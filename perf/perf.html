@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title></title>
+	<link rel="stylesheet" type="text/css" href="lib/ceres/base.css">
+	<link rel="stylesheet" type="text/css" href="lib/ceres/button.css">
+	<link rel="stylesheet" type="text/css" href="lib/ceres/box.css">
+
+	<style type="text/css">
+body {
+	padding: 50px;
+}
+
+#tfOutput {
+	display: block;
+	padding: 10px 20px;
+	border: 1px dashed #999;
+	color: #000;
+	font-size: 1.1em;
+}
+	</style>
+
+</head>
+<body>
+
+<p>
+	<label>
+		Number of layers
+		<input id="tfLayerCount" type="text" value="10">
+
+		<div id="bSetLayerCount">
+			<button class="-btn -btn-blue">10</button>
+			<button class="-btn -btn-blue">15</button>
+			<button class="-btn -btn-blue">25</button>
+			<button class="-btn -btn-red">50</button>
+			<button class="-btn -btn-red">100</button>
+			<button class="-btn -btn-red">1000</button>
+			<button class="-btn -btn-red">5000</button>
+			<button class="-btn -btn-red">25000</button>
+		</div>
+	</label>
+</p>
+
+<hr>
+
+<p id="bSelectLibrary">
+	Library
+	<br>
+	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="cellx" checked><span></span>cellx</label>
+	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="jin-atom"><span></span>jin-atom</label>
+	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="knockout"><span></span>Knockout</label>
+	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="angular"><span></span>AngularJS</label>
+	<br>
+	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="warp9"><span></span>Warp9</label>
+	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="kefir"><span></span>Kefir.js</label>
+	<!-- <label class="-radiobox"><input type="radio" name="rdbLibrary" value="bacon"><span></span>Bacon.js</label>
+	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="rx"><span></span>RxJS</label> -->
+</p>
+
+<hr>
+
+<p>
+	<button id="btnRunTest" class="-btn -btn-high -btn-blue">Run</button>
+</p>
+
+<hr>
+
+<p>
+	Output
+	<pre><output id="tfOutput">&nbsp;</output></pre>
+</p>
+
+<script src="lib/jquery.js"></script>
+<script src="lib/jin-atom.js"></script>
+<script src="lib/knockout-3.3.0.js"></script>
+<script src="lib/angular.min.js"></script>
+<script src="lib/warp9.js"></script>
+<script src="lib/kefir.js"></script>
+<script src="lib/bacon.js"></script>
+<script src="lib/rx.all.min.js"></script>
+<script src="../cellx.js"></script>
+<script>
+
+$('#bSetLayerCount button').click(function() {
+	$('#tfLayerCount').val(this.innerHTML);
+});
+
+$('#btnRunTest').click(function() {
+	runTest($('#bSelectLibrary input:checked').val(), parseInt($('#tfLayerCount').val(), 10));
+});
+
+function runTest(lib, layerCount) {
+	$('#btnRunTest')[0].disabled = true;
+
+	setTimeout(function() {
+		var report = {};
+
+		function onDone() {
+			$('#tfOutput').html(
+				'beforeChange: [' + report.beforeChange +
+					'],<br>afterChange: [' + report.afterChange +
+					'],<br>recalculationTime: ' + report.recalculationTime
+			);
+
+			$('#btnRunTest')[0].disabled = false;
+		}
+
+		switch (lib) {
+			case 'cellx': {
+				testCellx(report, layerCount, onDone);
+				break;
+			}
+			case 'jin-atom': {
+				testJinAtom(report, layerCount, onDone);
+				break;
+			}
+			case 'knockout': {
+				testKnockout(report, layerCount, onDone);
+				break;
+			}
+			case 'angular': {
+				testAngular(report, layerCount, onDone);
+				break;
+			}
+			case 'warp9': {
+				testWarp9(report, layerCount, onDone);
+				break;
+			}
+			case 'kefir': {
+				testKefir(report, layerCount, onDone);
+				break;
+			}
+			case 'bacon': {
+				testBacon(report, layerCount, onDone);
+				break;
+			}
+			case 'rx': {
+				testRx(report, layerCount, onDone);
+				break;
+			}
+		}
+	}, 500);
+}
+
+function testCellx(report, layerCount, done) {
+	function Start() {
+		this.prop1 = new cellx.Cell(1);
+		this.prop2 = new cellx.Cell(2);
+		this.prop3 = new cellx.Cell(3);
+		this.prop4 = new cellx.Cell(4);
+	}
+
+	var start = new Start();
+	var layer = start;
+
+	for (var i = layerCount; i--;) {
+		layer = (function(m) {
+			function Mid() {
+				this.prop1 = new cellx.Cell(function() { return m.prop2.read(); });
+				this.prop2 = new cellx.Cell(function() { return m.prop1.read() - m.prop3.read(); });
+				this.prop3 = new cellx.Cell(function() { return m.prop2.read() + m.prop4.read(); });
+				this.prop4 = new cellx.Cell(function() { return m.prop3.read(); });
+
+				this.prop1.on('change', function() {});
+				this.prop2.on('change', function() {});
+				this.prop3.on('change', function() {});
+				this.prop4.on('change', function() {});
+			}
+
+			var s = new Mid();
+
+			s.prop1.read();
+			s.prop2.read();
+			s.prop3.read();
+			s.prop4.read();
+
+			return s;
+		})(layer);
+	}
+
+	var end = layer;
+
+	report.beforeChange = [
+		end.prop1.read(),
+		end.prop2.read(),
+		end.prop3.read(),
+		end.prop4.read()
+	];
+
+	var st = Date.now();
+
+	start.prop1.write(4);
+	start.prop2.write(3);
+	start.prop3.write(2);
+	start.prop4.write(1);
+
+	report.afterChange = [
+		end.prop1.read(),
+		end.prop2.read(),
+		end.prop3.read(),
+		end.prop4.read()
+	];
+
+	report.recalculationTime = Date.now() - st;
+
+	done();
+}
+
+function testJinAtom(report, layerCount, done) {
+	function Start() {
+		this.prop1 = new $jin.atom.prop({ value: 1 });
+		this.prop2 = new $jin.atom.prop({ value: 2 });
+		this.prop3 = new $jin.atom.prop({ value: 3 });
+		this.prop4 = new $jin.atom.prop({ value: 4 });
+	}
+
+	var start = new Start();
+	var layer = start;
+
+	for (var i = layerCount; i--;) {
+		layer = (function(m) {
+			function Mid() {
+				this.prop1 = new $jin.atom.prop({ pull: function() { return m.prop2.get(); }, reap: function() {} });
+				this.prop2 = new $jin.atom.prop({ pull: function() { return m.prop1.get() - m.prop3.get(); }, reap: function() {} });
+				this.prop3 = new $jin.atom.prop({ pull: function() { return m.prop2.get() + m.prop4.get(); }, reap: function() {} });
+				this.prop4 = new $jin.atom.prop({ pull: function() { return m.prop3.get(); }, reap: function() {} });
+			}
+
+			var s = new Mid();
+
+			s.prop1.get();
+			s.prop2.get();
+			s.prop3.get();
+			s.prop4.get();
+
+			return s;
+		})(layer);
+	}
+
+	var end = layer;
+
+	report.beforeChange = [
+		end.prop1.get(),
+		end.prop2.get(),
+		end.prop3.get(),
+		end.prop4.get()
+	];
+
+	var st = Date.now();
+
+	start.prop1.push(4);
+	start.prop2.push(3);
+	start.prop3.push(2);
+	start.prop4.push(1);
+
+	new $jin.defer(function() {
+		report.afterChange = [
+			end.prop1.get(),
+			end.prop2.get(),
+			end.prop3.get(),
+			end.prop4.get()
+		];
+
+		report.recalculationTime = Date.now() - st;
+
+		done();
+	});
+}
+
+function testKnockout(report, layerCount, done) {
+	var Start = function() {
+		this.prop1 = ko.observable(1);
+		this.prop2 = ko.observable(2);
+		this.prop3 = ko.observable(3);
+		this.prop4 = ko.observable(4);
+	};
+
+	var start = new Start();
+	var layer = start;
+
+	for (var i = layerCount; i--;) {
+		layer = (function(m) {
+			var Mid = function() {
+				this.prop1 = ko.computed(function() { return m.prop2(); });
+				this.prop2 = ko.computed(function() { return m.prop1() - m.prop3(); });
+				this.prop3 = ko.computed(function() { return m.prop2() + m.prop4(); });
+				this.prop4 = ko.computed(function() { return m.prop3(); });
+
+				this.prop1.subscribe(function() {});
+				this.prop2.subscribe(function() {});
+				this.prop3.subscribe(function() {});
+				this.prop4.subscribe(function() {});
+			};
+
+			var s = new Mid();
+
+			s.prop1();
+			s.prop2();
+			s.prop3();
+			s.prop4();
+
+			return s;
+		})(layer);
+	}
+
+	var end = layer;
+
+	report.beforeChange = [
+		end.prop1(),
+		end.prop2(),
+		end.prop3(),
+		end.prop4()
+	];
+
+	var st = Date.now();
+
+	start.prop1(4);
+	start.prop2(3);
+	start.prop3(2);
+	start.prop4(1);
+
+	report.afterChange = [
+		end.prop1(),
+		end.prop2(),
+		end.prop3(),
+		end.prop4()
+	];
+
+	report.recalculationTime = Date.now() - st;
+
+	done();
+}
+
+function testAngular(report, layerCount, done) {
+	var app = angular.module('app', []);
+
+	var test;
+
+	app.controller('MyCtrl', function($scope) {
+		$scope.value_0_1 = 1;
+		$scope.value_0_2 = 2;
+		$scope.value_0_3 = 3;
+		$scope.value_0_4 = 4;
+
+		var i;
+
+		for (i = 1; i <= layerCount; i++) {
+			(function(i) {
+				var prevName1 = 'value_' + (i - 1) + '_1';
+				var prevName2 = 'value_' + (i - 1) + '_2';
+				var prevName3 = 'value_' + (i - 1) + '_3';
+				var prevName4 = 'value_' + (i - 1) + '_4';
+				var name1 = 'value_' + i + '_1';
+				var name2 = 'value_' + i + '_2';
+				var name3 = 'value_' + i + '_3';
+				var name4 = 'value_' + i + '_4';
+
+				Object.defineProperty($scope, name1, { get: function() { return $scope[prevName2]; } });
+				Object.defineProperty($scope, name2, { get: function() { return $scope[prevName1] - $scope[prevName3]; } });
+				Object.defineProperty($scope, name3, { get: function() { return $scope[prevName2] + $scope[prevName4]; } });
+				Object.defineProperty($scope, name4, { get: function() { return $scope[prevName3]; } });
+
+				report.beforeChange = [];
+
+				$scope.$watch(name1, function() {});
+				$scope.$watch(name2, function() {});
+				$scope.$watch(name3, function() {});
+				$scope.$watch(name4, function() {});
+
+				test = function() {
+					report.beforeChange = [
+						$scope[name1],
+						$scope[name2],
+						$scope[name3],
+						$scope[name4]
+					];
+
+					var st = Date.now();
+
+					$scope.value_0_1 = 4;
+					$scope.value_0_2 = 3;
+					$scope.value_0_3 = 2;
+					$scope.value_0_4 = 1;
+
+					cellx.nextTick(function() {
+						report.afterChange = [
+							$scope[name1],
+							$scope[name2],
+							$scope[name3],
+							$scope[name4]
+						];
+
+						report.recalculationTime = Date.now() - st;
+
+						done();
+					});
+				};
+			})(i);
+		}
+	});
+
+	var el = document.getElementById('angularApp');
+
+	el.innerHTML = '<div><div ng-controller="MyCtrl"><p>{{value_' + layerCount + '_1}}</p><p>{{value_' + layerCount + '_2}}</p><p>{{value_' + layerCount + '_3}}</p><p>{{value_' + layerCount + '_4}}</p></div></div>';
+
+	angular.bootstrap(el.firstElementChild, ['app']);
+
+	cellx.nextTick(test);
+}
+
+function testWarp9(report, layerCount, done) {
+	function Start() {
+		this.prop1 = new warp9.Cell(1);
+		this.prop2 = new warp9.Cell(2);
+		this.prop3 = new warp9.Cell(3);
+		this.prop4 = new warp9.Cell(4);
+	}
+
+	var start = new Start();
+	var layer = start;
+
+	for (var i = layerCount; i--;) {
+		layer = (function(m) {
+			function Mid() {
+				this.prop1 = m.prop2.lift(function(v) { return v; });
+				this.prop2 = m.prop1.lift(function(v) { return v - m.prop3.get(); });
+				this.prop3 = m.prop2.lift(function(v) { return v + m.prop4.get(); });
+				this.prop4 = m.prop3.lift(function(v) { return v; });
+
+				this.prop1.onChange(function() {});
+				this.prop2.onChange(function() {});
+				this.prop3.onChange(function() {});
+				this.prop4.onChange(function() {});
+			}
+
+			var s = new Mid();
+
+			s.prop1.get();
+			s.prop2.get();
+			s.prop3.get();
+			s.prop4.get();
+
+			return s;
+		})(layer);
+	}
+
+	var end = layer;
+
+	report.beforeChange = [
+		end.prop1.get(),
+		end.prop2.get(),
+		end.prop3.get(),
+		end.prop4.get()
+	];
+
+	var st = Date.now();
+
+	start.prop1.set(4);
+	start.prop2.set(3);
+	start.prop3.set(2);
+	start.prop4.set(1);
+
+	report.afterChange = [
+		end.prop1.get(),
+		end.prop2.get(),
+		end.prop3.get(),
+		end.prop4.get()
+	];
+
+	report.recalculationTime = Date.now() - st;
+
+	done();
+}
+
+function testKefir(report, layerCount, done) {
+	var em1;
+	var em2;
+	var em3;
+	var em4;
+
+	var start = {
+		prop1: Kefir.stream(function(em) { em1 = em; }),
+		prop2: Kefir.stream(function(em) { em2 = em; }),
+		prop3: Kefir.stream(function(em) { em3 = em; }),
+		prop4: Kefir.stream(function(em) { em4 = em; })
+	};
+	var layer = start;
+
+	for (var i = layerCount; i--;) {
+		layer = (function(m) {
+			var s = {
+				prop1: m.prop2.map(function(a) { return a; }),
+				prop2: Kefir.combine([m.prop1, m.prop3], function(a, b) { return a - b; }),
+				prop3: Kefir.combine([m.prop2, m.prop4], function(a, b) { return a + b; }),
+				prop4: m.prop3.map(function(a) { return a; })
+			};
+
+			s.prop1.onValue(function() {});
+			s.prop2.onValue(function() {});
+			s.prop3.onValue(function() {});
+			s.prop4.onValue(function() {});
+
+			return s;
+		})(layer);
+	}
+
+	var end = layer;
+
+	var st;
+
+	Kefir.combine([end.prop1, end.prop2, end.prop3, end.prop4], function(a, b, c, d) {
+		return [a, b, c, d];
+	}).onValue(function(v) {
+		if (!st) {
+			st = Date.now();
+
+			report.beforeChange = v;
+
+			cellx.nextTick(function() {
+				em1.emit(4);
+				em2.emit(3);
+				em3.emit(2);
+				em4.emit(1);
+			});
+		} else {
+			report.afterChange = v;
+			report.recalculationTime = Date.now() - st;
+
+			done();
+		}
+	});
+
+	em1.emit(1);
+	em2.emit(2);
+	em3.emit(3);
+	em4.emit(4);
+}
+
+function testBacon(report, layerCount, done) {
+	//
+}
+
+function testRx(report, layerCount, done) {
+	//
+}
+
+</script>
+
+<div id="angularApp" style="display: none;"></div>
+
+</body>
+</html>

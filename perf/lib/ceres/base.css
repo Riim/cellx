@@ -1,0 +1,249 @@
+/* http://www.w3.org/TR/html/ */
+html,
+body, article, section, nav, aside, h1, h2, h3, h4, h5, h6, header, footer, address,
+p, hr, pre, blockquote, ol, ul, li, dl, dt, dd, figure, figcaption, div, main,
+a, em, strong, small, s, cite, q, dfn, abbr, data, time, code, var, samp, kbd, sub, sup, i, b, u, mark, ruby, rb, rt,
+	rtc, rp, bdi, bdo, span/*, br, wbr*/,
+ins, del,
+img,
+iframe, embed, object, param, video, audio, source, track,
+map, area, table, caption, colgroup, col, tbody, thead, tfoot, tr, td, th,
+form, label, input, button, select, datalist, optgroup, option, textarea, keygen, output, progress, meter, fieldset,
+	legend {
+		margin: 0;
+		padding: 0;
+		outline-color: hsl(210, 100%, 64%);
+		vertical-align: baseline;
+		font-weight: inherit;
+		font-style: inherit;
+		font-size: 1em;
+		font-family: inherit;
+	}
+
+html {
+	-webkit-text-size-adjust: 100%;
+	-ms-text-size-adjust: 100%;
+}
+
+html,
+body {
+	height: 100%;
+}
+
+body {
+	background: white;
+	color: black;
+	line-height: 1.5;/* http://www.slideshare.net/maxdesign/line-height */
+	-webkit-font-smoothing: antialiased;
+	-webkit-tap-highlight-color: transparent;
+}
+
+blockquote,
+q {
+	quotes: none;
+}
+
+blockquote:before,
+blockquote:after,
+q:before,
+q:after {
+	content: '';
+	content: none;
+}
+
+ol,
+ul {
+	list-style: none;
+}
+
+abbr,
+img,
+fieldset {
+	border: 0;
+}
+
+table {
+	border-spacing: 0;
+	border-collapse: collapse;
+}
+
+caption,
+th {
+	text-align: left;
+}
+
+td,
+th {
+	vertical-align: middle;
+}
+
+input::-moz-focus-inner,
+button::-moz-focus-inner {
+	padding: 0;
+	border: 0;
+}
+
+/* Typography */
+
+body {
+	color: hsl(0, 0%, 20%);
+	font-size: 15px;
+	font-family: Verdana, Geneva, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	margin-bottom: 1em;
+	line-height: 1;
+}
+
+h1 { font-size: 1.8em; }
+h2 { font-size: 1.7em; }
+h3 { font-size: 1.5em; }
+h4 { font-size: 1.3em; }
+h5 { font-weight: 600; font-size: 1.1em; }
+h6 { margin-bottom: 0.5em; font-weight: 600; }
+
+address {
+	margin-bottom: 1.5em;
+	font-style: italic;
+}
+
+p {
+	margin-bottom: 1.5em;
+}
+
+hr {
+	clear: both;
+	margin: 0.5em 0 1em;
+	height: 0;
+	border: dashed hsl(0, 0%, 65%);
+	border-width: 1px 0 0;
+}
+
+pre,
+code {
+	font-family: 'Courier New', Courier, monospace;
+}
+
+pre {
+	margin: 1.5em 0;
+	white-space: pre;
+}
+
+blockquote {
+	margin: 1.5em;
+	color: hsl(0, 0%, 40%);
+	font-style: italic;
+}
+
+ol, ul { margin: 0 1.5em 1.5em 0; padding-left: 1.5em; }
+li ol, li ul { margin: 0; }
+ol { list-style-type: decimal; }
+ul { list-style-type: disc; }
+
+dl { margin-bottom: 1.5em; }
+dt { font-weight: bold; }
+dd { margin: 0 0 1em 1.5em; }
+
+a {
+	color: hsl(210, 100%, 40%);
+	text-decoration: underline;
+}
+
+em {
+	font-style: italic;
+}
+
+strong {
+	font-weight: bold;
+}
+
+small {
+	font-size: 0.85em;
+}
+
+dfn {
+	font-weight: bold;
+	font-style: italic;
+}
+
+abbr {
+	border-bottom: dashed 1px hsl(0, 0%, 40%);
+}
+
+sub,
+sup {
+	position: relative;
+	line-height: 0;
+}
+
+sup {
+	top: -0.5em;
+}
+
+sub {
+	bottom: -0.25em;
+}
+
+tfoot { font-style: italic; }
+th { font-weight: bold; }
+
+/* Form */
+
+fieldset {
+	margin-bottom: 1.5em;
+	padding: 1.4em;
+	border: solid 1px hsl(0, 0%, 80%);
+}
+
+legend {
+	padding: 0 2px;
+	font-weight: bold;
+	font-size: 1.2em;
+}
+
+input[type=text],
+input[type=password],
+input[type=url],
+input[type=email],
+input[type=number],
+textarea,
+select {
+	box-sizing: border-box;
+	padding: 0.3em 0.4em;
+	width: 400px;
+	border: solid 1px hsl(0, 0%, 65%);
+	box-shadow: inset 0 1px 3px hsla(0, 0%, 0%, 0.15);
+	vertical-align: middle;
+}
+
+input[type=text]:focus,
+input[type=password]:focus,
+input[type=url]:focus,
+input[type=email]:focus,
+input[type=number]:focus,
+textarea:focus,
+select:focus {
+	outline: none;
+	border-color: hsl(210, 100%, 64%);
+}
+
+textarea {
+	height: 10em;
+}
+
+select {
+	padding: 1px 1px 1px 0;
+}
+
+p input[type=text],
+p input[type=password],
+p input[type=url],
+p input[type=email],
+p input[type=number],
+p textarea,
+p select {
+	position: relative;
+	top: 0.15em;
+	display: block;
+}
