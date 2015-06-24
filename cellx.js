@@ -2067,6 +2067,8 @@
 				return this._changed;
 			},
 	
+			_currentlyClearing: false,
+	
 			/**
 			 * @override cellx.EventEmitter#on
 			 */
@@ -2425,12 +2427,31 @@
 			/**
 			 * @typesign ();
 			 */
-			dispose: function() {
+			clear: function() {
+				if (changes.size) {
+					releaseChanges();
+				}
+	
+				this._clear();
+			},
+	
+			/**
+			 * @typesign ();
+			 */
+			_clear: function() {
+				if (this._currentlyClearing) {
+					return;
+				}
+	
+				this._currentlyClearing = true;
+	
 				this._slaves.forEach(function(slave) {
-					slave.dispose();
+					slave._clear();
 				});
 	
 				this.off();
+	
+				this._currentlyClearing = false;
 			}
 		});
 	
@@ -2458,28 +2479,22 @@
 			var cell = owner[KEY_CELLS].get(wrap);
 	
 			if (!cell) {
-				if (initialValue === Object(initialValue)) {
+				if (initialValue != null && typeof initialValue == 'object') {
 					if (typeof initialValue.clone == 'function') {
-						if (typeof initialValue != 'function' || initialValue.constructor != Function) {
-							initialValue = initialValue.clone();
-						}
-					} else if (typeof initialValue != 'function') {
-						if (isArray(initialValue)) {
-							initialValue = initialValue.slice(0);
-						} else {
-							switch (toString.call(initialValue)) {
-								case '[object Date]': {
-									initialValue = new Date(initialValue);
-									break;
-								}
-								case '[object RegExp]': {
-									initialValue = new RegExp(initialValue);
-									break;
-								}
-								default: {
-									initialValue = assign({}, initialValue);
-									break;
-								}
+						initialValue = initialValue.clone();
+					} else if (isArray(initialValue)) {
+						initialValue = initialValue.slice(0);
+					} else if (initialValue.constructor === Object) {
+						initialValue = assign({}, initialValue);
+					} else {
+						switch (toString.call(initialValue)) {
+							case '[object Date]': {
+								initialValue = new Date(initialValue);
+								break;
+							}
+							case '[object RegExp]': {
+								initialValue = new RegExp(initialValue);
+								break;
 							}
 						}
 					}

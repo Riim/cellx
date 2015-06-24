@@ -369,6 +369,8 @@
 			return this._changed;
 		},
 
+		_currentlyClearing: false,
+
 		/**
 		 * @override cellx.EventEmitter#on
 		 */
@@ -727,12 +729,31 @@
 		/**
 		 * @typesign ();
 		 */
-		dispose: function() {
+		clear: function() {
+			if (changes.size) {
+				releaseChanges();
+			}
+
+			this._clear();
+		},
+
+		/**
+		 * @typesign ();
+		 */
+		_clear: function() {
+			if (this._currentlyClearing) {
+				return;
+			}
+
+			this._currentlyClearing = true;
+
 			this._slaves.forEach(function(slave) {
-				slave.dispose();
+				slave._clear();
 			});
 
 			this.off();
+
+			this._currentlyClearing = false;
 		}
 	});
 
