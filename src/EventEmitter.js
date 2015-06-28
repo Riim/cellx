@@ -1,5 +1,6 @@
 (function() {
 	var Map = cellx.Map;
+	var Set = cellx.Set;
 	var Event = cellx.Event;
 
 	/**
@@ -13,7 +14,7 @@
 
 	assign(EventEmitter.prototype, {
 		/**
-		 * @type {Map<string, Array<{ listener: Function, context: Object }>>}
+		 * @type {Map<string, Set<{ listener: Function, context: Object }>>}
 		 */
 		_events: null,
 
@@ -88,15 +89,11 @@
 		_on: function(type, listener, context) {
 			var events = (this._events || (this._events = new Map())).get(type);
 
-			if (!events) {
-				events = [];
-				this._events.set(type, events);
+			if (events) {
+				events.add({ listener: listener, context: context || this });
+			} else {
+				this._events.set(type, new Set([{ listener: listener, context: context || this }]));
 			}
-
-			events.push({
-				listener: listener,
-				context: context || this
-			});
 		},
 		/**
 		 * @typesign (
@@ -116,22 +113,20 @@
 				context = this;
 			}
 
-			for (var i = events.length; i;) {
-				if (events[--i].context == context) {
-					var evtListener = events[i].listener;
+			for (var iterator = events.values(), step; !(step = iterator.next()).done;) {
+				var evt = step.value;
+
+				if (evt.context == context) {
+					var evtListener = evt.listener;
 
 					if (
 						evtListener == listener ||
 							(evtListener.hasOwnProperty(KEY_INNER) && evtListener[KEY_INNER] == listener)
 					) {
-						events.splice(i, 1);
+						events['delete'](evt);
 						break;
 					}
 				}
-			}
-
-			if (!events.length) {
-				this._events['delete'](type);
 			}
 		},
 
@@ -184,22 +179,19 @@
 		 */
 		_handleEvent: function(evt) {
 			var type = evt.type;
-			var events = (this._events && this._events.get(type) || []).slice(0);
+			var events = this._events && this._events.get(type);
 
-			if (typeof this['on' + type] == 'function') {
-				events.push({
-					listener: this['on' + type],
-					context: this
-				});
+			if (!events) {
+				return;
 			}
 
-			for (var i = 0, l = events.length; i < l; i++) {
-				if (evt.immediatePropagationStopped) {
+			for (var iterator = events.values(), step; !(step = iterator.next()).done;) {
+				if (evt.isImmediatePropagationStopped) {
 					break;
 				}
 
 				try {
-					if (events[i].listener.call(events[i].context, evt) === false) {
+					if (step.value.listener.call(step.value.context, evt) === false) {
 						evt.stopPropagation();
 					}
 				} catch (err) {

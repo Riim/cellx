@@ -5,11 +5,6 @@
 	var Event = cellx.Event;
 	var EventEmitter = cellx.EventEmitter;
 
-	var onEvent = EventEmitter.prototype.on;
-	var offEvent = EventEmitter.prototype.off;
-	var _onEvent = EventEmitter.prototype._on;
-	var _offEvent = EventEmitter.prototype._off;
-
 	var STATE_CHANGES_COMBINING = 0;
 	var STATE_CHANGES_HANDLING = 1;
 	var STATE_SLAVES_RECALCULATION = 2;
@@ -24,27 +19,21 @@
 	 * @type {Array<cellx.Cell>}
 	 */
 	var outdatedCells = [];
-	var outdatedCellSet = new Set();
+
+	var handledCell = null;
+	var calculatedCell = null;
 
 	/**
-	 * @type {Map<cellx.Cell, uint>}
+	 * @type {Set<cellx.Cell>}
 	 */
-	var circularityDetectionCounter = new Map();
+	var detectedMasters = null;
 
-	var releaseVersion = 0;
+	var releaseVersion = 1;
 
 	/**
-	 * @typesign (cell: cellx.Cell, skipSet: boolean);
+	 * @typesign (cell: cellx.Cell);
 	 */
-	function registerOutdatedCell(cell, skipSet) {
-		if (!skipSet) {
-			if (outdatedCellSet.has(cell)) {
-				return;
-			}
-
-			outdatedCellSet.add(cell);
-		}
-
+	function registerOutdatedCell(cell) {
 		if (outdatedCells.length) {
 			var maxMasterLevel = cell._maxMasterLevel;
 			var low = 0;
@@ -72,35 +61,45 @@
 	function handleChanges() {
 		state = STATE_CHANGES_HANDLING;
 
-		do {
-			for (var iterator = changes.entries(), step; !(step = iterator.next()).done;) {
-				var cell = step.value[0];
+		for (var iterator = changes.entries(), step; !(step = iterator.next()).done;) {
+			var cell = step.value[0];
 
-				changes['delete'](cell);
-				cell._slaves.forEach(function(slave) {
-					registerOutdatedCell(slave, false);
-				});
+			changes['delete'](cell);
 
-				cell._fixedValue = cell._value;
-				cell._changed = true;
-
-				cell._handleEvent(step.value[1].event);
-
-				if (state != STATE_CHANGES_HANDLING) {
+			cell._slaves.forEach(function(slave) {
+				if (slave._outdated) {
 					return;
 				}
+
+				registerOutdatedCell(slave);
+				slave._outdated = true;
+			});
+
+			if (handledCell === cell) {
+				return;
 			}
-		} while (changes.size);
+
+			var prevHandledCell = handledCell;
+			handledCell = cell;
+
+			cell._fixedValue = cell._value;
+			cell._changed = true;
+
+			cell._handleEvent(step.value[1].event);
+
+			handledCell = prevHandledCell;
+
+			if (state != STATE_CHANGES_HANDLING) {
+				return;
+			}
+		}
 	}
 
 	/**
 	 * @typesign ();
 	 */
 	function releaseChanges() {
-		if (
-			(state == STATE_CHANGES_COMBINING || state == STATE_CHANGES_HANDLING) && changes.size ||
-				state == STATE_SLAVES_RECALCULATION
-		) {
+		if (changes.size) {
 			handleChanges();
 
 			if (state != STATE_CHANGES_HANDLING) {
@@ -112,18 +111,14 @@
 
 		state = STATE_SLAVES_RECALCULATION;
 
-		for (var outdatedCellCount; outdatedCellCount = outdatedCells.length;) {
-			var cell = outdatedCells[outdatedCellCount - 1];
+		while (outdatedCells.length) {
+			var cell = outdatedCells[outdatedCells.length - 1];
 
 			if (cell._recalc()) {
-				registerOutdatedCell(outdatedCells.pop(), true);
+				registerOutdatedCell(outdatedCells.pop());
 			} else {
-				if (state != STATE_SLAVES_RECALCULATION) {
-					return;
-				}
-
 				outdatedCells.pop();
-				outdatedCellSet['delete'](cell);
+				cell._outdated = false;
 			}
 
 			if (changes.size) {
@@ -137,10 +132,8 @@
 			}
 		}
 
-		state = STATE_CHANGES_COMBINING;
-		circularityDetectionCounter.clear();
-
 		releaseVersion++;
+		state = STATE_CHANGES_COMBINING;
 	}
 
 	/**
@@ -182,8 +175,6 @@
 			cancellable: cancellable !== false
 		});
 	}
-
-	var detectedMasters = [];
 
 	/**
 	 * @class cellx.Cell
@@ -234,19 +225,8 @@
 			opts = {};
 		}
 
-		var owner;
-
 		if (opts.owner) {
-			owner = this.owner = opts.owner;
-		}
-
-		var formula;
-
-		if (
-			typeof value == 'function' &&
-				(opts.computed !== undefined ? opts.computed : value.constructor == Function)
-		) {
-			formula = this._formula = value;
+			this.owner = opts.owner;
 		}
 
 		if (opts.read) {
@@ -262,20 +242,21 @@
 
 		this._slaves = new Set();
 
-		if (opts.onchange) {
-			this.on('change', opts.onchange, owner);
-		}
-		if (opts.onerror) {
-			this.on('error', opts.onerror, owner);
+		if (opts.pureComputed) {
+			this.pureComputed = true;
 		}
 
-		if (formula) {
+		if (
+			typeof value == 'function' &&
+				(opts.computed !== undefined ? opts.computed : value.constructor == Function)
+		) {
+			this._formula = value;
 			this.computed = true;
-
-			if (this._events.size) {
-				this._startUpdating();
-			}
 		} else {
+			if (this._validate) {
+				this._validate.call(this.owner || this, value);
+			}
+
 			this._value = this._fixedValue = this.initialValue = value;
 
 			if (value instanceof EventEmitter) {
@@ -283,8 +264,11 @@
 			}
 		}
 
-		if (opts.pureComputed) {
-			this.pureComputed = true;
+		if (opts.onchange) {
+			this.on('change', opts.onchange);
+		}
+		if (opts.onerror) {
+			this.on('error', opts.onerror);
 		}
 	}
 	extend(Cell, EventEmitter);
@@ -338,26 +322,27 @@
 		_slaves: null,
 
 		/**
-		 * @type {int|undefined}
+		 * @type {uint|undefined}
 		 */
-		_maxMasterLevel: undefined,
+		_maxMasterLevel: 0,
+
+		_version: 0,
+
+		_circularityDetectionCounter: 0,
 
 		/**
 		 * @type {?cellx.Event}
 		 */
 		_lastErrorEvent: null,
 
-		/**
-		 * @type {uint|undefined}
-		 */
-		_version: undefined,
-
 		computed: false,
-
 		pureComputed: false,
 
-		_changed: false,
+		_active: false,
 
+		_outdated: false,
+
+		_changed: false,
 		/**
 		 * @typesign (): boolean;
 		 */
@@ -369,8 +354,6 @@
 			return this._changed;
 		},
 
-		_currentlyClearing: false,
-
 		/**
 		 * @override cellx.EventEmitter#on
 		 */
@@ -380,10 +363,12 @@
 			}
 
 			if (this.computed && !this._events.size && !this._slaves.size) {
-				this._startUpdating();
+				this._activate();
 			}
 
-			return onEvent.call(this, type, listener, context);
+			EventEmitter.prototype.on.call(this, type, listener, context);
+
+			return this;
 		},
 		/**
 		 * @override cellx.EventEmitter#off
@@ -393,10 +378,10 @@
 				releaseChanges();
 			}
 
-			offEvent.call(this, type, listener, context);
+			EventEmitter.prototype.off.call(this, type, listener, context);
 
 			if (this.computed && !this._events.size && !this._slaves.size) {
-				this._stopUpdating();
+				this._deactivate();
 			}
 
 			return this;
@@ -406,13 +391,13 @@
 		 * @override cellx.EventEmitter#_on
 		 */
 		_on: function(type, listener, context) {
-			_onEvent.call(this, type, listener, context || this.owner);
+			EventEmitter.prototype._on.call(this, type, listener, context || this.owner);
 		},
 		/**
 		 * @override cellx.EventEmitter#_off
 		 */
 		_off: function(type, listener, context) {
-			_offEvent.call(this, type, listener, context || this.owner);
+			EventEmitter.prototype._off.call(this, type, listener, context || this.owner);
 		},
 
 		/**
@@ -447,7 +432,7 @@
 		 */
 		_registerSlave: function(slave) {
 			if (this.computed && !this._events.size && !this._slaves.size) {
-				this._startUpdating();
+				this._activate();
 			}
 
 			this._slaves.add(slave);
@@ -460,8 +445,56 @@
 			this._slaves['delete'](slave);
 
 			if (this.computed && !this._events.size && !this._slaves.size) {
-				this._stopUpdating();
+				this._deactivate();
 			}
+		},
+
+		/**
+		 * @typesign ();
+		 */
+		_activate: function() {
+			if (this._version != releaseVersion) {
+				var prevDetectedMasters = detectedMasters;
+				detectedMasters = new Set();
+
+				try {
+					this._value = this._fixedValue = this._formula.call(this.owner || this);
+				} catch (err) {
+					this._handleError(err);
+				}
+
+				this._masters = detectedMasters;
+				detectedMasters = prevDetectedMasters;
+
+				this._version = releaseVersion;
+			}
+
+			var maxMasterLevel = 0;
+
+			this._masters.forEach(function(master) {
+				master._registerSlave(this);
+
+				if (maxMasterLevel <= master._maxMasterLevel) {
+					maxMasterLevel = master._maxMasterLevel + 1;
+				}
+			}, this);
+
+			this._maxMasterLevel = maxMasterLevel;
+
+			this._active = true;
+		},
+
+		/**
+		 * @typesign ();
+		 */
+		_deactivate: function() {
+			this._masters.forEach(function(master) {
+				master._unregisterSlave(this);
+			}, this);
+
+			this._maxMasterLevel = undefined;
+
+			this._active = false;
 		},
 
 		/**
@@ -475,45 +508,54 @@
 		 * @typesign (): *;
 		 */
 		read: function() {
-			if (detectedMasters.length) {
-				detectedMasters[0].add(this);
+			if (detectedMasters) {
+				detectedMasters.add(this);
 			}
 
-			if (state == STATE_CHANGES_HANDLING || changes.size) {
+			// STATE_CHANGES_COMBINING - outdatedCells здесь точно нет.
+			// STATE_CHANGES_HANDLING - если нет ни changes, ни outdatedCells, то релиз не нужен.
+			// STATE_SLAVES_RECALCULATION - предположительно будут читаться ячейки с меньшим _maxMasterLevel,
+			// если так, то при отсутствии изменений релиз не нужен, если нет, то в releaseChanges
+			// ячейка пересортируется и _recalc вызвавший это чтение повторится позже.
+			if (changes.size || (state == STATE_CHANGES_HANDLING && outdatedCells.length)) {
 				releaseChanges();
 			}
 
-			var value = this._value;
+			var value;
 
-			if (this.computed && this._version != releaseVersion && !this._events.size) {
+			if (this.computed && !this._active && this._version != releaseVersion) {
+				var prevDetectedMasters = detectedMasters;
+				detectedMasters = new Set();
+
 				try {
 					value = this._value = this._fixedValue = this._formula.call(this.owner || this);
 				} catch (err) {
 					this._handleError(err);
 				}
 
+				this._masters = detectedMasters;
+				detectedMasters = prevDetectedMasters;
+
 				this._version = releaseVersion;
+			} else {
+				value = this._value;
 			}
 
-			if (this._read) {
-				return this.computed ? this._read.call(this.owner || this, value) : this._read(value);
-			}
-
-			return value;
+			return this._read ? this._read.call(this.owner || this, value) : value;
 		},
 
 		/**
 		 * @typesign (value): boolean;
 		 */
 		write: function(value) {
-			var oldValue = this._value;
-
-			if (svz(oldValue, value)) {
-				return false;
-			}
-
 			if (this.computed && !this._write) {
 				throw new TypeError('Cannot write to read-only cell');
+			}
+
+			var oldValue = this._value;
+
+			if (oldValue === value || (oldValue != oldValue && value != value)) {
+				return false;
 			}
 
 			if (this._validate) {
@@ -525,11 +567,6 @@
 			} else {
 				this._value = value;
 
-				if (svz(value, this._fixedValue) && changes.get(this).cancellable) {
-					changes['delete'](this);
-					return true;
-				}
-
 				if (oldValue instanceof EventEmitter) {
 					oldValue.off('change', this._onValueChange, this);
 				}
@@ -537,53 +574,20 @@
 					value.on('change', this._onValueChange, this);
 				}
 
-				addChange(this, {
-					oldValue: oldValue,
-					value: value
-				});
+				if (
+					(value === this._fixedValue || (value != value && this._fixedValue != this._fixedValue)) &&
+						changes.get(this).cancellable
+				) {
+					changes['delete'](this);
+				} else {
+					addChange(this, {
+						oldValue: oldValue,
+						value: value
+					});
+				}
 			}
 
 			return true;
-		},
-
-		/**
-		 * @typesign ();
-		 */
-		_startUpdating: function() {
-			detectedMasters.unshift(new Set());
-
-			try {
-				this._value = this._fixedValue = this._formula.call(this.owner || this);
-			} catch (err) {
-				this._handleError(err);
-			}
-
-			this._masters = detectedMasters.shift();
-
-			var maxMasterLevel = 1;
-
-			this._masters.forEach(function(master) {
-				master._registerSlave(this);
-
-				if (maxMasterLevel <= master._maxMasterLevel) {
-					maxMasterLevel = master._maxMasterLevel + 1;
-				}
-			}, this);
-
-			this._maxMasterLevel = maxMasterLevel;
-			this._version = releaseVersion;
-		},
-
-		/**
-		 * @typesign ();
-		 */
-		_stopUpdating: function() {
-			this._masters.forEach(function(master) {
-				master._unregisterSlave(this);
-			}, this);
-
-			this._masters = null;
-			this._maxMasterLevel = undefined;
 		},
 
 		/**
@@ -592,62 +596,63 @@
 		_recalc: function() {
 			var pureComputed = this.pureComputed;
 
-			var value;
-			var err;
+			if (!pureComputed) {
+				if (this._version == releaseVersion) {
+					if (++this._circularityDetectionCounter == 10) {
+						this._handleError(new RangeError('Circular dependency detected'));
+						return false;
+					}
+				} else {
+					this._circularityDetectionCounter = 1;
+				}
+			}
+
+			if (calculatedCell === this) {
+				return false;
+			}
+
+			var prevCalculatedCell = calculatedCell;
+			calculatedCell = this;
+
+			var prevDetectedMasters;
 
 			if (!pureComputed) {
-				var callCount = circularityDetectionCounter.get(this);
-
-				if (callCount === 10) {
-					this._handleError(new RangeError('Circular dependency detected'));
-					return false;
-				}
-
-				circularityDetectionCounter.set(this, (callCount || 0) + 1);
-
-				detectedMasters.unshift(new Set());
+				prevDetectedMasters = detectedMasters;
+				detectedMasters = new Set();
 			}
+
+			var value;
+			var err;
 
 			try {
 				value = this._formula.call(this.owner || this);
 
-				if (state != STATE_SLAVES_RECALCULATION) {
-					if (!pureComputed) {
-						detectedMasters.shift();
-					}
-
-					return false;
-				}
-
 				if (this._validate) {
-					this._validate(value);
-
-					if (state != STATE_SLAVES_RECALCULATION) {
-						if (!pureComputed) {
-							detectedMasters.shift();
-						}
-
-						return false;
-					}
+					this._validate.call(this.owner || this, value);
 				}
 			} catch (error) {
 				err = error;
 			}
 
+			calculatedCell = prevCalculatedCell;
+
 			if (!pureComputed) {
 				var oldMasters = this._masters;
-				var masters = this._masters = detectedMasters.shift();
-				var removedMasterCount = 0;
+
+				var masters = this._masters = detectedMasters;
+				detectedMasters = prevDetectedMasters;
+
+				var isMasterListChanged = false;
 
 				oldMasters.forEach(function(master) {
 					if (!masters.has(master)) {
 						master._unregisterSlave(this);
-						removedMasterCount++;
+						isMasterListChanged = true;
 					}
 				}, this);
 
-				if (oldMasters.size - removedMasterCount < masters.size) {
-					var maxMasterLevel = 1;
+				if (isMasterListChanged || oldMasters.size < masters.size) {
+					var maxMasterLevel = 0;
 
 					masters.forEach(function(master) {
 						if (!oldMasters.has(master)) {
@@ -678,7 +683,7 @@
 			} else {
 				var oldValue = this._value;
 
-				if (!svz(oldValue, value)) {
+				if (oldValue !== value && (oldValue == oldValue || value == value)) {
 					this._value = value;
 
 					addChange(this, {
@@ -718,7 +723,7 @@
 			this._handleEvent(evt);
 
 			for (var iterator = this._slaves.values(), step; !(step = iterator.next()).done;) {
-				if (evt.propagationStopped) {
+				if (evt.isPropagationStopped) {
 					break;
 				}
 
@@ -727,7 +732,7 @@
 		},
 
 		/**
-		 * @typesign ();
+		 * @typesign (): cellx.Cell;
 		 */
 		clear: function() {
 			if (changes.size) {
@@ -735,25 +740,23 @@
 			}
 
 			this._clear();
+
+			return this;
 		},
 
 		/**
 		 * @typesign ();
 		 */
 		_clear: function() {
-			if (this._currentlyClearing) {
+			this.off();
+
+			if (!this._active) {
 				return;
 			}
-
-			this._currentlyClearing = true;
 
 			this._slaves.forEach(function(slave) {
 				slave._clear();
 			});
-
-			this.off();
-
-			this._currentlyClearing = false;
 		}
 	});
 

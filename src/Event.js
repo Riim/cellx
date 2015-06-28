@@ -46,18 +46,18 @@
 		/**
 		 * Распространение события на другие объекты остановлено.
 		 */
-		propagationStopped: false,
+		isPropagationStopped: false,
 		/**
 		 * Распространение события на другие объекты и его обработка на текущем остановлены.
 		 */
-		immediatePropagationStopped: false,
+		isImmediatePropagationStopped: false,
 
 		/**
 		 * Останавливает распространение события на другие объекты.
 		 * @typesign ();
 		 */
 		stopPropagation: function() {
-			this.propagationStopped = true;
+			this.isPropagationStopped = true;
 		},
 
 		/**
@@ -65,8 +65,8 @@
 		 * @typesign ();
 		 */
 		stopImmediatePropagation: function() {
-			this.propagationStopped = true;
-			this.immediatePropagationStopped = true;
+			this.isPropagationStopped = true;
+			this.isImmediatePropagationStopped = true;
 		}
 	});
 
