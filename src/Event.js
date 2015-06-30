@@ -6,42 +6,42 @@
 	 */
 	function Event(type, canBubble) {
 		/**
-		* Объект, к которому применено событие.
-		* @type {?Object}
-		* @writable
-		*/
+		 * Объект, к которому применено событие.
+		 * @type {?Object}
+		 * @writable
+		 */
 		this.target = null;
 
 		/**
-		* @type {string}
-		*/
+		 * @type {string}
+		 */
 		this.type = type;
 
 		/**
-		* @type {int|undefined}
-		* @writable
-		*/
+		 * @type {int|undefined}
+		 * @writable
+		 */
 		this.timestamp = undefined;
 
 		/**
-		* Дополнительная информация по событию.
-		* @type {?Object}
-		* @writable
-		*/
+		 * Дополнительная информация по событию.
+		 * @type {?Object}
+		 * @writable
+		 */
 		this.detail = null;
 
 		/**
-		* Является ли событие всплывающим.
-		*/
+		 * Является ли событие всплывающим.
+		 */
 		this.bubbles = canBubble !== false;
 
 		/**
-		* Распространение события на другие объекты остановлено.
-		*/
+		 * Распространение события на другие объекты остановлено.
+		 */
 		this.isPropagationStopped = false;
 		/**
-		* Распространение события на другие объекты и его обработка на текущем остановлены.
-		*/
+		 * Распространение события на другие объекты и его обработка на текущем остановлены.
+		 */
 		this.isImmediatePropagationStopped = false;
 	}
 
