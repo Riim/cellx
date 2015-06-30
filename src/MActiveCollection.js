@@ -5,13 +5,6 @@ var MActiveCollection;
 
 	MActiveCollection = {
 		/**
-		 * @type {Map<*, uint>}
-		 */
-		_valueCounts: null,
-
-		adoptsItemChanges: true,
-
-		/**
 		 * @typesign (evt: cellx.Event);
 		 */
 		_onItemChange: function(evt) {

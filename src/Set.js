@@ -7,6 +7,8 @@
 		Set = function Set(arr) {
 			this._entries = new Map();
 
+			this.size = 0;
+
 			if (arr) {
 				for (var i = 0, l = arr.length; i < l; i++) {
 					this.add(arr[i]);
@@ -15,10 +17,6 @@
 		};
 
 		assign(Set.prototype, {
-			_entries: null,
-
-			size: 0,
-
 			has: function(value) {
 				return this._entries.has(value);
 			},

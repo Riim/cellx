@@ -10,12 +10,21 @@
 	 * }): cellx.ActiveMap;
 	 */
 	function ActiveMap(entries, opts) {
+		/**
+		 * @type {Map}
+		 */
 		this._entries = new Map();
+		/**
+		 * @type {Map<*, uint>}
+		 */
 		this._valueCounts = new Map();
 
-		if (opts && opts.adoptsItemChanges === false) {
-			this.adoptsItemChanges = false;
-		}
+		this.size = 0;
+
+		/**
+		 * @type {boolean}
+		 */
+		this.adoptsItemChanges = !opts || opts.adoptsItemChanges !== false;
 
 		if (entries) {
 			var thisEntries = this._entries;
@@ -46,13 +55,6 @@
 
 	assign(ActiveMap.prototype, MActiveCollection);
 	assign(ActiveMap.prototype, {
-		/**
-		 * @type {Map}
-		 */
-		_entries: null,
-
-		size: 0,
-
 		/**
 		 * @typesign (key): boolean;
 		 */

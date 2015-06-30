@@ -5,53 +5,47 @@
 	 * @typesign new (type: string, canBubble: boolean = true): cellx.Event;
 	 */
 	function Event(type, canBubble) {
+		/**
+		* Объект, к которому применено событие.
+		* @type {?Object}
+		* @writable
+		*/
+		this.target = null;
+
+		/**
+		* @type {string}
+		*/
 		this.type = type;
 
-		if (canBubble === false) {
-			this.bubbles = false;
-		}
+		/**
+		* @type {int|undefined}
+		* @writable
+		*/
+		this.timestamp = undefined;
+
+		/**
+		* Дополнительная информация по событию.
+		* @type {?Object}
+		* @writable
+		*/
+		this.detail = null;
+
+		/**
+		* Является ли событие всплывающим.
+		*/
+		this.bubbles = canBubble !== false;
+
+		/**
+		* Распространение события на другие объекты остановлено.
+		*/
+		this.isPropagationStopped = false;
+		/**
+		* Распространение события на другие объекты и его обработка на текущем остановлены.
+		*/
+		this.isImmediatePropagationStopped = false;
 	}
 
 	assign(Event.prototype, {
-		/**
-		 * Объект, к которому применено событие.
-		 * @type {?Object}
-		 * @writable
-		 */
-		target: null,
-
-		/**
-		 * @type {string}
-		 */
-		type: undefined,
-
-		/**
-		 * @type {int|undefined}
-		 * @writable
-		 */
-		timestamp: undefined,
-
-		/**
-		 * Дополнительная информация по событию.
-		 * @type {?Object}
-		 * @writable
-		 */
-		detail: null,
-
-		/**
-		 * Является ли событие всплывающим.
-		 */
-		bubbles: true,
-
-		/**
-		 * Распространение события на другие объекты остановлено.
-		 */
-		isPropagationStopped: false,
-		/**
-		 * Распространение события на другие объекты и его обработка на текущем остановлены.
-		 */
-		isImmediatePropagationStopped: false,
-
 		/**
 		 * Останавливает распространение события на другие объекты.
 		 * @typesign ();

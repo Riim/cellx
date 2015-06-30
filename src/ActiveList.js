@@ -67,12 +67,28 @@
 			opts = {};
 		}
 
+		/**
+		 * @type {Array}
+		 */
 		this._items = [];
+		/**
+		 * @type {Map<*, uint>}
+		 */
 		this._valueCounts = new Map();
 
-		if (opts.adoptsItemChanges === false) {
-			this.adoptsItemChanges = false;
-		}
+		this.length = 0;
+
+		/**
+		 * @type {boolean}
+		 */
+		this.adoptsItemChanges = opts.adoptsItemChanges !== false;
+
+		/**
+		 * @type {?Function}
+		 */
+		this.comparator = null;
+
+		this.sorted = false;
 
 		if (opts.sorted || (opts.comparator && opts.sorted !== false)) {
 			this.comparator = opts.comparator || defaultComparator;
@@ -87,20 +103,6 @@
 
 	assign(ActiveList.prototype, MActiveCollection);
 	assign(ActiveList.prototype, {
-		/**
-		 * @type {Array}
-		 */
-		_items: null,
-
-		length: 0,
-
-		/**
-		 * @type {?Function}
-		 */
-		comparator: null,
-
-		sorted: false,
-
 		/**
 		 * @typesign (index: int, endIndex: boolean = false): uint|undefined;
 		 */

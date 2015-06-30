@@ -9,15 +9,13 @@
 	 * @typesign new (): cellx.EventEmitter;
 	 */
 	function EventEmitter() {
+		/**
+		 * @type {Map<string, Set<{ listener: Function, context: Object }>>}
+		 */
 		this._events = new Map();
 	}
 
 	assign(EventEmitter.prototype, {
-		/**
-		 * @type {Map<string, Set<{ listener: Function, context: Object }>>}
-		 */
-		_events: null,
-
 		/**
 		 * @typesign (
 		 *     type: string,

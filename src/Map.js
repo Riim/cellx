@@ -10,6 +10,11 @@
 			this._entries = new Dictionary();
 			this._objectStamps = {};
 
+			this._first = null;
+			this._last = null;
+
+			this.size = 0;
+
 			if (arr) {
 				for (var i = 0, l = arr.length; i < l; i++) {
 					this.set(arr[i][0], arr[i][1]);
@@ -18,14 +23,6 @@
 		};
 
 		assign(Map.prototype, {
-			_entries: null,
-			_objectStamps: null,
-
-			_first: null,
-			_last: null,
-
-			size: 0,
-
 			has: function(key) {
 				return !!this._entries[this._getValueStamp(key)];
 			},

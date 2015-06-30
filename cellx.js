@@ -223,6 +223,11 @@
 				this._entries = new Dictionary();
 				this._objectStamps = {};
 	
+				this._first = null;
+				this._last = null;
+	
+				this.size = 0;
+	
 				if (arr) {
 					for (var i = 0, l = arr.length; i < l; i++) {
 						this.set(arr[i][0], arr[i][1]);
@@ -231,14 +236,6 @@
 			};
 	
 			assign(Map.prototype, {
-				_entries: null,
-				_objectStamps: null,
-	
-				_first: null,
-				_last: null,
-	
-				size: 0,
-	
 				has: function(key) {
 					return !!this._entries[this._getValueStamp(key)];
 				},
@@ -474,6 +471,8 @@
 			Set = function Set(arr) {
 				this._entries = new Map();
 	
+				this.size = 0;
+	
 				if (arr) {
 					for (var i = 0, l = arr.length; i < l; i++) {
 						this.add(arr[i]);
@@ -482,10 +481,6 @@
 			};
 	
 			assign(Set.prototype, {
-				_entries: null,
-	
-				size: 0,
-	
 				has: function(value) {
 					return this._entries.has(value);
 				},
@@ -613,53 +608,47 @@
 		 * @typesign new (type: string, canBubble: boolean = true): cellx.Event;
 		 */
 		function Event(type, canBubble) {
+			/**
+			* Объект, к которому применено событие.
+			* @type {?Object}
+			* @writable
+			*/
+			this.target = null;
+	
+			/**
+			* @type {string}
+			*/
 			this.type = type;
 	
-			if (canBubble === false) {
-				this.bubbles = false;
-			}
+			/**
+			* @type {int|undefined}
+			* @writable
+			*/
+			this.timestamp = undefined;
+	
+			/**
+			* Дополнительная информация по событию.
+			* @type {?Object}
+			* @writable
+			*/
+			this.detail = null;
+	
+			/**
+			* Является ли событие всплывающим.
+			*/
+			this.bubbles = canBubble !== false;
+	
+			/**
+			* Распространение события на другие объекты остановлено.
+			*/
+			this.isPropagationStopped = false;
+			/**
+			* Распространение события на другие объекты и его обработка на текущем остановлены.
+			*/
+			this.isImmediatePropagationStopped = false;
 		}
 	
 		assign(Event.prototype, {
-			/**
-			 * Объект, к которому применено событие.
-			 * @type {?Object}
-			 * @writable
-			 */
-			target: null,
-	
-			/**
-			 * @type {string}
-			 */
-			type: undefined,
-	
-			/**
-			 * @type {int|undefined}
-			 * @writable
-			 */
-			timestamp: undefined,
-	
-			/**
-			 * Дополнительная информация по событию.
-			 * @type {?Object}
-			 * @writable
-			 */
-			detail: null,
-	
-			/**
-			 * Является ли событие всплывающим.
-			 */
-			bubbles: true,
-	
-			/**
-			 * Распространение события на другие объекты остановлено.
-			 */
-			isPropagationStopped: false,
-			/**
-			 * Распространение события на другие объекты и его обработка на текущем остановлены.
-			 */
-			isImmediatePropagationStopped: false,
-	
 			/**
 			 * Останавливает распространение события на другие объекты.
 			 * @typesign ();
@@ -693,15 +682,13 @@
 		 * @typesign new (): cellx.EventEmitter;
 		 */
 		function EventEmitter() {
+			/**
+			 * @type {Map<string, Set<{ listener: Function, context: Object }>>}
+			 */
 			this._events = new Map();
 		}
 	
 		assign(EventEmitter.prototype, {
-			/**
-			 * @type {Map<string, Set<{ listener: Function, context: Object }>>}
-			 */
-			_events: null,
-	
 			/**
 			 * @typesign (
 			 *     type: string,
@@ -903,13 +890,6 @@
 	
 		MActiveCollection = {
 			/**
-			 * @type {Map<*, uint>}
-			 */
-			_valueCounts: null,
-	
-			adoptsItemChanges: true,
-	
-			/**
 			 * @typesign (evt: cellx.Event);
 			 */
 			_onItemChange: function(evt) {
@@ -983,12 +963,21 @@
 		 * }): cellx.ActiveMap;
 		 */
 		function ActiveMap(entries, opts) {
+			/**
+			 * @type {Map}
+			 */
 			this._entries = new Map();
+			/**
+			 * @type {Map<*, uint>}
+			 */
 			this._valueCounts = new Map();
 	
-			if (opts && opts.adoptsItemChanges === false) {
-				this.adoptsItemChanges = false;
-			}
+			this.size = 0;
+	
+			/**
+			 * @type {boolean}
+			 */
+			this.adoptsItemChanges = !opts || opts.adoptsItemChanges !== false;
 	
 			if (entries) {
 				var thisEntries = this._entries;
@@ -1019,13 +1008,6 @@
 	
 		assign(ActiveMap.prototype, MActiveCollection);
 		assign(ActiveMap.prototype, {
-			/**
-			 * @type {Map}
-			 */
-			_entries: null,
-	
-			size: 0,
-	
 			/**
 			 * @typesign (key): boolean;
 			 */
@@ -1258,12 +1240,28 @@
 				opts = {};
 			}
 	
+			/**
+			 * @type {Array}
+			 */
 			this._items = [];
+			/**
+			 * @type {Map<*, uint>}
+			 */
 			this._valueCounts = new Map();
 	
-			if (opts.adoptsItemChanges === false) {
-				this.adoptsItemChanges = false;
-			}
+			this.length = 0;
+	
+			/**
+			 * @type {boolean}
+			 */
+			this.adoptsItemChanges = opts.adoptsItemChanges !== false;
+	
+			/**
+			 * @type {?Function}
+			 */
+			this.comparator = null;
+	
+			this.sorted = false;
 	
 			if (opts.sorted || (opts.comparator && opts.sorted !== false)) {
 				this.comparator = opts.comparator || defaultComparator;
@@ -1278,20 +1276,6 @@
 	
 		assign(ActiveList.prototype, MActiveCollection);
 		assign(ActiveList.prototype, {
-			/**
-			 * @type {Array}
-			 */
-			_items: null,
-	
-			length: 0,
-	
-			/**
-			 * @type {?Function}
-			 */
-			comparator: null,
-	
-			sorted: false,
-	
 			/**
 			 * @typesign (index: int, endIndex: boolean = false): uint|undefined;
 			 */
@@ -1920,33 +1904,85 @@
 				opts = {};
 			}
 	
-			if (opts.owner) {
-				this.owner = opts.owner;
-			}
+			/**
+			 * @type {boolean}
+			 */
+			this.computed = typeof value == 'function' &&
+				(opts.computed !== undefined ? opts.computed : value.constructor == Function);
+			/**
+			 * @type {boolean}
+			 */
+			this.pureComputed = opts.pureComputed === true;
 	
-			if (opts.read) {
-				this._read = opts.read;
-			}
-			if (opts.write) {
-				this._write = opts.write;
-			}
+			/**
+			 * @type {?Object}
+			 */
+			this.owner = opts.owner || null;
 	
-			if (opts.validate) {
-				this._validate = opts.validate;
-			}
+			/**
+			 * @type {*}
+			 */
+			this._value = undefined;
+			/**
+			 * @type {*}
+			 */
+			this._fixedValue = undefined;
+			/**
+			 * @type {*}
+			 */
+			this.initialValue = undefined;
+			/**
+			 * @type {?Function}
+			 */
+			this._formula = null;
 	
+			/**
+			 * @type {?Function}
+			 */
+			this._read = opts.read || null;
+			/**
+			 * @type {?Function}
+			 */
+			this._write = opts.write || null;
+	
+			/**
+			 * @type {?Function}
+			 */
+			this._validate = opts.validate || null;
+	
+			/**
+			 * Ведущие ячейки.
+			 * @type {Set<cellx.Cell>}
+			 */
+			this._masters = null;
+			/**
+			 * Ведомые ячейки.
+			 * @type {Set<cellx.Cell>}
+			 */
 			this._slaves = new Set();
 	
-			if (opts.pureComputed) {
-				this.pureComputed = true;
-			}
+			/**
+			 * @type {uint|undefined}
+			 */
+			this._maxMasterLevel = 0;
 	
-			if (
-				typeof value == 'function' &&
-					(opts.computed !== undefined ? opts.computed : value.constructor == Function)
-			) {
+			this._version = 0;
+	
+			this._circularityDetectionCounter = 0;
+	
+			/**
+			 * @type {?cellx.Event}
+			 */
+			this._lastErrorEvent = null;
+	
+			this._active = false;
+	
+			this._outdated = false;
+	
+			this._changed = false;
+	
+			if (this.computed) {
 				this._formula = value;
-				this.computed = true;
 			} else {
 				if (this._validate) {
 					this._validate.call(this.owner || this, value);
@@ -1969,75 +2005,6 @@
 		extend(Cell, EventEmitter);
 	
 		assign(Cell.prototype, {
-			/**
-			 * @type {?Object}
-			 */
-			owner: null,
-	
-			/**
-			 * @type {*}
-			 */
-			_value: undefined,
-			/**
-			 * @type {*}
-			 */
-			_fixedValue: undefined,
-			/**
-			 * @type {*}
-			 */
-			initialValue: undefined,
-			/**
-			 * @type {?Function}
-			 */
-			_formula: null,
-	
-			/**
-			 * @type {?Function}
-			 */
-			_read: null,
-			/**
-			 * @type {?Function}
-			 */
-			_write: null,
-	
-			/**
-			 * @type {?Function}
-			 */
-			_validate: null,
-	
-			/**
-			 * Ведущие ячейки.
-			 * @type {Set<cellx.Cell>}
-			 */
-			_masters: null,
-			/**
-			 * Ведомые ячейки.
-			 * @type {Set<cellx.Cell>}
-			 */
-			_slaves: null,
-	
-			/**
-			 * @type {uint|undefined}
-			 */
-			_maxMasterLevel: 0,
-	
-			_version: 0,
-	
-			_circularityDetectionCounter: 0,
-	
-			/**
-			 * @type {?cellx.Event}
-			 */
-			_lastErrorEvent: null,
-	
-			computed: false,
-			pureComputed: false,
-	
-			_active: false,
-	
-			_outdated: false,
-	
-			_changed: false,
 			/**
 			 * @typesign (): boolean;
 			 */

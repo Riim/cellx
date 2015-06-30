@@ -230,33 +230,85 @@
 			opts = {};
 		}
 
-		if (opts.owner) {
-			this.owner = opts.owner;
-		}
+		/**
+		 * @type {boolean}
+		 */
+		this.computed = typeof value == 'function' &&
+			(opts.computed !== undefined ? opts.computed : value.constructor == Function);
+		/**
+		 * @type {boolean}
+		 */
+		this.pureComputed = opts.pureComputed === true;
 
-		if (opts.read) {
-			this._read = opts.read;
-		}
-		if (opts.write) {
-			this._write = opts.write;
-		}
+		/**
+		 * @type {?Object}
+		 */
+		this.owner = opts.owner || null;
 
-		if (opts.validate) {
-			this._validate = opts.validate;
-		}
+		/**
+		 * @type {*}
+		 */
+		this._value = undefined;
+		/**
+		 * @type {*}
+		 */
+		this._fixedValue = undefined;
+		/**
+		 * @type {*}
+		 */
+		this.initialValue = undefined;
+		/**
+		 * @type {?Function}
+		 */
+		this._formula = null;
 
+		/**
+		 * @type {?Function}
+		 */
+		this._read = opts.read || null;
+		/**
+		 * @type {?Function}
+		 */
+		this._write = opts.write || null;
+
+		/**
+		 * @type {?Function}
+		 */
+		this._validate = opts.validate || null;
+
+		/**
+		 * Ведущие ячейки.
+		 * @type {Set<cellx.Cell>}
+		 */
+		this._masters = null;
+		/**
+		 * Ведомые ячейки.
+		 * @type {Set<cellx.Cell>}
+		 */
 		this._slaves = new Set();
 
-		if (opts.pureComputed) {
-			this.pureComputed = true;
-		}
+		/**
+		 * @type {uint|undefined}
+		 */
+		this._maxMasterLevel = 0;
 
-		if (
-			typeof value == 'function' &&
-				(opts.computed !== undefined ? opts.computed : value.constructor == Function)
-		) {
+		this._version = 0;
+
+		this._circularityDetectionCounter = 0;
+
+		/**
+		 * @type {?cellx.Event}
+		 */
+		this._lastErrorEvent = null;
+
+		this._active = false;
+
+		this._outdated = false;
+
+		this._changed = false;
+
+		if (this.computed) {
 			this._formula = value;
-			this.computed = true;
 		} else {
 			if (this._validate) {
 				this._validate.call(this.owner || this, value);
@@ -279,75 +331,6 @@
 	extend(Cell, EventEmitter);
 
 	assign(Cell.prototype, {
-		/**
-		 * @type {?Object}
-		 */
-		owner: null,
-
-		/**
-		 * @type {*}
-		 */
-		_value: undefined,
-		/**
-		 * @type {*}
-		 */
-		_fixedValue: undefined,
-		/**
-		 * @type {*}
-		 */
-		initialValue: undefined,
-		/**
-		 * @type {?Function}
-		 */
-		_formula: null,
-
-		/**
-		 * @type {?Function}
-		 */
-		_read: null,
-		/**
-		 * @type {?Function}
-		 */
-		_write: null,
-
-		/**
-		 * @type {?Function}
-		 */
-		_validate: null,
-
-		/**
-		 * Ведущие ячейки.
-		 * @type {Set<cellx.Cell>}
-		 */
-		_masters: null,
-		/**
-		 * Ведомые ячейки.
-		 * @type {Set<cellx.Cell>}
-		 */
-		_slaves: null,
-
-		/**
-		 * @type {uint|undefined}
-		 */
-		_maxMasterLevel: 0,
-
-		_version: 0,
-
-		_circularityDetectionCounter: 0,
-
-		/**
-		 * @type {?cellx.Event}
-		 */
-		_lastErrorEvent: null,
-
-		computed: false,
-		pureComputed: false,
-
-		_active: false,
-
-		_outdated: false,
-
-		_changed: false,
 		/**
 		 * @typesign (): boolean;
 		 */
