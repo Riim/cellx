@@ -1694,9 +1694,6 @@
 		 */
 		var outdatedCells = [];
 	
-		var handledCell = null;
-		var calculatedCell = null;
-	
 		/**
 		 * @type {Set<cellx.Cell>}
 		 */
@@ -1754,19 +1751,10 @@
 	
 				cell._slaves.forEach(registerOutdatedCellIf);
 	
-				if (handledCell === cell) {
-					return;
-				}
-	
-				var prevHandledCell = handledCell;
-				handledCell = cell;
-	
 				cell._fixedValue = cell._value;
 				cell._changed = true;
 	
 				cell._handleEvent(step.value[1].event);
-	
-				handledCell = prevHandledCell;
 	
 				if (state != STATE_CHANGES_HANDLING) {
 					return;
@@ -2181,12 +2169,7 @@
 					detectedMasters.push(this);
 				}
 	
-				// STATE_CHANGES_COMBINING - outdatedCells здесь точно нет.
-				// STATE_CHANGES_HANDLING - если нет ни changes, ни outdatedCells, то релиз не нужен.
-				// STATE_SLAVES_RECALCULATION - предположительно будут читаться ячейки с меньшим _maxMasterLevel,
-				// если так, то при отсутствии изменений релиз не нужен, если нет, то в releaseChanges
-				// ячейка пересортируется и _recalc вызвавший это чтение повторится позже.
-				if (changes.size || (state == STATE_CHANGES_HANDLING && outdatedCells.length)) {
+				if (state == STATE_CHANGES_COMBINING && changes.size) {
 					releaseChanges();
 				}
 	
@@ -2261,9 +2244,11 @@
 			 * @typesign (): boolean;
 			 */
 			_recalc: function() {
-				var pureComputed = this.pureComputed;
+				var result;
 	
-				if (!pureComputed) {
+				if (this.pureComputed) {
+					result = this._tryFormula();
+				} else {
 					if (this._version == releaseVersion) {
 						if (++this._circularityDetectionCounter == 10) {
 							this._handleError(new RangeError('Circular dependency detected'));
@@ -2272,27 +2257,12 @@
 					} else {
 						this._circularityDetectionCounter = 1;
 					}
-				}
 	
-				if (calculatedCell === this) {
-					return false;
-				}
-	
-				var prevCalculatedCell = calculatedCell;
-				calculatedCell = this;
-	
-				var prevDetectedMasters;
-	
-				if (!pureComputed) {
-					prevDetectedMasters = detectedMasters;
+					var prevDetectedMasters = detectedMasters;
 					detectedMasters = [];
-				}
 	
-				var result = this._tryFormula();
+					result = this._tryFormula();
 	
-				calculatedCell = prevCalculatedCell;
-	
-				if (!pureComputed) {
 					var oldMasters = this._masters;
 	
 					var masters = this._masters = detectedMasters;
