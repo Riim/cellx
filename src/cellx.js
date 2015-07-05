@@ -115,8 +115,21 @@
 	 * https://people.mozilla.org/~jorendorff/es6-draft.html#sec-samevaluezero
 	 * @typesign (a, b): boolean;
 	 */
-	function svz(a, b) {
+	var is = Object.is || function(a, b) {
 		return a === b || (a != a && b != b);
+	};
+
+	/**
+	 * @typesign (child: Function, parent: Function): Function;
+	 */
+	function extend(child, parent) {
+		function F() {
+			this.constructor = child;
+		}
+		F.prototype = parent.prototype;
+
+		child.prototype = new F();
+		return child;
 	}
 
 	/**
@@ -140,19 +153,6 @@
 
 		return target;
 	};
-
-	/**
-	 * @typesign (child: Function, parent: Function): Function;
-	 */
-	function extend(child, parent) {
-		function F() {
-			this.constructor = child;
-		}
-		F.prototype = parent.prototype;
-
-		child.prototype = new F();
-		return child;
-	}
 
 	/**
 	 * @typesign (value): boolean;

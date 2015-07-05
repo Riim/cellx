@@ -115,8 +115,21 @@
 	 * https://people.mozilla.org/~jorendorff/es6-draft.html#sec-samevaluezero
 	 * @typesign (a, b): boolean;
 	 */
-	function svz(a, b) {
+	var is = Object.is || function(a, b) {
 		return a === b || (a != a && b != b);
+	};
+
+	/**
+	 * @typesign (child: Function, parent: Function): Function;
+	 */
+	function extend(child, parent) {
+		function F() {
+			this.constructor = child;
+		}
+		F.prototype = parent.prototype;
+
+		child.prototype = new F();
+		return child;
 	}
 
 	/**
@@ -140,19 +153,6 @@
 
 		return target;
 	};
-
-	/**
-	 * @typesign (child: Function, parent: Function): Function;
-	 */
-	function extend(child, parent) {
-		function F() {
-			this.constructor = child;
-		}
-		F.prototype = parent.prototype;
-
-		child.prototype = new F();
-		return child;
-	}
 
 	/**
 	 * @typesign (value): boolean;
@@ -799,6 +799,10 @@
 						}
 					}
 				}
+	
+				if (!events.size) {
+					this._events.delete(type);
+				}
 			},
 	
 			/**
@@ -963,9 +967,6 @@
 		 * }): cellx.ActiveMap;
 		 */
 		function ActiveMap(entries, opts) {
-			/**
-			 * @type {Map}
-			 */
 			this._entries = new Map();
 			/**
 			 * @type {Map<*, uint>}
@@ -1040,7 +1041,7 @@
 				if (hasKey) {
 					oldValue = entries.get(key);
 	
-					if (svz(oldValue, value)) {
+					if (is(oldValue, value)) {
 						return this;
 					}
 	
@@ -1240,9 +1241,6 @@
 				opts = {};
 			}
 	
-			/**
-			 * @type {Array}
-			 */
 			this._items = [];
 			/**
 			 * @type {Map<*, uint>}
@@ -1356,7 +1354,7 @@
 	
 				var items = this._items;
 	
-				if (svz(items[index], value)) {
+				if (is(items[index], value)) {
 					return this;
 				}
 	
@@ -1396,7 +1394,7 @@
 				for (var i = index + itemCount; i > index;) {
 					var item = items[--i];
 	
-					if (!svz(thisItems[i], item)) {
+					if (!is(thisItems[i], item)) {
 						this._unregisterValue(thisItems[i]);
 	
 						thisItems[i] = item;
@@ -1673,174 +1671,85 @@
 	
 
 	(function() {
-		var Map = cellx.Map;
-		var Set = cellx.Set;
 		var nextTick = cellx.nextTick;
 		var Event = cellx.Event;
 		var EventEmitter = cellx.EventEmitter;
 	
-		var STATE_CHANGES_COMBINING = 0;
-		var STATE_CHANGES_HANDLING = 1;
-		var STATE_SLAVES_RECALCULATION = 2;
+		var error = {
+			original: null
+		};
 	
-		var state = STATE_CHANGES_COMBINING;
-	
-		/**
-		 * @type {Map<cellx.Cell, { event: cellx.Event, cancellable: boolean }>}
-		 */
-		var changes = new Map();
-		/**
-		 * @type {Array<cellx.Cell>}
-		 */
-		var outdatedCells = [];
+		var currentlyRelease = false;
 	
 		/**
-		 * @type {Set<cellx.Cell>}
+		 * @type {Array<?Array<cellx.Cell>>}
 		 */
-		var detectedMasters = null;
+		var releasePlan = [];
+	
+		var releasePlanIndex = 0;
+		var maxLevel = -1;
+	
+		var calculatedCell = null;
 	
 		var releaseVersion = 1;
 	
-		/**
-		 * @typesign (cell: cellx.Cell);
-		 */
-		function registerOutdatedCell(cell) {
-			if (outdatedCells.length) {
-				var maxMasterLevel = cell._maxMasterLevel;
-				var low = 0;
-				var high = outdatedCells.length;
+		function release() {
+			if (releasePlanIndex > maxLevel) {
+				return;
+			}
 	
-				while (low != high) {
-					var mid = (low + high) >> 1;
+			currentlyRelease = true;
 	
-					if (maxMasterLevel < outdatedCells[mid]._maxMasterLevel) {
-						low = mid + 1;
+			do {
+				var bundle = releasePlan[releasePlanIndex];
+	
+				if (bundle) {
+					var cell = bundle.shift();
+	
+					if (releasePlanIndex) {
+						cell._recalc();
 					} else {
-						high = mid;
+						cell._changed = true;
+	
+						if (cell._events.size) {
+							cell._handleEvent(cell._changeEvent);
+						}
+	
+						cell._fixedValue = cell._value;
+						cell._changeEvent = null;
+	
+						var slaves = cell._slaves;
+	
+						for (var i = slaves.length; i;) {
+							var slave = slaves[--i];
+	
+							if (slave._fixed) {
+								(releasePlan[1] || (releasePlan[1] = [])).push(slave);
+	
+								if (!maxLevel) {
+									maxLevel = 1;
+								}
+	
+								slave._fixed = false;
+							}
+						}
+					}
+	
+					if (releasePlan[releasePlanIndex].length) {
+						continue;
+					} else {
+						releasePlan[releasePlanIndex] = null;
 					}
 				}
 	
-				outdatedCells.splice(low, 0, cell);
-			} else {
-				outdatedCells.push(cell);
-			}
-		}
+				releasePlanIndex++;
+			} while (releasePlanIndex <= maxLevel);
 	
-		/**
-		 * @typesign (cell: cellx.Cell);
-		 */
-		function registerOutdatedCellIf(cell) {
-			if (cell._outdated) {
-				return;
-			}
-	
-			registerOutdatedCell(cell);
-			cell._outdated = true;
-		}
-	
-		/**
-		 * @typesign ();
-		 */
-		function handleChanges() {
-			state = STATE_CHANGES_HANDLING;
-	
-			for (var iterator = changes.entries(), step; !(step = iterator.next()).done;) {
-				var cell = step.value[0];
-	
-				changes['delete'](cell);
-	
-				cell._slaves.forEach(registerOutdatedCellIf);
-	
-				cell._fixedValue = cell._value;
-				cell._changed = true;
-	
-				cell._handleEvent(step.value[1].event);
-	
-				if (state != STATE_CHANGES_HANDLING) {
-					return;
-				}
-			}
-		}
-	
-		/**
-		 * @typesign ();
-		 */
-		function releaseChanges() {
-			if (changes.size) {
-				handleChanges();
-	
-				if (state != STATE_CHANGES_HANDLING) {
-					return;
-				}
-			} else if (state == STATE_CHANGES_COMBINING) {
-				return;
-			}
-	
-			state = STATE_SLAVES_RECALCULATION;
-	
-			while (outdatedCells.length) {
-				var cell = outdatedCells[outdatedCells.length - 1];
-	
-				if (cell._recalc()) {
-					registerOutdatedCell(outdatedCells.pop());
-				} else {
-					outdatedCells.pop();
-					cell._outdated = false;
-				}
-	
-				if (changes.size) {
-					handleChanges();
-	
-					if (state != STATE_CHANGES_HANDLING) {
-						return;
-					}
-	
-					state = STATE_SLAVES_RECALCULATION;
-				}
-			}
+			maxLevel = -1;
 	
 			releaseVersion++;
-			state = STATE_CHANGES_COMBINING;
-		}
 	
-		/**
-		 * @typesign (cell: cellx.Cell, change: cellx.Event|Object, cancellable: boolean = true);
-		 */
-		function addChange(cell, change, cancellable) {
-			var evt;
-	
-			if (change instanceof Event) {
-				evt = change;
-			} else {
-				evt = new Event('change');
-				evt.target = cell;
-				evt.timestamp = now();
-				evt.detail = change;
-			}
-	
-			if (changes.size) {
-				change = changes.get(cell);
-	
-				if (change) {
-					(evt.detail || (evt.detail = {})).prevEvent = change.event;
-					change.event = evt;
-	
-					if (cancellable === false) {
-						change.cancellable = false;
-					}
-	
-					return;
-				}
-			} else {
-				if (state == STATE_CHANGES_COMBINING) {
-					nextTick(releaseChanges);
-				}
-			}
-	
-			changes.set(cell, {
-				event: evt,
-				cancellable: cancellable !== false
-			});
+			currentlyRelease = false;
 		}
 	
 		/**
@@ -1881,8 +1790,7 @@
 		 *     validate?: (value): *,
 		 *     onchange?: (evt: cellx.Event),
 		 *     onerror?: (evt: cellx.Event),
-		 *     computed?: true,
-		 *     pureComputed: boolean = false
+		 *     computed?: true
 		 * }): cellx.Cell;
 		 */
 		function Cell(value, opts) {
@@ -1892,85 +1800,55 @@
 				opts = {};
 			}
 	
-			/**
-			 * @type {boolean}
-			 */
-			this.computed = typeof value == 'function' &&
-				(opts.computed !== undefined ? opts.computed : value.constructor == Function);
-			/**
-			 * @type {boolean}
-			 */
-			this.pureComputed = opts.pureComputed === true;
-	
-			/**
-			 * @type {?Object}
-			 */
 			this.owner = opts.owner || null;
 	
-			/**
-			 * @type {*}
-			 */
+			this.computed = typeof value == 'function' &&
+				(opts.computed !== undefined ? opts.computed : value.constructor == Function);
+	
 			this._value = undefined;
-			/**
-			 * @type {*}
-			 */
 			this._fixedValue = undefined;
-			/**
-			 * @type {*}
-			 */
 			this.initialValue = undefined;
-			/**
-			 * @type {?Function}
-			 */
 			this._formula = null;
 	
-			/**
-			 * @type {?Function}
-			 */
 			this._read = opts.read || null;
-			/**
-			 * @type {?Function}
-			 */
 			this._write = opts.write || null;
 	
-			/**
-			 * @type {?Function}
-			 */
 			this._validate = opts.validate || null;
 	
 			/**
 			 * Ведущие ячейки.
-			 * @type {Set<cellx.Cell>}
+			 * @type {?Array<cellx.Cell>}
 			 */
 			this._masters = null;
 			/**
 			 * Ведомые ячейки.
-			 * @type {Set<cellx.Cell>}
+			 * @type {Array<cellx.Cell>}
 			 */
-			this._slaves = new Set();
+			this._slaves = [];
 	
 			/**
 			 * @type {uint|undefined}
 			 */
-			this._maxMasterLevel = 0;
+			this._level = 0;
+	
+			this._changeEvent = null;
+			this._isChangeCancellable = true;
+	
+			this._fixed = true;
+	
+			this._lastErrorEvent = null;
+	
+			this._circularityCounter = 0;
 	
 			this._version = 0;
 	
-			this._circularityDetectionCounter = 0;
-	
-			/**
-			 * @type {?cellx.Event}
-			 */
-			this._lastErrorEvent = null;
-	
 			this._active = false;
-	
-			this._outdated = false;
 	
 			this._changed = false;
 	
 			if (this.computed) {
 				this._formula = value;
+				this._activate();
 			} else {
 				if (this._validate) {
 					this._validate.call(this.owner || this, value);
@@ -1997,8 +1875,8 @@
 			 * @typesign (): boolean;
 			 */
 			changed: function() {
-				if (changes.size) {
-					releaseChanges();
+				if (!currentlyRelease) {
+					release();
 				}
 	
 				return this._changed;
@@ -2008,11 +1886,11 @@
 			 * @override cellx.EventEmitter#on
 			 */
 			on: function(type, listener, context) {
-				if (changes.size) {
-					releaseChanges();
+				if (!currentlyRelease) {
+					release();
 				}
 	
-				if (this.computed && !this._events.size && !this._slaves.size) {
+				if (this.computed && !this._events.size && !this._slaves.length) {
 					this._activate();
 				}
 	
@@ -2024,13 +1902,13 @@
 			 * @override cellx.EventEmitter#off
 			 */
 			off: function(type, listener, context) {
-				if (changes.size) {
-					releaseChanges();
+				if (!currentlyRelease) {
+					release();
 				}
 	
 				EventEmitter.prototype.off.call(this, type, listener, context);
 	
-				if (this.computed && !this._events.size && !this._slaves.size) {
+				if (this.computed && !this._events.size && !this._slaves.length) {
 					this._deactivate();
 				}
 	
@@ -2065,7 +1943,6 @@
 	
 				return this;
 			},
-	
 			/**
 			 * @typesign (listener: (evt: cellx.Event): boolean|undefined): cellx.Cell;
 			 */
@@ -2081,20 +1958,19 @@
 			 * @typesign (slave: cellx.Cell);
 			 */
 			_registerSlave: function(slave) {
-				if (this.computed && !this._events.size && !this._slaves.size) {
+				if (this.computed && !this._events.size && !this._slaves.length) {
 					this._activate();
 				}
 	
-				this._slaves.add(slave);
+				this._slaves.push(slave);
 			},
-	
 			/**
 			 * @typesign (slave: cellx.Cell);
 			 */
 			_unregisterSlave: function(slave) {
-				this._slaves['delete'](slave);
+				this._slaves.splice(this._slaves.indexOf(slave), 1);
 	
-				if (this.computed && !this._events.size && !this._slaves.size) {
+				if (this.computed && !this._events.size && !this._slaves.length) {
 					this._deactivate();
 				}
 			},
@@ -2104,41 +1980,28 @@
 			 */
 			_activate: function() {
 				if (this._version != releaseVersion) {
-					var prevDetectedMasters = detectedMasters;
-					detectedMasters = [];
+					this._masters = null;
+					this._level = 0;
 	
-					var result = this._tryFormula();
+					var value = this._tryFormula();
 	
-					this._masters = detectedMasters;
-					detectedMasters = prevDetectedMasters;
+					if (value === error) {
+						this._handleError(error.original);
+					} else {
+						this._value = value;
+					}
 	
 					this._version = releaseVersion;
-	
-					if (result[0]) {
-						this._value = this._fixedValue = result[1];
-					} else {
-						this._handleError(result[1]);
-					}
 				}
 	
-				var masters = this._masters;
-				var maxMasterLevel = 0;
+				var masters = this._masters || [];
 	
 				for (var i = masters.length; i;) {
-					var master = masters[--i];
-	
-					master._registerSlave(this);
-	
-					if (maxMasterLevel <= master._maxMasterLevel) {
-						maxMasterLevel = master._maxMasterLevel + 1;
-					}
+					masters[--i]._registerSlave(this);
 				}
-	
-				this._maxMasterLevel = maxMasterLevel;
 	
 				this._active = true;
 			},
-	
 			/**
 			 * @typesign ();
 			 */
@@ -2149,46 +2012,98 @@
 					masters[--i]._unregisterSlave(this);
 				}
 	
-				this._maxMasterLevel = undefined;
-	
 				this._active = false;
+			},
+	
+			/**
+			 * @typesign (oldValue, value, prevEvent: cellx.Event|null): cellx.Event;
+			 */
+			_createChangeEvent: function(oldValue, value, prevEvent) {
+				var evt = new Event('change');
+				evt.target = this;
+				evt.timestamp = now();
+				evt.detail = {
+					oldValue: oldValue,
+					value: value,
+					prevEvent: prevEvent
+				};
+	
+				return evt;
 			},
 	
 			/**
 			 * @typesign (evt: cellx.Event);
 			 */
 			_onValueChange: function(evt) {
-				addChange(this, evt, this._value !== this._fixedValue);
+				if (this._changeEvent) {
+					(evt.detail || (evt.detail = {})).prevEvent = this._changeEvent;
+	
+					this._changeEvent = evt;
+	
+					if (this._value === this._fixedValue) {
+						this._isChangeCancellable = false;
+					}
+				} else {
+					(releasePlan[0] || (releasePlan[0] = [])).push(this);
+	
+					releasePlanIndex = 0;
+	
+					if (maxLevel == -1) {
+						maxLevel = 0;
+					}
+	
+					(evt.detail || (evt.detail = {})).prevEvent = null;
+	
+					this._changeEvent = evt;
+					this._isChangeCancellable = false;
+	
+					if (!currentlyRelease) {
+						nextTick(release);
+					}
+				}
 			},
 	
 			/**
 			 * @typesign (): *;
 			 */
 			read: function() {
-				if (detectedMasters && detectedMasters.indexOf(this) == -1) {
-					detectedMasters.push(this);
+				if (calculatedCell) {
+					if (calculatedCell._masters) {
+						if (calculatedCell._masters.indexOf(this) == -1) {
+							calculatedCell._masters.push(this);
+	
+							if (calculatedCell._level <= this._level) {
+								calculatedCell._level = this._level + 1;
+							}
+						}
+					} else {
+						calculatedCell._masters = [this];
+						calculatedCell._level = this._level + 1;
+					}
 				}
 	
-				if (state == STATE_CHANGES_COMBINING && changes.size) {
-					releaseChanges();
+				if (!currentlyRelease) {
+					release();
 				}
 	
 				if (this.computed && !this._active && this._version != releaseVersion) {
-					var prevDetectedMasters = detectedMasters;
-					detectedMasters = [];
+					this._masters = null;
+					this._level = 0;
 	
-					var result = this._tryFormula();
+					var value = this._tryFormula();
 	
-					this._masters = detectedMasters;
-					detectedMasters = prevDetectedMasters;
+					if (value === error) {
+						this._handleError(error.original);
+					} else {
+						var oldValue = this._value;
+	
+						if (!is(oldValue, value)) {
+							this._value = value;
+							this._changed = true;
+						}
+					}
 	
 					this._version = releaseVersion;
-	
-					if (result[0]) {
-						this._value = this._fixedValue = result[1];
-					} else {
-						this._handleError(result[1]);
-					}
 				}
 	
 				return this._read ? this._read.call(this.owner || this, this._value) : this._value;
@@ -2204,7 +2119,7 @@
 	
 				var oldValue = this._value;
 	
-				if (oldValue === value || (oldValue != oldValue && value != value)) {
+				if (is(oldValue, value)) {
 					return false;
 				}
 	
@@ -2224,16 +2139,33 @@
 						value.on('change', this._onValueChange, this);
 					}
 	
-					if (
-						(value === this._fixedValue || (value != value && this._fixedValue != this._fixedValue)) &&
-							changes.get(this).cancellable
-					) {
-						changes['delete'](this);
+					if (this._changeEvent) {
+						if (is(value, this._fixedValue) && this._isChangeCancellable) {
+							if (releasePlan[0].length == 1) {
+								releasePlan[0] = null;
+							} else {
+								releasePlan[0]._unregisterSlave(this);
+							}
+	
+							this._changeEvent = null;
+						} else {
+							this._changeEvent = this._createChangeEvent(oldValue, value, this._changeEvent);
+						}
 					} else {
-						addChange(this, {
-							oldValue: oldValue,
-							value: value
-						});
+						(releasePlan[0] || (releasePlan[0] = [])).push(this);
+	
+						releasePlanIndex = 0;
+	
+						if (maxLevel == -1) {
+							maxLevel = 0;
+						}
+	
+						this._changeEvent = this._createChangeEvent(oldValue, value, null);
+						this._isChangeCancellable = true;
+	
+						if (!currentlyRelease) {
+							nextTick(release);
+						}
 					}
 				}
 	
@@ -2241,97 +2173,110 @@
 			},
 	
 			/**
-			 * @typesign (): boolean;
+			 * @typesign ();
 			 */
 			_recalc: function() {
-				var result;
-	
-				if (this.pureComputed) {
-					result = this._tryFormula();
+				if (this._version == releaseVersion) {
+					if (++this._circularityCounter == 10) {
+						this._version = releaseVersion + 1;
+						this._handleError(new RangeError('Circular dependency detected'));
+						return;
+					}
 				} else {
-					if (this._version == releaseVersion) {
-						if (++this._circularityDetectionCounter == 10) {
-							this._handleError(new RangeError('Circular dependency detected'));
-							return false;
+					this._circularityCounter = 1;
+				}
+	
+				var oldMasters = this._masters;
+				this._masters = null;
+	
+				var oldLevel = this._level;
+				this._level = 0;
+	
+				var value = this._tryFormula();
+	
+				var masters = this._masters || [];
+				var haveRemovedMasters = false;
+	
+				for (var i = oldMasters.length; i;) {
+					var oldMaster = oldMasters[--i];
+	
+					if (masters.indexOf(oldMaster) == -1) {
+						oldMaster._unregisterSlave(this);
+						haveRemovedMasters = true;
+					}
+				}
+	
+				if (haveRemovedMasters || oldMasters.length < masters.length) {
+					for (var j = masters.length; j;) {
+						var master = masters[--j];
+	
+						if (oldMasters.indexOf(master) == -1) {
+							master._registerSlave(this);
 						}
-					} else {
-						this._circularityDetectionCounter = 1;
 					}
 	
-					var prevDetectedMasters = detectedMasters;
-					detectedMasters = [];
+					var level = this._level;
 	
-					result = this._tryFormula();
+					if (level > oldLevel) {
+						(releasePlan[level] || (releasePlan[level] = [])).push(this);
 	
-					var oldMasters = this._masters;
-	
-					var masters = this._masters = detectedMasters;
-					detectedMasters = prevDetectedMasters;
-	
-					var isMasterListChanged = false;
-	
-					for (var i = oldMasters.length; i;) {
-						if (masters.indexOf(oldMasters[--i]) == -1) {
-							oldMasters[i]._unregisterSlave(this);
-							isMasterListChanged = true;
+						if (maxLevel < level) {
+							maxLevel = level;
 						}
+	
+						return;
 					}
+				}
 	
-					if (isMasterListChanged || oldMasters.length < masters.length) {
-						var maxMasterLevel = 0;
+				if (value === error) {
+					this._handleError(error.original);
+				} else {
+					var oldValue = this._value;
 	
-						for (var j = masters.length; i;) {
-							var master = masters[--j];
+					if (!is(oldValue, value)) {
+						this._value = value;
+						this._changed = true;
 	
-							if (oldMasters.indexOf(master) == -1) {
-								master._registerSlave(this);
-							}
-	
-							if (maxMasterLevel <= master._maxMasterLevel) {
-								maxMasterLevel = master._maxMasterLevel + 1;
-							}
+						if (this._events.size) {
+							this.emit('change', {
+								oldValue: oldValue,
+								value: value,
+								prevEvent: null
+							});
 						}
 	
-						if (this._maxMasterLevel != maxMasterLevel) {
-							if (
-								this._maxMasterLevel < maxMasterLevel && outdatedCells.length > 1 &&
-									maxMasterLevel > outdatedCells[outdatedCells.length - 2]._maxMasterLevel
-							) {
-								this._maxMasterLevel = maxMasterLevel;
-								return true;
-							}
+						this._fixed = true;
 	
-							this._maxMasterLevel = maxMasterLevel;
+						var slaves = this._slaves;
+	
+						for (var k = slaves.length; k;) {
+							var slave = slaves[--k];
+	
+							if (slave._fixed) {
+								var lvl = slave._level;
+	
+								(releasePlan[lvl] || (releasePlan[lvl] = [])).push(slave);
+	
+								if (maxLevel < lvl) {
+									maxLevel = lvl;
+								}
+	
+								slave._fixed = false;
+							}
 						}
 					}
 				}
 	
 				this._version = releaseVersion + 1;
-	
-				if (result[0]) {
-					var oldValue = this._value;
-					var value = result[1];
-	
-					if (oldValue !== value && (oldValue == oldValue || value == value)) {
-						this._value = value;
-	
-						addChange(this, {
-							oldValue: oldValue,
-							value: value
-						});
-					}
-				} else {
-					this._handleError(result[1]);
-				}
-	
-				return false;
 			},
 	
 			/**
-			 * @typesign (): { 0: true, 1 };
-			 * @typesign (): { 0: false, 1: Error };
+			 * @typesign (): *;
 			 */
 			_tryFormula: function() {
+				var prevCalculatedCell = calculatedCell;
+				calculatedCell = this;
+	
 				try {
 					var value = this._formula.call(this.owner || this);
 	
@@ -2339,9 +2284,12 @@
 						this._validate.call(this.owner || this, value);
 					}
 	
-					return [true, value];
+					return value;
 				} catch (err) {
-					return [false, err];
+					error.original = err;
+					return error;
+				} finally {
+					calculatedCell = prevCalculatedCell;
 				}
 			},
 	
@@ -2369,12 +2317,14 @@
 	
 				this._handleEvent(evt);
 	
-				for (var iterator = this._slaves.values(), step; !(step = iterator.next()).done;) {
+				var slaves = this._slaves;
+	
+				for (var i = slaves.length; i;) {
 					if (evt.isPropagationStopped) {
 						break;
 					}
 	
-					step.value._handleErrorEvent(evt);
+					slaves[--i]._handleErrorEvent(evt);
 				}
 			},
 	
@@ -2382,8 +2332,8 @@
 			 * @typesign (): cellx.Cell;
 			 */
 			clear: function() {
-				if (changes.size) {
-					releaseChanges();
+				if (!currentlyRelease) {
+					release();
 				}
 	
 				this._clear();
@@ -2398,9 +2348,11 @@
 				this.off();
 	
 				if (this._active) {
-					this._slaves.forEach(function(slave) {
-						slave._clear();
-					});
+					var slaves = this._slaves;
+	
+					for (var i = slaves.length; i;) {
+						slaves[--i]._clear();
+					}
 				}
 			}
 		});

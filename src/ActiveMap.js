@@ -10,9 +10,6 @@
 	 * }): cellx.ActiveMap;
 	 */
 	function ActiveMap(entries, opts) {
-		/**
-		 * @type {Map}
-		 */
 		this._entries = new Map();
 		/**
 		 * @type {Map<*, uint>}
@@ -87,7 +84,7 @@
 			if (hasKey) {
 				oldValue = entries.get(key);
 
-				if (svz(oldValue, value)) {
+				if (is(oldValue, value)) {
 					return this;
 				}
 

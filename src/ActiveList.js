@@ -67,9 +67,6 @@
 			opts = {};
 		}
 
-		/**
-		 * @type {Array}
-		 */
 		this._items = [];
 		/**
 		 * @type {Map<*, uint>}
@@ -183,7 +180,7 @@
 
 			var items = this._items;
 
-			if (svz(items[index], value)) {
+			if (is(items[index], value)) {
 				return this;
 			}
 
@@ -223,7 +220,7 @@
 			for (var i = index + itemCount; i > index;) {
 				var item = items[--i];
 
-				if (!svz(thisItems[i], item)) {
+				if (!is(thisItems[i], item)) {
 					this._unregisterValue(thisItems[i]);
 
 					thisItems[i] = item;

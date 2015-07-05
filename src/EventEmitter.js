@@ -126,6 +126,10 @@
 					}
 				}
 			}
+
+			if (!events.size) {
+				this._events.delete(type);
+			}
 		},
 
 		/**
