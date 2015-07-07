@@ -642,7 +642,7 @@
 			var slaves = this._slaves;
 
 			for (var i = slaves.length; i;) {
-				if (evt.isPropagationStopped === true) {
+				if (evt.isPropagationStopped) {
 					break;
 				}
 
