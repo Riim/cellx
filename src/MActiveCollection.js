@@ -5,10 +5,10 @@ var MActiveCollection;
 
 	MActiveCollection = {
 		/**
-		 * @typesign (evt: cellx.Event);
+		 * @typesign (evt: cellx~Event);
 		 */
 		_onItemChange: function(evt) {
-			this._handleEvent(evt);
+			this.emit(evt);
 		},
 
 		/**

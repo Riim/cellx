@@ -98,8 +98,9 @@
 				this.size++;
 			}
 
-			this.emit('change', {
-				type: hasKey ? 'update' : 'add',
+			this.emit({
+				type: 'change',
+				subtype: hasKey ? 'update' : 'add',
 				key: key,
 				oldValue: oldValue,
 				value: value
@@ -125,8 +126,9 @@
 
 			this.size--;
 
-			this.emit('change', {
-				type: 'delete',
+			this.emit({
+				type: 'change',
+				subtype: 'delete',
 				key: key,
 				oldValue: value,
 				value: undefined
@@ -147,7 +149,10 @@
 			this._valueCounts.clear();
 			this.size = 0;
 
-			this.emit('change', { type: 'clear' });
+			this.emit({
+				type: 'change',
+				subtype: 'clear'
+			});
 
 			return this;
 		},

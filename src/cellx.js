@@ -62,22 +62,16 @@
 	/**
 	 * @memberOf cellx
 	 */
-	var KEY_USED = '__cellx_used__';
-	/**
-	 * @memberOf cellx
-	 */
 	var KEY_CELLS = '__cellx_cells__';
 
 	if (global.Symbol && typeof Symbol.iterator == 'symbol') {
 		KEY_UID = Symbol(KEY_UID);
 		KEY_INNER = Symbol(KEY_INNER);
-		KEY_USED = Symbol(KEY_USED);
 		KEY_CELLS = Symbol(KEY_CELLS);
 	}
 
 	cellx.KEY_UID = KEY_UID;
 	cellx.KEY_INNER = KEY_INNER;
-	cellx.KEY_USED = KEY_USED;
 	cellx.KEY_CELLS = KEY_CELLS;
 
 	var uidCounter = 0;
@@ -110,14 +104,6 @@
 	}
 
 	cellx.logError = logError;
-
-	/**
-	 * https://people.mozilla.org/~jorendorff/es6-draft.html#sec-samevaluezero
-	 * @typesign (a, b): boolean;
-	 */
-	var is = Object.is || function(a, b) {
-		return a === b || (a != a && b != b);
-	};
 
 	/**
 	 * @typesign (child: Function, parent: Function): Function;
@@ -155,25 +141,24 @@
 	};
 
 	/**
+	 * https://people.mozilla.org/~jorendorff/es6-draft.html#sec-samevaluezero
+	 * @typesign (a, b): boolean;
+	 */
+	var is = Object.is || function(a, b) {
+		return a === b || (a != a && b != b);
+	};
+
+	/**
 	 * @typesign (value): boolean;
 	 */
 	var isArray = Array.isArray || function(value) {
 		return toString.call(value) == '[object Array]';
 	};
 
-	/**
-	 * @typesign (): uint;
-	 */
-	var now = Date.now || function() {
-		return +new Date();
-	};
-
 	// gulp-include
 	//= include ./Dictionary.js
 	//= include ./Map.js
-	//= include ./Set.js
 	//= include ./nextTick.js
-	//= include ./Event.js
 	//= include ./EventEmitter.js
 	//= include ./MActiveCollection.js
 	//= include ./ActiveMap.js

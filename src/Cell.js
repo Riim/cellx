@@ -1,6 +1,5 @@
 (function() {
 	var nextTick = cellx.nextTick;
-	var Event = cellx.Event;
 	var EventEmitter = cellx.EventEmitter;
 
 	var error = {
@@ -39,8 +38,8 @@
 				} else {
 					cell._changed = true;
 
-					if (cell._events.size) {
-						cell._handleEvent(cell._changeEvent);
+					if (cell._events.change) {
+						cell.emit(cell._changeEvent);
 					}
 
 					cell._fixedValue = cell._value;
@@ -106,8 +105,8 @@
 	 *     owner?: Object,
 	 *     read?: (value): *,
 	 *     validate?: (value): *,
-	 *     onchange?: (evt: cellx.Event),
-	 *     onerror?: (evt: cellx.Event),
+	 *     onchange?: (evt: cellx~Event): boolean|undefined,
+	 *     onerror?: (evt: cellx~Event): boolean|undefined,
 	 *     computed?: false
 	 * }): cellx.Cell;
 	 *
@@ -116,8 +115,8 @@
 	 *     read?: (value): *,
 	 *     write?: (value),
 	 *     validate?: (value): *,
-	 *     onchange?: (evt: cellx.Event),
-	 *     onerror?: (evt: cellx.Event),
+	 *     onchange?: (evt: cellx~Event): boolean|undefined,
+	 *     onerror?: (evt: cellx~Event): boolean|undefined,
 	 *     computed?: true
 	 * }): cellx.Cell;
 	 */
@@ -218,7 +217,7 @@
 				release();
 			}
 
-			if (this.computed && !this._events.size && !this._slaves.length) {
+			if (this.computed && !this._events.change && !this._slaves.length) {
 				this._activate();
 			}
 
@@ -236,7 +235,7 @@
 
 			EventEmitter.prototype.off.call(this, type, listener, context);
 
-			if (this.computed && !this._events.size && !this._slaves.length) {
+			if (this.computed && !this._events.change && !this._slaves.length) {
 				this._deactivate();
 			}
 
@@ -257,11 +256,11 @@
 		},
 
 		/**
-		 * @typesign (listener: (evt: cellx.Event): boolean|undefined): cellx.Cell;
+		 * @typesign (listener: (err: Error, evt: cellx~Event): boolean|undefined): cellx.Cell;
 		 */
 		subscribe: function(listener) {
 			function wrap(evt) {
-				listener.call(this, evt.type == 'change' ? null : evt.detail.error, evt);
+				return listener.call(this, evt.error || null, evt);
 			}
 			wrap[KEY_INNER] = listener;
 
@@ -272,7 +271,7 @@
 			return this;
 		},
 		/**
-		 * @typesign (listener: (evt: cellx.Event): boolean|undefined): cellx.Cell;
+		 * @typesign (listener: (err: Error, evt: cellx~Event): boolean|undefined): cellx.Cell;
 		 */
 		unsubscribe: function(listener) {
 			this
@@ -286,7 +285,7 @@
 		 * @typesign (slave: cellx.Cell);
 		 */
 		_registerSlave: function(slave) {
-			if (this.computed && !this._events.size && !this._slaves.length) {
+			if (this.computed && !this._events.change && !this._slaves.length) {
 				this._activate();
 			}
 
@@ -298,7 +297,7 @@
 		_unregisterSlave: function(slave) {
 			this._slaves.splice(this._slaves.indexOf(slave), 1);
 
-			if (this.computed && !this._events.size && !this._slaves.length) {
+			if (this.computed && !this._events.change && !this._slaves.length) {
 				this._deactivate();
 			}
 		},
@@ -344,27 +343,11 @@
 		},
 
 		/**
-		 * @typesign (oldValue, value, prevEvent: cellx.Event|null): cellx.Event;
-		 */
-		_createChangeEvent: function(oldValue, value, prevEvent) {
-			var evt = new Event('change');
-			evt.target = this;
-			evt.timestamp = now();
-			evt.detail = {
-				oldValue: oldValue,
-				value: value,
-				prevEvent: prevEvent
-			};
-
-			return evt;
-		},
-
-		/**
-		 * @typesign (evt: cellx.Event);
+		 * @typesign (evt: cellx~Event);
 		 */
 		_onValueChange: function(evt) {
 			if (this._changeEvent) {
-				(evt.detail || (evt.detail = {})).prevEvent = this._changeEvent;
+				evt.prev = this._changeEvent;
 
 				this._changeEvent = evt;
 
@@ -380,7 +363,7 @@
 					maxLevel = 0;
 				}
 
-				(evt.detail || (evt.detail = {})).prevEvent = null;
+				evt.prev = null;
 
 				this._changeEvent = evt;
 				this._isChangeCancellable = false;
@@ -477,7 +460,13 @@
 
 						this._changeEvent = null;
 					} else {
-						this._changeEvent = this._createChangeEvent(oldValue, value, this._changeEvent);
+						this._changeEvent = {
+							target: this,
+							type: 'change',
+							oldValue: oldValue,
+							value: value,
+							prev: this._changeEvent
+						};
 					}
 				} else {
 					(releasePlan[0] || (releasePlan[0] = [])).push(this);
@@ -488,7 +477,13 @@
 						maxLevel = 0;
 					}
 
-					this._changeEvent = this._createChangeEvent(oldValue, value, null);
+					this._changeEvent = {
+						target: this,
+						type: 'change',
+						oldValue: oldValue,
+						value: value,
+						prev: null
+					};
 					this._isChangeCancellable = true;
 
 					if (!currentlyRelease) {
@@ -565,11 +560,12 @@
 					this._value = value;
 					this._changed = true;
 
-					if (this._events.size) {
-						this.emit('change', {
+					if (this._events.change) {
+						this.emit({
+							type: 'change',
 							oldValue: oldValue,
 							value: value,
-							prevEvent: null
+							prev: null
 						});
 					}
 
@@ -622,19 +618,17 @@
 		},
 
 		/**
-		 * @typesign (err);
+		 * @typesign (err: Error);
 		 */
 		_handleError: function(err) {
-			var evt = new Event('error');
-			evt.target = this;
-			evt.timestamp = now();
-			evt.detail = { error: err };
-
-			this._handleErrorEvent(evt);
+			this._handleErrorEvent({
+				type: 'error',
+				error: err
+			});
 		},
 
 		/**
-		 * @typesign (evt: cellx.Event);
+		 * @typesign (evt: cellx~Event);
 		 */
 		_handleErrorEvent: function(evt) {
 			if (this._lastErrorEvent === evt) {
@@ -643,12 +637,12 @@
 
 			this._lastErrorEvent = evt;
 
-			this._handleEvent(evt);
+			this.emit(evt);
 
 			var slaves = this._slaves;
 
 			for (var i = slaves.length; i;) {
-				if (evt.isPropagationStopped) {
+				if (evt.isPropagationStopped === true) {
 					break;
 				}
 
@@ -659,12 +653,12 @@
 		/**
 		 * @typesign (): cellx.Cell;
 		 */
-		clear: function() {
+		dispose: function() {
 			if (!currentlyRelease) {
 				release();
 			}
 
-			this._clear();
+			this._dispose();
 
 			return this;
 		},
@@ -672,14 +666,14 @@
 		/**
 		 * @typesign ();
 		 */
-		_clear: function() {
+		_dispose: function() {
 			this.off();
 
 			if (this._active) {
 				var slaves = this._slaves;
 
 				for (var i = slaves.length; i;) {
-					slaves[--i]._clear();
+					slaves[--i]._dispose();
 				}
 			}
 		}

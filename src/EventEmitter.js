@@ -1,7 +1,9 @@
+/**
+ * @typedef {{ target?: Object, type: string }} cellx~Event
+ */
+
 (function() {
-	var Map = cellx.Map;
-	var Set = cellx.Set;
-	var Event = cellx.Event;
+	var Dictionary = cellx.Dictionary;
 
 	/**
 	 * @class cellx.EventEmitter
@@ -10,21 +12,21 @@
 	 */
 	function EventEmitter() {
 		/**
-		 * @type {Map<string, Set<{ listener: Function, context: Object }>>}
+		 * @type {cellx.Dictionary<Array<{ listener: Function, context: Object }>>}
 		 */
-		this._events = new Map();
+		this._events = new Dictionary();
 	}
 
 	assign(EventEmitter.prototype, {
 		/**
 		 * @typesign (
 		 *     type: string,
-		 *     listener: (evt: cellx.Event): boolean|undefined,
+		 *     listener: (evt: cellx~Event): boolean|undefined,
 		 *     context?: Object
 		 * ): cellx.EventEmitter;
 		 *
 		 * @typesign (
-		 *     listeners: Object<(evt: cellx.Event): boolean|undefined>,
+		 *     listeners: Object<(evt: cellx~Event): boolean|undefined>,
 		 *     context?: Object
 		 * ): cellx.EventEmitter;
 		 */
@@ -46,12 +48,12 @@
 		/**
 		 * @typesign (
 		 *     type: string,
-		 *     listener: (evt: cellx.Event): boolean|undefined,
+		 *     listener: (evt: cellx~Event): boolean|undefined,
 		 *     context?: Object
 		 * ): cellx.EventEmitter;
 		 *
 		 * @typesign (
-		 *     listeners: Object<(evt: cellx.Event): boolean|undefined>,
+		 *     listeners: Object<(evt: cellx~Event): boolean|undefined>,
 		 *     context?: Object
 		 * ): cellx.EventEmitter;
 		 *
@@ -80,28 +82,31 @@
 		/**
 		 * @typesign (
 		 *     type: string,
-		 *     listener: (evt: cellx.Event): boolean|undefined,
+		 *     listener: (evt: cellx~Event): boolean|undefined,
 		 *     context?: Object
 		 * );
 		 */
 		_on: function(type, listener, context) {
-			var events = (this._events || (this._events = new Map())).get(type);
+			var events = (this._events || (this._events = new Dictionary()))[type];
 
-			if (events) {
-				events.add({ listener: listener, context: context || this });
-			} else {
-				this._events.set(type, new Set([{ listener: listener, context: context || this }]));
+			if (!events) {
+				events = this._events[type] = [];
 			}
+
+			events.push({
+				listener: listener,
+				context: context || this
+			});
 		},
 		/**
 		 * @typesign (
 		 *     type: string,
-		 *     listener: (evt: cellx.Event): boolean|undefined,
+		 *     listener: (evt: cellx~Event): boolean|undefined,
 		 *     context?: Object
 		 * );
 		 */
 		_off: function(type, listener, context) {
-			var events = this._events || (this._events = new Map()).get(type);
+			var events = this._events && this._events[type];
 
 			if (!events) {
 				return;
@@ -111,38 +116,33 @@
 				context = this;
 			}
 
-			for (var iterator = events.values(), step; !(step = iterator.next()).done;) {
-				var evt = step.value;
+			for (var i = events.length; i;) {
+				if (events[--i].context == context) {
+					var lst = events[i].listener;
 
-				if (evt.context == context) {
-					var evtListener = evt.listener;
-
-					if (
-						evtListener == listener ||
-							(evtListener.hasOwnProperty(KEY_INNER) && evtListener[KEY_INNER] == listener)
-					) {
-						events['delete'](evt);
+					if (lst == listener || (lst.hasOwnProperty(KEY_INNER) && lst[KEY_INNER] == listener)) {
+						events.splice(i, 1);
 						break;
 					}
 				}
 			}
 
-			if (!events.size) {
-				this._events.delete(type);
+			if (!events.length) {
+				delete this._events[type];
 			}
 		},
 
 		/**
 		 * @typesign (
 		 *     type: string,
-		 *     listener: (evt: cellx.Event): boolean|undefined,
+		 *     listener: (evt: cellx~Event): boolean|undefined,
 		 *     context?: Object
 		 * ): cellx.EventEmitter;
 		 */
 		once: function(type, listener, context) {
 			function wrap() {
 				this._off(type, wrap, context);
-				listener.apply(this, arguments);
+				return listener.apply(this, arguments);
 			}
 			wrap[KEY_INNER] = listener;
 
@@ -152,54 +152,39 @@
 		},
 
 		/**
-		 * @typesign (evt: cellx.Event, detail?: Object): cellx.Event;
-		 * @typesign (type: string, detail?: Object): cellx.Event;
+		 * @typesign (evt: { type: string }): cellx~Event;
+		 * @typesign (type: string): cellx~Event;
 		 */
-		emit: function(evt, detail) {
+		emit: function(evt) {
 			if (typeof evt == 'string') {
-				evt = new Event(evt);
-			} else if (evt.hasOwnProperty(KEY_USED)) {
-				throw new TypeError('Attempt to use an object that is no longer usable');
+				evt = {
+					target: this,
+					type: evt
+				};
+			} else if (evt.target === undefined) {
+				evt.target = this;
 			}
 
-			evt[KEY_USED] = true;
-
-			evt.target = this;
-			evt.timestamp = now();
-
-			if (detail) {
-				evt.detail = detail;
-			}
-
-			this._handleEvent(evt);
-
-			return evt;
-		},
-
-		/**
-		 * @typesign (evt: cellx.Event);
-		 */
-		_handleEvent: function(evt) {
-			var type = evt.type;
-			var events = this._events && this._events.get(type);
+			var events = this._events && this._events[evt.type];
 
 			if (!events) {
-				return;
+				return evt;
 			}
 
-			for (var iterator = events.values(), step; !(step = iterator.next()).done;) {
-				if (evt.isImmediatePropagationStopped) {
-					break;
-				}
+			events = events.slice();
 
+			for (var i = 0, l = events.length; i < l; i++) {
 				try {
-					if (step.value.listener.call(step.value.context, evt) === false) {
-						evt.stopPropagation();
+					if (events[i].listener.call(events[i].context, evt) === false) {
+						evt.isPropagationStopped = true;
+						break;
 					}
 				} catch (err) {
 					this._logError(err);
 				}
 			}
+
+			return evt;
 		},
 
 		/**
