@@ -1010,6 +1010,8 @@
 	
 
 	(function() {
+		var Map = cellx.Map;
+	
 		var arrayProto = Array.prototype;
 	
 		/**
