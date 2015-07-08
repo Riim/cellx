@@ -22,8 +22,7 @@
 	 *     read?: (value): *,
 	 *     write?: (value),
 	 *     validate?: (value): *,
-	 *     computed?: true,
-	 *     pureComputed: boolean = false
+	 *     computed?: true
 	 * }): cellx;
 	 */
 	function cellx(value, opts) {
@@ -41,8 +40,8 @@
 		return cell;
 	}
 
-	if (typeof exports != 'undefined') {
-		if (typeof module != 'undefined') {
+	if (typeof exports == 'object') {
+		if (typeof module == 'object') {
 			module.exports = cellx;
 		} else {
 			exports.cellx = cellx;

@@ -17,7 +17,7 @@ describe('Cell.js', function() {
 			}, 1);
 		});
 
-		it('Нет изменения, если NaN заменяется на NaN', function(done) {
+		it('Нет изменения, если установить значение (NaN) равное текущему', function(done) {
 			var onChangeSpy = sinon.spy();
 
 			var a = new cellx.Cell(NaN, { onchange: onChangeSpy });
@@ -51,7 +51,7 @@ describe('Cell.js', function() {
 		});
 
 		it(
-			'Изменение не эмитится, если установить значение не равное текущему и сразу вернуть исходное значение',
+			'Нет изменения, если установить значение не равное текущему и сразу вернуть исходное значение',
 			function(done) {
 				var onChangeSpy = sinon.spy();
 
@@ -73,7 +73,7 @@ describe('Cell.js', function() {
 		);
 
 		it(
-			'Изменение не эмитится, если установить значение не равное текущему и сразу вернуть исходное значение (2)',
+			'Нет изменения, если установить значение не равное текущему и сразу вернуть исходное значение (2)',
 			function(done) {
 				var ee1 = new cellx.EventEmitter();
 				var ee2 = new cellx.EventEmitter();
@@ -95,7 +95,7 @@ describe('Cell.js', function() {
 		);
 
 		it(
-			'Изменение не эмитится, если установить значение не равное текущему, сделать в нём внутреннее изменение' +
+			'Нет изменения, если установить значение не равное текущему, сделать в нём внутреннее изменение' +
 				' и вернуть исходное значение',
 			function(done) {
 				var ee1 = new cellx.EventEmitter();
@@ -121,8 +121,8 @@ describe('Cell.js', function() {
 		);
 
 		it(
-			'Изменение эмитится, если сделать внутреннее изменение в текущем значении,' +
-				' установить значение не равное текущему и вернуть исходное значение',
+			'Есть изменение, если сделать внутреннее изменение в текущем значении, установить значение' +
+				' не равное текущему и вернуть исходное значение',
 			function(done) {
 				var ee1 = new cellx.EventEmitter();
 				var ee2 = new cellx.EventEmitter();
@@ -233,40 +233,44 @@ describe('Cell.js', function() {
 			}, 1);
 		});
 
-		it('Срабатывают все обработчики изменения, даже если в них запрашивать значения ячеек других', function(done) {
-			var aChangeSpy = sinon.spy(function() {
-				var bValue = b.read();
-			});
-			var bChangeSpy = sinon.spy(function() {
-				var cValue = c.read();
-			});
-			var cChangeSpy = sinon.spy(function() {
-				var aValue = a.read();
-			});
+		it(
+			'Срабатывают все обработчики изменения, даже если в них запрашивать значения других ячеек,' +
+				' обработчики которых должны сработать, но ещё не сработали',
+			function(done) {
+				var aChangeSpy = sinon.spy(function() {
+					var bValue = b.read();
+				});
+				var bChangeSpy = sinon.spy(function() {
+					var cValue = c.read();
+				});
+				var cChangeSpy = sinon.spy(function() {
+					var aValue = a.read();
+				});
 
-			var a = new cellx.Cell(1, { onchange: aChangeSpy });
-			var b = new cellx.Cell(2, { onchange: bChangeSpy });
-			var c = new cellx.Cell(3, { onchange: cChangeSpy });
-
-			setTimeout(function() {
-				a.write(5);
-				b.write(10);
-				c.write(15);
+				var a = new cellx.Cell(1, { onchange: aChangeSpy });
+				var b = new cellx.Cell(2, { onchange: bChangeSpy });
+				var c = new cellx.Cell(3, { onchange: cChangeSpy });
 
 				setTimeout(function() {
-					expect(aChangeSpy.calledOnce)
-						.to.be.ok;
+					a.write(5);
+					b.write(10);
+					c.write(15);
 
-					expect(bChangeSpy.calledOnce)
-						.to.be.ok;
+					setTimeout(function() {
+						expect(aChangeSpy.calledOnce)
+							.to.be.ok;
 
-					expect(cChangeSpy.calledOnce)
-						.to.be.ok;
+						expect(bChangeSpy.calledOnce)
+							.to.be.ok;
 
-					done();
+						expect(cChangeSpy.calledOnce)
+							.to.be.ok;
+
+						done();
+					}, 1);
 				}, 1);
-			}, 1);
-		});
+			}
+		);
 
 		it('Второй поток не портит жизнь первому', function() {
 			var a = new cellx.Cell(1);
@@ -291,7 +295,7 @@ describe('Cell.js', function() {
 				.to.equal(6);
 		});
 
-		it('Правильно считается, если в формуле делаем set и сразу get', function() {
+		it('Правильно считается, если в формуле делаем write и сразу read', function() {
 			var a = new cellx.Cell(1);
 			var b = new cellx.Cell(function() {
 				return a.read() + 1;
