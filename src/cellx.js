@@ -127,7 +127,7 @@
 	};
 
 	/**
-	 * @typesign (target: Object, source: Object);
+	 * @typesign (target: Object, source: Object): Object;
 	 */
 	var assign = Object.assign || function assign(target, source) {
 		for (var name in source) {

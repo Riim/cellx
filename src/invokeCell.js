@@ -54,6 +54,10 @@
 				return cell.write(firstArg);
 			}
 			default: {
+				if (firstArg === 'unwrap') {
+					return cell;
+				}
+
 				return cellProto[firstArg].apply(cell, otherArgs);
 			}
 		}

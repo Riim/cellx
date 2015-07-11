@@ -127,7 +127,7 @@
 	};
 
 	/**
-	 * @typesign (target: Object, source: Object);
+	 * @typesign (target: Object, source: Object): Object;
 	 */
 	var assign = Object.assign || function assign(target, source) {
 		for (var name in source) {
@@ -592,7 +592,7 @@
 						this._off(type, listener, context);
 					}
 				} else if (this._events) {
-					this._events.clear();
+					this._events = new Dictionary();
 				}
 	
 				return this;
@@ -2249,6 +2249,10 @@
 					return cell.write(firstArg);
 				}
 				default: {
+					if (firstArg === 'unwrap') {
+						return cell;
+					}
+	
 					return cellProto[firstArg].apply(cell, otherArgs);
 				}
 			}

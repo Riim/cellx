@@ -73,7 +73,7 @@
 					this._off(type, listener, context);
 				}
 			} else if (this._events) {
-				this._events.clear();
+				this._events = new Dictionary();
 			}
 
 			return this;
