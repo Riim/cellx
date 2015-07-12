@@ -12,7 +12,7 @@
 	 */
 	function EventEmitter() {
 		/**
-		 * @type {cellx.Dictionary<Array<{ listener: Function, context: Object }>>}
+		 * @type {cellx.Dictionary<Array<{ listener: (evt: cellx~Event): boolean|undefined, context: Object }>>}
 		 */
 		this._events = new Dictionary();
 	}

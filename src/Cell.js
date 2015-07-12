@@ -175,7 +175,6 @@
 
 		if (this.computed) {
 			this._formula = value;
-			this._activate();
 		} else {
 			if (this._validate) {
 				this._validate.call(this.owner || this, value);
@@ -499,7 +498,7 @@
 		 * @typesign ();
 		 */
 		_recalc: function() {
-			if (this._version == releaseVersion) {
+			if (this._version == releaseVersion + 1) {
 				if (++this._circularityCounter == 10) {
 					this._version = releaseVersion + 1;
 					this._handleError(new RangeError('Circular dependency detected'));

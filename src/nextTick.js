@@ -7,7 +7,7 @@
 	 *     console.log('nextTick');
 	 * });
 	 *
-	 * @typesign (cb: Function);
+	 * @typesign (cb: ());
 	 */
 	var nextTick;
 
