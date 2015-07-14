@@ -42,9 +42,6 @@
 						cell.emit(cell._changeEvent);
 					}
 
-					cell._fixedValue = cell._value;
-					cell._changeEvent = null;
-
 					var slaves = cell._slaves;
 
 					for (var i = slaves.length; i;) {
@@ -60,6 +57,9 @@
 							slave._fixed = false;
 						}
 					}
+
+					cell._fixedValue = cell._value;
+					cell._changeEvent = null;
 				}
 
 				if (releasePlan[releasePlanIndex].length) {
@@ -158,20 +158,20 @@
 		 */
 		this._level = 0;
 
+		this._active = !this.computed;
+
+		this._changed = false;
+
 		this._changeEvent = null;
 		this._isChangeCancellable = true;
 
-		this._fixed = true;
-
 		this._lastErrorEvent = null;
 
-		this._circularityCounter = 0;
+		this._fixed = true;
 
 		this._version = 0;
 
-		this._active = false;
-
-		this._changed = false;
+		this._circularityCounter = 0;
 
 		if (this.computed) {
 			this._formula = value;
@@ -313,8 +313,9 @@
 
 				if (value === error) {
 					this._handleError(error.original);
-				} else {
+				} else if (!is(this._value, value)) {
 					this._value = value;
+					this._changed = true;
 				}
 
 				this._version = releaseVersion;
@@ -500,8 +501,11 @@
 		_recalc: function() {
 			if (this._version == releaseVersion + 1) {
 				if (++this._circularityCounter == 10) {
-					this._version = releaseVersion + 1;
 					this._handleError(new RangeError('Circular dependency detected'));
+
+					this._fixed = true;
+					this._version = releaseVersion + 1;
+
 					return;
 				}
 			} else {
@@ -568,8 +572,6 @@
 						});
 					}
 
-					this._fixed = true;
-
 					var slaves = this._slaves;
 
 					for (var k = slaves.length; k;) {
@@ -590,6 +592,7 @@
 				}
 			}
 
+			this._fixed = true;
 			this._version = releaseVersion + 1;
 		},
 
