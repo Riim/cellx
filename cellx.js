@@ -1519,7 +1519,7 @@
 		var currentlyRelease = false;
 	
 		/**
-		 * @type {Array<?Array<cellx.Cell>>}
+		 * @type {Array<Array<cellx.Cell>|null>}
 		 */
 		var releasePlan = [];
 	
@@ -1546,10 +1546,15 @@
 					if (releasePlanIndex) {
 						cell._recalc();
 					} else {
+						var changeEvent = cell._changeEvent;
+	
+						cell._fixedValue = cell._value;
+						cell._changeEvent = null;
+	
 						cell._changed = true;
 	
 						if (cell._events.change) {
-							cell.emit(cell._changeEvent);
+							cell.emit(changeEvent);
 						}
 	
 						var slaves = cell._slaves;
@@ -1567,9 +1572,6 @@
 								slave._fixed = false;
 							}
 						}
-	
-						cell._fixedValue = cell._value;
-						cell._changeEvent = null;
 					}
 	
 					if (releasePlan[releasePlanIndex].length) {
@@ -1670,8 +1672,6 @@
 	
 			this._active = !this.computed;
 	
-			this._changed = false;
-	
 			this._changeEvent = null;
 			this._isChangeCancellable = true;
 	
@@ -1680,6 +1680,8 @@
 			this._fixed = true;
 	
 			this._version = 0;
+	
+			this._changed = false;
 	
 			this._circularityCounter = 0;
 	
@@ -1965,7 +1967,7 @@
 							if (releasePlan[0].length == 1) {
 								releasePlan[0] = null;
 							} else {
-								releasePlan[0]._unregisterSlave(this);
+								releasePlan[0].splice(releasePlan[0].indexOf(this), 1);
 							}
 	
 							this._changeEvent = null;
@@ -2011,10 +2013,10 @@
 			_recalc: function() {
 				if (this._version == releaseVersion + 1) {
 					if (++this._circularityCounter == 10) {
-						this._handleError(new RangeError('Circular dependency detected'));
-	
 						this._fixed = true;
 						this._version = releaseVersion + 1;
+	
+						this._handleError(new RangeError('Circular dependency detected'));
 	
 						return;
 					}
@@ -2064,6 +2066,9 @@
 					}
 				}
 	
+				this._fixed = true;
+				this._version = releaseVersion + 1;
+	
 				if (value === error) {
 					this._handleError(error.original);
 				} else {
@@ -2088,12 +2093,12 @@
 							var slave = slaves[--k];
 	
 							if (slave._fixed) {
-								var lvl = slave._level;
+								var slaveLevel = slave._level;
 	
-								(releasePlan[lvl] || (releasePlan[lvl] = [])).push(slave);
+								(releasePlan[slaveLevel] || (releasePlan[slaveLevel] = [])).push(slave);
 	
-								if (maxLevel < lvl) {
-									maxLevel = lvl;
+								if (maxLevel < slaveLevel) {
+									maxLevel = slaveLevel;
 								}
 	
 								slave._fixed = false;
@@ -2101,9 +2106,6 @@
 						}
 					}
 				}
-	
-				this._fixed = true;
-				this._version = releaseVersion + 1;
 			},
 	
 			/**
