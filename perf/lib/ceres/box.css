@@ -20,11 +20,11 @@
 .-checkbox input + span,
 .-radiobox input + span {
 	position: relative;
-	top: .3em;
+	top: .35rem;
 	display: inline-block;
-	margin: .5em .4em 0 .8em;
-	width: 1.2em;
-	height: 1.2em;
+	margin: .5rem .4rem 0 .8rem;
+	width: 1.3rem;
+	height: 1.3rem;
 	border: 2px solid hsl(0, 0%, 65%);
 	border-radius: 2px;
 	background-color: #fff;

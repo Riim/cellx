@@ -50,17 +50,8 @@
 		global.cellx = cellx;
 	}
 
-	/**
-	 * @memberOf cellx
-	 */
 	var KEY_UID = '__cellx_uid__';
-	/**
-	 * @memberOf cellx
-	 */
 	var KEY_INNER = '__cellx_inner__';
-	/**
-	 * @memberOf cellx
-	 */
 	var KEY_CELLS = '__cellx_cells__';
 
 	if (global.Symbol && typeof Symbol.iterator == 'symbol') {
@@ -83,7 +74,6 @@
 	}
 
 	/**
-	 * @memberOf cellx
 	 * @typesign (err);
 	 */
 	var logError;
@@ -455,8 +445,6 @@
 
 	(function() {
 		/**
-		 * @memberOf cellx
-		 *
 		 * @example
 		 * nextTick(function() {
 		 *     console.log('nextTick');
@@ -530,6 +518,11 @@
 		 * @typesign new (): cellx.EventEmitter;
 		 */
 		function EventEmitter() {
+			/**
+			 * @type {cellx.EventEmitter}
+			 */
+			this.parent = null;
+	
 			/**
 			 * @type {cellx.Dictionary<Array<{ listener: (evt: cellx~Event): boolean|undefined, context: Object }>>}
 			 */
@@ -659,13 +652,13 @@
 			 * ): cellx.EventEmitter;
 			 */
 			once: function(type, listener, context) {
-				function wrap() {
-					this._off(type, wrap, context);
+				function wrapper() {
+					this._off(type, wrapper, context);
 					return listener.apply(this, arguments);
 				}
-				wrap[KEY_INNER] = listener;
+				wrapper[KEY_INNER] = listener;
 	
-				this._on(type, wrap, context);
+				this._on(type, wrapper, context);
 	
 				return this;
 			},
@@ -684,26 +677,34 @@
 					evt.target = this;
 				}
 	
+				this._handleEvent(evt);
+	
+				return evt;
+			},
+	
+			/**
+			 * @typesign (evt: { target: cellx.EventEmitter, type: string });
+			 */
+			_handleEvent: function(evt) {
 				var events = this._events && this._events[evt.type];
 	
-				if (!events) {
-					return evt;
-				}
+				if (events) {
+					events = events.slice();
 	
-				events = events.slice();
-	
-				for (var i = 0, l = events.length; i < l; i++) {
-					try {
-						if (events[i].listener.call(events[i].context, evt) === false) {
-							evt.isPropagationStopped = true;
-							break;
+					for (var i = 0, l = events.length; i < l; i++) {
+						try {
+							if (events[i].listener.call(events[i].context, evt) === false) {
+								evt.isPropagationStopped = true;
+							}
+						} catch (err) {
+							this._logError(err);
 						}
-					} catch (err) {
-						this._logError(err);
 					}
 				}
 	
-				return evt;
+				if (this.parent && evt.bubbles !== false && !evt.isPropagationStopped) {
+					this.parent._handleEvent(evt);
+				}
 			},
 	
 			/**
@@ -992,8 +993,6 @@
 		cellx.ActiveMap = ActiveMap;
 	
 		/**
-		 * @memberOf cellx
-		 *
 		 * @typesign (entries?: Object|Array<{ 0, 1 }>|cellx.ActiveMap, opts?: {
 		 *     adoptsItemChanges: boolean = true
 		 * }): cellx.ActiveMap;
@@ -1466,7 +1465,7 @@
 			 * @typesign (): Array;
 			 */
 			toArray: function() {
-				return this._items.slice(0);
+				return this._items.slice();
 			},
 	
 			/**
@@ -1490,8 +1489,6 @@
 		cellx.ActiveList = ActiveList;
 	
 		/**
-		 * @memberOf cellx
-		 *
 		 * @typesign (items?: Array|cellx.ActiveList, opts?: {
 		 *     adoptsItemChanges: boolean = true,
 		 *     comparator?: (a, b): int,
@@ -1770,14 +1767,14 @@
 			 * @typesign (listener: (err: Error, evt: cellx~Event): boolean|undefined): cellx.Cell;
 			 */
 			subscribe: function(listener) {
-				function wrap(evt) {
+				function wrapper(evt) {
 					return listener.call(this, evt.error || null, evt);
 				}
-				wrap[KEY_INNER] = listener;
+				wrapper[KEY_INNER] = listener;
 	
 				this
-					.on('change', wrap)
-					.on('error', wrap);
+					.on('change', wrapper)
+					.on('error', wrapper);
 	
 				return this;
 			},
@@ -1845,7 +1842,7 @@
 			 * @typesign ();
 			 */
 			_deactivate: function() {
-				var masters = this._masters;
+				var masters = this._masters || [];
 	
 				for (var i = masters.length; i;) {
 					masters[--i]._unregisterSlave(this);
@@ -2074,7 +2071,7 @@
 				} else {
 					var oldValue = this._value;
 	
-					if (!is(oldValue, value)) {
+					if (!is(oldValue, value) || value instanceof EventEmitter) {
 						this._value = value;
 						this._changed = true;
 	
@@ -2203,9 +2200,9 @@
 	
 		var cellProto = Cell.prototype;
 	
-		invokeCell = function(wrap, initialValue, opts, owner, firstArg, otherArgs, argCount) {
+		invokeCell = function(wrapper, initialValue, opts, owner, firstArg, otherArgs, argCount) {
 			if (!owner || owner == global) {
-				owner = wrap;
+				owner = wrapper;
 			}
 	
 			if (!hasOwn.call(owner, KEY_CELLS)) {
@@ -2214,14 +2211,14 @@
 				});
 			}
 	
-			var cell = owner[KEY_CELLS].get(wrap);
+			var cell = owner[KEY_CELLS].get(wrapper);
 	
 			if (!cell) {
 				if (initialValue != null && typeof initialValue == 'object') {
 					if (typeof initialValue.clone == 'function') {
 						initialValue = initialValue.clone();
 					} else if (isArray(initialValue)) {
-						initialValue = initialValue.slice(0);
+						initialValue = initialValue.slice();
 					} else if (initialValue.constructor === Object) {
 						initialValue = assign({}, initialValue);
 					} else {
@@ -2242,7 +2239,7 @@
 				opts.owner = owner;
 	
 				cell = new Cell(initialValue, opts);
-				owner[KEY_CELLS].set(wrap, cell);
+				owner[KEY_CELLS].set(wrapper, cell);
 			}
 	
 			switch (argCount) {
@@ -2253,6 +2250,11 @@
 					return cell.write(firstArg);
 				}
 				default: {
+					if (firstArg === 'bind') {
+						wrapper = wrapper.bind(owner);
+						wrapper.constructor = cellx;
+						return wrapper;
+					}
 					if (firstArg === 'unwrap') {
 						return cell;
 					}

@@ -2,12 +2,12 @@
 	position: relative;
 	display: inline-block;
 	box-sizing: border-box;
-	padding: .4em .9em;
+	padding: .4rem .9rem;
 	outline: 0;
 	border: 0;
 	border-radius: 2px;
-	background-color: hsl(0, 0%, 98%);
-	box-shadow: 0 2px 4px hsla(0, 0%, 0%, .26);
+	background-color: transparent;
+	box-shadow: 0 2px 4px hsla(0, 0%, 0%, .2);
 	color: hsla(0, 0%, 0%, .87);
 	vertical-align: middle;
 	text-align: center;
@@ -30,8 +30,8 @@
 }
 
 .-btn:hover {
-	background-color: hsl(0, 0%, 93%);
-	box-shadow: 0 4px 8px hsla(0, 0%, 0%, .4);
+	background-color: #fff;
+	box-shadow: 0 3px 6px hsla(0, 0%, 0%, .4);
 	-webkit-transform: translate3d(0, -1px, 0);
 	transform: translate3d(0, -1px, 0);
 }
@@ -60,99 +60,86 @@
 .-btn:disabled:hover,
 .-btn:disabled:active,
 .-btn.-btn-selected[disabled] {
-	background-color: #999;
+	background-color: #aaa;
 	box-shadow: none;
+	color: #fff;
 	opacity: .7;
 	cursor: default;
 	-webkit-transform: none;
 	transform: none;
 }
 
-/* Sizing */
+/* high */
 
 .-btn-high {
-	padding-top: .7em;
-	padding-bottom: .7em;
+	padding-top: .7rem;
+	padding-bottom: .7rem;
 }
 
-/* Colorizing */
+/* default */
 
-/* Dark */
-
-.-btn-dark {
-	background-color: hsl(0, 0%, 39%);
-	color: #fff;
+.-btn-default {
+	background-color: #fff;
+	box-shadow: none;
+	color: #000;
 }
 
-.-btn-dark:hover {
-	background-color: hsl(0, 0%, 43%);
-}
+/* primary */
 
-.-btn-dark:active,
-.-btn-selected {
-	background-color: hsl(0, 0%, 47%);
-}
-
-.-btn-dark:focus:after {
-	border-color: hsla(0, 0%, 100%, .7);
-}
-
-/* Red */
-
-.-btn-red {
-	background-color: hsl(4, 91%, 59%);
-	color: #fff;
-}
-
-.-btn-red:hover {
-	background-color: hsl(4, 95%, 63%);
-}
-
-.-btn-red:active,
-.-btn-selected {
-	background-color: hsl(4, 99%, 67%);
-}
-
-.-btn-red:focus:after {
-	border-color: hsla(0, 0%, 100%, .7);
-}
-
-/* Green */
-
-.-btn-green {
-	background-color: hsl(110, 86%, 40%);
-	color: #fff;
-}
-
-.-btn-green:hover {
-	background-color: hsl(110, 88%, 42%);
-}
-
-.-btn-green:active,
-.-btn-selected {
-	background-color: hsl(110, 90%, 44%);
-}
-
-.-btn-green:focus:after {
-	border-color: hsla(0, 0%, 100%, .7);
-}
-
-/* Blue */
-
-.-btn-blue {
+.-btn-primary {
 	background-color: hsl(210, 94%, 54%);
 	color: #fff;
 }
 
-.-btn-blue:hover {
+.-btn-primary:hover {
 	background-color: hsl(210, 97%, 59%);
 }
 
-.-btn-blue:active,
+.-btn-primary:active,
 .-btn-selected {
 	background-color: hsl(210, 100%, 64%);
 }
 
-.-btn-blue:focus:after {
+.-btn-primary:focus:after {
+	border-color: hsla(0, 0%, 100%, .7);
+}
+
+/* success */
+
+.-btn-success {
+	background-color: hsl(170, 86%, 40%);
+	color: #fff;
+}
+
+.-btn-success:hover {
+	background-color: hsl(170, 88%, 42%);
+}
+
+.-btn-success:active,
+.-btn-selected {
+	background-color: hsl(170, 90%, 44%);
+}
+
+.-btn-success:focus:after {
+	border-color: hsla(0, 0%, 100%, .7);
+}
+
+/* danger */
+
+.-btn-danger {
+	background-color: hsl(4, 91%, 59%);
+	color: #fff;
+}
+
+.-btn-danger:hover {
+	background-color: hsl(4, 95%, 63%);
+}
+
+.-btn-danger:active,
+.-btn-selected {
+	background-color: hsl(4, 99%, 67%);
+}
+
+.-btn-danger:focus:after {
 	border-color: hsla(0, 0%, 100%, .7);
 }

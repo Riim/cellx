@@ -1,7 +1,5 @@
 (function() {
 	/**
-	 * @memberOf cellx
-	 *
 	 * @example
 	 * nextTick(function() {
 	 *     console.log('nextTick');

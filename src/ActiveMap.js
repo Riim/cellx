@@ -204,8 +204,6 @@
 	cellx.ActiveMap = ActiveMap;
 
 	/**
-	 * @memberOf cellx
-	 *
 	 * @typesign (entries?: Object|Array<{ 0, 1 }>|cellx.ActiveMap, opts?: {
 	 *     adoptsItemChanges: boolean = true
 	 * }): cellx.ActiveMap;

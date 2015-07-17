@@ -50,17 +50,8 @@
 		global.cellx = cellx;
 	}
 
-	/**
-	 * @memberOf cellx
-	 */
 	var KEY_UID = '__cellx_uid__';
-	/**
-	 * @memberOf cellx
-	 */
 	var KEY_INNER = '__cellx_inner__';
-	/**
-	 * @memberOf cellx
-	 */
 	var KEY_CELLS = '__cellx_cells__';
 
 	if (global.Symbol && typeof Symbol.iterator == 'symbol') {
@@ -83,7 +74,6 @@
 	}
 
 	/**
-	 * @memberOf cellx
 	 * @typesign (err);
 	 */
 	var logError;

@@ -12,6 +12,11 @@
 	 */
 	function EventEmitter() {
 		/**
+		 * @type {cellx.EventEmitter}
+		 */
+		this.parent = null;
+
+		/**
 		 * @type {cellx.Dictionary<Array<{ listener: (evt: cellx~Event): boolean|undefined, context: Object }>>}
 		 */
 		this._events = new Dictionary();
@@ -140,13 +145,13 @@
 		 * ): cellx.EventEmitter;
 		 */
 		once: function(type, listener, context) {
-			function wrap() {
-				this._off(type, wrap, context);
+			function wrapper() {
+				this._off(type, wrapper, context);
 				return listener.apply(this, arguments);
 			}
-			wrap[KEY_INNER] = listener;
+			wrapper[KEY_INNER] = listener;
 
-			this._on(type, wrap, context);
+			this._on(type, wrapper, context);
 
 			return this;
 		},
@@ -165,26 +170,34 @@
 				evt.target = this;
 			}
 
+			this._handleEvent(evt);
+
+			return evt;
+		},
+
+		/**
+		 * @typesign (evt: { target: cellx.EventEmitter, type: string });
+		 */
+		_handleEvent: function(evt) {
 			var events = this._events && this._events[evt.type];
 
-			if (!events) {
-				return evt;
-			}
+			if (events) {
+				events = events.slice();
 
-			events = events.slice();
-
-			for (var i = 0, l = events.length; i < l; i++) {
-				try {
-					if (events[i].listener.call(events[i].context, evt) === false) {
-						evt.isPropagationStopped = true;
-						break;
+				for (var i = 0, l = events.length; i < l; i++) {
+					try {
+						if (events[i].listener.call(events[i].context, evt) === false) {
+							evt.isPropagationStopped = true;
+						}
+					} catch (err) {
+						this._logError(err);
 					}
-				} catch (err) {
-					this._logError(err);
 				}
 			}
 
-			return evt;
+			if (this.parent && evt.bubbles !== false && !evt.isPropagationStopped) {
+				this.parent._handleEvent(evt);
+			}
 		},
 
 		/**

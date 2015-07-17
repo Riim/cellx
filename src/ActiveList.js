@@ -456,7 +456,7 @@
 		 * @typesign (): Array;
 		 */
 		toArray: function() {
-			return this._items.slice(0);
+			return this._items.slice();
 		},
 
 		/**
@@ -480,8 +480,6 @@
 	cellx.ActiveList = ActiveList;
 
 	/**
-	 * @memberOf cellx
-	 *
 	 * @typesign (items?: Array|cellx.ActiveList, opts?: {
 	 *     adoptsItemChanges: boolean = true,
 	 *     comparator?: (a, b): int,

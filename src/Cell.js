@@ -260,14 +260,14 @@
 		 * @typesign (listener: (err: Error, evt: cellx~Event): boolean|undefined): cellx.Cell;
 		 */
 		subscribe: function(listener) {
-			function wrap(evt) {
+			function wrapper(evt) {
 				return listener.call(this, evt.error || null, evt);
 			}
-			wrap[KEY_INNER] = listener;
+			wrapper[KEY_INNER] = listener;
 
 			this
-				.on('change', wrap)
-				.on('error', wrap);
+				.on('change', wrapper)
+				.on('error', wrapper);
 
 			return this;
 		},
@@ -335,7 +335,7 @@
 		 * @typesign ();
 		 */
 		_deactivate: function() {
-			var masters = this._masters;
+			var masters = this._masters || [];
 
 			for (var i = masters.length; i;) {
 				masters[--i]._unregisterSlave(this);
@@ -564,7 +564,7 @@
 			} else {
 				var oldValue = this._value;
 
-				if (!is(oldValue, value)) {
+				if (!is(oldValue, value) || value instanceof EventEmitter) {
 					this._value = value;
 					this._changed = true;
 

@@ -4,9 +4,9 @@
 
 	var cellProto = Cell.prototype;
 
-	invokeCell = function(wrap, initialValue, opts, owner, firstArg, otherArgs, argCount) {
+	invokeCell = function(wrapper, initialValue, opts, owner, firstArg, otherArgs, argCount) {
 		if (!owner || owner == global) {
-			owner = wrap;
+			owner = wrapper;
 		}
 
 		if (!hasOwn.call(owner, KEY_CELLS)) {
@@ -15,14 +15,14 @@
 			});
 		}
 
-		var cell = owner[KEY_CELLS].get(wrap);
+		var cell = owner[KEY_CELLS].get(wrapper);
 
 		if (!cell) {
 			if (initialValue != null && typeof initialValue == 'object') {
 				if (typeof initialValue.clone == 'function') {
 					initialValue = initialValue.clone();
 				} else if (isArray(initialValue)) {
-					initialValue = initialValue.slice(0);
+					initialValue = initialValue.slice();
 				} else if (initialValue.constructor === Object) {
 					initialValue = assign({}, initialValue);
 				} else {
@@ -43,7 +43,7 @@
 			opts.owner = owner;
 
 			cell = new Cell(initialValue, opts);
-			owner[KEY_CELLS].set(wrap, cell);
+			owner[KEY_CELLS].set(wrapper, cell);
 		}
 
 		switch (argCount) {
@@ -54,6 +54,11 @@
 				return cell.write(firstArg);
 			}
 			default: {
+				if (firstArg === 'bind') {
+					wrapper = wrapper.bind(owner);
+					wrapper.constructor = cellx;
+					return wrapper;
+				}
 				if (firstArg === 'unwrap') {
 					return cell;
 				}
