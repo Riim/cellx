@@ -3,13 +3,475 @@
 <head>
 	<meta charset="UTF-8">
 	<title></title>
-	<link rel="stylesheet" type="text/css" href="lib/ceres/base.css">
-	<link rel="stylesheet" type="text/css" href="lib/ceres/button.css">
-	<link rel="stylesheet" type="text/css" href="lib/ceres/box.css">
 
-	<style type="text/css">
+	<style>
+html,
+body, article, section, nav, aside, h1, h2, h3, h4, h5, h6, header, footer, address,
+p, hr, pre, blockquote, ol, ul, li, dl, dt, dd, figure, figcaption, div, main,
+a, em, strong, small, s, cite, q, dfn, abbr, data, time, code, var, samp, kbd, sub, sup, i, b, u, mark, ruby, rb, rt,
+	rtc, rp, bdi, bdo, span,
+ins, del,
+img,
+iframe, embed, object, param, video, audio, source, track,
+map, area, table, caption, colgroup, col, tbody, thead, tfoot, tr, td, th,
+form, label, input, button, select, datalist, optgroup, option, textarea, keygen, output, progress, meter, fieldset,
+	legend {
+		margin: 0;
+		padding: 0;
+		outline-color: hsl(210, 100%, 64%);
+		vertical-align: baseline;
+		font-weight: inherit;
+		font-style: inherit;
+		font-size: 1rem;
+		font-family: inherit;
+	}
+
+html,
+body {
+	height: 100%;
+}
+
+body {
+	background: white;
+	color: black;
+	line-height: 1.5;/* http://www.slideshare.net/maxdesign/line-height */
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	-webkit-text-size-adjust: 100%;
+	-ms-text-size-adjust: 100%;
+	-webkit-tap-highlight-color: transparent;
+}
+
+blockquote,
+q {
+	quotes: none;
+}
+
+blockquote::before,
+blockquote::after,
+q::before,
+q::after {
+	content: '';
+	content: none;
+}
+
+ol,
+ul {
+	list-style: none;
+}
+
+abbr,
+img,
+fieldset {
+	border: 0;
+}
+
+table {
+	border-spacing: 0;
+	border-collapse: collapse;
+}
+
+caption,
+th {
+	text-align: left;
+}
+
+td,
+th {
+	vertical-align: middle;
+}
+
+input::-moz-focus-inner,
+button::-moz-focus-inner {
+	padding: 0;
+	border: 0;
+}
+
+/* typography */
+
+body {
+	color: hsl(0, 0%, 20%);
+	font-size: 15px;
+	font-family: Verdana, Geneva, sans-serif;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	margin-bottom: 1rem;
+	line-height: 1;
+}
+
+h1 { font-size: 1.8rem; }
+h2 { font-size: 1.7rem; }
+h3 { font-size: 1.5rem; }
+h4 { font-size: 1.3rem; }
+h5 { font-weight: 600; font-size: 1.1rem; }
+h6 { margin-bottom: .5rem; font-weight: 600; }
+
+address {
+	margin-bottom: 1.5rem;
+	font-style: italic;
+}
+
+p {
+	margin-bottom: 1.5rem;
+}
+
+hr {
+	clear: both;
+	margin: .5rem 0 1rem;
+	height: 0;
+	border: dashed hsl(0, 0%, 65%);
+	border-width: 1px 0 0;
+}
+
+pre,
+code {
+	font-family: 'Courier New', Courier, monospace;
+}
+
+pre {
+	margin: 1.5rem 0;
+	white-space: pre;
+}
+
+blockquote {
+	margin: 1.5rem;
+	color: hsl(0, 0%, 40%);
+	font-style: italic;
+}
+
+ol, ul { margin: 0 1.5rem 1.5rem 0; padding-left: 1.5rem; }
+li ol, li ul { margin: 0; }
+ol { list-style-type: decimal; }
+ul { list-style-type: disc; }
+
+dl { margin-bottom: 1.5rem; }
+dt { font-weight: bold; }
+dd { margin: 0 0 1rem 1.5rem; }
+
+a {
+	color: hsl(210, 100%, 40%);
+	text-decoration: underline;
+}
+
+em {
+	font-style: italic;
+}
+
+strong {
+	font-weight: bold;
+}
+
+small {
+	font-size: .85rem;
+}
+
+dfn {
+	font-weight: bold;
+	font-style: italic;
+}
+
+abbr {
+	border-bottom: dashed 1px hsl(0, 0%, 40%);
+}
+
+sub,
+sup {
+	position: relative;
+	line-height: 0;
+}
+
+sup {
+	top: -.5rem;
+}
+
+sub {
+	bottom: -.25rem;
+}
+
+tfoot { font-style: italic; }
+th { font-weight: bold; }
+
+/* form */
+
+fieldset {
+	margin-bottom: 1.5rem;
+	padding: 1.5rem;
+	border: 1px solid hsl(0, 0%, 80%);
+	border-radius: 2px;
+}
+
+legend {
+	padding: 0 2px;
+	font-weight: bold;
+	font-size: 1.2rem;
+}
+
+.-textfield {
+	box-sizing: border-box;
+	padding: .2rem .5rem;
+	width: 400px;
+	border: 1px solid hsl(0, 0%, 65%);
+	border-radius: 2px;
+	box-shadow: inset 0 1px 3px hsla(0, 0%, 0%, .15);
+	line-height: inherit;
+}
+
+.-textfield:focus {
+	outline: none;
+	border-color: hsl(210, 100%, 64%);
+}
+
+.-textfield:disabled {
+	border-color: hsl(0, 0%, 80%);
+	background-color: hsl(0, 0%, 95%);
+	box-shadow: none;
+}
+
+p .-textfield {
+	display: block;
+}
+
+.-checkbox,
+.-radiobox {
+	position: relative;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.-checkbox input,
+.-radiobox input {
+	position: absolute;
+	z-index: -1;
+	width: 1px;
+	height: 1px;
+	outline: 0;
+	opacity: 0;
+}
+
+.-checkbox input + span,
+.-radiobox input + span {
+	position: relative;
+	top: .3rem;
+	display: inline-block;
+	margin: 0 .5rem 0 .8rem;
+	width: 1.3rem;
+	height: 1.3rem;
+	border: 2px solid hsl(0, 0%, 65%);
+	border-radius: 2px;
+	background-color: #fff;
+	cursor: pointer;
+}
+
+.-radiobox input + span {
+	border-radius: 50%;
+}
+
+.-checkbox:hover input + span,
+.-radiobox:hover input + span {
+	border-color: hsl(0, 0%, 50%);
+}
+
+.-checkbox input:focus + span,
+.-radiobox input:focus + span {
+	border-color: hsl(210, 100%, 64%);
+}
+
+.-checkbox input:disabled + span,
+.-radiobox input:disabled + span {
+	border-color: hsl(0, 0%, 80%);
+	background-color: hsl(0, 0%, 95%);
+	cursor: default;
+}
+
+.-checkbox input + span::after,
+.-radiobox input + span::after {
+	position: absolute;
+	top: 3px;
+	right: 3px;
+	bottom: 3px;
+	left: 3px;
+	border-radius: 2px;
+	content: '';
+}
+
+.-radiobox input + span::after {
+	border-radius: 50%;
+}
+
+.-checkbox:hover input + span::after,
+.-radiobox:hover input + span::after {
+	background-color: hsl(0, 0%, 75%);
+}
+
+.-checkbox input:checked + span::after,
+.-radiobox input:checked + span::after {
+	background-color: hsl(0, 0%, 25%);
+}
+
+.-checkbox input:disabled + span::after,
+.-radiobox input:disabled + span::after {
+	background-color: transparent;
+}
+
+.-checkbox input:checked:disabled + span::after,
+.-radiobox input:checked:disabled + span::after {
+	background-color: hsl(0, 0%, 65%);
+}
+
+.-btn {
+	position: relative;
+	display: inline-block;
+	box-sizing: border-box;
+	padding: .4rem .9rem;
+	outline: 0;
+	border: 0;
+	border-radius: 2px;
+	background-color: transparent;
+	box-shadow: 0 2px 4px hsla(0, 0%, 0%, .2);
+	color: hsla(0, 0%, 0%, .87);
+	text-align: center;
+	text-decoration: none;
+	text-shadow: none;
+	line-height: 1.3;
+	cursor: pointer;
+	-webkit-transition:
+		box-shadow .4s cubic-bezier(.25,.8,.25,1),
+		background-color .4s cubic-bezier(.25,.8,.25,1),
+		-webkit-transform .4s cubic-bezier(.25,.8,.25,1);
+	transition:
+		box-shadow .4s cubic-bezier(.25,.8,.25,1),
+		background-color .4s cubic-bezier(.25,.8,.25,1),
+		transform .4s cubic-bezier(.25,.8,.25,1);
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+
+.-btn:hover {
+	background-color: #fff;
+	box-shadow: 0 3px 6px hsla(0, 0%, 0%, .3);
+	-webkit-transform: translate3d(0, -1px, 0);
+	transform: translate3d(0, -1px, 0);
+}
+
+.-btn:active,
+.-btn-selected {
+	background-color: hsl(0, 0%, 88%);
+	box-shadow: none;
+	-webkit-transition-duration: .05s;
+	transition-duration: .05s;
+	-webkit-transform: translate3d(0, 1px, 0);
+	transform: translate3d(0, 1px, 0);
+}
+
+.-btn:focus::after {
+	position: absolute;
+	top: 1px;
+	right: 1px;
+	bottom: 1px;
+	left: 1px;
+	border: 1px solid hsl(210, 100%, 64%);
+	content: '';
+}
+
+.-btn:disabled,
+.-btn:disabled:hover,
+.-btn:disabled:active,
+.-btn.-btn-selected[disabled] {
+	background-color: #aaa;
+	box-shadow: none;
+	color: #fff;
+	opacity: .7;
+	cursor: default;
+	-webkit-transform: none;
+	-ms-transform: none;
+	transform: none;
+}
+
+/* high */
+
+.-btn-high {
+	padding-top: .7rem;
+	padding-bottom: .7rem;
+}
+
+/* default */
+
+.-btn-default {
+	box-shadow: none;
+	color: #000;
+}
+
+/* primary */
+
+.-btn-primary {
+	background-color: hsl(210, 94%, 54%);
+	color: #fff;
+}
+
+.-btn-primary:hover {
+	background-color: hsl(210, 97%, 59%);
+}
+
+.-btn-primary:active,
+.-btn-selected {
+	background-color: hsl(210, 100%, 64%);
+}
+
+.-btn-primary:focus::after {
+	border-color: hsla(0, 0%, 100%, .7);
+}
+
+/* success */
+
+.-btn-success {
+	background-color: hsl(170, 92%, 38%);
+	color: #fff;
+}
+
+.-btn-success:hover {
+	background-color: hsl(170, 94%, 40%);
+}
+
+.-btn-success:active,
+.-btn-selected {
+	background-color: hsl(170, 96%, 42%);
+}
+
+.-btn-success:focus::after {
+	border-color: hsla(0, 0%, 100%, .7);
+}
+
+/* danger */
+
+.-btn-danger {
+	background-color: hsl(350, 91%, 59%);
+	color: #fff;
+}
+
+.-btn-danger:hover {
+	background-color: hsl(350, 95%, 63%);
+}
+
+.-btn-danger:active,
+.-btn-selected {
+	background-color: hsl(350, 99%, 67%);
+}
+
+.-btn-danger:focus::after {
+	border-color: hsla(0, 0%, 100%, .7);
+}
+
 body {
 	padding: 50px;
+}
+
+#bSelectLibrary {
+	line-height: 2.2rem;
 }
 
 #tfOutput {
@@ -27,7 +489,7 @@ body {
 <p>
 	<label>
 		Number of layers
-		<input id="tfLayerCount" type="text" value="10">
+		<input class="-textfield" id="tfLayerCount" type="text" value="10">
 
 		<div id="bSetLayerCount">
 			<button class="-btn -btn-primary">10</button>
@@ -48,20 +510,19 @@ body {
 	Library
 	<br>
 	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="cellx" checked><span></span>cellx</label>
-	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="jin-atom"><span></span>jin-atom</label>
 	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="knockout"><span></span>Knockout</label>
 	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="angular"><span></span>AngularJS</label>
+	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="jin-atom"><span></span>jin-atom</label>
 	<br>
 	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="warp9"><span></span>Warp9</label>
+	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="vue"><span></span>vue.js</label>
 	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="kefir"><span></span>Kefir.js</label>
-	<!-- <label class="-radiobox"><input type="radio" name="rdbLibrary" value="bacon"><span></span>Bacon.js</label>
-	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="rx"><span></span>RxJS</label> -->
 </p>
 
 <hr>
 
 <p>
-	<button id="btnRunTest" class="-btn -btn-high -btn-success">Run</button>
+	<button id="btnRunTest" class="-btn -btn-high -btn-primary">Run</button>
 </p>
 
 <hr>
@@ -72,13 +533,12 @@ body {
 </p>
 
 <script src="lib/jquery.js"></script>
-<script src="lib/jin-atom.js"></script>
 <script src="lib/knockout-3.3.0.js"></script>
 <script src="lib/angular.min.js"></script>
+<script src="lib/jin-atom.js"></script>
 <script src="lib/warp9.js"></script>
+<script src="lib/vue.js"></script>
 <script src="lib/kefir.js"></script>
-<script src="lib/bacon.js"></script>
-<script src="lib/rx.all.min.js"></script>
 <script src="../cellx.js"></script>
 <script>
 
@@ -111,10 +571,6 @@ function runTest(lib, layerCount) {
 				testCellx(report, layerCount, onDone);
 				break;
 			}
-			case 'jin-atom': {
-				testJinAtom(report, layerCount, onDone);
-				break;
-			}
 			case 'knockout': {
 				testKnockout(report, layerCount, onDone);
 				break;
@@ -123,20 +579,20 @@ function runTest(lib, layerCount) {
 				testAngular(report, layerCount, onDone);
 				break;
 			}
+			case 'jin-atom': {
+				testJinAtom(report, layerCount, onDone);
+				break;
+			}
 			case 'warp9': {
 				testWarp9(report, layerCount, onDone);
 				break;
 			}
+			case 'vue': {
+				testVue(report, layerCount, onDone);
+				break;
+			}
 			case 'kefir': {
 				testKefir(report, layerCount, onDone);
-				break;
-			}
-			case 'bacon': {
-				testBacon(report, layerCount, onDone);
-				break;
-			}
-			case 'rx': {
-				testRx(report, layerCount, onDone);
 				break;
 			}
 		}
@@ -144,31 +600,27 @@ function runTest(lib, layerCount) {
 }
 
 function testCellx(report, layerCount, done) {
-	function Start() {
-		this.prop1 = new cellx.Cell(1);
-		this.prop2 = new cellx.Cell(2);
-		this.prop3 = new cellx.Cell(3);
-		this.prop4 = new cellx.Cell(4);
-	}
-
-	var start = new Start();
+	var start = {
+		prop1: new cellx.Cell(1),
+		prop2: new cellx.Cell(2),
+		prop3: new cellx.Cell(3),
+		prop4: new cellx.Cell(4)
+	};
 	var layer = start;
 
 	for (var i = layerCount; i--;) {
 		layer = (function(m) {
-			function Mid() {
-				this.prop1 = new cellx.Cell(function() { return m.prop2.read(); });
-				this.prop2 = new cellx.Cell(function() { return m.prop1.read() - m.prop3.read(); });
-				this.prop3 = new cellx.Cell(function() { return m.prop2.read() + m.prop4.read(); });
-				this.prop4 = new cellx.Cell(function() { return m.prop3.read(); });
+			var s = {
+				prop1: new cellx.Cell(function() { return m.prop2.read(); }),
+				prop2: new cellx.Cell(function() { return m.prop1.read() - m.prop3.read(); }),
+				prop3: new cellx.Cell(function() { return m.prop2.read() + m.prop4.read(); }),
+				prop4: new cellx.Cell(function() { return m.prop3.read(); })
+			};
 
-				this.prop1.on('change', function() {});
-				this.prop2.on('change', function() {});
-				this.prop3.on('change', function() {});
-				this.prop4.on('change', function() {});
-			}
-
-			var s = new Mid();
+			s.prop1.on('change', function() {});
+			s.prop2.on('change', function() {});
+			s.prop3.on('change', function() {});
+			s.prop4.on('change', function() {});
 
 			s.prop1.read();
 			s.prop2.read();
@@ -205,67 +657,6 @@ function testCellx(report, layerCount, done) {
 	report.recalculationTime = Date.now() - st;
 
 	done();
-}
-
-function testJinAtom(report, layerCount, done) {
-	function Start() {
-		this.prop1 = new $jin.atom.prop({ value: 1 });
-		this.prop2 = new $jin.atom.prop({ value: 2 });
-		this.prop3 = new $jin.atom.prop({ value: 3 });
-		this.prop4 = new $jin.atom.prop({ value: 4 });
-	}
-
-	var start = new Start();
-	var layer = start;
-
-	for (var i = layerCount; i--;) {
-		layer = (function(m) {
-			function Mid() {
-				this.prop1 = new $jin.atom.prop({ pull: function() { return m.prop2.get(); }, reap: function() {} });
-				this.prop2 = new $jin.atom.prop({ pull: function() { return m.prop1.get() - m.prop3.get(); }, reap: function() {} });
-				this.prop3 = new $jin.atom.prop({ pull: function() { return m.prop2.get() + m.prop4.get(); }, reap: function() {} });
-				this.prop4 = new $jin.atom.prop({ pull: function() { return m.prop3.get(); }, reap: function() {} });
-			}
-
-			var s = new Mid();
-
-			s.prop1.get();
-			s.prop2.get();
-			s.prop3.get();
-			s.prop4.get();
-
-			return s;
-		})(layer);
-	}
-
-	var end = layer;
-
-	report.beforeChange = [
-		end.prop1.get(),
-		end.prop2.get(),
-		end.prop3.get(),
-		end.prop4.get()
-	];
-
-	var st = Date.now();
-
-	start.prop1.push(4);
-	start.prop2.push(3);
-	start.prop3.push(2);
-	start.prop4.push(1);
-
-	new $jin.defer(function() {
-		report.afterChange = [
-			end.prop1.get(),
-			end.prop2.get(),
-			end.prop3.get(),
-			end.prop4.get()
-		];
-
-		report.recalculationTime = Date.now() - st;
-
-		done();
-	});
 }
 
 function testKnockout(report, layerCount, done) {
@@ -409,32 +800,97 @@ function testAngular(report, layerCount, done) {
 	cellx.nextTick(test);
 }
 
-function testWarp9(report, layerCount, done) {
-	function Start() {
-		this.prop1 = new warp9.Cell(1);
-		this.prop2 = new warp9.Cell(2);
-		this.prop3 = new warp9.Cell(3);
-		this.prop4 = new warp9.Cell(4);
-	}
-
-	var start = new Start();
+function testJinAtom(report, layerCount, done) {
+	var start = {
+		prop1: new $jin.atom.prop({ value: 1 }),
+		prop2: new $jin.atom.prop({ value: 2 }),
+		prop3: new $jin.atom.prop({ value: 3 }),
+		prop4: new $jin.atom.prop({ value: 4 })
+	};
 	var layer = start;
 
 	for (var i = layerCount; i--;) {
 		layer = (function(m) {
-			function Mid() {
-				this.prop1 = m.prop2.lift(function(v) { return v; });
-				this.prop2 = m.prop1.lift(function(v) { return v - m.prop3.get(); });
-				this.prop3 = m.prop2.lift(function(v) { return v + m.prop4.get(); });
-				this.prop4 = m.prop3.lift(function(v) { return v; });
+			var s = {
+				prop1: new $jin.atom.prop({
+					pull: function() { return m.prop2.get(); },
+					reap: function() {}
+				}),
+				prop2: new $jin.atom.prop({
+					pull: function() { return m.prop1.get() - m.prop3.get(); },
+					reap: function() {}
+				}),
+				prop3: new $jin.atom.prop({
+					pull: function() { return m.prop2.get() + m.prop4.get(); },
+					reap: function() {}
+				}),
+				prop4: new $jin.atom.prop({
+					pull: function() { return m.prop3.get(); },
+					reap: function() {}
+				})
+			};
 
-				this.prop1.onChange(function() {});
-				this.prop2.onChange(function() {});
-				this.prop3.onChange(function() {});
-				this.prop4.onChange(function() {});
-			}
+			s.prop1.get();
+			s.prop2.get();
+			s.prop3.get();
+			s.prop4.get();
 
-			var s = new Mid();
+			return s;
+		})(layer);
+	}
+
+	var end = layer;
+
+	report.beforeChange = [
+		end.prop1.get(),
+		end.prop2.get(),
+		end.prop3.get(),
+		end.prop4.get()
+	];
+
+	var st = Date.now();
+
+	start.prop1.push(4);
+	start.prop2.push(3);
+	start.prop3.push(2);
+	start.prop4.push(1);
+
+	new $jin.defer(function() {
+		report.afterChange = [
+			end.prop1.get(),
+			end.prop2.get(),
+			end.prop3.get(),
+			end.prop4.get()
+		];
+
+		report.recalculationTime = Date.now() - st;
+
+		done();
+	});
+}
+
+function testWarp9(report, layerCount, done) {
+	var start = {
+		prop1: new warp9.Cell(1),
+		prop2: new warp9.Cell(2),
+		prop3: new warp9.Cell(3),
+		prop4: new warp9.Cell(4)
+	};
+	var layer = start;
+
+	for (var i = layerCount; i--;) {
+		layer = (function(m) {
+			var s = {
+				prop1: m.prop2.lift(function(v) { return v; }),
+				prop2: m.prop1.lift(function(v) { return v - m.prop3.get(); }),
+				prop3: m.prop2.lift(function(v) { return v + m.prop4.get(); }),
+				prop4: m.prop3.lift(function(v) { return v; })
+			};
+
+			s.prop1.onChange(function() {});
+			s.prop2.onChange(function() {});
+			s.prop3.onChange(function() {});
+			s.prop4.onChange(function() {});
 
 			s.prop1.get();
 			s.prop2.get();
@@ -466,6 +922,66 @@ function testWarp9(report, layerCount, done) {
 		end.prop2.get(),
 		end.prop3.get(),
 		end.prop4.get()
+	];
+
+	report.recalculationTime = Date.now() - st;
+
+	done();
+}
+
+function testVue(report, layerCount, done) {
+	var start = new Vue({
+		data: {
+			prop1: 1,
+			prop2: 2,
+			prop3: 3,
+			prop4: 4
+		}
+	});
+
+	var layer = start;
+
+	for (var i = layerCount; i--;) {
+		layer = (function(m) {
+			var s = new Vue({
+				computed: {
+					prop1: function() { return m.prop2; },
+					prop2: function() { return m.prop1 - m.prop3; },
+					prop3: function() { return m.prop2 + m.prop4; },
+					prop4: function() { return m.prop3; }
+				}
+			});
+
+			s.prop1;
+			s.prop2;
+			s.prop3;
+			s.prop4;
+
+			return s;
+		})(layer);
+	}
+
+	var end = layer;
+
+	report.beforeChange = [
+		end.prop1,
+		end.prop2,
+		end.prop3,
+		end.prop4
+	];
+
+	var st = Date.now();
+
+	start.prop1 = 4;
+	start.prop2 = 3;
+	start.prop3 = 2;
+	start.prop4 = 1;
+
+	report.afterChange = [
+		end.prop1,
+		end.prop2,
+		end.prop3,
+		end.prop4
 	];
 
 	report.recalculationTime = Date.now() - st;
@@ -535,14 +1051,6 @@ function testKefir(report, layerCount, done) {
 	em2.emit(2);
 	em3.emit(3);
 	em4.emit(4);
-}
-
-function testBacon(report, layerCount, done) {
-	//
-}
-
-function testRx(report, layerCount, done) {
-	//
 }
 
 </script>

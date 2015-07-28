@@ -6,7 +6,7 @@
 
 		var entryStub = { value: undefined };
 
-		Map = function Map(arr) {
+		Map = function Map(entries) {
 			this._entries = new Dictionary();
 			this._objectStamps = {};
 
@@ -15,9 +15,9 @@
 
 			this.size = 0;
 
-			if (arr) {
-				for (var i = 0, l = arr.length; i < l; i++) {
-					this.set(arr[i][0], arr[i][1]);
+			if (entries) {
+				for (var i = 0, l = entries.length; i < l; i++) {
+					this.set(entries[i][0], entries[i][1]);
 				}
 			}
 		};

@@ -11,7 +11,7 @@
 	/**
 	 * @type {Array<Array<cellx.Cell>|null>}
 	 */
-	var releasePlan = [];
+	var releasePlan = [[]];
 
 	var releasePlanIndex = 0;
 	var maxLevel = -1;
@@ -34,7 +34,17 @@
 				var cell = bundle.shift();
 
 				if (releasePlanIndex) {
+					var index = releasePlanIndex;
+
 					cell._recalc();
+
+					if (!releasePlan[index].length) {
+						releasePlan[index] = null;
+
+						if (releasePlanIndex) {
+							releasePlanIndex++;
+						}
+					}
 				} else {
 					var changeEvent = cell._changeEvent;
 
@@ -44,7 +54,7 @@
 					cell._changed = true;
 
 					if (cell._events.change) {
-						cell.emit(changeEvent);
+						cell._handleEvent(changeEvent);
 					}
 
 					var slaves = cell._slaves;
@@ -62,16 +72,14 @@
 							slave._fixed = false;
 						}
 					}
-				}
 
-				if (releasePlan[releasePlanIndex].length) {
-					continue;
-				} else {
-					releasePlan[releasePlanIndex] = null;
+					if (!releasePlan[0].length) {
+						releasePlanIndex++;
+					}
 				}
+			} else {
+				releasePlanIndex++;
 			}
-
-			releasePlanIndex++;
 		} while (releasePlanIndex <= maxLevel);
 
 		maxLevel = -1;
@@ -357,7 +365,7 @@
 					this._isChangeCancellable = false;
 				}
 			} else {
-				(releasePlan[0] || (releasePlan[0] = [])).push(this);
+				releasePlan[0].push(this);
 
 				releasePlanIndex = 0;
 
@@ -455,7 +463,11 @@
 				if (this._changeEvent) {
 					if (is(value, this._fixedValue) && this._isChangeCancellable) {
 						if (releasePlan[0].length == 1) {
-							releasePlan[0] = null;
+							releasePlan[0].pop();
+
+							if (!maxLevel) {
+								maxLevel = -1;
+							}
 						} else {
 							releasePlan[0].splice(releasePlan[0].indexOf(this), 1);
 						}
@@ -471,7 +483,7 @@
 						};
 					}
 				} else {
-					(releasePlan[0] || (releasePlan[0] = [])).push(this);
+					releasePlan[0].push(this);
 
 					releasePlanIndex = 0;
 
@@ -625,6 +637,8 @@
 		 * @typesign (err: Error);
 		 */
 		_handleError: function(err) {
+			this._logError(err);
+
 			this._handleErrorEvent({
 				type: 'error',
 				error: err
@@ -641,7 +655,7 @@
 
 			this._lastErrorEvent = evt;
 
-			this.emit(evt);
+			this._handleEvent(evt);
 
 			var slaves = this._slaves;
 

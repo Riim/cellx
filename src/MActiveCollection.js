@@ -8,7 +8,7 @@ var MActiveCollection;
 		 * @typesign (evt: cellx~Event);
 		 */
 		_onItemChange: function(evt) {
-			this.emit(evt);
+			this._handleEvent(evt);
 		},
 
 		/**

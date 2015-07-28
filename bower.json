@@ -1,7 +1,7 @@
 {
   "name": "cellx",
   "main": "cellx.js",
-  "version": "1.0.0-rc1",
+  "version": "1.0.0-rc2",
   "homepage": "https://github.com/Riim/cellx",
   "authors": [
     "Dmitry Vibe <riim@yandex.ru>"
