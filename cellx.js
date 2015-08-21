@@ -51,17 +51,14 @@
 	}
 
 	var KEY_UID = '__cellx_uid__';
-	var KEY_INNER = '__cellx_inner__';
 	var KEY_CELLS = '__cellx_cells__';
 
 	if (global.Symbol && typeof Symbol.iterator == 'symbol') {
 		KEY_UID = Symbol(KEY_UID);
-		KEY_INNER = Symbol(KEY_INNER);
 		KEY_CELLS = Symbol(KEY_CELLS);
 	}
 
 	cellx.KEY_UID = KEY_UID;
-	cellx.KEY_INNER = KEY_INNER;
 	cellx.KEY_CELLS = KEY_CELLS;
 
 	var uidCounter = 0;
@@ -146,15 +143,13 @@
 
 	// gulp-include
 	(function() {
-		var create = Object.create;
-	
 		/**
 		 * @class cellx.Dictionary
 		 * @typesign new (): cellx.Dictionary;
 		 */
 		var Dictionary;
 	
-		if (create && isNative(create)) {
+		if (isNative(create)) {
 			Dictionary = function() {
 				return create(null);
 			};
@@ -512,6 +507,12 @@
 	(function() {
 		var Dictionary = cellx.Dictionary;
 	
+		var KEY_INNER = '__cellx_EventEmitter_inner__';
+	
+		if (global.Symbol && typeof Symbol.iterator == 'symbol') {
+			KEY_INNER = Symbol(KEY_INNER);
+		}
+	
 		/**
 		 * @class cellx.EventEmitter
 		 * @extends {Object}
@@ -528,6 +529,8 @@
 			 */
 			this._events = new Dictionary();
 		}
+	
+		EventEmitter.KEY_INNER = KEY_INNER;
 	
 		assign(EventEmitter.prototype, {
 			/**
@@ -632,7 +635,7 @@
 					if (events[--i].context == context) {
 						var lst = events[i].listener;
 	
-						if (lst == listener || (lst.hasOwnProperty(KEY_INNER) && lst[KEY_INNER] == listener)) {
+						if (lst == listener || lst[KEY_INNER] === listener) {
 							events.splice(i, 1);
 							break;
 						}
@@ -1508,6 +1511,8 @@
 	(function() {
 		var nextTick = cellx.nextTick;
 		var EventEmitter = cellx.EventEmitter;
+	
+		var KEY_INNER = EventEmitter.KEY_INNER;
 	
 		var error = {
 			original: null

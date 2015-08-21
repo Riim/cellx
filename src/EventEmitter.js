@@ -5,6 +5,12 @@
 (function() {
 	var Dictionary = cellx.Dictionary;
 
+	var KEY_INNER = '__cellx_EventEmitter_inner__';
+
+	if (global.Symbol && typeof Symbol.iterator == 'symbol') {
+		KEY_INNER = Symbol(KEY_INNER);
+	}
+
 	/**
 	 * @class cellx.EventEmitter
 	 * @extends {Object}
@@ -21,6 +27,8 @@
 		 */
 		this._events = new Dictionary();
 	}
+
+	EventEmitter.KEY_INNER = KEY_INNER;
 
 	assign(EventEmitter.prototype, {
 		/**
@@ -125,7 +133,7 @@
 				if (events[--i].context == context) {
 					var lst = events[i].listener;
 
-					if (lst == listener || (lst.hasOwnProperty(KEY_INNER) && lst[KEY_INNER] == listener)) {
+					if (lst == listener || lst[KEY_INNER] === listener) {
 						events.splice(i, 1);
 						break;
 					}

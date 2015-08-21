@@ -51,17 +51,14 @@
 	}
 
 	var KEY_UID = '__cellx_uid__';
-	var KEY_INNER = '__cellx_inner__';
 	var KEY_CELLS = '__cellx_cells__';
 
 	if (global.Symbol && typeof Symbol.iterator == 'symbol') {
 		KEY_UID = Symbol(KEY_UID);
-		KEY_INNER = Symbol(KEY_INNER);
 		KEY_CELLS = Symbol(KEY_CELLS);
 	}
 
 	cellx.KEY_UID = KEY_UID;
-	cellx.KEY_INNER = KEY_INNER;
 	cellx.KEY_CELLS = KEY_CELLS;
 
 	var uidCounter = 0;

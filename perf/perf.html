@@ -11,9 +11,8 @@ p, hr, pre, blockquote, ol, ul, li, dl, dt, dd, figure, figcaption, div, main,
 a, em, strong, small, s, cite, q, dfn, abbr, data, time, code, var, samp, kbd, sub, sup, i, b, u, mark, ruby, rb, rt,
 	rtc, rp, bdi, bdo, span,
 ins, del,
-img,
-iframe, embed, object, param, video, audio, source, track,
-map, area, table, caption, colgroup, col, tbody, thead, tfoot, tr, td, th,
+img, iframe, embed, object, param, video, audio, source, track, map, area,
+table, caption, colgroup, col, tbody, thead, tfoot, tr, td, th,
 form, label, input, button, select, datalist, optgroup, option, textarea, keygen, output, progress, meter, fieldset,
 	legend {
 		margin: 0;
@@ -34,7 +33,7 @@ body {
 body {
 	background: white;
 	color: black;
-	line-height: 1.5;/* http://www.slideshare.net/maxdesign/line-height */
+	line-height: 1.5; /* http://www.slideshare.net/maxdesign/line-height */
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 	-webkit-text-size-adjust: 100%;
@@ -235,9 +234,6 @@ p .-textfield {
 .-checkbox,
 .-radiobox {
 	position: relative;
-	-webkit-user-select: none;
-	-moz-user-select: none;
-	-ms-user-select: none;
 	user-select: none;
 }
 
@@ -325,36 +321,27 @@ p .-textfield {
 	position: relative;
 	display: inline-block;
 	box-sizing: border-box;
-	padding: .4rem .9rem;
+	padding: .2rem 1rem;
 	outline: 0;
-	border: 0;
+	border: 1px solid transparent;
 	border-radius: 2px;
 	background-color: transparent;
-	box-shadow: 0 2px 4px hsla(0, 0%, 0%, .2);
-	color: hsla(0, 0%, 0%, .87);
+	color: #000;
 	text-align: center;
 	text-decoration: none;
 	text-shadow: none;
-	line-height: 1.3;
+	line-height: inherit;
 	cursor: pointer;
-	-webkit-transition:
-		box-shadow .4s cubic-bezier(.25,.8,.25,1),
-		background-color .4s cubic-bezier(.25,.8,.25,1),
-		-webkit-transform .4s cubic-bezier(.25,.8,.25,1);
 	transition:
 		box-shadow .4s cubic-bezier(.25,.8,.25,1),
 		background-color .4s cubic-bezier(.25,.8,.25,1),
 		transform .4s cubic-bezier(.25,.8,.25,1);
-	-webkit-user-select: none;
-	-moz-user-select: none;
-	-ms-user-select: none;
 	user-select: none;
 }
 
 .-btn:hover {
 	background-color: #fff;
 	box-shadow: 0 3px 6px hsla(0, 0%, 0%, .3);
-	-webkit-transform: translate3d(0, -1px, 0);
 	transform: translate3d(0, -1px, 0);
 }
 
@@ -362,9 +349,7 @@ p .-textfield {
 .-btn-selected {
 	background-color: hsl(0, 0%, 88%);
 	box-shadow: none;
-	-webkit-transition-duration: .05s;
 	transition-duration: .05s;
-	-webkit-transform: translate3d(0, 1px, 0);
 	transform: translate3d(0, 1px, 0);
 }
 
@@ -387,8 +372,6 @@ p .-textfield {
 	color: #fff;
 	opacity: .7;
 	cursor: default;
-	-webkit-transform: none;
-	-ms-transform: none;
 	transform: none;
 }
 
@@ -399,47 +382,42 @@ p .-textfield {
 	padding-bottom: .7rem;
 }
 
-/* default */
-
-.-btn-default {
-	box-shadow: none;
-	color: #000;
-}
-
 /* primary */
 
 .-btn-primary {
-	background-color: hsl(210, 94%, 54%);
+	background-color: hsl(210, 18%, 41%);
+	box-shadow: 0 2px 4px hsla(0, 0%, 0%, .2);
 	color: #fff;
 }
 
 .-btn-primary:hover {
-	background-color: hsl(210, 97%, 59%);
+	background-color: hsl(210, 21%, 46%);
 }
 
 .-btn-primary:active,
 .-btn-selected {
-	background-color: hsl(210, 100%, 64%);
+	background-color: hsl(210, 24%, 51%);
 }
 
 .-btn-primary:focus::after {
-	border-color: hsla(0, 0%, 100%, .7);
+	border-color: hsla(0, 0%, 100%, .6);
 }
 
 /* success */
 
 .-btn-success {
-	background-color: hsl(170, 92%, 38%);
+	background-color: hsl(210, 94%, 54%);
+	box-shadow: 0 2px 4px hsla(0, 0%, 0%, .2);
 	color: #fff;
 }
 
 .-btn-success:hover {
-	background-color: hsl(170, 94%, 40%);
+	background-color: hsl(210, 97%, 59%);
 }
 
 .-btn-success:active,
 .-btn-selected {
-	background-color: hsl(170, 96%, 42%);
+	background-color: hsl(210, 100%, 64%);
 }
 
 .-btn-success:focus::after {
@@ -450,6 +428,7 @@ p .-textfield {
 
 .-btn-danger {
 	background-color: hsl(350, 91%, 59%);
+	box-shadow: 0 2px 4px hsla(0, 0%, 0%, .2);
 	color: #fff;
 }
 
@@ -522,7 +501,7 @@ body {
 <hr>
 
 <p>
-	<button id="btnRunTest" class="-btn -btn-high -btn-primary">Run</button>
+	<button id="btnRunTest" class="-btn -btn-high -btn-success">Run</button>
 </p>
 
 <hr>

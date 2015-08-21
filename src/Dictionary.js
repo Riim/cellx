@@ -1,13 +1,11 @@
 (function() {
-	var create = Object.create;
-
 	/**
 	 * @class cellx.Dictionary
 	 * @typesign new (): cellx.Dictionary;
 	 */
 	var Dictionary;
 
-	if (create && isNative(create)) {
+	if (isNative(create)) {
 		Dictionary = function() {
 			return create(null);
 		};
