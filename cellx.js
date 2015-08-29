@@ -186,7 +186,6 @@
 		cellx.Dictionary = Dictionary;
 	})();
 	
-
 	(function() {
 		var Map = global.Map;
 	
@@ -437,7 +436,6 @@
 		cellx.Map = Map;
 	})();
 	
-
 	(function() {
 		/**
 		 * @example
@@ -499,7 +497,6 @@
 		cellx.nextTick = nextTick;
 	})();
 	
-
 	/**
 	 * @typedef {{ target?: Object, type: string }} cellx~Event
 	 */
@@ -721,7 +718,6 @@
 		cellx.EventEmitter = EventEmitter;
 	})();
 	
-
 	var MActiveCollection;
 	
 	(function() {
@@ -789,7 +785,6 @@
 		};
 	})();
 	
-
 	(function() {
 		var Map = cellx.Map;
 	
@@ -1009,7 +1004,6 @@
 		cellx.map = map;
 	})();
 	
-
 	(function() {
 		var Map = cellx.Map;
 	
@@ -1507,7 +1501,6 @@
 		cellx.list = list;
 	})();
 	
-
 	(function() {
 		var nextTick = cellx.nextTick;
 		var EventEmitter = cellx.EventEmitter;
@@ -2212,7 +2205,6 @@
 		cellx.Cell = Cell;
 	})();
 	
-
 	(function() {
 		var Map = cellx.Map;
 		var Cell = cellx.Cell;
@@ -2284,5 +2276,4 @@
 		};
 	})();
 	
-
 })();
