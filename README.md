@@ -1,33 +1,39 @@
 # cellx
 
-Сверхбыстрая реализация реактивности для javascript.
+Ultra-fast implementation of reactivity for javascript.
 
-## Где достать
+[ [Этот документ на русском](https://github.com/Riim/cellx/blob/master/README.ru.md) ]
 
-Установить через `npm`:
+## Installation
+
+You can currently install the package as a npm package or bower component.
+
+### NPM
+
+The following command installs cellx as a npm package:
 ```
 npm install cellx --save
 ```
 
-или через `bower`:
+### Bower
+
+The following command installs cellx as a bower component that can be used in the browser:
 ```
 bower install cellx --save
 ```
 
-или скачать файлом: [ткнименя](https://raw.githubusercontent.com/Riim/cellx/master/cellx.js)
+## Browser support
 
-## Поддержка браузеров
-
-Все актуальные, IE9+.  
-Для работы в IE8 нужно добавить полифил для
+cellx supports IE9 and above and all modern browsers.  
+To work in IE8 need add polyfill for
 [Array#indexOf](https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Global_Objects/Array/indexOf).
 
-## Пример использования
+## Example
 
 ```js
 var user = {
-    firstName: cellx('Матроскин'),
-    lastName: cellx('Кот'),
+    firstName: cellx('Matroskin'),
+    lastName: cellx('Cat'),
 
     fullName: cellx(function() {
         return this.firstName() + ' ' + this.lastName();
@@ -39,24 +45,25 @@ user.fullName('subscribe', function() {
 });
 
 console.log(user.fullName());
-// => 'Матроскин Кот'
+// => 'Matroskin Cat'
 
-user.firstName('Шарик');
-user.lastName('Пёс');
-// => 'fullName: Шарик Пёс'
+user.firstName('Sharik');
+user.lastName('Dog');
+// => 'fullName: Sharik Dog'
 ```
 
-Несмотря на то, что изменились две зависимости ячейки `fullName`, обработчик её изменения сработал только один раз.  
-Важной особенностью cellx-а является то, что он старается максимально избавиться как от лишних вызовов
-обработчиков изменений, так и от лишних вызовов расчётных формул зависимых ячеек. В сочетании с ещё некоторыми особыми
-оптимизациями это приводит к идеальной скорости расчёта сложнейших сеток зависимостей.  
-В одном из тестов, который используется для замера производительности, генерируется сетка из множества "слоёв",
-каждый из которых состоит из 4-x ячеек. Ячейки вычисляются из ячеек предыдущего слоя (кроме самого первого, он содержит
-исходные значения) по формуле A2=B1, B2=A1-C1, C2=B1+D1, D2=C1. Далее запоминается начальное время, меняются значения
-всех ячеек первого слоя и замеряется время, через которое все ячейки последнего слоя обновятся.
-Результаты теста (в милисекундах) с разным числом слоёв (для Google Chrome 44.0.2403.107 (64-bit)):
+Despite the fact that the two dependencies of the cell `fullName` has been changed, event handler worked only once.  
+Important feature of cellx is that it tries to get rid of unnecessary calls
+of the event handlers as well as of unnecessary calls of the dependent cells calculation formulas.
+In combination with some special optimizations, this leads to an ideal speed of calculation of
+the complex dependencies networks.  
+One test, which is used for measuring the performance, generates grid with multiply "layers"
+each of which is composed of 4 cells. Cells are calculated from the previous layer of cells (except the first one,
+which contains initial values) by the formula A2=B1, B2=A1-C1, C2=B1+D1, D2=C1. After that start time is stored,
+values of all first layer cells are changed and time needed to update all last layer cells is measured.
+Test results (in milliseconds) for different number of layers (for Google Chrome 44.0.2403.107 (64-bit)):
 
-| Number of computed layers ↓ \ Library → | cellx | [Knockout](http://knockoutjs.com/) | [AngularJS](https://angularjs.org/) | [jin-atom](https://github.com/nin-jin/pms-jin/) | [Warp9](http://rystsov.info/warp9/)               | [Kefir.js](https://rpominov.github.io/kefir/) |
+| Number of computed layers v \ Library > | cellx | [Knockout](http://knockoutjs.com/) | [AngularJS](https://angularjs.org/) | [jin-atom](https://github.com/nin-jin/pms-jin/) | [Warp9](http://rystsov.info/warp9/)               | [Kefir.js](https://rpominov.github.io/kefir/) |
 |-----------------------------------------|-------|------------------------------------|-------------------------------------|-------------------------------------------------|---------------------------------------------------|-----------------------------------------------|
 | 10                                      | 1     | 5                                  | 1                                   | 1                                               | 1                                                 | 30                                            |
 | 15                                      | 1     | 40                                 | 3                                   | 1                                               | 2                                                 | 250                                           |
@@ -67,15 +74,15 @@ user.lastName('Пёс');
 | 5000                                    | 25    | >300000                            | >300000                             | 260                                             | first call - 500, subsequent calls - >500         | >300000                                       |
 | 25000                                   | 120   | >300000                            | >300000                             | first call - 5000                               | first call - 2500, subsequent calls - crashes tab | >300000                                       |
 
-Исходники теста можно найти в папке [perf](https://github.com/Riim/cellx/tree/master/perf).  
-Плотность связей в реальных приложениях обычно ниже чем в данном тесте, то есть если в тесте определённая задержка
-появляется на 100 вычисляемых ячейках (25 слоёв), то в реальном приложении подобная задержка будет либо
-на большем числе ячеек, либо в формулах ячеек будут какие-то сложные расчёты (например, вычисление одного массива
-из другого).
+Test sources can be found in the folder [perf](https://github.com/Riim/cellx/tree/master/perf).  
+Density of connections in real applications is usually lower than in the present test, that is,
+if a certain delay in the test is visible in 100 calculated cells (25 layers), in a real application,
+this delay will either be visible in the greater number of cells, or cells formulas will include
+some complex calculations (e.g., computation of one array from other).
 
-## Использование
+## Usage
 
-Ячейки можно сохранять в переменных:
+Cells can be stored in the variables:
 
 ```js
 var num = cellx(1);
@@ -85,7 +92,7 @@ console.log(plusOne());
 // => 2
 ```
 
-Создавать в конструкторе класса:
+Create in the class constructor:
 
 ```js
 function User(name) {
@@ -93,13 +100,13 @@ function User(name) {
     this.upperName = cellx(function() { return this.name().toUpperCase(); });
 }
 
-var user = new User('Матроскин');
+var user = new User('Matroskin');
 
 console.log(user.upperName());
-// => 'МАТРОСКИН'
+// => 'MATROSKIN'
 ```
 
-Объявление ячейки в прототипе класса тоже допустимо:
+Announcement of the cell in the class prototype is also acceptable:
 
 ```js
 function User(name) {
@@ -110,13 +117,13 @@ User.prototype = {
     upperName: cellx(function() { return this.name().toUpperCase(); })
 };
 
-var user = new User('Матроскин');
+var user = new User('Matroskin');
 
 console.log(user.upperName());
-// => 'МАТРОСКИН'
+// => 'MATROSKIN'
 ```
 
-В javascript-е есть фича, не примитивные типы, объявленные в прототипе, разделяются всеми экземплярами класса:
+Javascript has a feature: non-primitive types, declared in the prototype, are shared by all instances of the class:
 
 ```js
 function User(name) {
@@ -127,23 +134,23 @@ User.prototype = {
     friends: []
 };
 
-var user1 = new User('Матроскин');
-var user2 = new User('Шарик');
+var user1 = new User('Matroskin');
+var user2 = new User('Sharik');
 
-user1.friends.push(new User('Фёдор'));
+user1.friends.push(new User('Fedor'));
 
 console.log(user1.friends.length);
 // => 1
 
 console.log(user2.friends.length);
 // => 1
-// Опачки!
+// Hola!
 
 console.log(user1.friends == user2.friends);
 // => true
 ```
 
-cellx создаёт отдельные копии таких значений для каждого экземпляра:
+cellx creates a separate copy of these values for each instance:
 
 ```js
 function User(name) {
@@ -154,10 +161,10 @@ User.prototype = {
     friends: cellx([])
 };
 
-var user1 = new User('Матроскин');
-var user2 = new User('Шарик');
+var user1 = new User('Matroskin');
+var user2 = new User('Sharik');
 
-user1.friends().push(new User('Фёдор'));
+user1.friends().push(new User('Fedor'));
 
 console.log(user1.friends().length);
 // => 1
@@ -170,26 +177,26 @@ console.log(user1.friends() == user2.friends());
 // => false
 ```
 
-Копирование делается так:  
-- если есть метод `clone`, вернуть результат его вызова;
-- если массив, скопировать его через `slice` и вернуть копию;
-- если дата, скопировать её через `new Date(value)` и вернуть копию;
-- если регэксп, скопировать его через `new RegExp(value)` и вернуть копию;
-- скопировать свойства в пустой объект (поверхностное копирование) и вернуть его.
+Copying is done as follows:  
+- if there is a `clone` method, return the result of its calling;
+- if there is an array, copy it through `slice` and return a copy;
+- if there is a date, copy it through the `new Date (value)` and return a copy;
+- if there is a regexp, copy it through the `new RegExp (value)` and return a copy;
+- copy the properties into an empty object (superficial copy) and return it.
 
-То есть определяя метод `clone` для вашего кастомного типа, вы подсказываете cellx-у как правильно копировать
-его (кастомного типа) экземпляры.
+That is, in order to define a `clone` method for your custom type, you must tell cellx how to copy
+his (custom type's) items.
 
-### Опции
+### Options
 
-При создании ячейки можно передать некоторые опции:
+When you create a cell, you can pass some options:
 
 #### read
 
-Дополнительная обработка значения при чтении:
+Additional processing of value during reading:
 
 ```js
-// массив, который не получится случайно испортить, портиться будет копия
+// array that you can't mess up accidentally, the messed up thing will be a copy
 var arr = cellx([1, 2, 3], {
     read: function(arr) { return arr.slice(); }
 });
@@ -205,7 +212,7 @@ console.log(arr()[0]);
 
 #### write
 
-Используется для создания записываемых вычисляемых ячеек:
+Used to create recordable calculated cells:
 
 ```js
 function User() {
@@ -226,19 +233,19 @@ function User() {
 
 var user = new User();
 
-user.fullName('Матроскин Кот');
+user.fullName('Matroskin Cat');
 
 console.log(user.firstName());
-// => 'Матроскин'
+// => 'Matroskin'
 console.log(user.lastName());
-// => 'Кот'
+// => 'Cat'
 ```
 
 #### validate
 
-Валидирует значение при записи и вычислении.
+Validates the value during recording and calculating.
 
-Валидация при записи в ячейку:
+Validation during recording into the cell:
 
 ```js
 var num = cellx(5, {
@@ -250,7 +257,7 @@ var num = cellx(5, {
 });
 
 try {
-    num('Йа строчка');
+    num('I string');
 } catch (err) {
     console.log(err.message);
     // => 'Oops!'
@@ -260,7 +267,7 @@ console.log(num());
 // => 5
 ```
 
-Валидация при вычислении ячейки:
+Validation during the calculation of the cell:
 
 ```js
 var value = cellx(5);
@@ -279,11 +286,11 @@ num('subscribe', function(err) {
     console.log(err.message);
 });
 
-value('Йа строчка');
+value('I string');
 // => 'Oops!'
 
 console.log(value());
-// => 'Йа строчка'
+// => 'I string'
 
 console.log(num());
 // => 5
@@ -291,19 +298,19 @@ console.log(num());
 
 #### computed
 
-По умолчанию, если первый аргумент cellx-а - обычная функция, то ячейка определяется как вычисляемая, а переданная
-функция используется как формула для вычисления значения ячейки. Если же необходимо создать ячейку с функцией
-в качестве значения, то можно либо установить значение уже после инициализации ячейки, либо передать опцию `computed`
-со значением `false`:
+By default, if the first argument of cell-a is a normal function, the cell is defined as a calculated and passed
+function is used as a formula to calculate the value of the cell. But if you need to create cell with a function
+as a value, you can either set a value after the initialization of the cell or pass the option `computed`
+with the value `false`:
 
 ```js
 var value = cellx(Number, { computed: false });
 ```
 
-И наоборот, функции могут быть экземплярами какого-то кастомного типа, для их детекции им обычно переопределяют
-свойство `constructor` (в ecmascript 6 можно будет менять поведение `instanceof` с помощью `Symbol.hasInstance`).
-Функции с переопределённым `constructor`-ом, по умолчанию, засчитываются как обычные значения.
-Экземпляры cellx-а сами являются такими:
+And vice versa, functions may be instances of some custom type and for their detection they usually get
+the property `constructor` (ecmascript 6 will allow to change the behavior of` instanceof` using `Symbol.hasInstance`).
+Functions redefined as `constructor` are counted as usual values by default.
+Cellx instances are like this:
 
 ```js
 var num = cellx(5);
@@ -316,7 +323,7 @@ console.log(
 // => true true false
 ```
 
-в результате вы можете ложить одну ячейку во-внутрь другой:
+as a result, you can put one cell inside another:
 
 ```js
 var num = cellx(5);
@@ -326,8 +333,8 @@ console.log(container()());
 // => 5
 ```
 
-Если же кастомная функция всё равно должна быть засчитана как формула для вычисляемой ячейки, то нужно передать
-опцию `computed` со значением `true`:
+If the custom function still has to be counted as a formula for the calculated cell, you need to pass
+option `computed` with a value` true`:
 
 ```js
 function FormulaSum(a, b) {
@@ -348,16 +355,16 @@ console.log(sum());
 // => 15
 ```
 
-### Методы
+### Methods
 
-Вызов метода ячейки делается несколько необычно - вызывается сама ячейка, первым аргументом передаётся имя метода,
-остальными - аргументы. При этом аргументов должно быть не менее одного, иначе вызов ячейки будет засчитан как её
-запись. Если у метода нет аргументов, нужно при вызове дополнительно передавать `void 0` или для краткости
-просто `0` (см. `dispose`).
+Calling the cell method is somewhat unusual - the cell itself is called, the first argument passes the method name,
+rest ones - the arguments. In this case, there must be at least one argument, or call of the cell will be counted as its
+recording. If the method has no arguments, you need to transfer an additional `void 0` with a call or to shorten it
+just `0` (see `dispose`).
 
 #### on
 
-Добавляет обработчик события. Из событий есть `change` и `error`:
+Adds an event handler. Among the events there are `change` and ` error`:
 
 ```js
 var num = cellx(5);
@@ -372,11 +379,11 @@ num(10);
 
 #### off
 
-Снимает ранее добавленный обработчик события.
+Removes previously added event handler.
 
 #### subscribe
 
-Подписывает на события `change` и `error`. В обработчик первым аргументом приходит объект ошибки, вторым - событие.
+Subscribes to the events `change` and ` error`. First argument comes into handler is an error object, second - an event.
 
 ```js
 user.fullName('subscribe', function(err, evt) {
@@ -390,31 +397,31 @@ user.fullName('subscribe', function(err, evt) {
 
 #### unsubscribe
 
-Отписывает от событий `change` и `error`.
+Unsubscribes from events `change` and `error`.
 
-#### dispose или как убить ячейку
+#### dispose or how to kill the cell
 
-Во многих движках реактивного программирования вычисляемую ячейку (атом, observable-свойство) нужно воспринимать
-как обычный обработчик изменения других ячеек, то есть, что бы "убить" ячейку, недостаточно просто снять с неё все
-обработчики и потерять на неё ссылку, её саму тоже нужно отвязать от её зависимостей.
-В cellx-е вычисляемые ячейки постоянно отслеживают наличие обработчиков на них самих и всех своих потомках,
-и в случае их (обработчиков) отсутствия переходят в режим пассивного обновления, то есть сами отписываются от своих
-зависимостей и вычисляются непосредственно при чтении. Таким образом, для "убийства" вычисляемой ячейки нужно просто
-снять с неё все добавленные ранее обработчики и забыть ссылку на неё, о других ячейках, из которых она вычисляется
-или вычисляемых из неё, думать не нужно. После этого сборщик мусора всё почистит.
+In many reactivity engines calculated cell (atom, observable-property) should be seen
+as a normal event handler for other cells, that is, for "killing" the cell it is not enough to simply remove
+all handlers from it and lose the link to it, it is also necessary to decouple it from its dependencies.
+Calculated cells in cellx constantly monitor the presence of handlers for themselves and all their descendants,
+and in cases of their (handlers) absence went to the passive updates mode, i.e. unsubscribe themselves from their
+dependencies and are evaluated immediately upon reading. Thus, to "kill" of the cell you just calculated
+remove from it all handlers added before and forget the link to it; you do not need to think about the other cells,
+from which it is calculated or which are calculated from it. After this, garbage collector will clean everything.
 
-На всякий случай можно вызвать `dispose`:
+You can call the `dispose`, just in case:
 
 ```js
 user.name('dispose', 0);
 ```
 
-это снимет все обработчики не только с самой ячейки, но и со всех вычисляемых из неё ячеек,
-при отсутствии ссылок "умрёт" вся ветка зависимостей.
+This will remove all the handlers, not only from the cell itself, but also from all cells calculated from it,
+and in the absence of links all branch of dependencies will "die".
 
-### Схлопывание и отбрасывание событий
+### Collapse and discarding of events
 
-Для минимизации перерисовки UI cellx может "схлопывать" несколько событий в одно. Ссылка на предыдущее находится в
+To minimize redraw of UI cellx may "collapse" several events into one. Link to the previous event is stored in
 `evt.prev`:
 
 ```js
@@ -442,7 +449,7 @@ num(20);
 // }
 ```
 
-В ситуации когда ячейка приходит к исходному значению до генерации события, она совсем его не генерит:
+In cases when the cell comes to the initial value before generation of event, it does not generate it at all:
 
 ```js
 var num = cellx(5);
@@ -453,11 +460,11 @@ num('on', 'change', function(evt) {
 
 num(10);
 num(15);
-num(5); // возвращаем исходное значение
-// а ничегошеньки здесь нет
+num(5); // return the original value
+// but there's nothing here
 ```
 
-При изменении нескольких зависимостей вычисляемой ячейки, она вычисляется лишь раз и событие создаётся одно:
+Upon changing the number of the calculated cell dependencies, it is evaluated only once and creates only one event:
 
 ```js
 var inited = false;
@@ -486,9 +493,9 @@ num2(15);
 // }
 ```
 
-#### Динамическая актуализация зависимостей
+#### Dynamic actualisation of dependencies
 
-Формула вычисляемой ячейки может быть написана так, что набор зависимостей может со временем меняться. Например:
+Calculated cell formula can be written so that a set of dependencies may change over time. For example:
 
 ```js
 var user = {
@@ -501,18 +508,18 @@ var user = {
 };
 ```
 
-Здесь пока `firstName` является пустой строкой, ячейка `name` подписана и на `firstName` и на `lastName`,
-так как изменение любого из них приведёт к изменению её значения. Если же задать `firstName`-у какую-то не пустую
-строку, то, при перевычислении значения `name`, до чтения `lastName` в формуле просто не дойдёт,
-то есть значение ячейки `name` с этого момента уже никак не зависит от `lastName`.
-В таких случаях ячейки автоматически отписываются от незначимых для них зависимостей и не перевычисляются
-при их изменении. В дальнейшем, если `firstName` снова станет пустой строкой, ячейка `name` вновь подпишется
-на `lastName`.
+There, while `firstName` is still empty string, cell` name` is signed for `firstName` and` lastName`,
+and change in any of them will lead to the change in its value. If you assign to the `firstName` some not empty
+string, then during recalculation of value `name` it simply will not come to reading ` lastName` in the formula,
+i.e. the value of the cell `name` from this moment will not depend on` lastName`.
+In such cases, cells automatically unsubscribe from dependencies insignificant for them and are not recalculated
+when they change. In the future, if the `firstName` again become an empty string, the cell` name` will re-subscribe
+to the `lastName`.
 
-### Коллекции
+### Collections
 
-Если в ячейку записать экземпляр класса наследующего от `cellx.EventEmitter`, то ячейка подпишется на его
-событие `change` и будет выдавать его за своё:
+If you record to the cell an instance of class which inherits of `cellx.EventEmitter`,
+then the cell will subscribe to its `change` event and will claim it as own:
 
 ```js
 var value = cellx(new cellx.EventEmitter());
@@ -525,12 +532,12 @@ value().emit({ type: 'change', ok: true });
 // => true
 ```
 
-За счёт этого можно создавать свои коллекции, при обновлении которых будет обновляться ячейка, содержащая их
-и перевычисляться зависимые от неё ячейки. Две таких коллекции уже есть в cellx-е:
+Due to this, you can create your collections, upon updating those collections you will update the cell containing them
+and dependent cells will be recalculated. Two such collections already is added to the cellx:
 
 #### cellx.ActiveMap
 
-Короткий синтаксис для создания:
+The short syntax to create:
 
 ```js
 var map = cellx.map({
@@ -540,27 +547,28 @@ var map = cellx.map({
 });
 ```
 
-`cellx.ActiveMap` полностью повторяет
-[Map](https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Global_Objects/Map) из ecmascript 6,
-за исключением следующих отличий:
-- наследует от `cellx.EventEmitter`-а и генерирует событие `change` при изменении своих записей;
-- имеет метод `contains`, позволяющий узнать, содержится ли значение в map-е без перебора всех его значений;
-- содержит метод `clone`, создающий копию map-а;
-- данные при инициализации может принимать не только в виде массива, но и в виде объекта (в этом случае ключами
-будут только строки, ключевое отличие объекта от Map-а как раз в том, что ключи в Map-е могут быть любого типа)
-или другого map-а.
+`cellx.ActiveMap` repeats
+[Map](https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Global_Objects/Map) from ecmascript 6,
+except for the following differences:
+- inherits of `cellx.EventEmitter` and generates an event `change` when changing their records;
+- has a method `contains`, which let you know whether or not the value is contained in the map,
+without going over all of its values;
+- has a method `clone`, which creates a copy of map;
+- data on initialization can be not only an array but also in the form of an object (in this case,
+only strings will be counted as keys, and the key difference between object and Map is in
+the fact that the keys in the Map can be of any type) or another map.
 
 #### cellx.ActiveList
 
-Короткий синтаксис для создания:
+Short creation syntax:
 
 ```js
 var list = cellx.list([1, 2, 3]);
 ```
 
-Список также как и `cellx.Map` генерирует событие `change` при любом изменении своих записей.
+Like `cellx.Map`, list generates an event `change` upon any change of its records.
 
-При инициализации список может принимать `comparator`, с помощью которого будет происходить сортировка его значений:
+During initialization the list may take option `comparator`, which will implement the assortment of its values:
 
 ```js
 var list = cellx.list([
@@ -584,7 +592,7 @@ console.log(list.toArray());
 // => [{ x: -100 }, { x: 1 }, { x: 5 }, { x: 7 }, { x: 10 }, { x: 100 }]
 ```
 
-Если вместо `comparator`-а передать опцию `sorted` со значением `true`, то будет использован стандартный `comparator`:
+If instead of `comparator` you pass the option `sorted` with the value `true`, it will use the standard` comparator`:
 
 ```js
 var list = cellx.list([5, 1, 10], { sorted: true });
@@ -598,154 +606,154 @@ console.log(list.toArray());
 // => [-100, 1, 5, 7, 10, 100]
 ```
 
-##### Свойства cellx.ActiveList
+##### Properties of cellx.ActiveList
 
 ###### length
 
-Длинна списка. Только для чтения.
+Length of the list. Read-only.
 
 ###### comparator
 
-Функция для сравнения значений в сортированном списке. Только для чтения.
+Function for comparing values in the sorted list. Read-only.
 
 ###### sorted
 
-Является ли список сортированным. Только для чтения.
+Whether or not the list is sorted. Read-only.
 
-##### Методы cellx.ActiveList
+##### Methods of cellx.ActiveList
 
-Важным отличем списка от массива, является то, что список не может содержать так называемых "дырок",
-то есть при попытке прочитать или установить значение по индексу вне существующего диапазона элементов,
-будет генерироваться исключение.
-Расширение диапазона (добавление элементов) происходит через методы `add`, `addRange`, `insert` и `insertRange`.
-При этом у последних двух передаваемый `index` не может быть больше длинны списка.
+Important difference between list and array is that the list can't contain so-called "holes"
+that is, when it will try to read or set the value of the index beyond the existing range of elements,
+an exception will be generated.
+Range extension (adding of items) occurs through methods `add`,` addRange`, `insert` and `insertRange`.
+In such case, in the last two methods passed `index` can not be longer than the length of the list.
 
-Сортированный список предполагает, что его значения всегда находятся в отсортированном порядке. Методы
-`set`, `setRange`, `insert` и `insertRange` идут вразрез с этим утверждением, они либо будут ломать правильный порядок
-сортировки, либо, для сохранения этого порядка, будут устанавливать/вставлять мимо указанного индекса, то есть
-работать неверно. Поэтому при вызове на сортированном списке они всегда генерируют исключение. Добавить значения в
-отсортированный список можно методами `add` и `addRange`, либо при инициализации списка.
+Sorted list suggests that its values are always in sorted order. Methods
+`set`,` setRange`, `insert` and` insertRange` are contrary to this statement, they either will break the correct order
+of sorting or (for preservation of this order) will install/paste past the specified index, i.e.
+will not work properly. Therefore, when you call the sorted list, they always generate an exception. It is possible to
+add values to the sorted list through the methods `add` and `addRange`, or during initialization of the list.
 
 ###### contains
 
-Сигнатура вызова: `(value): boolean;`.
+Type signature: `(value): boolean;`.
 
-Проверяет содержится ли значение в списке. При большом колличестве значений в списке, может быть существенно быстрее
-чем `list.indexOf(value) != -1`.
+Checks if the value is in the list. In cases of a large amount of values in the list it may be significantly faster
+than `list.indexOf(value) != -1`.
 
 ###### indexOf
 
-Сигнатура вызова: `(value, fromIndex: int = 0): int;`.
+Type signature: `(value, fromIndex: int = 0): int;`.
 
 ###### lastIndexOf
 
-Сигнатура вызова: `(value, fromIndex: int = -1): int;`.
+Type signature: `(value, fromIndex: int = -1): int;`.
 
 ###### get
 
-Сигнатура вызова: `(index: int): *;`.
+Type signature: `(index: int): *;`.
 
 ###### getRange
 
-Сигнатура вызова: `(index: int = 0, count?: uint): Array;`.
+Type signature: `(index: int = 0, count?: uint): Array;`.
 
-При неуказанном `count`-е копирует до конца списка.
+If `count` is unspecified it makes copies till the end of the list.
 
 ###### set
 
-Сигнатура вызова: `(index: int, value): cellx.ActiveList;`.
+Type signature: `(index: int, value): cellx.ActiveList;`.
 
 ###### setRange
 
-Сигнатура вызова: `(index: int, items: Array): cellx.ActiveList;`.
+Type signature: `(index: int, items: Array): cellx.ActiveList;`.
 
 ###### add
 
-Сигнатура вызова: `(item): cellx.ActiveList;`.
+Type signature: `(item): cellx.ActiveList;`.
 
 ###### addRange
 
-Сигнатура вызова: `(items: Array): cellx.ActiveList;`.
+Type signature: `(items: Array): cellx.ActiveList;`.
 
 ###### insert
 
-Сигнатура вызова: `(index: int, item): cellx.ActiveList;`.
+Type signature: `(index: int, item): cellx.ActiveList;`.
 
 ###### insertRange
 
-Сигнатура вызова: `(index: int, items: Array): cellx.ActiveList;`.
+Type signature: `(index: int, items: Array): cellx.ActiveList;`.
 
 ###### remove
 
-Сигнатура вызова: `(item, fromIndex: int = 0): cellx.ActiveList;`.
+Type signature: `(item, fromIndex: int = 0): cellx.ActiveList;`.
 
-Удаляет первое вхождениие `item` в списке.
+Removes the first occurrence of `item` in the list.
 
 ###### removeAll
 
-Сигнатура вызова: `(item, fromIndex: int = 0): cellx.ActiveList;`.
+Type signature: `(item, fromIndex: int = 0): cellx.ActiveList;`.
 
-Удаляет все вхождениия `item` в списке.
+It removes all occurrences of `item` list.
 
 ###### removeAt
 
-Сигнатура вызова: `(index: int): cellx.ActiveList;`.
+Type signature: `(index: int): cellx.ActiveList;`.
 
 ###### removeRange
 
-Сигнатура вызова: `(index: int = 0, count?: uint): cellx.ActiveList;`.
+Type signature: `(index: int = 0, count?: uint): cellx.ActiveList;`.
 
-При неуказанном `count`-е удалит всё до конца списка.
+If `count` is unspecified it will remove everything till the end of the list.
 
 ###### clear
 
-Сигнатура вызова: `(): cellx.ActiveList;`.
+Type signature: `(): cellx.ActiveList;`.
 
 ###### join
 
-Сигнатура вызова: `(separator: string = ','): string;`.
+Type signature: `(separator: string = ','): string;`.
 
 ###### forEach
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ActiveList), context: Object = global);`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ActiveList), context: Object = global);`.
 
 ###### map
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ActiveList): *, context: Object = global): Array;`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ActiveList): *, context: Object = global): Array;`.
 
 ###### filter
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ActiveList): boolean, context: Object = global): Array;`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ActiveList): boolean, context: Object = global): Array;`.
 
 ###### every
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ActiveList): boolean, context: Object = global): boolean;`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ActiveList): boolean, context: Object = global): boolean;`.
 
 ###### some
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ActiveList): boolean, context: Object = global): boolean;`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ActiveList): boolean, context: Object = global): boolean;`.
 
 ###### reduce
 
-Сигнатура вызова: `(cb: (accumulator: *, item, index: uint, arr: cellx.ActiveList): *, initialValue?): *;`.
+Type signature: `(cb: (accumulator: *, item, index: uint, arr: cellx.ActiveList): *, initialValue?): *;`.
 
 ###### reduceRight
 
-Сигнатура вызова: `(cb: (accumulator: *, item, index: uint, arr: cellx.ActiveList): *, initialValue?): *;`.
+Type signature: `(cb: (accumulator: *, item, index: uint, arr: cellx.ActiveList): *, initialValue?): *;`.
 
 ###### clone
 
-Сигнатура вызова: `(): cellx.ActiveList;`.
+Type signature: `(): cellx.ActiveList;`.
 
 ###### toArray
 
-Сигнатура вызова: `(): Array;`.
+Type signature: `(): Array;`.
 
 ###### toString
 
-Сигнатура вызова: `(): string;`.
+Type signature: `(): string;`.
 
-## Использованные материалы
+## List of references
 
-При разработке были использованы идеи [Дмитрия Карловского](https://github.com/nin-jin/)
-из статьи [Атом — минимальный кирпичик FRP приложения](http://habrahabr.ru/post/235121/).
+Ideas of [Dmitry Karlovsky](https://github.com/nin-jin/) from article
+[Атом — минимальный кирпичик FRP приложения](http://habrahabr.ru/post/235121/) have been used in the development.
