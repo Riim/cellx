@@ -1,10 +1,13 @@
 /**
- * @typedef {{ target?: Object, type: string }} cellx~Event
+ * @typedef {{
+ *     target?: Object,
+ *     type: string,
+ *     bubbles?: boolean,
+ *     isPropagationStopped?: boolean
+ * }} cellx~Event
  */
 
 (function() {
-	var Dictionary = cellx.Dictionary;
-
 	var KEY_INNER = '__cellx_EventEmitter_inner__';
 
 	if (global.Symbol && typeof Symbol.iterator == 'symbol') {
@@ -14,23 +17,25 @@
 	/**
 	 * @class cellx.EventEmitter
 	 * @extends {Object}
-	 * @typesign new (): cellx.EventEmitter;
+	 * @typesign new (parent: cellx.EventEmitter): cellx.EventEmitter;
 	 */
-	function EventEmitter() {
-		/**
-		 * @type {cellx.EventEmitter}
-		 */
-		this.parent = null;
+	var EventEmitter = createClass({
+		Static: {
+			KEY_INNER: KEY_INNER
+		},
 
-		/**
-		 * @type {cellx.Dictionary<Array<{ listener: (evt: cellx~Event): boolean|undefined, context: Object }>>}
-		 */
-		this._events = new Dictionary();
-	}
+		constructor: function(parent) {
+			/**
+			 * @type {cellx.EventEmitter}
+			 */
+			this.parent = parent || null;
 
-	EventEmitter.KEY_INNER = KEY_INNER;
+			/**
+			 * @type {Object<Array<{ listener: (evt: cellx~Event): boolean|undefined, context: Object }>>}
+			 */
+			this._events = Object.create(null);
+		},
 
-	assign(EventEmitter.prototype, {
 		/**
 		 * @typesign (
 		 *     type: string,
@@ -86,7 +91,7 @@
 					this._off(type, listener, context);
 				}
 			} else if (this._events) {
-				this._events = new Dictionary();
+				this._events = Object.create(null);
 			}
 
 			return this;
@@ -100,16 +105,22 @@
 		 * );
 		 */
 		_on: function(type, listener, context) {
-			var events = (this._events || (this._events = new Dictionary()))[type];
+			var index = type.indexOf(':');
 
-			if (!events) {
-				events = this._events[type] = [];
+			if (index != -1) {
+				this['_' + type.slice(index + 1)]('on', type.slice(0, index), listener, context);
+			} else {
+				var events = (this._events || (this._events = Object.create(null)))[type];
+
+				if (!events) {
+					events = this._events[type] = [];
+				}
+
+				events.push({
+					listener: listener,
+					context: context || this
+				});
 			}
-
-			events.push({
-				listener: listener,
-				context: context || this
-			});
 		},
 		/**
 		 * @typesign (
@@ -119,29 +130,33 @@
 		 * );
 		 */
 		_off: function(type, listener, context) {
-			var events = this._events && this._events[type];
+			var index = type.indexOf(':');
 
-			if (!events) {
-				return;
-			}
+			if (index != -1) {
+				this['_' + type.slice(index + 1)]('off', type.slice(0, index), listener, context);
+			} else {
+				var events = this._events && this._events[type];
 
-			if (!context) {
-				context = this;
-			}
+				if (!events) {
+					return;
+				}
 
-			for (var i = events.length; i;) {
-				if (events[--i].context == context) {
-					var lst = events[i].listener;
+				if (!context) {
+					context = this;
+				}
 
-					if (lst == listener || lst[KEY_INNER] === listener) {
+				for (var i = events.length; i;) {
+					var evt = events[--i];
+
+					if (evt.context == context && (evt.listener == listener || evt.listener[KEY_INNER] === listener)) {
 						events.splice(i, 1);
 						break;
 					}
 				}
-			}
 
-			if (!events.length) {
-				delete this._events[type];
+				if (!events.length) {
+					delete this._events[type];
+				}
 			}
 		},
 
@@ -165,7 +180,7 @@
 		},
 
 		/**
-		 * @typesign (evt: { type: string }): cellx~Event;
+		 * @typesign (evt: cellx~Event): cellx~Event;
 		 * @typesign (type: string): cellx~Event;
 		 */
 		emit: function(evt) {
@@ -174,7 +189,7 @@
 					target: this,
 					type: evt
 				};
-			} else if (evt.target === undefined) {
+			} else if (!evt.target) {
 				evt.target = this;
 			}
 
@@ -184,7 +199,7 @@
 		},
 
 		/**
-		 * @typesign (evt: { target: cellx.EventEmitter, type: string });
+		 * @typesign (evt: cellx~Event);
 		 */
 		_handleEvent: function(evt) {
 			var events = this._events && this._events[evt.type];

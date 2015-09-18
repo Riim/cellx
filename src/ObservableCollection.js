@@ -1,9 +1,19 @@
-var MActiveCollection;
+var ObservableCollection;
 
 (function() {
+	var Map = cellx.Map;
 	var EventEmitter = cellx.EventEmitter;
 
-	MActiveCollection = {
+	ObservableCollection = createClass({
+		Extends: EventEmitter,
+
+		constructor: function() {
+			/**
+			 * @type {Map<*, uint>}
+			 */
+			this._valueCounts = new Map();
+		},
+
 		/**
 		 * @typesign (evt: cellx~Event);
 		 */
@@ -39,7 +49,7 @@ var MActiveCollection;
 			if (valueCount > 1) {
 				valueCounts.set(value, valueCount - 1);
 			} else {
-				valueCounts['delete'](value);
+				valueCounts.delete(value);
 
 				if (this.adoptsItemChanges && value instanceof EventEmitter) {
 					value.off('change', this._onItemChange, this);
@@ -53,14 +63,12 @@ var MActiveCollection;
 		 */
 		dispose: function() {
 			if (this.adoptsItemChanges) {
-				var onItemChange = this._onItemChange;
-
 				this._valueCounts.forEach(function(value) {
 					if (value instanceof EventEmitter) {
-						value.off('change', onItemChange, this);
+						value.off('change', this._onItemChange, this);
 					}
 				}, this);
 			}
 		}
-	};
+	});
 })();

@@ -132,87 +132,88 @@
 	 *     computed?: true
 	 * }): cellx.Cell;
 	 */
-	function Cell(value, opts) {
-		EventEmitter.call(this);
+	var Cell = createClass({
+		Extends: EventEmitter,
 
-		if (!opts) {
-			opts = {};
-		}
+		constructor: function(value, opts) {
+			EventEmitter.call(this);
 
-		this.owner = opts.owner || null;
-
-		this.computed = typeof value == 'function' &&
-			(opts.computed !== undefined ? opts.computed : value.constructor == Function);
-
-		this._value = undefined;
-		this._fixedValue = undefined;
-		this.initialValue = undefined;
-		this._formula = null;
-
-		this._read = opts.read || null;
-		this._write = opts.write || null;
-
-		this._validate = opts.validate || null;
-
-		/**
-		 * Ведущие ячейки.
-		 * @type {?Array<cellx.Cell>}
-		 */
-		this._masters = null;
-		/**
-		 * Ведомые ячейки.
-		 * @type {Array<cellx.Cell>}
-		 */
-		this._slaves = [];
-
-		/**
-		 * @type {uint|undefined}
-		 */
-		this._level = 0;
-
-		this._active = !this.computed;
-
-		this._changeEvent = null;
-		this._isChangeCancellable = true;
-
-		this._lastErrorEvent = null;
-
-		this._fixed = true;
-
-		this._version = 0;
-
-		this._changed = false;
-
-		this._circularityCounter = 0;
-
-		if (this.computed) {
-			this._formula = value;
-		} else {
-			if (this._validate) {
-				this._validate.call(this.owner || this, value);
+			if (!opts) {
+				opts = {};
 			}
 
-			this._value = this._fixedValue = this.initialValue = value;
+			this.owner = opts.owner || null;
 
-			if (value instanceof EventEmitter) {
-				value.on('change', this._onValueChange, this);
+			this.computed = typeof value == 'function' &&
+				(opts.computed !== undefined ? opts.computed : value.constructor == Function);
+
+			this._value = undefined;
+			this._fixedValue = undefined;
+			this.initialValue = undefined;
+			this._formula = null;
+
+			this._read = opts.read || null;
+			this._write = opts.write || null;
+
+			this._validate = opts.validate || null;
+
+			/**
+			 * Ведущие ячейки.
+			 * @type {?Array<cellx.Cell>}
+			 */
+			this._masters = null;
+			/**
+			 * Ведомые ячейки.
+			 * @type {Array<cellx.Cell>}
+			 */
+			this._slaves = [];
+
+			/**
+			 * @type {uint|undefined}
+			 */
+			this._level = 0;
+
+			this._active = !this.computed;
+
+			this._changeEvent = null;
+			this._isChangeCancellable = true;
+
+			this._lastErrorEvent = null;
+
+			this._fixed = true;
+
+			this._version = 0;
+
+			this._changed = false;
+
+			this._circularityCounter = 0;
+
+			if (this.computed) {
+				this._formula = value;
+			} else {
+				if (this._validate) {
+					this._validate.call(this.owner || this, value);
+				}
+
+				this._value = this._fixedValue = this.initialValue = value;
+
+				if (value instanceof EventEmitter) {
+					value.on('change', this._onValueChange, this);
+				}
 			}
-		}
 
-		if (opts.onchange) {
-			this.on('change', opts.onchange);
-		}
-		if (opts.onerror) {
-			this.on('error', opts.onerror);
-		}
-	}
-	extend(Cell, EventEmitter);
+			if (opts.onchange) {
+				this.on('change', opts.onchange);
+			}
+			if (opts.onerror) {
+				this.on('error', opts.onerror);
+			}
+		},
 
-	assign(Cell.prototype, {
 		/**
-		 * @typesign (): boolean;
+		 * @type {boolean}
 		 */
-		changed: function() {
+		get changed() {
 			if (!currentlyRelease) {
 				release();
 			}
@@ -418,9 +419,7 @@
 				if (value === error) {
 					this._handleError(error.original);
 				} else {
-					var oldValue = this._value;
-
-					if (!is(oldValue, value)) {
+					if (!is(this._value, value)) {
 						this._value = value;
 						this._changed = true;
 					}

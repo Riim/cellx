@@ -39,16 +39,7 @@
 
 		return cell;
 	}
-
-	if (typeof exports == 'object') {
-		if (typeof module == 'object') {
-			module.exports = cellx;
-		} else {
-			exports.cellx = cellx;
-		}
-	} else {
-		global.cellx = cellx;
-	}
+	cellx.cellx = cellx;
 
 	var KEY_UID = '__cellx_uid__';
 	var KEY_CELLS = '__cellx_cells__';
@@ -64,10 +55,79 @@
 	var uidCounter = 0;
 
 	/**
-	 * @typesign (fn: Function): boolean;
+	 * @typesign (target: Object, source: Object): Object;
 	 */
-	function isNative(fn) {
-		return fn.toString().indexOf('[native code]') != -1;
+	var assign = Object.assign || function(target, source) {
+		for (var name in source) {
+			if (hasOwn.call(source, name)) {
+				target[name] = source[name];
+			}
+		}
+
+		return target;
+	};
+
+	/**
+	 * @typesign (a, b): boolean;
+	 */
+	var is = Object.is || function(a, b) {
+		return a === b || (a != a && b != b);
+	};
+
+	/**
+	 * @typesign (value): boolean;
+	 */
+	var isArray = Array.isArray || function(value) {
+		return toString.call(value) == '[object Array]';
+	};
+
+	/**
+	 * @typesign (description: {
+	 *     Extends: Function,
+	 *     Implements?: Array<Function>,
+	 *     Static?: Object,
+	 *     constructor?: Function
+	 * }): Function;
+	 */
+	function createClass(description) {
+		var parent;
+
+		if (description.Extends) {
+			parent = description.Extends;
+			delete description.Extends;
+		} else {
+			parent = Object;
+		}
+
+		var constr;
+
+		if (hasOwn.call(description, 'constructor')) {
+			constr = description.constructor;
+			delete description.constructor;
+		} else {
+			constr = function() {};
+		}
+
+		if (description.Static) {
+			assign(constr, description.Static);
+			delete description.Static;
+		}
+
+		var proto = constr.prototype = Object.create(parent.prototype);
+
+		if (description.Implements) {
+			description.Implements.forEach(function(mixin) {
+				assign(proto, mixin.prototype);
+			});
+
+			delete description.Implements;
+		}
+
+		assign(proto, description);
+
+		proto.constructor = constr;
+
+		return constr;
 	}
 
 	/**
@@ -82,7 +142,7 @@
 			};
 		} else {
 			logError = function(err) {
-				console.log('!!! ' + (err === Object(err) && err.stack || err));
+				console.log('Error: ' + (err === Object(err) && err.stack || err));
 			};
 		}
 	} else {
@@ -91,64 +151,24 @@
 
 	cellx.logError = logError;
 
-	/**
-	 * @typesign (child: Function, parent: Function): Function;
-	 */
-	function extend(child, parent) {
-		function F() {
-			this.constructor = child;
-		}
-		F.prototype = parent.prototype;
-
-		child.prototype = new F();
-		return child;
-	}
-
-	/**
-	 * @typesign (proto: Object): Object;
-	 */
-	var create = Object.create || function(proto) {
-		function F() {}
-		F.prototype = proto;
-		return new F();
-	};
-
-	/**
-	 * @typesign (target: Object, source: Object): Object;
-	 */
-	var assign = Object.assign || function assign(target, source) {
-		for (var name in source) {
-			if (hasOwn.call(source, name)) {
-				target[name] = source[name];
-			}
-		}
-
-		return target;
-	};
-
-	/**
-	 * https://people.mozilla.org/~jorendorff/es6-draft.html#sec-samevaluezero
-	 * @typesign (a, b): boolean;
-	 */
-	var is = Object.is || function(a, b) {
-		return a === b || (a != a && b != b);
-	};
-
-	/**
-	 * @typesign (value): boolean;
-	 */
-	var isArray = Array.isArray || function(value) {
-		return toString.call(value) == '[object Array]';
-	};
-
 	// gulp-include
-	//= include ./Dictionary.js
 	//= include ./Map.js
 	//= include ./nextTick.js
 	//= include ./EventEmitter.js
-	//= include ./MActiveCollection.js
-	//= include ./ActiveMap.js
-	//= include ./ActiveList.js
+	//= include ./ObservableCollection.js
+	//= include ./ObservableMap.js
+	//= include ./ObservableList.js
 	//= include ./Cell.js
 	//= include ./invokeCell.js
+	//= include ./d.js
+
+	if (typeof exports == 'object') {
+		if (typeof module == 'object') {
+			module.exports = cellx;
+		} else {
+			exports.cellx = cellx;
+		}
+	} else {
+		global.cellx = cellx;
+	}
 })();

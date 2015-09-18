@@ -18,9 +18,7 @@ bower install cellx --save
 
 ## Поддержка браузеров
 
-Все актуальные, IE9+.  
-Для работы в IE8 нужно добавить полифил для
-[Array#indexOf](https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Global_Objects/Array/indexOf).
+Все актуальные, IE9+.
 
 ## Пример использования
 
@@ -180,6 +178,50 @@ console.log(user1.friends() == user2.friends());
 То есть определяя метод `clone` для вашего кастомного типа, вы подсказываете cellx-у как правильно копировать
 его (кастомного типа) экземпляры.
 
+### Использование с ECMAScript 6
+
+Иногда не очень удобно постоянно дописывать скобки в конце при чтении ячейки, кроме того, бывают ситуации когда
+какое-то обычное свойство класса уже используется в приложеннии и вдруг понадобилось сделать его ячейкой,
+тут придётся пройтись по всем местам в приложении, где оно уже используется, и дописать скобки.
+Всё это может оказаться совсем неудобным. Используя декораторы из ES6 можно избежать таких проблем:
+
+```js
+import { cellx, d } from 'cellx';
+
+class User extends cellx.EventEmitter {
+	@d.observable firstName = '';
+	@d.observable lastName = '';
+
+	@d.computed fullName = function() {
+		return (this.firstName + ' ' + this.lastName).trim();
+	};
+
+	constructor(data) {
+        for (let name in data) {
+            this[name] = data[name];
+        }
+	}
+}
+
+let user = new User({ firstName: 'Матроскин', lastName: 'Кот' });
+
+// добавление обработчика
+user.on('change:fullName', function() {
+    console.log(`fullName: ${this.fullName}`);
+});
+
+console.log(user.firstName);
+// => 'Матроскин'
+
+user.firstName = 'Шарик';
+user.lastName = 'Пёс';
+// => 'fullName: Шарик Пёс'
+```
+
+Теперь к любому свойству в классе всегда можно добавить декоратор `observable` и получить возможность
+подписываться на его изменения и создавать вычисляемые из него свойства. При этом в уже написанной части приложения
+ничего менять не придётся.
+
 ### Опции
 
 При создании ячейки можно передать некоторые опции:
@@ -301,7 +343,7 @@ var value = cellx(Number, { computed: false });
 ```
 
 И наоборот, функции могут быть экземплярами какого-то кастомного типа, для их детекции им обычно переопределяют
-свойство `constructor` (в ecmascript 6 можно будет менять поведение `instanceof` с помощью `Symbol.hasInstance`).
+свойство `constructor` (в ECMAScript 6 можно будет менять поведение `instanceof` с помощью `Symbol.hasInstance`).
 Функции с переопределённым `constructor`-ом, по умолчанию, засчитываются как обычные значения.
 Экземпляры cellx-а сами являются такими:
 
@@ -528,7 +570,7 @@ value().emit({ type: 'change', ok: true });
 За счёт этого можно создавать свои коллекции, при обновлении которых будет обновляться ячейка, содержащая их
 и перевычисляться зависимые от неё ячейки. Две таких коллекции уже есть в cellx-е:
 
-#### cellx.ActiveMap
+#### cellx.ObservableMap
 
 Короткий синтаксис для создания:
 
@@ -540,7 +582,7 @@ var map = cellx.map({
 });
 ```
 
-`cellx.ActiveMap` полностью повторяет
+`cellx.ObservableMap` полностью повторяет
 [Map](https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Global_Objects/Map) из ecmascript 6,
 за исключением следующих отличий:
 - наследует от `cellx.EventEmitter`-а и генерирует событие `change` при изменении своих записей;
@@ -550,7 +592,7 @@ var map = cellx.map({
 будут только строки, ключевое отличие объекта от Map-а как раз в том, что ключи в Map-е могут быть любого типа)
 или другого map-а.
 
-#### cellx.ActiveList
+#### cellx.ObservableList
 
 Короткий синтаксис для создания:
 
@@ -598,7 +640,7 @@ console.log(list.toArray());
 // => [-100, 1, 5, 7, 10, 100]
 ```
 
-##### Свойства cellx.ActiveList
+##### Свойства cellx.ObservableList
 
 ###### length
 
@@ -612,7 +654,7 @@ console.log(list.toArray());
 
 Является ли список сортированным. Только для чтения.
 
-##### Методы cellx.ActiveList
+##### Методы cellx.ObservableList
 
 Важным отличем списка от массива, является то, что список не может содержать так называемых "дырок",
 то есть при попытке прочитать или установить значение по индексу вне существующего диапазона элементов,
@@ -653,53 +695,53 @@ console.log(list.toArray());
 
 ###### set
 
-Сигнатура вызова: `(index: int, value): cellx.ActiveList;`.
+Сигнатура вызова: `(index: int, value): cellx.ObservableList;`.
 
 ###### setRange
 
-Сигнатура вызова: `(index: int, items: Array): cellx.ActiveList;`.
+Сигнатура вызова: `(index: int, items: Array): cellx.ObservableList;`.
 
 ###### add
 
-Сигнатура вызова: `(item): cellx.ActiveList;`.
+Сигнатура вызова: `(item): cellx.ObservableList;`.
 
 ###### addRange
 
-Сигнатура вызова: `(items: Array): cellx.ActiveList;`.
+Сигнатура вызова: `(items: Array): cellx.ObservableList;`.
 
 ###### insert
 
-Сигнатура вызова: `(index: int, item): cellx.ActiveList;`.
+Сигнатура вызова: `(index: int, item): cellx.ObservableList;`.
 
 ###### insertRange
 
-Сигнатура вызова: `(index: int, items: Array): cellx.ActiveList;`.
+Сигнатура вызова: `(index: int, items: Array): cellx.ObservableList;`.
 
 ###### remove
 
-Сигнатура вызова: `(item, fromIndex: int = 0): cellx.ActiveList;`.
+Сигнатура вызова: `(item, fromIndex: int = 0): cellx.ObservableList;`.
 
 Удаляет первое вхождениие `item` в списке.
 
 ###### removeAll
 
-Сигнатура вызова: `(item, fromIndex: int = 0): cellx.ActiveList;`.
+Сигнатура вызова: `(item, fromIndex: int = 0): cellx.ObservableList;`.
 
 Удаляет все вхождениия `item` в списке.
 
 ###### removeAt
 
-Сигнатура вызова: `(index: int): cellx.ActiveList;`.
+Сигнатура вызова: `(index: int): cellx.ObservableList;`.
 
 ###### removeRange
 
-Сигнатура вызова: `(index: int = 0, count?: uint): cellx.ActiveList;`.
+Сигнатура вызова: `(index: int = 0, count?: uint): cellx.ObservableList;`.
 
 При неуказанном `count`-е удалит всё до конца списка.
 
 ###### clear
 
-Сигнатура вызова: `(): cellx.ActiveList;`.
+Сигнатура вызова: `(): cellx.ObservableList;`.
 
 ###### join
 
@@ -707,35 +749,35 @@ console.log(list.toArray());
 
 ###### forEach
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ActiveList), context: Object = global);`.
+Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList), context: Object = global);`.
 
 ###### map
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ActiveList): *, context: Object = global): Array;`.
+Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList): *, context: Object = global): Array;`.
 
 ###### filter
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ActiveList): boolean, context: Object = global): Array;`.
+Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): Array;`.
 
 ###### every
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ActiveList): boolean, context: Object = global): boolean;`.
+Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): boolean;`.
 
 ###### some
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ActiveList): boolean, context: Object = global): boolean;`.
+Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): boolean;`.
 
 ###### reduce
 
-Сигнатура вызова: `(cb: (accumulator: *, item, index: uint, arr: cellx.ActiveList): *, initialValue?): *;`.
+Сигнатура вызова: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList): *, initialValue?): *;`.
 
 ###### reduceRight
 
-Сигнатура вызова: `(cb: (accumulator: *, item, index: uint, arr: cellx.ActiveList): *, initialValue?): *;`.
+Сигнатура вызова: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList): *, initialValue?): *;`.
 
 ###### clone
 
-Сигнатура вызова: `(): cellx.ActiveList;`.
+Сигнатура вызова: `(): cellx.ObservableList;`.
 
 ###### toArray
 

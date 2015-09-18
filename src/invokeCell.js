@@ -39,7 +39,7 @@
 				}
 			}
 
-			opts = create(opts);
+			opts = Object.create(opts);
 			opts.owner = owner;
 
 			cell = new Cell(initialValue, opts);
@@ -54,16 +54,19 @@
 				return cell.write(firstArg);
 			}
 			default: {
-				if (firstArg === 'bind') {
-					wrapper = wrapper.bind(owner);
-					wrapper.constructor = cellx;
-					return wrapper;
+				switch (firstArg) {
+					case 'bind': {
+						wrapper = wrapper.bind(owner);
+						wrapper.constructor = cellx;
+						return wrapper;
+					}
+					case 'unwrap': {
+						return cell;
+					}
+					default: {
+						return cellProto[firstArg].apply(cell, otherArgs);
+					}
 				}
-				if (firstArg === 'unwrap') {
-					return cell;
-				}
-
-				return cellProto[firstArg].apply(cell, otherArgs);
 			}
 		}
 	};

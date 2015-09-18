@@ -1,10 +1,5 @@
 (function() {
 	/**
-	 * @example
-	 * nextTick(function() {
-	 *     console.log('nextTick');
-	 * });
-	 *
 	 * @typesign (cb: ());
 	 */
 	var nextTick;
@@ -15,7 +10,7 @@
 		nextTick = function(cb) {
 			setImmediate(cb);
 		};
-	} else if (global.Promise && isNative(Promise)) {
+	} else if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
 		var prm = Promise.resolve();
 
 		nextTick = function(cb) {

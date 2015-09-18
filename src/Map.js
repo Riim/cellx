@@ -2,27 +2,25 @@
 	var Map = global.Map;
 
 	if (!Map) {
-		var Dictionary = cellx.Dictionary;
-
 		var entryStub = { value: undefined };
 
-		Map = function Map(entries) {
-			this._entries = new Dictionary();
-			this._objectStamps = {};
+		Map = createClass({
+			constructor: function(entries) {
+				this._entries = Object.create(null);
+				this._objectStamps = {};
 
-			this._first = null;
-			this._last = null;
+				this._first = null;
+				this._last = null;
 
-			this.size = 0;
+				this.size = 0;
 
-			if (entries) {
-				for (var i = 0, l = entries.length; i < l; i++) {
-					this.set(entries[i][0], entries[i][1]);
+				if (entries) {
+					for (var i = 0, l = entries.length; i < l; i++) {
+						this.set(entries[i][0], entries[i][1]);
+					}
 				}
-			}
-		};
+			},
 
-		assign(Map.prototype, {
 			has: function(key) {
 				return !!this._entries[this._getValueStamp(key)];
 			},
@@ -58,7 +56,7 @@
 				return this;
 			},
 
-			'delete': function(key) {
+			delete: function(key) {
 				var keyStamp = this._getValueStamp(key);
 				var entry = this._entries[keyStamp];
 
@@ -133,44 +131,31 @@
 				return this._getObjectStamp(value);
 			},
 
-			_getObjectStamp: (function() {
-				// for non-extensible objects and IE8
-				function getObjectStamp(obj) {
-					var stamps = this._objectStamps;
-					var stamp;
+			_getObjectStamp: function(obj) {
+				if (!hasOwn.call(obj, KEY_UID)) {
+					if (!Object.isExtensible(obj)) {
+						var stamps = this._objectStamps;
+						var stamp;
 
-					for (stamp in stamps) {
-						if (stamps[stamp] == obj) {
-							return stamp;
+						for (stamp in stamps) {
+							if (stamps[stamp] == obj) {
+								return stamp;
+							}
 						}
+
+						stamp = String(++uidCounter);
+						stamps[stamp] = obj;
+
+						return stamp;
 					}
 
-					stamp = String(++uidCounter);
-					stamps[stamp] = obj;
-					return stamp;
+					Object.defineProperty(obj, KEY_UID, {
+						value: String(++uidCounter)
+					});
 				}
 
-				if (
-					Object.defineProperty && isNative(Object.defineProperty) &&
-						Object.isExtensible && isNative(Object.isExtensible)
-				) {
-					return function(obj) {
-						if (!hasOwn.call(obj, KEY_UID)) {
-							if (!Object.isExtensible(obj)) {
-								return getObjectStamp.call(this, obj);
-							}
-
-							Object.defineProperty(obj, KEY_UID, {
-								value: String(++uidCounter)
-							});
-						}
-
-						return obj[KEY_UID];
-					};
-				}
-
-				return getObjectStamp;
-			})(),
+				return obj[KEY_UID];
+			},
 
 			forEach: function(cb, context) {
 				if (context == null) {
@@ -193,7 +178,7 @@
 			}
 		});
 
-		var iterators = [
+		[
 			['keys', function(entry) {
 				return entry.key;
 			}],
@@ -203,46 +188,44 @@
 			['entries', function(entry) {
 				return [entry.key, entry.value];
 			}]
-		];
+		].forEach(function(iterator) {
+			var getStepValue = iterator[1];
 
-		for (var i = 0, l = iterators.length; i < l; i++) {
-			Map.prototype[iterators[i][0]] = (function(getStepValue) {
-				return function() {
-					var entries = this._entries;
-					var entry;
-					var done = false;
-					var map = this;
+			Map.prototype[iterator[0]] = function() {
+				var entries = this._entries;
+				var entry;
+				var done = false;
+				var map = this;
 
-					return {
-						next: function() {
-							if (!done) {
-								if (entry) {
-									do {
-										entry = entry.next;
-									} while (entry && !entries[entry.keyStamp]);
-								} else {
-									entry = map._first;
-								}
-
-								if (entry) {
-									return {
-										value: getStepValue(entry),
-										done: false
-									};
-								}
-
-								done = true;
+				return {
+					next: function() {
+						if (!done) {
+							if (entry) {
+								do {
+									entry = entry.next;
+								} while (entry && !entries[entry.keyStamp]);
+							} else {
+								entry = map._first;
 							}
 
-							return {
-								value: undefined,
-								done: true
-							};
+							if (entry) {
+								return {
+									value: getStepValue(entry),
+									done: false
+								};
+							}
+
+							done = true;
 						}
-					};
+
+						return {
+							value: undefined,
+							done: true
+						};
+					}
 				};
-			})(iterators[i][1]);
-		}
+			};
+		});
 	}
 
 	cellx.Map = Map;

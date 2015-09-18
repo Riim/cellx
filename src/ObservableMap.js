@@ -1,57 +1,59 @@
 (function() {
 	var Map = cellx.Map;
+	var EventEmitter = cellx.EventEmitter;
 
 	/**
-	 * @class cellx.ActiveMap
+	 * @class cellx.ObservableMap
 	 * @extends {cellx.EventEmitter}
+	 * @implements {ObservableCollection}
 	 *
-	 * @typesign new (entries?: Object|Array<{ 0, 1 }>|cellx.ActiveMap, opts?: {
+	 * @typesign new (entries?: Object|Array<{ 0, 1 }>|cellx.ObservableMap, opts?: {
 	 *     adoptsItemChanges: boolean = true
-	 * }): cellx.ActiveMap;
+	 * }): cellx.ObservableMap;
 	 */
-	function ActiveMap(entries, opts) {
-		this._entries = new Map();
-		/**
-		 * @type {Map<*, uint>}
-		 */
-		this._valueCounts = new Map();
+	var ObservableMap = createClass({
+		Extends: EventEmitter,
+		Implements: [ObservableCollection],
 
-		this.size = 0;
+		constructor: function(entries, opts) {
+			EventEmitter.call(this);
+			ObservableCollection.call(this);
 
-		/**
-		 * @type {boolean}
-		 */
-		this.adoptsItemChanges = !opts || opts.adoptsItemChanges !== false;
+			this._entries = new Map();
 
-		if (entries) {
-			var thisEntries = this._entries;
+			this.size = 0;
 
-			if (entries instanceof ActiveMap) {
-				entries._entries.forEach(function(value, key) {
-					thisEntries.set(key, value);
-					this._registerValue(value);
-				}, this);
-			} else if (isArray(entries)) {
-				for (var i = 0, l = entries.length; i < l; i++) {
-					var entry = entries[i];
+			/**
+			 * @type {boolean}
+			 */
+			this.adoptsItemChanges = !opts || opts.adoptsItemChanges !== false;
 
-					thisEntries.set(entry[0], entry[1]);
-					this._registerValue(entry[1]);
+			if (entries) {
+				var mapEntries = this._entries;
+
+				if (entries instanceof ObservableMap) {
+					entries._entries.forEach(function(value, key) {
+						mapEntries.set(key, value);
+						this._registerValue(value);
+					}, this);
+				} else if (isArray(entries)) {
+					for (var i = 0, l = entries.length; i < l; i++) {
+						var entry = entries[i];
+
+						mapEntries.set(entry[0], entry[1]);
+						this._registerValue(entry[1]);
+					}
+				} else {
+					for (var key in entries) {
+						mapEntries.set(key, entries[key]);
+						this._registerValue(entries[key]);
+					}
 				}
-			} else {
-				for (var key in entries) {
-					thisEntries.set(key, entries[key]);
-					this._registerValue(entries[key]);
-				}
+
+				this.size = mapEntries.size;
 			}
+		},
 
-			this.size = thisEntries.size;
-		}
-	}
-	extend(ActiveMap, cellx.EventEmitter);
-
-	assign(ActiveMap.prototype, MActiveCollection);
-	assign(ActiveMap.prototype, {
 		/**
 		 * @typesign (key): boolean;
 		 */
@@ -74,7 +76,7 @@
 		},
 
 		/**
-		 * @typesign (key, value): cellx.ActiveMap;
+		 * @typesign (key, value): cellx.ObservableMap;
 		 */
 		set: function(key, value) {
 			var entries = this._entries;
@@ -112,7 +114,7 @@
 		/**
 		 * @typesign (key): boolean;
 		 */
-		'delete': function(key) {
+		delete: function(key) {
 			var entries = this._entries;
 
 			if (!entries.has(key)) {
@@ -121,7 +123,7 @@
 
 			var value = entries.get(key);
 
-			entries['delete'](key);
+			entries.delete(key);
 			this._unregisterValue(value);
 
 			this.size--;
@@ -138,7 +140,7 @@
 		},
 
 		/**
-		 * @typesign (): cellx.ActiveMap;
+		 * @typesign (): cellx.ObservableMap;
 		 */
 		clear: function() {
 			if (!this.size) {
@@ -158,7 +160,7 @@
 		},
 
 		/**
-		 * @typesign (cb: (value, key, map: cellx.ActiveMap), context?: Object);
+		 * @typesign (cb: (value, key, map: cellx.ObservableMap), context?: Object);
 		 */
 		forEach: function(cb, context) {
 			if (context == null) {
@@ -192,7 +194,7 @@
 		},
 
 		/**
-		 * @typesign (): cellx.ActiveMap;
+		 * @typesign (): cellx.ObservableMap;
 		 */
 		clone: function() {
 			return new this.constructor(this, {
@@ -201,17 +203,21 @@
 		}
 	});
 
-	cellx.ActiveMap = ActiveMap;
+	cellx.ObservableMap = ObservableMap;
 
 	/**
-	 * @typesign (entries?: Object|Array<{ 0, 1 }>|cellx.ActiveMap, opts?: {
-	 *     adoptsItemChanges: boolean = true
-	 * }): cellx.ActiveMap;
+	 * @typesign (
+	 *     entries?: Object|Array<{ 0, 1 }>|cellx.ObservableMap,
+	 *     opts?: { adoptsItemChanges: boolean = true }
+	 * ): cellx.ObservableMap;
 	 *
-	 * @typesign (entries?: Object|Array<{ 0, 1 }>|cellx.ActiveMap, adoptsItemChanges: boolean = true): cellx.ActiveMap;
+	 * @typesign (
+	 *     entries?: Object|Array<{ 0, 1 }>|cellx.ObservableMap,
+	 *     adoptsItemChanges: boolean = true
+	 * ): cellx.ObservableMap;
 	 */
 	function map(entries, opts) {
-		return new ActiveMap(entries, typeof opts == 'boolean' ? { adoptsItemChanges: opts } : opts);
+		return new ObservableMap(entries, typeof opts == 'boolean' ? { adoptsItemChanges: opts } : opts);
 	}
 
 	cellx.map = map;

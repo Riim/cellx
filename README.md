@@ -2,7 +2,7 @@
 
 Ultra-fast implementation of reactivity for javascript.
 
-[ [Этот документ на русском](https://github.com/Riim/cellx/blob/master/README.ru.md) ]
+[Этот документ на русском](https://github.com/Riim/cellx/blob/master/README.ru.md)
 
 ## Installation
 
@@ -24,9 +24,7 @@ bower install cellx --save
 
 ## Browser support
 
-cellx supports IE9 and above and all modern browsers.  
-To work in IE8 need add polyfill for
-[Array#indexOf](https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Global_Objects/Array/indexOf).
+cellx supports IE9 and above and all modern browsers.
 
 ## Example
 
@@ -187,6 +185,41 @@ Copying is done as follows:
 That is, in order to define a `clone` method for your custom type, you must tell cellx how to copy
 his (custom type's) items.
 
+### Use with ECMAScript 6
+
+```js
+import { cellx, d } from 'cellx';
+
+class User extends cellx.EventEmitter {
+	@d.observable firstName = '';
+	@d.observable lastName = '';
+
+	@d.computed fullName = function() {
+		return (this.firstName + ' ' + this.lastName).trim();
+	};
+
+	constructor(data) {
+        for (let name in data) {
+            this[name] = data[name];
+        }
+	}
+}
+
+let user = new User({ firstName: 'Matroskin', lastName: 'Cat' });
+
+// add listener
+user.on('change:fullName', function() {
+    console.log(`fullName: ${this.fullName}`);
+});
+
+console.log(user.firstName);
+// => 'Matroskin'
+
+user.firstName = 'Sharik';
+user.lastName = 'Dog';
+// => 'fullName: Sharik Dog'
+```
+
 ### Options
 
 When you create a cell, you can pass some options:
@@ -308,7 +341,7 @@ var value = cellx(Number, { computed: false });
 ```
 
 And vice versa, functions may be instances of some custom type and for their detection they usually get
-the property `constructor` (ecmascript 6 will allow to change the behavior of` instanceof` using `Symbol.hasInstance`).
+the property `constructor` (ECMAScript 6 will allow to change the behavior of` instanceof` using `Symbol.hasInstance`).
 Functions redefined as `constructor` are counted as usual values by default.
 Cellx instances are like this:
 
@@ -535,7 +568,7 @@ value().emit({ type: 'change', ok: true });
 Due to this, you can create your collections, upon updating those collections you will update the cell containing them
 and dependent cells will be recalculated. Two such collections already is added to the cellx:
 
-#### cellx.ActiveMap
+#### cellx.ObservableMap
 
 The short syntax to create:
 
@@ -547,7 +580,7 @@ var map = cellx.map({
 });
 ```
 
-`cellx.ActiveMap` repeats
+`cellx.ObservableMap` repeats
 [Map](https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Global_Objects/Map) from ecmascript 6,
 except for the following differences:
 - inherits of `cellx.EventEmitter` and generates an event `change` when changing their records;
@@ -558,7 +591,7 @@ without going over all of its values;
 only strings will be counted as keys, and the key difference between object and Map is in
 the fact that the keys in the Map can be of any type) or another map.
 
-#### cellx.ActiveList
+#### cellx.ObservableList
 
 Short creation syntax:
 
@@ -606,7 +639,7 @@ console.log(list.toArray());
 // => [-100, 1, 5, 7, 10, 100]
 ```
 
-##### Properties of cellx.ActiveList
+##### Properties of cellx.ObservableList
 
 ###### length
 
@@ -620,7 +653,7 @@ Function for comparing values in the sorted list. Read-only.
 
 Whether or not the list is sorted. Read-only.
 
-##### Methods of cellx.ActiveList
+##### Methods of cellx.ObservableList
 
 Important difference between list and array is that the list can't contain so-called "holes"
 that is, when it will try to read or set the value of the index beyond the existing range of elements,
@@ -661,53 +694,53 @@ If `count` is unspecified it makes copies till the end of the list.
 
 ###### set
 
-Type signature: `(index: int, value): cellx.ActiveList;`.
+Type signature: `(index: int, value): cellx.ObservableList;`.
 
 ###### setRange
 
-Type signature: `(index: int, items: Array): cellx.ActiveList;`.
+Type signature: `(index: int, items: Array): cellx.ObservableList;`.
 
 ###### add
 
-Type signature: `(item): cellx.ActiveList;`.
+Type signature: `(item): cellx.ObservableList;`.
 
 ###### addRange
 
-Type signature: `(items: Array): cellx.ActiveList;`.
+Type signature: `(items: Array): cellx.ObservableList;`.
 
 ###### insert
 
-Type signature: `(index: int, item): cellx.ActiveList;`.
+Type signature: `(index: int, item): cellx.ObservableList;`.
 
 ###### insertRange
 
-Type signature: `(index: int, items: Array): cellx.ActiveList;`.
+Type signature: `(index: int, items: Array): cellx.ObservableList;`.
 
 ###### remove
 
-Type signature: `(item, fromIndex: int = 0): cellx.ActiveList;`.
+Type signature: `(item, fromIndex: int = 0): cellx.ObservableList;`.
 
 Removes the first occurrence of `item` in the list.
 
 ###### removeAll
 
-Type signature: `(item, fromIndex: int = 0): cellx.ActiveList;`.
+Type signature: `(item, fromIndex: int = 0): cellx.ObservableList;`.
 
 It removes all occurrences of `item` list.
 
 ###### removeAt
 
-Type signature: `(index: int): cellx.ActiveList;`.
+Type signature: `(index: int): cellx.ObservableList;`.
 
 ###### removeRange
 
-Type signature: `(index: int = 0, count?: uint): cellx.ActiveList;`.
+Type signature: `(index: int = 0, count?: uint): cellx.ObservableList;`.
 
 If `count` is unspecified it will remove everything till the end of the list.
 
 ###### clear
 
-Type signature: `(): cellx.ActiveList;`.
+Type signature: `(): cellx.ObservableList;`.
 
 ###### join
 
@@ -715,35 +748,35 @@ Type signature: `(separator: string = ','): string;`.
 
 ###### forEach
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ActiveList), context: Object = global);`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList), context: Object = global);`.
 
 ###### map
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ActiveList): *, context: Object = global): Array;`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList): *, context: Object = global): Array;`.
 
 ###### filter
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ActiveList): boolean, context: Object = global): Array;`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): Array;`.
 
 ###### every
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ActiveList): boolean, context: Object = global): boolean;`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): boolean;`.
 
 ###### some
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ActiveList): boolean, context: Object = global): boolean;`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): boolean;`.
 
 ###### reduce
 
-Type signature: `(cb: (accumulator: *, item, index: uint, arr: cellx.ActiveList): *, initialValue?): *;`.
+Type signature: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList): *, initialValue?): *;`.
 
 ###### reduceRight
 
-Type signature: `(cb: (accumulator: *, item, index: uint, arr: cellx.ActiveList): *, initialValue?): *;`.
+Type signature: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList): *, initialValue?): *;`.
 
 ###### clone
 
-Type signature: `(): cellx.ActiveList;`.
+Type signature: `(): cellx.ObservableList;`.
 
 ###### toArray
 

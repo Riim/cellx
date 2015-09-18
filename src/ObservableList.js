@@ -1,5 +1,5 @@
 (function() {
-	var Map = cellx.Map;
+	var EventEmitter = cellx.EventEmitter;
 
 	var arrayProto = Array.prototype;
 
@@ -7,17 +7,13 @@
 	 * @typesign (a, b): enum[-1, 1, 0];
 	 */
 	function defaultComparator(a, b) {
-		if (a < b) {
-			return -1;
-		}
-		if (a > b) {
-			return 1;
-		}
+		if (a < b) { return -1; }
+		if (a > b) { return 1; }
 		return 0;
 	}
 
 	/**
-	 * @typesign (list: cellx.ActiveList, items: Array);
+	 * @typesign (list: cellx.ObservableList, items: Array);
 	 */
 	function addRange(list, items) {
 		var listItems = list._items;
@@ -55,57 +51,58 @@
 	}
 
 	/**
-	 * @class cellx.ActiveList
+	 * @class cellx.ObservableList
 	 * @extends {cellx.EventEmitter}
+	 * @implements {ObservableCollection}
 	 *
-	 * @typesign new (items?: Array|cellx.ActiveList, opts?: {
+	 * @typesign new (items?: Array|cellx.ObservableList, opts?: {
 	 *     adoptsItemChanges: boolean = true,
 	 *     comparator?: (a, b): int,
 	 *     sorted?: boolean
-	 * }): cellx.ActiveList;
+	 * }): cellx.ObservableList;
 	 */
-	function ActiveList(items, opts) {
-		if (!opts) {
-			opts = {};
-		}
+	var ObservableList = createClass({
+		Extends: EventEmitter,
+		Implements: [ObservableCollection],
 
-		this._items = [];
+		constructor: function(items, opts) {
+			EventEmitter.call(this);
+			ObservableCollection.call(this);
+
+			if (!opts) {
+				opts = {};
+			}
+
+			this._items = [];
+
+			this.length = 0;
+
+			/**
+			 * @type {boolean}
+			 */
+			this.adoptsItemChanges = opts.adoptsItemChanges !== false;
+
+			/**
+			 * @type {?Function}
+			 */
+			this.comparator = null;
+
+			this.sorted = false;
+
+			if (opts.sorted || (opts.comparator && opts.sorted !== false)) {
+				this.comparator = opts.comparator || defaultComparator;
+				this.sorted = true;
+			}
+
+			if (items) {
+				addRange(this, items instanceof ObservableList ? items._items : items);
+			}
+		},
+
 		/**
-		 * @type {Map<*, uint>}
+		 * @typesign (index: int, allowEndIndex: boolean = false): uint|undefined;
 		 */
-		this._valueCounts = new Map();
-
-		this.length = 0;
-
-		/**
-		 * @type {boolean}
-		 */
-		this.adoptsItemChanges = opts.adoptsItemChanges !== false;
-
-		/**
-		 * @type {?Function}
-		 */
-		this.comparator = null;
-
-		this.sorted = false;
-
-		if (opts.sorted || (opts.comparator && opts.sorted !== false)) {
-			this.comparator = opts.comparator || defaultComparator;
-			this.sorted = true;
-		}
-
-		if (items) {
-			addRange(this, items instanceof ActiveList ? items._items : items);
-		}
-	}
-	extend(ActiveList, cellx.EventEmitter);
-
-	assign(ActiveList.prototype, MActiveCollection);
-	assign(ActiveList.prototype, {
-		/**
-		 * @typesign (index: int, endIndex: boolean = false): uint|undefined;
-		 */
-		_validateIndex: function(index, endIndex) {
+		_validateIndex: function(index, allowEndIndex) {
 			if (index === undefined) {
 				return index;
 			}
@@ -116,7 +113,7 @@
 				if (index < 0) {
 					throw new RangeError('Index out of range');
 				}
-			} else if (index >= (this.length + (endIndex ? 1 : 0))) {
+			} else if (index >= (this.length + (allowEndIndex ? 1 : 0))) {
 				throw new RangeError('Index out of range');
 			}
 
@@ -171,7 +168,7 @@
 		},
 
 		/**
-		 * @typesign (index: int, value): cellx.ActiveList;
+		 * @typesign (index: int, value): cellx.ObservableList;
 		 */
 		set: function(index, value) {
 			if (this.sorted) {
@@ -197,7 +194,7 @@
 		},
 
 		/**
-		 * @typesign (index: int, items: Array): cellx.ActiveList;
+		 * @typesign (index: int, items: Array): cellx.ObservableList;
 		 */
 		setRange: function(index, items) {
 			if (this.sorted) {
@@ -216,16 +213,16 @@
 				throw new RangeError('"index" and length of "items" do not denote a valid range');
 			}
 
-			var thisItems = this._items;
+			var listItems = this._items;
 			var changed = false;
 
 			for (var i = index + itemCount; i > index;) {
 				var item = items[--i];
 
-				if (!is(thisItems[i], item)) {
-					this._unregisterValue(thisItems[i]);
+				if (!is(listItems[i], item)) {
+					this._unregisterValue(listItems[i]);
 
-					thisItems[i] = item;
+					listItems[i] = item;
 					this._registerValue(item);
 
 					changed = true;
@@ -240,7 +237,7 @@
 		},
 
 		/**
-		 * @typesign (item): cellx.ActiveList;
+		 * @typesign (item): cellx.ObservableList;
 		 */
 		add: function(item) {
 			this.addRange([item]);
@@ -248,7 +245,7 @@
 		},
 
 		/**
-		 * @typesign (items: Array): cellx.ActiveList;
+		 * @typesign (items: Array): cellx.ObservableList;
 		 */
 		addRange: function(items) {
 			if (!items.length) {
@@ -262,7 +259,7 @@
 		},
 
 		/**
-		 * @typesign (index: int, item): cellx.ActiveList;
+		 * @typesign (index: int, item): cellx.ObservableList;
 		 */
 		insert: function(index, item) {
 			this.insertRange(index, [item]);
@@ -270,7 +267,7 @@
 		},
 
 		/**
-		 * @typesign (index: int, items: Array): cellx.ActiveList;
+		 * @typesign (index: int, items: Array): cellx.ObservableList;
 		 */
 		insertRange: function(index, items) {
 			if (this.sorted) {
@@ -299,7 +296,7 @@
 		},
 
 		/**
-		 * @typesign (item, fromIndex: int = 0): cellx.ActiveList;
+		 * @typesign (item, fromIndex: int = 0): cellx.ObservableList;
 		 */
 		remove: function(item, fromIndex) {
 			var index = this._items.indexOf(item, this._validateIndex(fromIndex));
@@ -319,7 +316,7 @@
 		},
 
 		/**
-		 * @typesign (item, fromIndex: int = 0): cellx.ActiveList;
+		 * @typesign (item, fromIndex: int = 0): cellx.ObservableList;
 		 */
 		removeAll: function(item, fromIndex) {
 			var items = this._items;
@@ -342,7 +339,7 @@
 		},
 
 		/**
-		 * @typesign (index: int): cellx.ActiveList;
+		 * @typesign (index: int): cellx.ObservableList;
 		 */
 		removeAt: function(index) {
 			this._unregisterValue(this._items.splice(this._validateIndex(index), 1)[0]);
@@ -354,7 +351,7 @@
 		},
 
 		/**
-		 * @typesign (index: int = 0, count?: uint): cellx.ActiveList;
+		 * @typesign (index: int = 0, count?: uint): cellx.ObservableList;
 		 */
 		removeRange: function(index, count) {
 			index = this._validateIndex(index || 0, true);
@@ -384,7 +381,7 @@
 		},
 
 		/**
-		 * @typesign (): cellx.ActiveList;
+		 * @typesign (): cellx.ObservableList;
 		 */
 		clear: function() {
 			if (this.length) {
@@ -407,42 +404,42 @@
 		},
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ActiveList), context: Object = global);
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList), context: Object = global);
 		 */
 		forEach: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ActiveList): *, context: Object = global): Array;
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): *, context: Object = global): Array;
 		 */
 		map: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ActiveList): boolean, context: Object = global): Array;
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): Array;
 		 */
 		filter: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ActiveList): boolean, context: Object = global): boolean;
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): boolean;
 		 */
 		every: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ActiveList): boolean, context: Object = global): boolean;
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): boolean;
 		 */
 		some: null,
 
 		/**
-		 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ActiveList): *, initialValue?): *;
+		 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList): *, initialValue?): *;
 		 */
 		reduce: null,
 
 		/**
-		 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ActiveList): *, initialValue?): *;
+		 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList): *, initialValue?): *;
 		 */
 		reduceRight: null,
 
 		/**
-		 * @typesign (): cellx.ActiveList;
+		 * @typesign (): cellx.ObservableList;
 		 */
 		clone: function() {
 			return new this.constructor(this, {
@@ -467,29 +464,25 @@
 		}
 	});
 
-	var methods = ['forEach', 'map', 'filter', 'every', 'some', 'reduce', 'reduceRight'];
+	['forEach', 'map', 'filter', 'every', 'some', 'reduce', 'reduceRight'].forEach(function(name) {
+		ObservableList.prototype[name] = function() {
+			return arrayProto[name].apply(this._items, arguments);
+		};
+	});
 
-	for (var i = methods.length; i;) {
-		(function(name) {
-			ActiveList.prototype[name] = function() {
-				return arrayProto[name].apply(this._items, arguments);
-			};
-		})(methods[--i]);
-	}
-
-	cellx.ActiveList = ActiveList;
+	cellx.ObservableList = ObservableList;
 
 	/**
-	 * @typesign (items?: Array|cellx.ActiveList, opts?: {
+	 * @typesign (items?: Array|cellx.ObservableList, opts?: {
 	 *     adoptsItemChanges: boolean = true,
 	 *     comparator?: (a, b): int,
 	 *     sorted?: boolean
-	 * }): cellx.ActiveList;
+	 * }): cellx.ObservableList;
 	 *
-	 * @typesign (items?: Array|cellx.ActiveList, adoptsItemChanges: boolean = true): cellx.ActiveList;
+	 * @typesign (items?: Array|cellx.ObservableList, adoptsItemChanges: boolean = true): cellx.ObservableList;
 	 */
 	function list(items, opts) {
-		return new ActiveList(items, typeof opts == 'boolean' ? { adoptsItemChanges: opts } : opts);
+		return new ObservableList(items, typeof opts == 'boolean' ? { adoptsItemChanges: opts } : opts);
 	}
 
 	cellx.list = list;
