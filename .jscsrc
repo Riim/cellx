@@ -1,47 +1,32 @@
 {
-	"requireCurlyBraces": ["if", "else", "for", "while", "do", "try", "catch", "case", "default"],
-	"requireSpaceAfterKeywords":
-		["if", "else", "for", "while", "do", "switch", "return", "throw", "try", "catch", "case", "with"],
-	"disallowSpaceAfterKeywords": ["default", "break"],
-	"requireSpaceBeforeBlockStatements": true,
-	"requireParenthesesAroundIIFE": true,
-	"requireSpacesInConditionalExpression": {
-		"afterTest": true,
-		"beforeConsequent": true,
-		"afterConsequent": true,
-		"beforeAlternate": true
-	},
-	"requireSpacesInFunction": {
-		"beforeOpeningCurlyBrace": true
-	},
-	"disallowSpacesInFunction": {
-		"beforeOpeningRoundBrace": true
-	},
-	"disallowMultipleVarDecl": true,
-	"disallowEmptyBlocks": true,
-	"disallowSpacesInsideArrayBrackets": true,
-	"disallowSpacesInsideParentheses": true,
-	"requireSpacesInsideObjectBrackets": "all",
-	// "disallowQuotedKeysInObjects": true,
-	"disallowSpaceAfterObjectKeys": true,
-	"requireCommaBeforeLineBreak": true,
-	"requireOperatorBeforeLineBreak": [
-		"?",
-		"=",
-		"+",
-		"-",
-		"/",
-		"*",
-		"==",
-		"===",
-		"!=",
-		"!==",
-		">",
-		">=",
-		"<",
-		"<="
+	"disallowKeywords": ["with"],
+	"requireCurlyBraces": [
+		"if",
+		"else",
+		"case",
+		"default",
+		"for",
+		"while",
+		"do"
 	],
-	"disallowSpaceAfterPrefixUnaryOperators": ["++", "--", "+", "-", "~", "!"],
+	"requireSpaceAfterKeywords": [
+		"if",
+		"else",
+		"switch",
+		"case",
+		"for",
+		"while",
+		"do",
+		"try",
+		"catch",
+		"finally",
+		"throw",
+		"return"
+	],
+	"disallowSpaceAfterKeywords": ["default", "break"],
+	"disallowKeywordsOnNewLine": ["else", "catch", "finally"],
+
+	"disallowSpaceAfterPrefixUnaryOperators": ["!", "++", "--", "+", "-", "~"],
 	"disallowSpaceBeforePostfixUnaryOperators": ["++", "--"],
 	"requireSpaceBeforeBinaryOperators": [
 		"=",
@@ -66,21 +51,77 @@
 		"!=",
 		"!=="
 	],
-	"disallowImplicitTypeConversion": ["binary", "string"],
+	"requireOperatorBeforeLineBreak": [
+		"?",
+		"=",
+		"+",
+		"-",
+		"/",
+		"*",
+		"==",
+		"===",
+		"!=",
+		"!==",
+		">",
+		">=",
+		"<",
+		"<="
+	],
+
 	"requireCamelCaseOrUpperCaseIdentifiers": true,
-	"disallowKeywords": ["with"],
-	"disallowMultipleLineStrings": true,
-	// "disallowMultipleLineBreaks": true,
-	"validateLineBreaks": "LF",
+
+	"disallowMultipleVarDecl": true,
+
+	"requireSpacesInsideObjectBrackets": "all",
+	"disallowSpacesInsideArrayBrackets": true,
+	"disallowSpacesInsideParentheses": true,
+
+	"disallowEmptyBlocks": true,
+
+	"requireParenthesesAroundIIFE": true,
+	"requireSpaceBetweenArguments": true,
+	"requireSpacesInFunction": {
+		"beforeOpeningCurlyBrace": true
+	},
+	"disallowSpacesInFunction": {
+		"beforeOpeningRoundBrace": true
+	},
+
+	"requireSpacesInConditionalExpression": {
+		"afterTest": true,
+		"beforeConsequent": true,
+		"afterConsequent": true,
+		"beforeAlternate": true
+	},
+
+	"disallowSpaceBeforeBinaryOperators": [","],
+	"disallowSpaceBeforeComma": true,
+	"requireCommaBeforeLineBreak": true,
+	"disallowTrailingComma": true,
+
 	"validateQuoteMarks": { "mark": "'", "escape": true },
-	"validateIndentation": "\t",
+	"disallowMultipleLineStrings": true,
+
+	"disallowImplicitTypeConversion": ["binary", "string"],
+	"disallowYodaConditions": true,
+
+	"requireDotNotation": true,
+	"disallowQuotedKeysInObjects": true,
+	"disallowSpaceAfterObjectKeys": true,
+
+	"requireSpaceBeforeBlockStatements": true,
+	"disallowNewlineBeforeBlockStatements": true,
+
+	"requireSpaceAfterLineComment": true,
+
+	"requireSemicolons": true,
+	"disallowSpaceBeforeSemicolon": true,
+
+	"maximumLineLength": 120,
 	"disallowMixedSpacesAndTabs": true,
 	// "disallowTrailingWhitespace": true,
-	"disallowTrailingComma": true,
-	"disallowKeywordsOnNewLine": ["else"],
-	"requireLineFeedAtFileEnd": true,
-	"maximumLineLength": 120,
-	"disallowYodaConditions": true,
-	"requireSpaceAfterLineComment": true,
-	"disallowNewlineBeforeBlockStatements": true
+	// "disallowMultipleLineBreaks": true,
+	"validateIndentation": "\t",
+	"validateLineBreaks": "LF",
+	"requireLineFeedAtFileEnd": true
 }

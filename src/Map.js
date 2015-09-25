@@ -2,7 +2,9 @@
 	var Map = global.Map;
 
 	if (!Map) {
-		var entryStub = { value: undefined };
+		var entryStub = {
+			value: undefined
+		};
 
 		Map = createClass({
 			constructor: function(entries) {

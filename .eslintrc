@@ -16,6 +16,7 @@
 		"no-script-url": 0,
 
 		// Strict Mode
+		"no-extra-strict": 0,
 		"strict": 0,
 
 		// Variables

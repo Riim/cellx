@@ -599,7 +599,7 @@ Short creation syntax:
 var list = cellx.list([1, 2, 3]);
 ```
 
-Like `cellx.Map`, list generates an event `change` upon any change of its records.
+Like `cellx.ObservableMap`, list generates an event `change` upon any change of its records.
 
 During initialization the list may take option `comparator`, which will implement the assortment of its values:
 
