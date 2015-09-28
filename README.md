@@ -199,6 +199,8 @@ class User extends cellx.EventEmitter {
 	};
 
 	constructor(data) {
+        super();
+
         for (let name in data) {
             this[name] = data[name];
         }
@@ -220,18 +222,57 @@ user.lastName = 'Dog';
 // => 'fullName: Sharik Dog'
 ```
 
+### Use with React
+
+[react-bind-observables](https://github.com/Riim/react-bind-observables)
+
+```js
+import React from 'react';
+import { cellx, d } from 'cellx';
+import bindObservables from 'react-bind-observables';
+
+class User {
+    @d.observable age = 20;
+
+    @d.computed ageYearLater = function() {
+        return this.age + 1;
+    };
+}
+
+let user = new User();
+
+setInterval(function() {
+    user.age++;
+}, 1000);
+
+@bindObservables(React, cellx)
+export default class UserCard extends React.Component {
+    @d.computed userAgeTwoYearsLater = function() {
+        return user.ageYearLater + 1;
+    };
+
+    render() {
+        return (<div>
+            <p>age: {user.age}</p>
+            <p>ageYearLater: {user.ageYearLater}</p>
+            <p>ageTwoYearsLater: {this.userAgeTwoYearsLater}</p>
+        </div>);
+    }
+}
+```
+
 ### Options
 
 When you create a cell, you can pass some options:
 
-#### read
+#### get
 
 Additional processing of value during reading:
 
 ```js
 // array that you can't mess up accidentally, the messed up thing will be a copy
 var arr = cellx([1, 2, 3], {
-    read: function(arr) { return arr.slice(); }
+    get: function(arr) { return arr.slice(); }
 });
 
 console.log(arr()[0]);
@@ -243,7 +284,7 @@ console.log(arr()[0]);
 // => 1
 ```
 
-#### write
+#### set
 
 Used to create recordable calculated cells:
 
@@ -255,7 +296,7 @@ function User() {
     this.fullName = cellx(function() {
         return (this.firstName() + ' ' + this.lastName()).trim();
     }, {
-        write: function(name) {
+        set: function(name) {
             name = name.split(' ');
 
             this.firstName(name[0]);
@@ -341,7 +382,7 @@ var value = cellx(Number, { computed: false });
 ```
 
 And vice versa, functions may be instances of some custom type and for their detection they usually get
-the property `constructor` (ECMAScript 6 will allow to change the behavior of` instanceof` using `Symbol.hasInstance`).
+the property `constructor` (ECMAScript 6 will allow to change the behavior of `instanceof` using `Symbol.hasInstance`).
 Functions redefined as `constructor` are counted as usual values by default.
 Cellx instances are like this:
 
@@ -367,7 +408,7 @@ console.log(container()());
 ```
 
 If the custom function still has to be counted as a formula for the calculated cell, you need to pass
-option `computed` with a value` true`:
+option `computed` with a value `true`:
 
 ```js
 function FormulaSum(a, b) {
@@ -397,7 +438,7 @@ just `0` (see `dispose`).
 
 #### on
 
-Adds an event handler. Among the events there are `change` and ` error`:
+Adds an event handler. Among the events there are `change` and `error`:
 
 ```js
 var num = cellx(5);
@@ -416,7 +457,7 @@ Removes previously added event handler.
 
 #### subscribe
 
-Subscribes to the events `change` and ` error`. First argument comes into handler is an error object, second - an event.
+Subscribes to the events `change` and `error`. First argument comes into handler is an error object, second - an event.
 
 ```js
 user.fullName('subscribe', function(err, evt) {
@@ -541,12 +582,12 @@ var user = {
 };
 ```
 
-There, while `firstName` is still empty string, cell` name` is signed for `firstName` and` lastName`,
+There, while `firstName` is still empty string, cell `name` is signed for `firstName` and `lastName`,
 and change in any of them will lead to the change in its value. If you assign to the `firstName` some not empty
-string, then during recalculation of value `name` it simply will not come to reading ` lastName` in the formula,
-i.e. the value of the cell `name` from this moment will not depend on` lastName`.
+string, then during recalculation of value `name` it simply will not come to reading `lastName` in the formula,
+i.e. the value of the cell `name` from this moment will not depend on `lastName`.
 In such cases, cells automatically unsubscribe from dependencies insignificant for them and are not recalculated
-when they change. In the future, if the `firstName` again become an empty string, the cell` name` will re-subscribe
+when they change. In the future, if the `firstName` again become an empty string, the cell `name` will re-subscribe
 to the `lastName`.
 
 ### Collections
@@ -625,7 +666,7 @@ console.log(list.toArray());
 // => [{ x: -100 }, { x: 1 }, { x: 5 }, { x: 7 }, { x: 10 }, { x: 100 }]
 ```
 
-If instead of `comparator` you pass the option `sorted` with the value `true`, it will use the standard` comparator`:
+If instead of `comparator` you pass the option `sorted` with the value `true`, it will use the standard `comparator`:
 
 ```js
 var list = cellx.list([5, 1, 10], { sorted: true });
@@ -658,11 +699,11 @@ Whether or not the list is sorted. Read-only.
 Important difference between list and array is that the list can't contain so-called "holes"
 that is, when it will try to read or set the value of the index beyond the existing range of elements,
 an exception will be generated.
-Range extension (adding of items) occurs through methods `add`,` addRange`, `insert` and `insertRange`.
+Range extension (adding of items) occurs through methods `add`, `addRange`, `insert` and `insertRange`.
 In such case, in the last two methods passed `index` can not be longer than the length of the list.
 
 Sorted list suggests that its values are always in sorted order. Methods
-`set`,` setRange`, `insert` and` insertRange` are contrary to this statement, they either will break the correct order
+`set`, `setRange`, `insert` and `insertRange` are contrary to this statement, they either will break the correct order
 of sorting or (for preservation of this order) will install/paste past the specified index, i.e.
 will not work properly. Therefore, when you call the sorted list, they always generate an exception. It is possible to
 add values to the sorted list through the methods `add` and `addRange`, or during initialization of the list.

@@ -66,7 +66,7 @@
 			}
 		};
 
-		if (opts.write) {
+		if (opts.set) {
 			descr.set = function(value) {
 				this[_name](value);
 			};

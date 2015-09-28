@@ -7,7 +7,7 @@ describe('Cell.js', function() {
 
 			var a = new cellx.Cell(1, { onchange: onChangeSpy });
 
-			a.write(1);
+			a.set(1);
 
 			setTimeout(function() {
 				expect(onChangeSpy.called)
@@ -22,7 +22,7 @@ describe('Cell.js', function() {
 
 			var a = new cellx.Cell(NaN, { onchange: onChangeSpy });
 
-			a.write(NaN);
+			a.set(NaN);
 
 			setTimeout(function() {
 				expect(onChangeSpy.called)
@@ -37,10 +37,10 @@ describe('Cell.js', function() {
 
 			var a = new cellx.Cell(1);
 			var b = new cellx.Cell(function() {
-				return a.read() + NaN;
+				return a.get() + NaN;
 			}, { onchange: onChangeSpy });
 
-			a.write(2);
+			a.set(2);
 
 			setTimeout(function() {
 				expect(onChangeSpy.called)
@@ -57,14 +57,14 @@ describe('Cell.js', function() {
 
 				var a = new cellx.Cell(1, { onchange: onChangeSpy });
 
-				a.write(5);
-				a.write(1);
+				a.set(5);
+				a.set(1);
 
 				setTimeout(function() {
 					expect(onChangeSpy.called)
 						.to.not.be.ok;
 
-					expect(a.read())
+					expect(a.get())
 						.to.equal(1);
 
 					done();
@@ -82,8 +82,8 @@ describe('Cell.js', function() {
 
 				var a = new cellx.Cell(ee1, { onchange: onChangeSpy });
 
-				a.write(ee2);
-				a.write(ee1);
+				a.set(ee2);
+				a.set(ee1);
 
 				setTimeout(function() {
 					expect(onChangeSpy.called)
@@ -105,11 +105,11 @@ describe('Cell.js', function() {
 
 				var a = new cellx.Cell(ee1, { onchange: onChangeSpy });
 
-				a.write(ee2);
+				a.set(ee2);
 
 				ee2.emit('change');
 
-				a.write(ee1);
+				a.set(ee1);
 
 				setTimeout(function() {
 					expect(onChangeSpy.called)
@@ -133,8 +133,8 @@ describe('Cell.js', function() {
 
 				ee1.emit('change');
 
-				a.write(ee2);
-				a.write(ee1);
+				a.set(ee2);
+				a.set(ee1);
 
 				setTimeout(function() {
 					expect(onChangeSpy.called)
@@ -150,7 +150,7 @@ describe('Cell.js', function() {
 			var b = new cellx.Cell(2);
 
 			var cFormulaSpy = sinon.spy(function() {
-				return a.read() + b.read();
+				return a.get() + b.get();
 			});
 
 			var c = new cellx.Cell(cFormulaSpy, { onchange: function() {} });
@@ -174,7 +174,7 @@ describe('Cell.js', function() {
 			var b = new cellx.Cell(2);
 
 			var cFormulaSpy = sinon.spy(function() {
-				return a.read() + b.read();
+				return a.get() + b.get();
 			});
 
 			var c = new cellx.Cell(cFormulaSpy, { onchange: function() {} });
@@ -182,8 +182,8 @@ describe('Cell.js', function() {
 			setTimeout(function() {
 				cFormulaSpy.reset();
 
-				a.write(5);
-				b.write(10);
+				a.set(5);
+				b.set(10);
 
 				setTimeout(function() {
 					expect(cFormulaSpy.calledOnce)
@@ -203,11 +203,11 @@ describe('Cell.js', function() {
 		it('При изменении нескольких родителей дочерний пересчитывается 1 раз (2)', function(done) {
 			var a = new cellx.Cell(1);
 			var b = new cellx.Cell(2);
-			var aa = new cellx.Cell(function() { return a.read() + 1; });
-			var bb = new cellx.Cell(function() { return b.read() + 1; });
+			var aa = new cellx.Cell(function() { return a.get() + 1; });
+			var bb = new cellx.Cell(function() { return b.get() + 1; });
 
 			var cFormulaSpy = sinon.spy(function() {
-				return aa.read() + bb.read();
+				return aa.get() + bb.get();
 			});
 
 			var c = new cellx.Cell(cFormulaSpy, { onchange: function() {} });
@@ -215,8 +215,8 @@ describe('Cell.js', function() {
 			setTimeout(function() {
 				cFormulaSpy.reset();
 
-				a.write(5);
-				b.write(10);
+				a.set(5);
+				b.set(10);
 
 				setTimeout(function() {
 					expect(cFormulaSpy.calledOnce)
@@ -238,13 +238,13 @@ describe('Cell.js', function() {
 				' обработчики которых должны сработать, но ещё не сработали',
 			function(done) {
 				var aChangeSpy = sinon.spy(function() {
-					var bValue = b.read();
+					var bValue = b.get();
 				});
 				var bChangeSpy = sinon.spy(function() {
-					var cValue = c.read();
+					var cValue = c.get();
 				});
 				var cChangeSpy = sinon.spy(function() {
-					var aValue = a.read();
+					var aValue = a.get();
 				});
 
 				var a = new cellx.Cell(1, { onchange: aChangeSpy });
@@ -252,9 +252,9 @@ describe('Cell.js', function() {
 				var c = new cellx.Cell(3, { onchange: cChangeSpy });
 
 				setTimeout(function() {
-					a.write(5);
-					b.write(10);
-					c.write(15);
+					a.set(5);
+					b.set(10);
+					c.set(15);
 
 					setTimeout(function() {
 						expect(aChangeSpy.calledOnce)
@@ -279,41 +279,41 @@ describe('Cell.js', function() {
 			var t = 0;
 			var aa = new cellx.Cell(function() {
 				if (t++) {
-					b.write(10);
+					b.set(10);
 				}
 
-				return a.read() + 1;
+				return a.get() + 1;
 			}, { onchange: function() {} });
 
 			var bb = new cellx.Cell(function() {
-				return b.read() + 1;
+				return b.get() + 1;
 			}, { onchange: function() {} });
 
-			a.write(5);
+			a.set(5);
 
-			expect(aa.read())
+			expect(aa.get())
 				.to.equal(6);
 		});
 
-		it('Правильно считается, если в формуле делаем write и сразу read', function() {
+		it('Правильно считается, если в формуле делаем set и сразу get', function() {
 			var a = new cellx.Cell(1);
 			var b = new cellx.Cell(function() {
-				return a.read() + 1;
+				return a.get() + 1;
 			});
 			var c = new cellx.Cell(function() {
-				if (b.read() == 3) {
-					a.write(10);
+				if (b.get() == 3) {
+					a.set(10);
 				}
 
-				return b.read() + 1;
+				return b.get() + 1;
 			});
 			var d = new cellx.Cell(function() {
-				return c.read() + 1;
+				return c.get() + 1;
 			});
 
-			a.write(2);
+			a.set(2);
 
-			expect(d.read())
+			expect(d.get())
 				.to.equal(13);
 		});
 
@@ -322,7 +322,7 @@ describe('Cell.js', function() {
 
 			var a = new cellx.Cell(1);
 
-			a.write(2);
+			a.set(2);
 
 			a.on('change', onChangeSpy);
 
@@ -348,14 +348,14 @@ describe('Cell.js', function() {
 					throw 1;
 				}
 
-				return a.read() + 1;
+				return a.get() + 1;
 			}, { onerror: bOnErrorSpy });
 
-			var c1 = new cellx.Cell(function() { return b.read() + 1; }, { onerror: c1OnErrorSpy });
-			var c2 = new cellx.Cell(function() { return b.read() + 1; }, { onerror: c2OnErrorSpy });
-			var d = new cellx.Cell(function() { return c1.read() + c2.read(); }, { onerror: dOnErrorSpy });
+			var c1 = new cellx.Cell(function() { return b.get() + 1; }, { onerror: c1OnErrorSpy });
+			var c2 = new cellx.Cell(function() { return b.get() + 1; }, { onerror: c2OnErrorSpy });
+			var d = new cellx.Cell(function() { return c1.get() + c2.get(); }, { onerror: dOnErrorSpy });
 
-			a.write(2);
+			a.set(2);
 
 			setTimeout(function() {
 				expect(bOnErrorSpy.calledOnce)
@@ -368,6 +368,37 @@ describe('Cell.js', function() {
 					.to.be.ok;
 
 				expect(dOnErrorSpy.calledOnce)
+					.to.be.ok;
+
+				done();
+			}, 1);
+		});
+
+		// Если в get устанавливать _level раньше запуска _tryFormula,
+		// то на уровнях 2+ _level будет всегда 1, что уже неверно.
+		// Дальше если, при перерасчёте ячейки с неверным _level,
+		// доходит до проверки "level > oldLevel" (для этого нужно чтобы как-то поменялись ведущие ячейки),
+		// то её формула посчитается лишний второй раз.
+		it('_level в пассивном режиме считается правильно', function(done) {
+			var a = new cellx.Cell(1);
+			var a2 = new cellx.Cell(2);
+
+			var b = new cellx.Cell(function() { return a.get() + 1; });
+
+			var cFormulaSpy = sinon.spy(function() {
+				return b.get() + (b.get() == 2 ? 1 : a2.get());
+			});
+
+			var c = new cellx.Cell(cFormulaSpy);
+
+			c.on('change', function() {});
+
+			cFormulaSpy.reset();
+
+			a.set(2);
+
+			setTimeout(function() {
+				expect(cFormulaSpy.calledOnce)
 					.to.be.ok;
 
 				done();

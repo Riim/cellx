@@ -197,6 +197,8 @@ class User extends cellx.EventEmitter {
 	};
 
 	constructor(data) {
+        super();
+
         for (let name in data) {
             this[name] = data[name];
         }
@@ -222,18 +224,57 @@ user.lastName = 'Пёс';
 подписываться на его изменения и создавать вычисляемые из него свойства. При этом в уже написанной части приложения
 ничего менять не придётся.
 
+### Использование с React
+
+[react-bind-observables](https://github.com/Riim/react-bind-observables)
+
+```js
+import React from 'react';
+import { cellx, d } from 'cellx';
+import bindObservables from 'react-bind-observables';
+
+class User {
+    @d.observable age = 20;
+
+    @d.computed ageYearLater = function() {
+        return this.age + 1;
+    };
+}
+
+let user = new User();
+
+setInterval(function() {
+    user.age++;
+}, 1000);
+
+@bindObservables(React, cellx)
+export default class UserCard extends React.Component {
+    @d.computed userAgeTwoYearsLater = function() {
+        return user.ageYearLater + 1;
+    };
+
+    render() {
+        return (<div>
+            <p>age: {user.age}</p>
+            <p>ageYearLater: {user.ageYearLater}</p>
+            <p>ageTwoYearsLater: {this.userAgeTwoYearsLater}</p>
+        </div>);
+    }
+}
+```
+
 ### Опции
 
 При создании ячейки можно передать некоторые опции:
 
-#### read
+#### get
 
 Дополнительная обработка значения при чтении:
 
 ```js
 // массив, который не получится случайно испортить, портиться будет копия
 var arr = cellx([1, 2, 3], {
-    read: function(arr) { return arr.slice(); }
+    get: function(arr) { return arr.slice(); }
 });
 
 console.log(arr()[0]);
@@ -245,7 +286,7 @@ console.log(arr()[0]);
 // => 1
 ```
 
-#### write
+#### set
 
 Используется для создания записываемых вычисляемых ячеек:
 
@@ -257,7 +298,7 @@ function User() {
     this.fullName = cellx(function() {
         return (this.firstName() + ' ' + this.lastName()).trim();
     }, {
-        write: function(name) {
+        set: function(name) {
             name = name.split(' ');
 
             this.firstName(name[0]);

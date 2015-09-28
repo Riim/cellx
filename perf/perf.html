@@ -145,10 +145,10 @@ function testCellx(report, layerCount, done) {
 	for (var i = layerCount; i--;) {
 		layer = (function(m) {
 			var s = {
-				prop1: new cellx.Cell(function() { return m.prop2.read(); }),
-				prop2: new cellx.Cell(function() { return m.prop1.read() - m.prop3.read(); }),
-				prop3: new cellx.Cell(function() { return m.prop2.read() + m.prop4.read(); }),
-				prop4: new cellx.Cell(function() { return m.prop3.read(); })
+				prop1: new cellx.Cell(function() { return m.prop2.get(); }),
+				prop2: new cellx.Cell(function() { return m.prop1.get() - m.prop3.get(); }),
+				prop3: new cellx.Cell(function() { return m.prop2.get() + m.prop4.get(); }),
+				prop4: new cellx.Cell(function() { return m.prop3.get(); })
 			};
 
 			s.prop1.on('change', function() {});
@@ -156,10 +156,10 @@ function testCellx(report, layerCount, done) {
 			s.prop3.on('change', function() {});
 			s.prop4.on('change', function() {});
 
-			s.prop1.read();
-			s.prop2.read();
-			s.prop3.read();
-			s.prop4.read();
+			s.prop1.get();
+			s.prop2.get();
+			s.prop3.get();
+			s.prop4.get();
 
 			return s;
 		})(layer);
@@ -168,24 +168,24 @@ function testCellx(report, layerCount, done) {
 	var end = layer;
 
 	report.beforeChange = [
-		end.prop1.read(),
-		end.prop2.read(),
-		end.prop3.read(),
-		end.prop4.read()
+		end.prop1.get(),
+		end.prop2.get(),
+		end.prop3.get(),
+		end.prop4.get()
 	];
 
 	var st = Date.now();
 
-	start.prop1.write(4);
-	start.prop2.write(3);
-	start.prop3.write(2);
-	start.prop4.write(1);
+	start.prop1.set(4);
+	start.prop2.set(3);
+	start.prop3.set(2);
+	start.prop4.set(1);
 
 	report.afterChange = [
-		end.prop1.read(),
-		end.prop2.read(),
-		end.prop3.read(),
-		end.prop4.read()
+		end.prop1.get(),
+		end.prop2.get(),
+		end.prop3.get(),
+		end.prop4.get()
 	];
 
 	report.recalculationTime = Date.now() - st;

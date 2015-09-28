@@ -48,10 +48,10 @@
 
 		switch (argCount) {
 			case 0: {
-				return cell.read();
+				return cell.get();
 			}
 			case 1: {
-				return cell.write(firstArg);
+				return cell.set(firstArg);
 			}
 			default: {
 				switch (firstArg) {

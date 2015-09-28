@@ -13,14 +13,14 @@
 
 	/**
 	 * @typesign (value?, opts?: {
-	 *     read?: (value): *,
+	 *     get?: (value): *,
 	 *     validate?: (value): *,
 	 *     computed?: false
 	 * }): cellx;
 	 *
 	 * @typesign (formula: (): *, opts?: {
-	 *     read?: (value): *,
-	 *     write?: (value),
+	 *     get?: (value): *,
+	 *     set?: (value),
 	 *     validate?: (value): *,
 	 *     computed?: true
 	 * }): cellx;

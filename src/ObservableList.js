@@ -4,7 +4,7 @@
 	var arrayProto = Array.prototype;
 
 	/**
-	 * @typesign (a, b): enum[-1, 1, 0];
+	 * @typesign (a, b): -1|1|0;
 	 */
 	function defaultComparator(a, b) {
 		if (a < b) { return -1; }
