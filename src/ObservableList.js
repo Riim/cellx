@@ -1,8 +1,6 @@
 (function() {
 	var EventEmitter = cellx.EventEmitter;
 
-	var arrayProto = Array.prototype;
-
 	/**
 	 * @typesign (a, b): -1|1|0;
 	 */
@@ -466,7 +464,7 @@
 
 	['forEach', 'map', 'filter', 'every', 'some', 'reduce', 'reduceRight'].forEach(function(name) {
 		ObservableList.prototype[name] = function() {
-			return arrayProto[name].apply(this._items, arguments);
+			return Array.prototype[name].apply(this._items, arguments);
 		};
 	});
 

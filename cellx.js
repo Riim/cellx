@@ -71,6 +71,9 @@
 	 * @typesign (a, b): boolean;
 	 */
 	var is = Object.is || function(a, b) {
+		if (a === 0 && b === 0) {
+			return 1 / a == 1 / b;
+		}
 		return a === b || (a != a && b != b);
 	};
 
@@ -982,8 +985,6 @@
 	(function() {
 		var EventEmitter = cellx.EventEmitter;
 	
-		var arrayProto = Array.prototype;
-	
 		/**
 		 * @typesign (a, b): -1|1|0;
 		 */
@@ -1447,7 +1448,7 @@
 	
 		['forEach', 'map', 'filter', 'every', 'some', 'reduce', 'reduceRight'].forEach(function(name) {
 			ObservableList.prototype[name] = function() {
-				return arrayProto[name].apply(this._items, arguments);
+				return Array.prototype[name].apply(this._items, arguments);
 			};
 		});
 	
