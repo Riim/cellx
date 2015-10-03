@@ -24,7 +24,7 @@
 				} else if (isArray(initialValue)) {
 					initialValue = initialValue.slice();
 				} else if (initialValue.constructor === Object) {
-					initialValue = assign({}, initialValue);
+					initialValue = mixin({}, initialValue);
 				} else {
 					switch (toString.call(initialValue)) {
 						case '[object Date]': {

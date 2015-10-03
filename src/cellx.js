@@ -57,15 +57,15 @@
 	/**
 	 * @typesign (target: Object, source: Object): Object;
 	 */
-	var assign = Object.assign || function(target, source) {
-		for (var name in source) {
-			if (hasOwn.call(source, name)) {
-				target[name] = source[name];
-			}
+	function mixin(target, source) {
+		var names = Object.getOwnPropertyNames(source);
+
+		for (var i = names.length; i;) {
+			Object.defineProperty(target, names[--i], Object.getOwnPropertyDescriptor(source, names[i]));
 		}
 
 		return target;
-	};
+	}
 
 	/**
 	 * @typesign (a, b): boolean;
@@ -112,21 +112,21 @@
 		}
 
 		if (description.Static) {
-			assign(constr, description.Static);
+			mixin(constr, description.Static);
 			delete description.Static;
 		}
 
 		var proto = constr.prototype = Object.create(parent.prototype);
 
 		if (description.Implements) {
-			description.Implements.forEach(function(mixin) {
-				assign(proto, mixin.prototype);
+			description.Implements.forEach(function(impl) {
+				mixin(proto, impl.prototype);
 			});
 
 			delete description.Implements;
 		}
 
-		assign(proto, description);
+		mixin(proto, description);
 
 		proto.constructor = constr;
 
