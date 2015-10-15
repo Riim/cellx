@@ -1,5 +1,9 @@
 # cellx
 
+<p align="center">
+    <img src="https://raw.githubusercontent.com/Riim/cellx/master/docs/images/logo.png">
+</p>
+
 Ultra-fast implementation of reactivity for javascript.
 
 [Этот документ на русском](https://github.com/Riim/cellx/blob/master/README.ru.md)
