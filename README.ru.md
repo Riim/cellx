@@ -1,6 +1,4 @@
-# cellx
-
-<p align="center">
+<p>
     <img src="https://raw.githubusercontent.com/Riim/cellx/master/docs/images/logo.png" width="237" height="129">
 </p>
 

@@ -1,12 +1,15 @@
-# cellx
+<p align="right">
+    <a href="https://github.com/Riim/cellx/blob/master/README.ru.md">Этот документ на русском</a>
+</p>
 
-<p align="center">
+<p>
     <img src="https://raw.githubusercontent.com/Riim/cellx/master/docs/images/logo.png" width="237" height="129">
 </p>
 
 Ultra-fast implementation of reactivity for javascript.
 
-[Этот документ на русском](https://github.com/Riim/cellx/blob/master/README.ru.md)
+[![DevDependency Status](https://david-dm.org/Riim/cellx/dev-status.svg)](https://david-dm.org/Riim/cellx#info=devDependencies)
+[![license](https://img.shields.io/npm/l/cellx.svg)](https://www.npmjs.com/package/cellx)
 
 ## Installation
 
