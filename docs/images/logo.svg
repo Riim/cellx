@@ -1,28 +1,27 @@
 <?xml version="1.0"?>
-<svg width="473.26199" height="257.33401" xmlns="http://www.w3.org/2000/svg">
- <metadata id="metadata40">image/svg+xml</metadata>
+<svg width="474" height="258" xmlns="http://www.w3.org/2000/svg">
 
- <g>
+ <metadata id="metadata40">image/svg+xmlimage/svg+xml</metadata>
+ <g id="g5">
   <title>background</title>
-  <rect x="-1" y="-1" width="475.26199" height="259.33401" id="canvas_background" fill="none"/>
+  <rect x="-1" y="-1" width="476" height="260" id="canvas_background" fill="#ffffff"/>
  </g>
- <g>
+ <g id="g10" transform="matrix(0.99944726,0,0,0.994856,-0.00055274493,1.994856) ">
   <title>Layer 1</title>
-  <rect height="259.33401" width="473.26199" y="-1" x="-1" id="rect4" fill="#ffffff"/>
-  <line stroke-linecap="null" stroke-linejoin="null" y2="234.00066" x2="109.33351" y1="18.112919" x1="137.25838" id="line6" stroke-width="8" stroke="#007fff" fill="none"/>
-  <line stroke-linecap="null" stroke-linejoin="null" y2="184.07651" x2="226.07623" y1="19.333035" x1="141.33388" id="line8" stroke-width="8" stroke="#007fff" fill="none"/>
-  <line stroke-linecap="null" stroke-linejoin="null" y2="114.39922" x2="219.32727" y1="135.64355" x1="171.83215" id="line10" stroke-width="8" stroke="#ffffff" fill="none"/>
-  <line stroke-linecap="null" stroke-linejoin="null" y2="84.757713" x2="153.12863" y1="74.791344" x1="100.23167" id="line12" stroke-width="8" stroke="#ffffff" fill="none"/>
-  <line stroke-linecap="null" stroke-linejoin="null" y2="197.460353" x2="140.89914" y1="195.361513" x1="87.708084" id="line14" stroke-width="8" stroke="#ffffff" fill="none"/>
-  <line stroke-linecap="null" stroke-linejoin="null" y2="52.666649" x2="24.666607" y1="91.95295" x1="234.23921" id="line16" stroke-width="8" stroke="#007fff" fill="none"/>
-  <line stroke-linecap="null" stroke-linejoin="null" y2="186.17917" x2="51.398472" y1="193.22057" x1="221.09027" id="line18" stroke-width="8" stroke="#007fff" fill="none"/>
-  <line stroke-linecap="null" stroke-linejoin="null" y2="98.97187" x2="235.06761" y1="180.66698" x1="51.333393" id="line20" stroke-width="8" stroke="#007fff" fill="none"/>
-  <circle r="11" cy="14.999674" cx="138.33386" id="circle22" stroke-width="8" stroke="#007fff" fill="#ffffff"/>
-  <circle r="11" cy="242.334" cx="107.66685" id="circle24" stroke-width="8" stroke="#007fff" fill="#ffffff"/>
-  <circle r="11" cy="193.00104" cx="230.33409" id="circle26" stroke-width="8" stroke="#007fff" fill="#ffffff"/>
-  <circle r="11" cy="185.66699" cx="41.666805" id="circle28" stroke-width="8" stroke="#007fff" fill="#ffffff"/>
-  <circle r="11" cy="94.143425" cx="245.09633" id="circle30" stroke-width="8" stroke="#007fff" fill="#ffffff"/>
-  <circle r="11" cy="51" cx="15" id="circle32" stroke-width="8" stroke="#007fff" fill="#ffffff"/>
-  <text stroke-opacity="null" x="314.31683" y="150.97853" font-size="80px" text-anchor="left" id="text34" stroke-width="0" stroke="#007fff" fill="#007fff" font-family="Helvetica, Arial, sans-serif">cellx</text>
+  <text font-family="Helvetica, Arial, sans-serif" fill="#007fff" stroke="#007fff" stroke-width="0" x="315.31741" y="155.61105" font-size="80px" text-anchor="left" id="text34">cellx</text>
+  <line fill="none" stroke="#007fff" stroke-width="8" stroke-linecap="null" stroke-linejoin="null" y2="232.99548" x2="109.33406" y1="22.68914" x1="136.79381" id="line6"/>
+  <line fill="none" stroke="#007fff" stroke-width="8" stroke-linecap="null" stroke-linejoin="null" y2="183.07133" x2="225.69067" y1="21.583677" x1="142.26466" id="line8"/>
+  <line fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="null" stroke-linejoin="null" y2="113.19034" x2="218.74989" y1="134.79503" x1="170.71425" id="line10"/>
+  <line fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="null" stroke-linejoin="null" y2="84.898148" x2="155.90892" y1="74.624374" x1="101.39037" id="line12"/>
+  <line fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="null" stroke-linejoin="null" y2="196.63536" x2="139.99095" y1="194.35634" x1="86.259354" id="line14"/>
+  <circle fill="#ffffff" stroke="#007fff" stroke-width="8" r="11" cy="12.995152" cx="138.33441" id="circle22"/>
+  <circle fill="#ffffff" stroke="#007fff" stroke-width="8" r="11" cy="242.32884" cx="108.26768" id="circle24"/>
+  <line fill="none" stroke="#007fff" stroke-width="8" stroke-linecap="null" stroke-linejoin="null" y2="52.236187" x2="24.66716" y1="91.798996" x1="234.23976" id="line16"/>
+  <line fill="none" stroke="#007fff" stroke-width="8" stroke-linecap="null" stroke-linejoin="null" y2="185.174" x2="51.399025" y1="192.21539" x1="221.09082" id="line18"/>
+  <line fill="none" stroke="#007fff" stroke-width="8" stroke-linecap="null" stroke-linejoin="null" y2="97.853073" x2="234.29596" y1="179.6618" x1="51.333946" id="line20"/>
+  <circle fill="#ffffff" stroke="#007fff" stroke-width="8" r="11" cy="191.99586" cx="230.33464" id="circle26"/>
+  <circle fill="#ffffff" stroke="#007fff" stroke-width="8" r="11" cy="184.66182" cx="41.667358" id="circle28"/>
+  <circle fill="#ffffff" stroke="#007fff" stroke-width="8" r="11" cy="93.22406" cx="245.09688" id="circle30"/>
+  <circle fill="#ffffff" stroke="#007fff" stroke-width="8" r="11" cy="49.994827" cx="15.000553" id="circle32"/>
  </g>
 </svg>

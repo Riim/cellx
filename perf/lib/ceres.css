@@ -19,6 +19,12 @@ form, label, input, button, select, datalist, optgroup, option, textarea, keygen
 		font-family: inherit;
 	}
 
+a, em, strong, small, s, cite, q, dfn, abbr, data, time, code, var, samp, kbd, sub, sup, i, b, u, mark, ruby, rb, rt,
+	rtc, rp, bdi, bdo, span,
+ins, del {
+	font-size: inherit;
+}
+
 html,
 body {
 	height: 100%;
@@ -244,6 +250,7 @@ p .-textfield {
 	-webkit-transform: translateY(-40%);
 	    -ms-transform: translateY(-40%);
 	        transform: translateY(-40%);
+	pointer-events: none;
 }
 
 .-select select {
@@ -413,6 +420,7 @@ p .-select {
 	bottom: 1px;
 	left: 1px;
 	border: 1px solid hsl(210, 100%, 64%);
+	border-radius: 2px;
 	content: '';
 }
 
