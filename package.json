@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.2.7",
+  "version": "1.2.9",
   "description": "",
   "main": "cellx.js",
   "directories": {
@@ -20,28 +20,28 @@
   },
   "homepage": "https://github.com/Riim/cellx",
   "devDependencies": {
-    "chai": "^3.3.0",
+    "chai": "^3.4.0",
     "del": "^2.0.2",
     "gulp": "^3.9.0",
     "gulp-eslint": "^1.0.0",
-    "gulp-include": "^2.0.2",
+    "gulp-include": "^2.0.3",
     "gulp-jscs": "^3.0.1",
     "gulp-karma": "0.0.5",
     "gulp-load-plugins": "^1.0.0",
     "gulp-plumber": "^1.0.1",
     "gulp-rename": "^1.2.2",
     "gulp-uglify": "^1.4.2",
-    "gulp-util": "^3.0.6",
-    "karma": "^0.13.11",
+    "gulp-util": "^3.0.7",
+    "karma": "^0.13.14",
     "karma-chai": "^0.1.0",
     "karma-chrome-launcher": "^0.2.1",
-    "karma-coverage": "^0.5.2",
+    "karma-coverage": "^0.5.3",
     "karma-mocha": "^0.2.0",
     "karma-mocha-reporter": "^1.1.1",
     "karma-sinon": "^1.0.4",
     "mocha": "^2.3.3",
     "node-notifier": "^4.3.1",
     "require-dir": "^0.3.0",
-    "sinon": "^1.17.1"
+    "sinon": "^1.17.2"
   }
 }

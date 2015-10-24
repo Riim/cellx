@@ -31,7 +31,7 @@
 					try {
 						q[i]();
 					} catch (err) {
-						cellx.logError(err);
+						cellx._logError(err);
 					}
 				}
 			}

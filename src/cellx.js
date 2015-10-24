@@ -14,14 +14,14 @@
 	/**
 	 * @typesign (value?, opts?: {
 	 *     get?: (value): *,
-	 *     validate?: (value): *,
+	 *     validate?: (value),
 	 *     computed?: false
 	 * }): cellx;
 	 *
 	 * @typesign (formula: (): *, opts?: {
 	 *     get?: (value): *,
 	 *     set?: (value),
-	 *     validate?: (value): *,
+	 *     validate?: (value),
 	 *     computed?: true
 	 * }): cellx;
 	 */
@@ -41,15 +41,11 @@
 	}
 	cellx.cellx = cellx;
 
-	var KEY_UID = '__cellx_uid__';
 	var KEY_CELLS = '__cellx_cells__';
-
 	if (global.Symbol && typeof Symbol.iterator == 'symbol') {
-		KEY_UID = Symbol(KEY_UID);
 		KEY_CELLS = Symbol(KEY_CELLS);
 	}
 
-	cellx.KEY_UID = KEY_UID;
 	cellx.KEY_CELLS = KEY_CELLS;
 
 	var uidCounter = 0;
@@ -152,7 +148,17 @@
 		logError = function() {};
 	}
 
-	cellx.logError = logError;
+	/**
+	 * For override:
+	 * @example
+	 * var cellx = require('cellx');
+	 * var winston = require('winston');
+	 *
+	 * cellx._logError = function(err) {
+	 *     winston.log('error', err.message + ' ' + err.stack);
+	 * };
+	 */
+	cellx._logError = logError;
 
 	// gulp-include
 	//= include ./Map.js

@@ -14,14 +14,14 @@
 	/**
 	 * @typesign (value?, opts?: {
 	 *     get?: (value): *,
-	 *     validate?: (value): *,
+	 *     validate?: (value),
 	 *     computed?: false
 	 * }): cellx;
 	 *
 	 * @typesign (formula: (): *, opts?: {
 	 *     get?: (value): *,
 	 *     set?: (value),
-	 *     validate?: (value): *,
+	 *     validate?: (value),
 	 *     computed?: true
 	 * }): cellx;
 	 */
@@ -41,15 +41,11 @@
 	}
 	cellx.cellx = cellx;
 
-	var KEY_UID = '__cellx_uid__';
 	var KEY_CELLS = '__cellx_cells__';
-
 	if (global.Symbol && typeof Symbol.iterator == 'symbol') {
-		KEY_UID = Symbol(KEY_UID);
 		KEY_CELLS = Symbol(KEY_CELLS);
 	}
 
-	cellx.KEY_UID = KEY_UID;
 	cellx.KEY_CELLS = KEY_CELLS;
 
 	var uidCounter = 0;
@@ -152,13 +148,28 @@
 		logError = function() {};
 	}
 
-	cellx.logError = logError;
+	/**
+	 * For override:
+	 * @example
+	 * var cellx = require('cellx');
+	 * var winston = require('winston');
+	 *
+	 * cellx._logError = function(err) {
+	 *     winston.log('error', err.message + ' ' + err.stack);
+	 * };
+	 */
+	cellx._logError = logError;
 
 	// gulp-include
 	(function() {
 		var Map = global.Map;
 	
 		if (!Map) {
+			var KEY_UID = '__cellx_Map_uid__';
+			if (global.Symbol && typeof Symbol.iterator == 'symbol') {
+				KEY_UID = Symbol(KEY_UID);
+			}
+	
 			var entryStub = {
 				value: undefined
 			};
@@ -423,7 +434,7 @@
 						try {
 							q[i]();
 						} catch (err) {
-							cellx.logError(err);
+							cellx._logError(err);
 						}
 					}
 				}
@@ -465,7 +476,7 @@
 		/**
 		 * @class cellx.EventEmitter
 		 * @extends {Object}
-		 * @typesign new (parent: cellx.EventEmitter): cellx.EventEmitter;
+		 * @typesign new (parent?: cellx.EventEmitter): cellx.EventEmitter;
 		 */
 		var EventEmitter = createClass({
 			Static: {
@@ -675,7 +686,7 @@
 			 * @typesign (err);
 			 */
 			_logError: function(err) {
-				cellx.logError(err);
+				cellx._logError(err);
 			}
 		});
 	
@@ -742,7 +753,7 @@
 			},
 	
 			/**
-			 * Уничтожает инстанс освобождая занятые им ресурсы.
+			 * Освобождает занятые инстансом ресурсы.
 			 * @typesign ();
 			 */
 			dispose: function() {
@@ -1065,7 +1076,7 @@
 				this.adoptsItemChanges = opts.adoptsItemChanges !== false;
 	
 				/**
-				 * @type {?Function}
+				 * @type {?(a, b): int}
 				 */
 				this.comparator = null;
 	
@@ -1386,37 +1397,37 @@
 			},
 	
 			/**
-			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList), context: Object = global);
+			 * @typesign (cb: (item, index: uint, arr: Array), context: Object = global);
 			 */
 			forEach: null,
 	
 			/**
-			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): *, context: Object = global): Array;
+			 * @typesign (cb: (item, index: uint, arr: Array): *, context: Object = global): Array;
 			 */
 			map: null,
 	
 			/**
-			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): Array;
+			 * @typesign (cb: (item, index: uint, arr: Array): boolean, context: Object = global): Array;
 			 */
 			filter: null,
 	
 			/**
-			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): boolean;
+			 * @typesign (cb: (item, index: uint, arr: Array): boolean, context: Object = global): boolean;
 			 */
 			every: null,
 	
 			/**
-			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): boolean;
+			 * @typesign (cb: (item, index: uint, arr: Array): boolean, context: Object = global): boolean;
 			 */
 			some: null,
 	
 			/**
-			 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList): *, initialValue?): *;
+			 * @typesign (cb: (accumulator: *, item, index: uint, arr: Array): *, initialValue?): *;
 			 */
 			reduce: null,
 	
 			/**
-			 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList): *, initialValue?): *;
+			 * @typesign (cb: (accumulator: *, item, index: uint, arr: Array): *, initialValue?): *;
 			 */
 			reduceRight: null,
 	
@@ -1588,7 +1599,7 @@
 		 * @typesign new (value?, opts?: {
 		 *     owner?: Object,
 		 *     get?: (value): *,
-		 *     validate?: (value): *,
+		 *     validate?: (value),
 		 *     onchange?: (evt: cellx~Event): boolean|undefined,
 		 *     onerror?: (evt: cellx~Event): boolean|undefined,
 		 *     computed?: false
@@ -1598,7 +1609,7 @@
 		 *     owner?: Object,
 		 *     get?: (value): *,
 		 *     set?: (value),
-		 *     validate?: (value): *,
+		 *     validate?: (value),
 		 *     onchange?: (evt: cellx~Event): boolean|undefined,
 		 *     onerror?: (evt: cellx~Event): boolean|undefined,
 		 *     computed?: true
@@ -1740,7 +1751,7 @@
 			},
 	
 			/**
-			 * @typesign (listener: (err: Error, evt: cellx~Event): boolean|undefined): cellx.Cell;
+			 * @typesign (listener: (err: Error|null, evt: cellx~Event): boolean|undefined): cellx.Cell;
 			 */
 			subscribe: function(listener) {
 				function wrapper(evt) {
@@ -1755,7 +1766,7 @@
 				return this;
 			},
 			/**
-			 * @typesign (listener: (err: Error, evt: cellx~Event): boolean|undefined): cellx.Cell;
+			 * @typesign (listener: (err: Error|null, evt: cellx~Event): boolean|undefined): cellx.Cell;
 			 */
 			unsubscribe: function(listener) {
 				this

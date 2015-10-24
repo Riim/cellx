@@ -116,7 +116,7 @@
 	 * @typesign new (value?, opts?: {
 	 *     owner?: Object,
 	 *     get?: (value): *,
-	 *     validate?: (value): *,
+	 *     validate?: (value),
 	 *     onchange?: (evt: cellx~Event): boolean|undefined,
 	 *     onerror?: (evt: cellx~Event): boolean|undefined,
 	 *     computed?: false
@@ -126,7 +126,7 @@
 	 *     owner?: Object,
 	 *     get?: (value): *,
 	 *     set?: (value),
-	 *     validate?: (value): *,
+	 *     validate?: (value),
 	 *     onchange?: (evt: cellx~Event): boolean|undefined,
 	 *     onerror?: (evt: cellx~Event): boolean|undefined,
 	 *     computed?: true
@@ -268,7 +268,7 @@
 		},
 
 		/**
-		 * @typesign (listener: (err: Error, evt: cellx~Event): boolean|undefined): cellx.Cell;
+		 * @typesign (listener: (err: Error|null, evt: cellx~Event): boolean|undefined): cellx.Cell;
 		 */
 		subscribe: function(listener) {
 			function wrapper(evt) {
@@ -283,7 +283,7 @@
 			return this;
 		},
 		/**
-		 * @typesign (listener: (err: Error, evt: cellx~Event): boolean|undefined): cellx.Cell;
+		 * @typesign (listener: (err: Error|null, evt: cellx~Event): boolean|undefined): cellx.Cell;
 		 */
 		unsubscribe: function(listener) {
 			this

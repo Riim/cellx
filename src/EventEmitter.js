@@ -17,7 +17,7 @@
 	/**
 	 * @class cellx.EventEmitter
 	 * @extends {Object}
-	 * @typesign new (parent: cellx.EventEmitter): cellx.EventEmitter;
+	 * @typesign new (parent?: cellx.EventEmitter): cellx.EventEmitter;
 	 */
 	var EventEmitter = createClass({
 		Static: {
@@ -227,7 +227,7 @@
 		 * @typesign (err);
 		 */
 		_logError: function(err) {
-			cellx.logError(err);
+			cellx._logError(err);
 		}
 	});
 

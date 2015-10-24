@@ -2,6 +2,11 @@
 	var Map = global.Map;
 
 	if (!Map) {
+		var KEY_UID = '__cellx_Map_uid__';
+		if (global.Symbol && typeof Symbol.iterator == 'symbol') {
+			KEY_UID = Symbol(KEY_UID);
+		}
+
 		var entryStub = {
 			value: undefined
 		};
