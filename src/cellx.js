@@ -51,6 +51,37 @@
 	var uidCounter = 0;
 
 	/**
+	 * @typesign (err);
+	 */
+	var logError;
+
+	if (global.console) {
+		if (console.error) {
+			logError = function(err) {
+				console.error(err === Object(err) && err.stack || err);
+			};
+		} else {
+			logError = function(err) {
+				console.log('Error: ' + (err === Object(err) && err.stack || err));
+			};
+		}
+	} else {
+		logError = function() {};
+	}
+
+	/**
+	 * For override:
+	 * @example
+	 * var cellx = require('cellx');
+	 * var winston = require('winston');
+	 *
+	 * cellx._logError = function(err) {
+	 *     winston.log('error', err.message + ' ' + err.stack);
+	 * };
+	 */
+	cellx._logError = logError;
+
+	/**
 	 * @typesign (target: Object, source: Object): Object;
 	 */
 	function mixin(target, source) {
@@ -129,40 +160,9 @@
 		return constr;
 	}
 
-	/**
-	 * @typesign (err);
-	 */
-	var logError;
-
-	if (global.console) {
-		if (console.error) {
-			logError = function(err) {
-				console.error(err === Object(err) && err.stack || err);
-			};
-		} else {
-			logError = function(err) {
-				console.log('Error: ' + (err === Object(err) && err.stack || err));
-			};
-		}
-	} else {
-		logError = function() {};
-	}
-
-	/**
-	 * For override:
-	 * @example
-	 * var cellx = require('cellx');
-	 * var winston = require('winston');
-	 *
-	 * cellx._logError = function(err) {
-	 *     winston.log('error', err.message + ' ' + err.stack);
-	 * };
-	 */
-	cellx._logError = logError;
-
 	// gulp-include
-	//= include ./Map.js
 	//= include ./nextTick.js
+	//= include ./Map.js
 	//= include ./EventEmitter.js
 	//= include ./ObservableCollection.js
 	//= include ./ObservableMap.js
@@ -170,6 +170,13 @@
 	//= include ./Cell.js
 	//= include ./invokeCell.js
 	//= include ./d.js
+
+	cellx.utils = {
+		logError: logError,
+		mixin: mixin,
+		createClass: createClass,
+		nextTick: nextTick
+	};
 
 	if (typeof exports == 'object') {
 		if (typeof module == 'object') {

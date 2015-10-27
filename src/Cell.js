@@ -1,5 +1,4 @@
 (function() {
-	var nextTick = cellx.nextTick;
 	var EventEmitter = cellx.EventEmitter;
 
 	var KEY_INNER = EventEmitter.KEY_INNER;

@@ -1,24 +1,28 @@
-(function() {
-	/**
-	 * @typesign (cb: ());
-	 */
-	var nextTick;
-
+/**
+ * @typesign (cb: ());
+ */
+var nextTick = (function() {
 	if (global.process && process.toString() == '[object process]' && process.nextTick) {
-		nextTick = process.nextTick;
-	} else if (global.setImmediate) {
-		nextTick = function(cb) {
+		return process.nextTick;
+	}
+
+	if (global.setImmediate) {
+		return function(cb) {
 			setImmediate(cb);
 		};
-	} else if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
+	}
+
+	if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
 		var prm = Promise.resolve();
 
-		nextTick = function(cb) {
+		return function(cb) {
 			prm.then(function() {
 				cb();
 			});
 		};
-	} else if (global.postMessage && !global.ActiveXObject) {
+	}
+
+	if (global.postMessage && !global.ActiveXObject) {
 		var queue;
 
 		global.addEventListener('message', function() {
@@ -37,19 +41,17 @@
 			}
 		}, false);
 
-		nextTick = function(cb) {
+		return function(cb) {
 			if (queue) {
 				queue.push(cb);
 			} else {
 				queue = [cb];
-				global.postMessage('__tic__', '*');
+				postMessage('__tic__', '*');
 			}
-		};
-	} else {
-		nextTick = function(cb) {
-			setTimeout(cb, 1);
 		};
 	}
 
-	cellx.nextTick = nextTick;
+	return function(cb) {
+		setTimeout(cb, 1);
+	};
 })();

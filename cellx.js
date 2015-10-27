@@ -51,6 +51,37 @@
 	var uidCounter = 0;
 
 	/**
+	 * @typesign (err);
+	 */
+	var logError;
+
+	if (global.console) {
+		if (console.error) {
+			logError = function(err) {
+				console.error(err === Object(err) && err.stack || err);
+			};
+		} else {
+			logError = function(err) {
+				console.log('Error: ' + (err === Object(err) && err.stack || err));
+			};
+		}
+	} else {
+		logError = function() {};
+	}
+
+	/**
+	 * For override:
+	 * @example
+	 * var cellx = require('cellx');
+	 * var winston = require('winston');
+	 *
+	 * cellx._logError = function(err) {
+	 *     winston.log('error', err.message + ' ' + err.stack);
+	 * };
+	 */
+	cellx._logError = logError;
+
+	/**
 	 * @typesign (target: Object, source: Object): Object;
 	 */
 	function mixin(target, source) {
@@ -129,38 +160,65 @@
 		return constr;
 	}
 
+	// gulp-include
 	/**
-	 * @typesign (err);
+	 * @typesign (cb: ());
 	 */
-	var logError;
-
-	if (global.console) {
-		if (console.error) {
-			logError = function(err) {
-				console.error(err === Object(err) && err.stack || err);
-			};
-		} else {
-			logError = function(err) {
-				console.log('Error: ' + (err === Object(err) && err.stack || err));
+	var nextTick = (function() {
+		if (global.process && process.toString() == '[object process]' && process.nextTick) {
+			return process.nextTick;
+		}
+	
+		if (global.setImmediate) {
+			return function(cb) {
+				setImmediate(cb);
 			};
 		}
-	} else {
-		logError = function() {};
-	}
-
-	/**
-	 * For override:
-	 * @example
-	 * var cellx = require('cellx');
-	 * var winston = require('winston');
-	 *
-	 * cellx._logError = function(err) {
-	 *     winston.log('error', err.message + ' ' + err.stack);
-	 * };
-	 */
-	cellx._logError = logError;
-
-	// gulp-include
+	
+		if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
+			var prm = Promise.resolve();
+	
+			return function(cb) {
+				prm.then(function() {
+					cb();
+				});
+			};
+		}
+	
+		if (global.postMessage && !global.ActiveXObject) {
+			var queue;
+	
+			global.addEventListener('message', function() {
+				if (queue) {
+					var q = queue;
+	
+					queue = null;
+	
+					for (var i = 0, l = q.length; i < l; i++) {
+						try {
+							q[i]();
+						} catch (err) {
+							cellx._logError(err);
+						}
+					}
+				}
+			}, false);
+	
+			return function(cb) {
+				if (queue) {
+					queue.push(cb);
+				} else {
+					queue = [cb];
+					postMessage('__tic__', '*');
+				}
+			};
+		}
+	
+		return function(cb) {
+			setTimeout(cb, 1);
+		};
+	})();
+	
 	(function() {
 		var Map = global.Map;
 	
@@ -399,62 +457,6 @@
 		}
 	
 		cellx.Map = Map;
-	})();
-	
-	(function() {
-		/**
-		 * @typesign (cb: ());
-		 */
-		var nextTick;
-	
-		if (global.process && process.toString() == '[object process]' && process.nextTick) {
-			nextTick = process.nextTick;
-		} else if (global.setImmediate) {
-			nextTick = function(cb) {
-				setImmediate(cb);
-			};
-		} else if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
-			var prm = Promise.resolve();
-	
-			nextTick = function(cb) {
-				prm.then(function() {
-					cb();
-				});
-			};
-		} else if (global.postMessage && !global.ActiveXObject) {
-			var queue;
-	
-			global.addEventListener('message', function() {
-				if (queue) {
-					var q = queue;
-	
-					queue = null;
-	
-					for (var i = 0, l = q.length; i < l; i++) {
-						try {
-							q[i]();
-						} catch (err) {
-							cellx._logError(err);
-						}
-					}
-				}
-			}, false);
-	
-			nextTick = function(cb) {
-				if (queue) {
-					queue.push(cb);
-				} else {
-					queue = [cb];
-					global.postMessage('__tic__', '*');
-				}
-			};
-		} else {
-			nextTick = function(cb) {
-				setTimeout(cb, 1);
-			};
-		}
-	
-		cellx.nextTick = nextTick;
 	})();
 	
 	/**
@@ -1506,7 +1508,6 @@
 	})();
 	
 	(function() {
-		var nextTick = cellx.nextTick;
 		var EventEmitter = cellx.EventEmitter;
 	
 		var KEY_INNER = EventEmitter.KEY_INNER;
@@ -2382,6 +2383,13 @@
 		};
 	})();
 	
+
+	cellx.utils = {
+		logError: logError,
+		mixin: mixin,
+		createClass: createClass,
+		nextTick: nextTick
+	};
 
 	if (typeof exports == 'object') {
 		if (typeof module == 'object') {
