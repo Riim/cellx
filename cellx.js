@@ -476,19 +476,14 @@
 		/**
 		 * @class cellx.EventEmitter
 		 * @extends {Object}
-		 * @typesign new (parent?: cellx.EventEmitter): cellx.EventEmitter;
+		 * @typesign new (): cellx.EventEmitter;
 		 */
 		var EventEmitter = createClass({
 			Static: {
 				KEY_INNER: KEY_INNER
 			},
 	
-			constructor: function(parent) {
-				/**
-				 * @type {cellx.EventEmitter}
-				 */
-				this.parent = parent || null;
-	
+			constructor: function() {
 				/**
 				 * @type {Object<Array<{ listener: (evt: cellx~Event): boolean|undefined, context: Object }>>}
 				 */
@@ -659,6 +654,39 @@
 	
 			/**
 			 * @typesign (evt: cellx~Event);
+			 *
+			 * For override:
+			 * @example
+			 * function View(el) {
+			 *     this.element = el;
+			 *     el._view = this;
+			 * }
+			 *
+			 * View.prototype = Object.create(EventEmitter.prototype);
+			 * View.prototype.constructor = View;
+			 *
+			 * View.prototype.getParent = function() {
+			 *     var node = this.element;
+			 *
+			 *     while (node = node.parentNode) {
+			 *         if (node._view) {
+			 *             return node._view;
+			 *         }
+			 *     }
+			 *
+			 *     return null;
+			 * };
+			 *
+			 * View.prototype._handleEvent = function(evt) {
+			 *     // call super._handleEvent
+			 *     EventEmitter.prototype._handleEvent.call(this, evt);
+			 *
+			 *     var parent = this.getParent();
+			 *
+			 *     if (parent && evt.bubbles !== false && !evt.isPropagationStopped) {
+			 *         parent._handleEvent(evt);
+			 *     }
+			 * };
 			 */
 			_handleEvent: function(evt) {
 				var events = this._events && this._events[evt.type];
@@ -675,10 +703,6 @@
 							this._logError(err);
 						}
 					}
-				}
-	
-				if (this.parent && evt.bubbles !== false && !evt.isPropagationStopped) {
-					this.parent._handleEvent(evt);
 				}
 			},
 	
