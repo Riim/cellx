@@ -39,7 +39,7 @@
 
 		return cell;
 	}
-	cellx.cellx = cellx;
+	cellx.cellx = cellx; // for destructuring
 
 	var KEY_CELLS = '__cellx_cells__';
 	if (global.Symbol && typeof Symbol.iterator == 'symbol') {

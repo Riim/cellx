@@ -60,8 +60,8 @@
 
 					var slaves = cell._slaves;
 
-					for (var i = slaves.length; i;) {
-						var slave = slaves[--i];
+					for (var i = 0, l = slaves.length; i < l; i++) {
+						var slave = slaves[i];
 
 						if (slave._fixed) {
 							(releasePlan[1] || (releasePlan[1] = [])).push(slave);
@@ -604,8 +604,8 @@
 
 					var slaves = this._slaves;
 
-					for (var k = slaves.length; k;) {
-						var slave = slaves[--k];
+					for (var k = 0, n = slaves.length; k < n; k++) {
+						var slave = slaves[k];
 
 						if (slave._fixed) {
 							var slaveLevel = slave._level;
@@ -676,12 +676,12 @@
 
 			var slaves = this._slaves;
 
-			for (var i = slaves.length; i;) {
+			for (var i = 0, l = slaves.length; i < l; i++) {
 				if (evt.isPropagationStopped) {
 					break;
 				}
 
-				slaves[--i]._handleErrorEvent(evt);
+				slaves[i]._handleErrorEvent(evt);
 			}
 		},
 
@@ -707,8 +707,8 @@
 			if (this._active) {
 				var slaves = this._slaves;
 
-				for (var i = slaves.length; i;) {
-					slaves[--i]._dispose();
+				for (var i = 0, l = slaves.length; i < l; i++) {
+					slaves[i]._dispose();
 				}
 			}
 		}

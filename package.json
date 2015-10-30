@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.2.11",
+  "version": "1.2.12",
   "description": "",
   "main": "cellx.js",
   "directories": {
@@ -25,7 +25,7 @@
     "gulp": "^3.9.0",
     "gulp-eslint": "^1.0.0",
     "gulp-include": "^2.0.3",
-    "gulp-jscs": "^3.0.1",
+    "gulp-jscs": "^3.0.2",
     "gulp-karma": "0.0.5",
     "gulp-load-plugins": "^1.0.0",
     "gulp-plumber": "^1.0.1",
