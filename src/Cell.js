@@ -37,7 +37,9 @@
 				if (releasePlanIndex) {
 					var index = releasePlanIndex;
 
-					cell._recalc();
+					if (cell._active) {
+						cell._recalc();
+					}
 
 					if (!releasePlan[index].length) {
 						releasePlan[index] = null;

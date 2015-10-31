@@ -41,8 +41,11 @@
 	}
 	cellx.cellx = cellx; // for destructuring
 
+	var KEY_UID = '__cellx_uid__';
 	var KEY_CELLS = '__cellx_cells__';
+
 	if (global.Symbol && typeof Symbol.iterator == 'symbol') {
+		KEY_UID = Symbol(KEY_UID);
 		KEY_CELLS = Symbol(KEY_CELLS);
 	}
 
