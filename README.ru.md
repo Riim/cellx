@@ -797,5 +797,6 @@ console.log(list.toArray());
 
 ## Использованные материалы
 
-При разработке были использованы идеи [Дмитрия Карловского](https://github.com/nin-jin/)
-из статьи [Атом — минимальный кирпичик FRP приложения](http://habrahabr.ru/post/235121/).
+- [Атом - минимальный кирпичик FRP приложения](http://habrahabr.ru/post/235121/)
+- [Warp9 - The next generation of reactive js libraries](http://rystsov.info/warp9/)
+- [Knockout - Simplify dynamic JavaScript UIs with the Model-View-View Model (MVVM) pattern](http://knockoutjs.com/)

@@ -803,5 +803,6 @@ Type signature: `(): string;`.
 
 ## List of references
 
-Ideas of [Dmitry Karlovsky](https://github.com/nin-jin/) from article
-[Атом — минимальный кирпичик FRP приложения](http://habrahabr.ru/post/235121/) have been used in the development.
+- [Атом - минимальный кирпичик FRP приложения](http://habrahabr.ru/post/235121/)
+- [Warp9 - The next generation of reactive js libraries](http://rystsov.info/warp9/)
+- [Knockout - Simplify dynamic JavaScript UIs with the Model-View-View Model (MVVM) pattern](http://knockoutjs.com/)
