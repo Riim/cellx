@@ -15,14 +15,16 @@
 	 * @typesign (value?, opts?: {
 	 *     get?: (value): *,
 	 *     validate?: (value),
-	 *     computed?: false
+	 *     computed?: false,
+	 *     debugKey?: string
 	 * }): cellx;
 	 *
 	 * @typesign (formula: (): *, opts?: {
 	 *     get?: (value): *,
 	 *     set?: (value),
 	 *     validate?: (value),
-	 *     computed?: true
+	 *     computed?: true,
+	 *     debugKey?: string
 	 * }): cellx;
 	 */
 	function cellx(value, opts) {

@@ -120,7 +120,8 @@
 	 *     validate?: (value),
 	 *     onchange?: (evt: cellx~Event): boolean|undefined,
 	 *     onerror?: (evt: cellx~Event): boolean|undefined,
-	 *     computed?: false
+	 *     computed?: false,
+	 *     debugKey?: string
 	 * }): cellx.Cell;
 	 *
 	 * @typesign new (formula: (): *, opts?: {
@@ -130,7 +131,8 @@
 	 *     validate?: (value),
 	 *     onchange?: (evt: cellx~Event): boolean|undefined,
 	 *     onerror?: (evt: cellx~Event): boolean|undefined,
-	 *     computed?: true
+	 *     computed?: true,
+	 *     debugKey?: string
 	 * }): cellx.Cell;
 	 */
 	var Cell = createClass({
@@ -223,7 +225,7 @@
 		},
 
 		/**
-		 * @override cellx.EventEmitter#on
+		 * @override
 		 */
 		on: function(type, listener, context) {
 			if (!currentlyRelease) {
@@ -239,7 +241,7 @@
 			return this;
 		},
 		/**
-		 * @override cellx.EventEmitter#off
+		 * @override
 		 */
 		off: function(type, listener, context) {
 			if (!currentlyRelease) {
@@ -256,13 +258,13 @@
 		},
 
 		/**
-		 * @override cellx.EventEmitter#_on
+		 * @override
 		 */
 		_on: function(type, listener, context) {
 			EventEmitter.prototype._on.call(this, type, listener, context || this.owner);
 		},
 		/**
-		 * @override cellx.EventEmitter#_off
+		 * @override
 		 */
 		_off: function(type, listener, context) {
 			EventEmitter.prototype._off.call(this, type, listener, context || this.owner);
@@ -437,7 +439,9 @@
 		 */
 		set: function(value) {
 			if (this.computed && !this._set) {
-				throw new TypeError('Cannot write to read-only cell');
+				throw new TypeError(
+					(this.debugKey ? '[' + this.debugKey + '] ' : '') + 'Cannot write to read-only cell'
+				);
 			}
 
 			var oldValue = this._value;
@@ -662,6 +666,14 @@
 				type: 'error',
 				error: err
 			});
+		},
+
+		/**
+		 * @override
+		 * @typesign (err: Error);
+		 */
+		_logError: function(err) {
+			cellx._logError((this.debugKey ? '[' + this.debugKey + '] ' : '') + err.stack);
 		},
 
 		/**
