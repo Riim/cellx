@@ -57,7 +57,7 @@
 
 		target[_name] = cellx(value, opts);
 
-		var descr = {
+		var descriptor = {
 			configurable: descr.configurable,
 			enumerable: descr.enumerable,
 
@@ -67,12 +67,12 @@
 		};
 
 		if (opts.set) {
-			descr.set = function(value) {
+			descriptor.set = function(value) {
 				this[_name](value);
 			};
 		}
 
-		return descr;
+		return descriptor;
 	}
 
 	cellx.d = {

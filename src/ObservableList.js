@@ -402,37 +402,37 @@
 		},
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: Array), context: Object = global);
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList), context: Object = global);
 		 */
 		forEach: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: Array): *, context: Object = global): Array;
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): *, context: Object = global): Array;
 		 */
 		map: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: Array): boolean, context: Object = global): Array;
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): Array;
 		 */
 		filter: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: Array): boolean, context: Object = global): boolean;
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): boolean;
 		 */
 		every: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: Array): boolean, context: Object = global): boolean;
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): boolean;
 		 */
 		some: null,
 
 		/**
-		 * @typesign (cb: (accumulator: *, item, index: uint, arr: Array): *, initialValue?): *;
+		 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList): *, initialValue?): *;
 		 */
 		reduce: null,
 
 		/**
-		 * @typesign (cb: (accumulator: *, item, index: uint, arr: Array): *, initialValue?): *;
+		 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList): *, initialValue?): *;
 		 */
 		reduceRight: null,
 
@@ -464,7 +464,7 @@
 
 	['forEach', 'map', 'filter', 'every', 'some', 'reduce', 'reduceRight'].forEach(function(name) {
 		ObservableList.prototype[name] = function() {
-			return Array.prototype[name].apply(this._items, arguments);
+			return Array.prototype[name].apply(this, arguments);
 		};
 	});
 
