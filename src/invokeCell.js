@@ -18,6 +18,10 @@
 		var cell = owner[KEY_CELLS].get(wrapper);
 
 		if (!cell) {
+			if (opts.cloneValue) {
+				initialValue = opts.cloneValue(initialValue);
+			}
+
 			opts = Object.create(opts);
 			opts.owner = owner;
 

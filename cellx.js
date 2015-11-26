@@ -13,16 +13,23 @@
 
 	/**
 	 * @typesign (value?, opts?: {
+	 *     owner?: Object,
+	 *     cloneValue?: (value): *,
 	 *     get?: (value): *,
 	 *     validate?: (value),
+	 *     onchange?: (evt: cellx~Event): boolean|undefined,
+	 *     onerror?: (evt: cellx~Event): boolean|undefined,
 	 *     computed?: false,
 	 *     debugKey?: string
 	 * }): cellx;
 	 *
 	 * @typesign (formula: (): *, opts?: {
+	 *     owner?: Object,
 	 *     get?: (value): *,
 	 *     set?: (value),
 	 *     validate?: (value),
+	 *     onchange?: (evt: cellx~Event): boolean|undefined,
+	 *     onerror?: (evt: cellx~Event): boolean|undefined,
 	 *     computed?: true,
 	 *     debugKey?: string
 	 * }): cellx;
@@ -38,6 +45,14 @@
 			return invokeCell(cell, initialValue, opts, this, value, slice.call(arguments, 1), arguments.length);
 		}
 		cell.constructor = cellx;
+
+		if (opts.onchange || opts.onerror) {
+			if (!opts.owner) {
+				throw new TypeError('Owner is required');
+			}
+
+			cell.call(opts.owner);
+		}
 
 		return cell;
 	}
@@ -2260,6 +2275,10 @@
 			var cell = owner[KEY_CELLS].get(wrapper);
 	
 			if (!cell) {
+				if (opts.cloneValue) {
+					initialValue = opts.cloneValue(initialValue);
+				}
+	
 				opts = Object.create(opts);
 				opts.owner = owner;
 	
@@ -2312,7 +2331,7 @@
 	
 			var _name = '_' + name;
 	
-			target[_name] = cellx(descr.initializer(), opts);
+			target[_name] = cellx(descr.initializer.call(target), opts);
 	
 			return {
 				configurable: descr.configurable,

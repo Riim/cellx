@@ -16,7 +16,7 @@
 
 		var _name = '_' + name;
 
-		target[_name] = cellx(descr.initializer(), opts);
+		target[_name] = cellx(descr.initializer.call(target), opts);
 
 		return {
 			configurable: descr.configurable,
