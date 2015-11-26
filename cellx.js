@@ -2260,31 +2260,11 @@
 			var cell = owner[KEY_CELLS].get(wrapper);
 	
 			if (!cell) {
-				if (initialValue != null && typeof initialValue == 'object') {
-					if (typeof initialValue.clone == 'function') {
-						initialValue = initialValue.clone();
-					} else if (isArray(initialValue)) {
-						initialValue = initialValue.slice();
-					} else if (initialValue.constructor === Object) {
-						initialValue = mixin({}, initialValue);
-					} else {
-						switch (toString.call(initialValue)) {
-							case '[object Date]': {
-								initialValue = new Date(initialValue);
-								break;
-							}
-							case '[object RegExp]': {
-								initialValue = new RegExp(initialValue);
-								break;
-							}
-						}
-					}
-				}
-	
 				opts = Object.create(opts);
 				opts.owner = owner;
 	
 				cell = new Cell(initialValue, opts);
+	
 				owner[KEY_CELLS].set(wrapper, cell);
 			}
 	
