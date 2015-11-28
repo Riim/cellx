@@ -2,7 +2,7 @@
 	var EventEmitter = cellx.EventEmitter;
 
 	/**
-	 * @typesign (a, b): -1|1|0;
+	 * @typesign (a, b) -> -1|1|0;
 	 */
 	function defaultComparator(a, b) {
 		if (a < b) { return -1; }
@@ -54,10 +54,10 @@
 	 * @implements {ObservableCollection}
 	 *
 	 * @typesign new (items?: Array|cellx.ObservableList, opts?: {
-	 *     adoptsItemChanges: boolean = true,
-	 *     comparator?: (a, b): int,
+	 *     adoptsItemChanges?: boolean,
+	 *     comparator?: (a, b) -> int,
 	 *     sorted?: boolean
-	 * }): cellx.ObservableList;
+	 * }) -> cellx.ObservableList;
 	 */
 	var ObservableList = createClass({
 		Extends: EventEmitter,
@@ -81,7 +81,7 @@
 			this.adoptsItemChanges = opts.adoptsItemChanges !== false;
 
 			/**
-			 * @type {?(a, b): int}
+			 * @type {?(a, b) -> int}
 			 */
 			this.comparator = null;
 
@@ -98,7 +98,7 @@
 		},
 
 		/**
-		 * @typesign (index: int, allowEndIndex: boolean = false): uint|undefined;
+		 * @typesign (index: int, allowEndIndex?: boolean) -> uint|undefined;
 		 */
 		_validateIndex: function(index, allowEndIndex) {
 			if (index === undefined) {
@@ -119,35 +119,35 @@
 		},
 
 		/**
-		 * @typesign (value): boolean;
+		 * @typesign (value) -> boolean;
 		 */
 		contains: function(value) {
 			return this._valueCounts.has(value);
 		},
 
 		/**
-		 * @typesign (value, fromIndex: int = 0): int;
+		 * @typesign (value, fromIndex?: int) -> int;
 		 */
 		indexOf: function(value, fromIndex) {
 			return this._items.indexOf(value, this._validateIndex(fromIndex));
 		},
 
 		/**
-		 * @typesign (value, fromIndex: int = -1): int;
+		 * @typesign (value, fromIndex?: int) -> int;
 		 */
 		lastIndexOf: function(value, fromIndex) {
 			return this._items.lastIndexOf(value, this._validateIndex(fromIndex));
 		},
 
 		/**
-		 * @typesign (index: int): *;
+		 * @typesign (index: int) -> *;
 		 */
 		get: function(index) {
 			return this._items[this._validateIndex(index)];
 		},
 
 		/**
-		 * @typesign (index: int = 0, count?: uint): Array;
+		 * @typesign (index?: int, count?: uint) -> Array;
 		 */
 		getRange: function(index, count) {
 			index = this._validateIndex(index || 0, true);
@@ -166,7 +166,7 @@
 		},
 
 		/**
-		 * @typesign (index: int, value): cellx.ObservableList;
+		 * @typesign (index: int, value) -> cellx.ObservableList;
 		 */
 		set: function(index, value) {
 			if (this.sorted) {
@@ -192,7 +192,7 @@
 		},
 
 		/**
-		 * @typesign (index: int, items: Array): cellx.ObservableList;
+		 * @typesign (index: int, items: Array) -> cellx.ObservableList;
 		 */
 		setRange: function(index, items) {
 			if (this.sorted) {
@@ -235,7 +235,7 @@
 		},
 
 		/**
-		 * @typesign (item): cellx.ObservableList;
+		 * @typesign (item) -> cellx.ObservableList;
 		 */
 		add: function(item) {
 			this.addRange([item]);
@@ -243,7 +243,7 @@
 		},
 
 		/**
-		 * @typesign (items: Array): cellx.ObservableList;
+		 * @typesign (items: Array) -> cellx.ObservableList;
 		 */
 		addRange: function(items) {
 			if (!items.length) {
@@ -257,7 +257,7 @@
 		},
 
 		/**
-		 * @typesign (index: int, item): cellx.ObservableList;
+		 * @typesign (index: int, item) -> cellx.ObservableList;
 		 */
 		insert: function(index, item) {
 			this.insertRange(index, [item]);
@@ -265,7 +265,7 @@
 		},
 
 		/**
-		 * @typesign (index: int, items: Array): cellx.ObservableList;
+		 * @typesign (index: int, items: Array) -> cellx.ObservableList;
 		 */
 		insertRange: function(index, items) {
 			if (this.sorted) {
@@ -294,7 +294,7 @@
 		},
 
 		/**
-		 * @typesign (item, fromIndex: int = 0): cellx.ObservableList;
+		 * @typesign (item, fromIndex?: int) -> cellx.ObservableList;
 		 */
 		remove: function(item, fromIndex) {
 			var index = this._items.indexOf(item, this._validateIndex(fromIndex));
@@ -314,7 +314,7 @@
 		},
 
 		/**
-		 * @typesign (item, fromIndex: int = 0): cellx.ObservableList;
+		 * @typesign (item, fromIndex?: int) -> cellx.ObservableList;
 		 */
 		removeAll: function(item, fromIndex) {
 			var items = this._items;
@@ -337,7 +337,7 @@
 		},
 
 		/**
-		 * @typesign (index: int): cellx.ObservableList;
+		 * @typesign (index: int) -> cellx.ObservableList;
 		 */
 		removeAt: function(index) {
 			this._unregisterValue(this._items.splice(this._validateIndex(index), 1)[0]);
@@ -349,7 +349,7 @@
 		},
 
 		/**
-		 * @typesign (index: int = 0, count?: uint): cellx.ObservableList;
+		 * @typesign (index?: int, count?: uint) -> cellx.ObservableList;
 		 */
 		removeRange: function(index, count) {
 			index = this._validateIndex(index || 0, true);
@@ -379,7 +379,7 @@
 		},
 
 		/**
-		 * @typesign (): cellx.ObservableList;
+		 * @typesign () -> cellx.ObservableList;
 		 */
 		clear: function() {
 			if (this.length) {
@@ -395,49 +395,49 @@
 		},
 
 		/**
-		 * @typesign (separator: string = ','): string;
+		 * @typesign (separator?: string) -> string;
 		 */
 		join: function(separator) {
 			return this._items.join(separator);
 		},
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList), context: Object = global);
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList), context?: Object);
 		 */
 		forEach: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): *, context: Object = global): Array;
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> *, context?: Object) -> Array;
 		 */
 		map: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): Array;
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> Array;
 		 */
 		filter: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): boolean;
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> boolean;
 		 */
 		every: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): boolean;
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> boolean;
 		 */
 		some: null,
 
 		/**
-		 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList): *, initialValue?): *;
+		 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;
 		 */
 		reduce: null,
 
 		/**
-		 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList): *, initialValue?): *;
+		 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;
 		 */
 		reduceRight: null,
 
 		/**
-		 * @typesign (): cellx.ObservableList;
+		 * @typesign () -> cellx.ObservableList;
 		 */
 		clone: function() {
 			return new this.constructor(this, {
@@ -448,14 +448,14 @@
 		},
 
 		/**
-		 * @typesign (): Array;
+		 * @typesign () -> Array;
 		 */
 		toArray: function() {
 			return this._items.slice();
 		},
 
 		/**
-		 * @typesign (): string;
+		 * @typesign () -> string;
 		 */
 		toString: function() {
 			return this._items.join();
@@ -464,7 +464,7 @@
 
 	['forEach', 'map', 'filter', 'every', 'some', 'reduce', 'reduceRight'].forEach(function(name) {
 		ObservableList.prototype[name] = function() {
-			return Array.prototype[name].apply(this, arguments);
+			return Array.prototype[name].apply(this._items, arguments);
 		};
 	});
 
@@ -472,12 +472,12 @@
 
 	/**
 	 * @typesign (items?: Array|cellx.ObservableList, opts?: {
-	 *     adoptsItemChanges: boolean = true,
-	 *     comparator?: (a, b): int,
+	 *     adoptsItemChanges?: boolean,
+	 *     comparator?: (a, b) -> int,
 	 *     sorted?: boolean
-	 * }): cellx.ObservableList;
+	 * }) -> cellx.ObservableList;
 	 *
-	 * @typesign (items?: Array|cellx.ObservableList, adoptsItemChanges: boolean = true): cellx.ObservableList;
+	 * @typesign (items?: Array|cellx.ObservableList, adoptsItemChanges?: boolean) -> cellx.ObservableList;
 	 */
 	function list(items, opts) {
 		return new ObservableList(items, typeof opts == 'boolean' ? { adoptsItemChanges: opts } : opts);

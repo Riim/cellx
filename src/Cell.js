@@ -116,24 +116,24 @@
 	 *
 	 * @typesign new (value?, opts?: {
 	 *     owner?: Object,
-	 *     get?: (value): *,
+	 *     get?: (value) -> *,
 	 *     validate?: (value),
-	 *     onchange?: (evt: cellx~Event): boolean|undefined,
-	 *     onerror?: (evt: cellx~Event): boolean|undefined,
+	 *     onchange?: (evt: cellx~Event) -> boolean|undefined,
+	 *     onerror?: (evt: cellx~Event) -> boolean|undefined,
 	 *     computed?: false,
 	 *     debugKey?: string
-	 * }): cellx.Cell;
+	 * }) -> cellx.Cell;
 	 *
-	 * @typesign new (formula: (): *, opts?: {
+	 * @typesign new (formula: () -> *, opts?: {
 	 *     owner?: Object,
-	 *     get?: (value): *,
+	 *     get?: (value) -> *,
 	 *     set?: (value),
 	 *     validate?: (value),
-	 *     onchange?: (evt: cellx~Event): boolean|undefined,
-	 *     onerror?: (evt: cellx~Event): boolean|undefined,
+	 *     onchange?: (evt: cellx~Event) -> boolean|undefined,
+	 *     onerror?: (evt: cellx~Event) -> boolean|undefined,
 	 *     computed?: true,
 	 *     debugKey?: string
-	 * }): cellx.Cell;
+	 * }) -> cellx.Cell;
 	 */
 	var Cell = createClass({
 		Extends: EventEmitter,
@@ -271,7 +271,7 @@
 		},
 
 		/**
-		 * @typesign (listener: (err: Error|null, evt: cellx~Event): boolean|undefined): cellx.Cell;
+		 * @typesign (listener: (err: Error|null, evt: cellx~Event) -> boolean|undefined) -> cellx.Cell;
 		 */
 		subscribe: function(listener) {
 			function wrapper(evt) {
@@ -286,7 +286,7 @@
 			return this;
 		},
 		/**
-		 * @typesign (listener: (err: Error|null, evt: cellx~Event): boolean|undefined): cellx.Cell;
+		 * @typesign (listener: (err: Error|null, evt: cellx~Event) -> boolean|undefined) -> cellx.Cell;
 		 */
 		unsubscribe: function(listener) {
 			this
@@ -391,7 +391,7 @@
 		},
 
 		/**
-		 * @typesign (): *;
+		 * @typesign () -> *;
 		 */
 		get: function() {
 			if (!currentlyRelease) {
@@ -435,7 +435,7 @@
 		},
 
 		/**
-		 * @typesign (value): boolean;
+		 * @typesign (value) -> boolean;
 		 */
 		set: function(value) {
 			if (this.computed && !this._set) {
@@ -516,14 +516,14 @@
 		},
 
 		/**
-		 * @typesign (): boolean|undefined;
+		 * @typesign () -> boolean|undefined;
 		 */
 		recalc: function() {
 			return this._recalc(true);
 		},
 
 		/**
-		 * @typesign (force: boolean = false): boolean|undefined;
+		 * @typesign (force?: boolean) -> boolean|undefined;
 		 */
 		_recalc: function(force) {
 			if (!force) {
@@ -634,7 +634,7 @@
 		},
 
 		/**
-		 * @typesign (): *;
+		 * @typesign () -> *;
 		 */
 		_tryFormula: function() {
 			var prevCalculatedCell = calculatedCell;
@@ -700,7 +700,7 @@
 		},
 
 		/**
-		 * @typesign (): cellx.Cell;
+		 * @typesign () -> cellx.Cell;
 		 */
 		dispose: function() {
 			if (!currentlyRelease) {

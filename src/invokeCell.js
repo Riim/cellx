@@ -18,6 +18,10 @@
 		var cell = owner[KEY_CELLS].get(wrapper);
 
 		if (!cell) {
+			if (argCount >= 2 && firstArg === 'dispose') {
+				return;
+			}
+
 			if (opts.cloneValue) {
 				initialValue = opts.cloneValue(initialValue);
 			}

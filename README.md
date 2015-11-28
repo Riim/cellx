@@ -620,122 +620,122 @@ add values to the sorted list through the methods `add` and `addRange`, or durin
 
 ###### contains
 
-Type signature: `(value): boolean;`.
+Type signature: `(value) -> boolean;`.
 
 Checks if the value is in the list. In cases of a large amount of values in the list it may be significantly faster
 than `list.indexOf(value) != -1`.
 
 ###### indexOf
 
-Type signature: `(value, fromIndex: int = 0): int;`.
+Type signature: `(value, fromIndex?: int) -> int;`.
 
 ###### lastIndexOf
 
-Type signature: `(value, fromIndex: int = -1): int;`.
+Type signature: `(value, fromIndex?: int) -> int;`.
 
 ###### get
 
-Type signature: `(index: int): *;`.
+Type signature: `(index: int) -> *;`.
 
 ###### getRange
 
-Type signature: `(index: int = 0, count?: uint): Array;`.
+Type signature: `(index?: int, count?: uint) -> Array;`.
 
 If `count` is unspecified it makes copies till the end of the list.
 
 ###### set
 
-Type signature: `(index: int, value): cellx.ObservableList;`.
+Type signature: `(index: int, value) -> cellx.ObservableList;`.
 
 ###### setRange
 
-Type signature: `(index: int, items: Array): cellx.ObservableList;`.
+Type signature: `(index: int, items: Array) -> cellx.ObservableList;`.
 
 ###### add
 
-Type signature: `(item): cellx.ObservableList;`.
+Type signature: `(item) -> cellx.ObservableList;`.
 
 ###### addRange
 
-Type signature: `(items: Array): cellx.ObservableList;`.
+Type signature: `(items: Array) -> cellx.ObservableList;`.
 
 ###### insert
 
-Type signature: `(index: int, item): cellx.ObservableList;`.
+Type signature: `(index: int, item) -> cellx.ObservableList;`.
 
 ###### insertRange
 
-Type signature: `(index: int, items: Array): cellx.ObservableList;`.
+Type signature: `(index: int, items: Array) -> cellx.ObservableList;`.
 
 ###### remove
 
-Type signature: `(item, fromIndex: int = 0): cellx.ObservableList;`.
+Type signature: `(item, fromIndex?: int) -> cellx.ObservableList;`.
 
 Removes the first occurrence of `item` in the list.
 
 ###### removeAll
 
-Type signature: `(item, fromIndex: int = 0): cellx.ObservableList;`.
+Type signature: `(item, fromIndex?: int) -> cellx.ObservableList;`.
 
 It removes all occurrences of `item` list.
 
 ###### removeAt
 
-Type signature: `(index: int): cellx.ObservableList;`.
+Type signature: `(index: int) -> cellx.ObservableList;`.
 
 ###### removeRange
 
-Type signature: `(index: int = 0, count?: uint): cellx.ObservableList;`.
+Type signature: `(index?: int, count?: uint) -> cellx.ObservableList;`.
 
 If `count` is unspecified it will remove everything till the end of the list.
 
 ###### clear
 
-Type signature: `(): cellx.ObservableList;`.
+Type signature: `() -> cellx.ObservableList;`.
 
 ###### join
 
-Type signature: `(separator: string = ','): string;`.
+Type signature: `(separator?: string) -> string;`.
 
 ###### forEach
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList), context: Object = global);`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList), context?: Object);`.
 
 ###### map
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList): *, context: Object = global): Array;`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> *, context?: Object) -> Array;`.
 
 ###### filter
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): Array;`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> Array;`.
 
 ###### every
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): boolean;`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> boolean;`.
 
 ###### some
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): boolean;`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> boolean;`.
 
 ###### reduce
 
-Type signature: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList): *, initialValue?): *;`.
+Type signature: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
 ###### reduceRight
 
-Type signature: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList): *, initialValue?): *;`.
+Type signature: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
 ###### clone
 
-Type signature: `(): cellx.ObservableList;`.
+Type signature: `() -> cellx.ObservableList;`.
 
 ###### toArray
 
-Type signature: `(): Array;`.
+Type signature: `() -> Array;`.
 
 ###### toString
 
-Type signature: `(): string;`.
+Type signature: `() -> string;`.
 
 ## List of references
 

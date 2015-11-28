@@ -17,7 +17,7 @@
 	/**
 	 * @class cellx.EventEmitter
 	 * @extends {Object}
-	 * @typesign new (): cellx.EventEmitter;
+	 * @typesign new () -> cellx.EventEmitter;
 	 */
 	var EventEmitter = createClass({
 		Static: {
@@ -26,7 +26,7 @@
 
 		constructor: function() {
 			/**
-			 * @type {Object<Array<{ listener: (evt: cellx~Event): boolean|undefined, context: Object }>>}
+			 * @type {Object<Array<{ listener: (evt: cellx~Event) -> boolean|undefined, context: Object }>>}
 			 */
 			this._events = Object.create(null);
 		},
@@ -34,14 +34,14 @@
 		/**
 		 * @typesign (
 		 *     type: string,
-		 *     listener: (evt: cellx~Event): boolean|undefined,
+		 *     listener: (evt: cellx~Event) -> boolean|undefined,
 		 *     context?: Object
-		 * ): cellx.EventEmitter;
+		 * ) -> cellx.EventEmitter;
 		 *
 		 * @typesign (
-		 *     listeners: Object<(evt: cellx~Event): boolean|undefined>,
+		 *     listeners: Object<(evt: cellx~Event) -> boolean|undefined>,
 		 *     context?: Object
-		 * ): cellx.EventEmitter;
+		 * ) -> cellx.EventEmitter;
 		 */
 		on: function(type, listener, context) {
 			if (typeof type == 'object') {
@@ -61,16 +61,16 @@
 		/**
 		 * @typesign (
 		 *     type: string,
-		 *     listener: (evt: cellx~Event): boolean|undefined,
+		 *     listener: (evt: cellx~Event) -> boolean|undefined,
 		 *     context?: Object
-		 * ): cellx.EventEmitter;
+		 * ) -> cellx.EventEmitter;
 		 *
 		 * @typesign (
-		 *     listeners: Object<(evt: cellx~Event): boolean|undefined>,
+		 *     listeners: Object<(evt: cellx~Event) -> boolean|undefined>,
 		 *     context?: Object
-		 * ): cellx.EventEmitter;
+		 * ) -> cellx.EventEmitter;
 		 *
-		 * @typesign (): cellx.EventEmitter;
+		 * @typesign () -> cellx.EventEmitter;
 		 */
 		off: function(type, listener, context) {
 			if (type) {
@@ -95,7 +95,7 @@
 		/**
 		 * @typesign (
 		 *     type: string,
-		 *     listener: (evt: cellx~Event): boolean|undefined,
+		 *     listener: (evt: cellx~Event) -> boolean|undefined,
 		 *     context?: Object
 		 * );
 		 */
@@ -120,7 +120,7 @@
 		/**
 		 * @typesign (
 		 *     type: string,
-		 *     listener: (evt: cellx~Event): boolean|undefined,
+		 *     listener: (evt: cellx~Event) -> boolean|undefined,
 		 *     context?: Object
 		 * );
 		 */
@@ -158,9 +158,9 @@
 		/**
 		 * @typesign (
 		 *     type: string,
-		 *     listener: (evt: cellx~Event): boolean|undefined,
+		 *     listener: (evt: cellx~Event) -> boolean|undefined,
 		 *     context?: Object
-		 * ): cellx.EventEmitter;
+		 * ) -> cellx.EventEmitter;
 		 */
 		once: function(type, listener, context) {
 			function wrapper() {
@@ -175,8 +175,8 @@
 		},
 
 		/**
-		 * @typesign (evt: cellx~Event): cellx~Event;
-		 * @typesign (type: string): cellx~Event;
+		 * @typesign (evt: cellx~Event) -> cellx~Event;
+		 * @typesign (type: string) -> cellx~Event;
 		 */
 		emit: function(evt) {
 			if (typeof evt == 'string') {
@@ -219,7 +219,6 @@
 		 * };
 		 *
 		 * View.prototype._handleEvent = function(evt) {
-		 *     // call super._handleEvent
 		 *     EventEmitter.prototype._handleEvent.call(this, evt);
 		 *
 		 *     var parent = this.getParent();

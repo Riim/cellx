@@ -14,25 +14,25 @@
 	/**
 	 * @typesign (value?, opts?: {
 	 *     owner?: Object,
-	 *     cloneValue?: (value): *,
-	 *     get?: (value): *,
+	 *     cloneValue?: (value) -> *,
+	 *     get?: (value) -> *,
 	 *     validate?: (value),
-	 *     onchange?: (evt: cellx~Event): boolean|undefined,
-	 *     onerror?: (evt: cellx~Event): boolean|undefined,
+	 *     onchange?: (evt: cellx~Event) -> boolean|undefined,
+	 *     onerror?: (evt: cellx~Event) -> boolean|undefined,
 	 *     computed?: false,
 	 *     debugKey?: string
-	 * }): cellx;
+	 * }) -> cellx;
 	 *
-	 * @typesign (formula: (): *, opts?: {
+	 * @typesign (formula: () -> *, opts?: {
 	 *     owner?: Object,
-	 *     get?: (value): *,
+	 *     get?: (value) -> *,
 	 *     set?: (value),
 	 *     validate?: (value),
-	 *     onchange?: (evt: cellx~Event): boolean|undefined,
-	 *     onerror?: (evt: cellx~Event): boolean|undefined,
+	 *     onchange?: (evt: cellx~Event) -> boolean|undefined,
+	 *     onerror?: (evt: cellx~Event) -> boolean|undefined,
 	 *     computed?: true,
 	 *     debugKey?: string
-	 * }): cellx;
+	 * }) -> cellx;
 	 */
 	function cellx(value, opts) {
 		if (!opts) {
@@ -102,7 +102,7 @@
 	cellx._logError = logError;
 
 	/**
-	 * @typesign (target: Object, source: Object): Object;
+	 * @typesign (target: Object, source: Object) -> Object;
 	 */
 	function mixin(target, source) {
 		var names = Object.getOwnPropertyNames(source);
@@ -115,7 +115,7 @@
 	}
 
 	/**
-	 * @typesign (a, b): boolean;
+	 * @typesign (a, b) -> boolean;
 	 */
 	var is = Object.is || function(a, b) {
 		if (a === 0 && b === 0) {
@@ -125,7 +125,7 @@
 	};
 
 	/**
-	 * @typesign (value): boolean;
+	 * @typesign (value) -> boolean;
 	 */
 	var isArray = Array.isArray || function(value) {
 		return toString.call(value) == '[object Array]';
@@ -137,7 +137,7 @@
 	 *     Implements?: Array<Function>,
 	 *     Static?: Object,
 	 *     constructor?: Function
-	 * }): Function;
+	 * }) -> Function;
 	 */
 	function createClass(description) {
 		var parent;
@@ -493,7 +493,7 @@
 		/**
 		 * @class cellx.EventEmitter
 		 * @extends {Object}
-		 * @typesign new (): cellx.EventEmitter;
+		 * @typesign new () -> cellx.EventEmitter;
 		 */
 		var EventEmitter = createClass({
 			Static: {
@@ -502,7 +502,7 @@
 	
 			constructor: function() {
 				/**
-				 * @type {Object<Array<{ listener: (evt: cellx~Event): boolean|undefined, context: Object }>>}
+				 * @type {Object<Array<{ listener: (evt: cellx~Event) -> boolean|undefined, context: Object }>>}
 				 */
 				this._events = Object.create(null);
 			},
@@ -510,14 +510,14 @@
 			/**
 			 * @typesign (
 			 *     type: string,
-			 *     listener: (evt: cellx~Event): boolean|undefined,
+			 *     listener: (evt: cellx~Event) -> boolean|undefined,
 			 *     context?: Object
-			 * ): cellx.EventEmitter;
+			 * ) -> cellx.EventEmitter;
 			 *
 			 * @typesign (
-			 *     listeners: Object<(evt: cellx~Event): boolean|undefined>,
+			 *     listeners: Object<(evt: cellx~Event) -> boolean|undefined>,
 			 *     context?: Object
-			 * ): cellx.EventEmitter;
+			 * ) -> cellx.EventEmitter;
 			 */
 			on: function(type, listener, context) {
 				if (typeof type == 'object') {
@@ -537,16 +537,16 @@
 			/**
 			 * @typesign (
 			 *     type: string,
-			 *     listener: (evt: cellx~Event): boolean|undefined,
+			 *     listener: (evt: cellx~Event) -> boolean|undefined,
 			 *     context?: Object
-			 * ): cellx.EventEmitter;
+			 * ) -> cellx.EventEmitter;
 			 *
 			 * @typesign (
-			 *     listeners: Object<(evt: cellx~Event): boolean|undefined>,
+			 *     listeners: Object<(evt: cellx~Event) -> boolean|undefined>,
 			 *     context?: Object
-			 * ): cellx.EventEmitter;
+			 * ) -> cellx.EventEmitter;
 			 *
-			 * @typesign (): cellx.EventEmitter;
+			 * @typesign () -> cellx.EventEmitter;
 			 */
 			off: function(type, listener, context) {
 				if (type) {
@@ -571,7 +571,7 @@
 			/**
 			 * @typesign (
 			 *     type: string,
-			 *     listener: (evt: cellx~Event): boolean|undefined,
+			 *     listener: (evt: cellx~Event) -> boolean|undefined,
 			 *     context?: Object
 			 * );
 			 */
@@ -596,7 +596,7 @@
 			/**
 			 * @typesign (
 			 *     type: string,
-			 *     listener: (evt: cellx~Event): boolean|undefined,
+			 *     listener: (evt: cellx~Event) -> boolean|undefined,
 			 *     context?: Object
 			 * );
 			 */
@@ -634,9 +634,9 @@
 			/**
 			 * @typesign (
 			 *     type: string,
-			 *     listener: (evt: cellx~Event): boolean|undefined,
+			 *     listener: (evt: cellx~Event) -> boolean|undefined,
 			 *     context?: Object
-			 * ): cellx.EventEmitter;
+			 * ) -> cellx.EventEmitter;
 			 */
 			once: function(type, listener, context) {
 				function wrapper() {
@@ -651,8 +651,8 @@
 			},
 	
 			/**
-			 * @typesign (evt: cellx~Event): cellx~Event;
-			 * @typesign (type: string): cellx~Event;
+			 * @typesign (evt: cellx~Event) -> cellx~Event;
+			 * @typesign (type: string) -> cellx~Event;
 			 */
 			emit: function(evt) {
 				if (typeof evt == 'string') {
@@ -695,7 +695,6 @@
 			 * };
 			 *
 			 * View.prototype._handleEvent = function(evt) {
-			 *     // call super._handleEvent
 			 *     EventEmitter.prototype._handleEvent.call(this, evt);
 			 *
 			 *     var parent = this.getParent();
@@ -819,8 +818,8 @@
 		 * @implements {ObservableCollection}
 		 *
 		 * @typesign new (entries?: Object|Array<{ 0, 1 }>|cellx.ObservableMap, opts?: {
-		 *     adoptsItemChanges: boolean = true
-		 * }): cellx.ObservableMap;
+		 *     adoptsItemChanges?: boolean
+		 * }) -> cellx.ObservableMap;
 		 */
 		var ObservableMap = createClass({
 			Extends: EventEmitter,
@@ -866,28 +865,28 @@
 			},
 	
 			/**
-			 * @typesign (key): boolean;
+			 * @typesign (key) -> boolean;
 			 */
 			has: function(key) {
 				return this._entries.has(key);
 			},
 	
 			/**
-			 * @typesign (value): boolean;
+			 * @typesign (value) -> boolean;
 			 */
 			contains: function(value) {
 				return this._valueCounts.has(value);
 			},
 	
 			/**
-			 * @typesign (key): *;
+			 * @typesign (key) -> *;
 			 */
 			get: function(key) {
 				return this._entries.get(key);
 			},
 	
 			/**
-			 * @typesign (key, value): cellx.ObservableMap;
+			 * @typesign (key, value) -> cellx.ObservableMap;
 			 */
 			set: function(key, value) {
 				var entries = this._entries;
@@ -923,7 +922,7 @@
 			},
 	
 			/**
-			 * @typesign (key): boolean;
+			 * @typesign (key) -> boolean;
 			 */
 			delete: function(key) {
 				var entries = this._entries;
@@ -951,7 +950,7 @@
 			},
 	
 			/**
-			 * @typesign (): cellx.ObservableMap;
+			 * @typesign () -> cellx.ObservableMap;
 			 */
 			clear: function() {
 				if (!this.size) {
@@ -984,28 +983,28 @@
 			},
 	
 			/**
-			 * @typesign (): { next: (): { value, done: boolean } };
+			 * @typesign () -> { next: () -> { value, done: boolean } };
 			 */
 			keys: function() {
 				return this._entries.keys();
 			},
 	
 			/**
-			 * @typesign (): { next: (): { value, done: boolean } };
+			 * @typesign () -> { next: () -> { value, done: boolean } };
 			 */
 			values: function() {
 				return this._entries.values();
 			},
 	
 			/**
-			 * @typesign (): { next: (): { value: { 0, 1 }, done: boolean } };
+			 * @typesign () -> { next: () -> { value: { 0, 1 }, done: boolean } };
 			 */
 			entries: function() {
 				return this._entries.entries();
 			},
 	
 			/**
-			 * @typesign (): cellx.ObservableMap;
+			 * @typesign () -> cellx.ObservableMap;
 			 */
 			clone: function() {
 				return new this.constructor(this, {
@@ -1019,13 +1018,13 @@
 		/**
 		 * @typesign (
 		 *     entries?: Object|Array<{ 0, 1 }>|cellx.ObservableMap,
-		 *     opts?: { adoptsItemChanges: boolean = true }
-		 * ): cellx.ObservableMap;
+		 *     opts?: { adoptsItemChanges?: boolean }
+		 * ) -> cellx.ObservableMap;
 		 *
 		 * @typesign (
 		 *     entries?: Object|Array<{ 0, 1 }>|cellx.ObservableMap,
-		 *     adoptsItemChanges: boolean = true
-		 * ): cellx.ObservableMap;
+		 *     adoptsItemChanges?: boolean
+		 * ) -> cellx.ObservableMap;
 		 */
 		function map(entries, opts) {
 			return new ObservableMap(entries, typeof opts == 'boolean' ? { adoptsItemChanges: opts } : opts);
@@ -1038,7 +1037,7 @@
 		var EventEmitter = cellx.EventEmitter;
 	
 		/**
-		 * @typesign (a, b): -1|1|0;
+		 * @typesign (a, b) -> -1|1|0;
 		 */
 		function defaultComparator(a, b) {
 			if (a < b) { return -1; }
@@ -1090,10 +1089,10 @@
 		 * @implements {ObservableCollection}
 		 *
 		 * @typesign new (items?: Array|cellx.ObservableList, opts?: {
-		 *     adoptsItemChanges: boolean = true,
-		 *     comparator?: (a, b): int,
+		 *     adoptsItemChanges?: boolean,
+		 *     comparator?: (a, b) -> int,
 		 *     sorted?: boolean
-		 * }): cellx.ObservableList;
+		 * }) -> cellx.ObservableList;
 		 */
 		var ObservableList = createClass({
 			Extends: EventEmitter,
@@ -1117,7 +1116,7 @@
 				this.adoptsItemChanges = opts.adoptsItemChanges !== false;
 	
 				/**
-				 * @type {?(a, b): int}
+				 * @type {?(a, b) -> int}
 				 */
 				this.comparator = null;
 	
@@ -1134,7 +1133,7 @@
 			},
 	
 			/**
-			 * @typesign (index: int, allowEndIndex: boolean = false): uint|undefined;
+			 * @typesign (index: int, allowEndIndex?: boolean) -> uint|undefined;
 			 */
 			_validateIndex: function(index, allowEndIndex) {
 				if (index === undefined) {
@@ -1155,35 +1154,35 @@
 			},
 	
 			/**
-			 * @typesign (value): boolean;
+			 * @typesign (value) -> boolean;
 			 */
 			contains: function(value) {
 				return this._valueCounts.has(value);
 			},
 	
 			/**
-			 * @typesign (value, fromIndex: int = 0): int;
+			 * @typesign (value, fromIndex?: int) -> int;
 			 */
 			indexOf: function(value, fromIndex) {
 				return this._items.indexOf(value, this._validateIndex(fromIndex));
 			},
 	
 			/**
-			 * @typesign (value, fromIndex: int = -1): int;
+			 * @typesign (value, fromIndex?: int) -> int;
 			 */
 			lastIndexOf: function(value, fromIndex) {
 				return this._items.lastIndexOf(value, this._validateIndex(fromIndex));
 			},
 	
 			/**
-			 * @typesign (index: int): *;
+			 * @typesign (index: int) -> *;
 			 */
 			get: function(index) {
 				return this._items[this._validateIndex(index)];
 			},
 	
 			/**
-			 * @typesign (index: int = 0, count?: uint): Array;
+			 * @typesign (index?: int, count?: uint) -> Array;
 			 */
 			getRange: function(index, count) {
 				index = this._validateIndex(index || 0, true);
@@ -1202,7 +1201,7 @@
 			},
 	
 			/**
-			 * @typesign (index: int, value): cellx.ObservableList;
+			 * @typesign (index: int, value) -> cellx.ObservableList;
 			 */
 			set: function(index, value) {
 				if (this.sorted) {
@@ -1228,7 +1227,7 @@
 			},
 	
 			/**
-			 * @typesign (index: int, items: Array): cellx.ObservableList;
+			 * @typesign (index: int, items: Array) -> cellx.ObservableList;
 			 */
 			setRange: function(index, items) {
 				if (this.sorted) {
@@ -1271,7 +1270,7 @@
 			},
 	
 			/**
-			 * @typesign (item): cellx.ObservableList;
+			 * @typesign (item) -> cellx.ObservableList;
 			 */
 			add: function(item) {
 				this.addRange([item]);
@@ -1279,7 +1278,7 @@
 			},
 	
 			/**
-			 * @typesign (items: Array): cellx.ObservableList;
+			 * @typesign (items: Array) -> cellx.ObservableList;
 			 */
 			addRange: function(items) {
 				if (!items.length) {
@@ -1293,7 +1292,7 @@
 			},
 	
 			/**
-			 * @typesign (index: int, item): cellx.ObservableList;
+			 * @typesign (index: int, item) -> cellx.ObservableList;
 			 */
 			insert: function(index, item) {
 				this.insertRange(index, [item]);
@@ -1301,7 +1300,7 @@
 			},
 	
 			/**
-			 * @typesign (index: int, items: Array): cellx.ObservableList;
+			 * @typesign (index: int, items: Array) -> cellx.ObservableList;
 			 */
 			insertRange: function(index, items) {
 				if (this.sorted) {
@@ -1330,7 +1329,7 @@
 			},
 	
 			/**
-			 * @typesign (item, fromIndex: int = 0): cellx.ObservableList;
+			 * @typesign (item, fromIndex?: int) -> cellx.ObservableList;
 			 */
 			remove: function(item, fromIndex) {
 				var index = this._items.indexOf(item, this._validateIndex(fromIndex));
@@ -1350,7 +1349,7 @@
 			},
 	
 			/**
-			 * @typesign (item, fromIndex: int = 0): cellx.ObservableList;
+			 * @typesign (item, fromIndex?: int) -> cellx.ObservableList;
 			 */
 			removeAll: function(item, fromIndex) {
 				var items = this._items;
@@ -1373,7 +1372,7 @@
 			},
 	
 			/**
-			 * @typesign (index: int): cellx.ObservableList;
+			 * @typesign (index: int) -> cellx.ObservableList;
 			 */
 			removeAt: function(index) {
 				this._unregisterValue(this._items.splice(this._validateIndex(index), 1)[0]);
@@ -1385,7 +1384,7 @@
 			},
 	
 			/**
-			 * @typesign (index: int = 0, count?: uint): cellx.ObservableList;
+			 * @typesign (index?: int, count?: uint) -> cellx.ObservableList;
 			 */
 			removeRange: function(index, count) {
 				index = this._validateIndex(index || 0, true);
@@ -1415,7 +1414,7 @@
 			},
 	
 			/**
-			 * @typesign (): cellx.ObservableList;
+			 * @typesign () -> cellx.ObservableList;
 			 */
 			clear: function() {
 				if (this.length) {
@@ -1431,49 +1430,49 @@
 			},
 	
 			/**
-			 * @typesign (separator: string = ','): string;
+			 * @typesign (separator?: string) -> string;
 			 */
 			join: function(separator) {
 				return this._items.join(separator);
 			},
 	
 			/**
-			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList), context: Object = global);
+			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList), context?: Object);
 			 */
 			forEach: null,
 	
 			/**
-			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): *, context: Object = global): Array;
+			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> *, context?: Object) -> Array;
 			 */
 			map: null,
 	
 			/**
-			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): Array;
+			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> Array;
 			 */
 			filter: null,
 	
 			/**
-			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): boolean;
+			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> boolean;
 			 */
 			every: null,
 	
 			/**
-			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): boolean;
+			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> boolean;
 			 */
 			some: null,
 	
 			/**
-			 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList): *, initialValue?): *;
+			 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;
 			 */
 			reduce: null,
 	
 			/**
-			 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList): *, initialValue?): *;
+			 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;
 			 */
 			reduceRight: null,
 	
 			/**
-			 * @typesign (): cellx.ObservableList;
+			 * @typesign () -> cellx.ObservableList;
 			 */
 			clone: function() {
 				return new this.constructor(this, {
@@ -1484,14 +1483,14 @@
 			},
 	
 			/**
-			 * @typesign (): Array;
+			 * @typesign () -> Array;
 			 */
 			toArray: function() {
 				return this._items.slice();
 			},
 	
 			/**
-			 * @typesign (): string;
+			 * @typesign () -> string;
 			 */
 			toString: function() {
 				return this._items.join();
@@ -1500,7 +1499,7 @@
 	
 		['forEach', 'map', 'filter', 'every', 'some', 'reduce', 'reduceRight'].forEach(function(name) {
 			ObservableList.prototype[name] = function() {
-				return Array.prototype[name].apply(this, arguments);
+				return Array.prototype[name].apply(this._items, arguments);
 			};
 		});
 	
@@ -1508,12 +1507,12 @@
 	
 		/**
 		 * @typesign (items?: Array|cellx.ObservableList, opts?: {
-		 *     adoptsItemChanges: boolean = true,
-		 *     comparator?: (a, b): int,
+		 *     adoptsItemChanges?: boolean,
+		 *     comparator?: (a, b) -> int,
 		 *     sorted?: boolean
-		 * }): cellx.ObservableList;
+		 * }) -> cellx.ObservableList;
 		 *
-		 * @typesign (items?: Array|cellx.ObservableList, adoptsItemChanges: boolean = true): cellx.ObservableList;
+		 * @typesign (items?: Array|cellx.ObservableList, adoptsItemChanges?: boolean) -> cellx.ObservableList;
 		 */
 		function list(items, opts) {
 			return new ObservableList(items, typeof opts == 'boolean' ? { adoptsItemChanges: opts } : opts);
@@ -1640,24 +1639,24 @@
 		 *
 		 * @typesign new (value?, opts?: {
 		 *     owner?: Object,
-		 *     get?: (value): *,
+		 *     get?: (value) -> *,
 		 *     validate?: (value),
-		 *     onchange?: (evt: cellx~Event): boolean|undefined,
-		 *     onerror?: (evt: cellx~Event): boolean|undefined,
+		 *     onchange?: (evt: cellx~Event) -> boolean|undefined,
+		 *     onerror?: (evt: cellx~Event) -> boolean|undefined,
 		 *     computed?: false,
 		 *     debugKey?: string
-		 * }): cellx.Cell;
+		 * }) -> cellx.Cell;
 		 *
-		 * @typesign new (formula: (): *, opts?: {
+		 * @typesign new (formula: () -> *, opts?: {
 		 *     owner?: Object,
-		 *     get?: (value): *,
+		 *     get?: (value) -> *,
 		 *     set?: (value),
 		 *     validate?: (value),
-		 *     onchange?: (evt: cellx~Event): boolean|undefined,
-		 *     onerror?: (evt: cellx~Event): boolean|undefined,
+		 *     onchange?: (evt: cellx~Event) -> boolean|undefined,
+		 *     onerror?: (evt: cellx~Event) -> boolean|undefined,
 		 *     computed?: true,
 		 *     debugKey?: string
-		 * }): cellx.Cell;
+		 * }) -> cellx.Cell;
 		 */
 		var Cell = createClass({
 			Extends: EventEmitter,
@@ -1795,7 +1794,7 @@
 			},
 	
 			/**
-			 * @typesign (listener: (err: Error|null, evt: cellx~Event): boolean|undefined): cellx.Cell;
+			 * @typesign (listener: (err: Error|null, evt: cellx~Event) -> boolean|undefined) -> cellx.Cell;
 			 */
 			subscribe: function(listener) {
 				function wrapper(evt) {
@@ -1810,7 +1809,7 @@
 				return this;
 			},
 			/**
-			 * @typesign (listener: (err: Error|null, evt: cellx~Event): boolean|undefined): cellx.Cell;
+			 * @typesign (listener: (err: Error|null, evt: cellx~Event) -> boolean|undefined) -> cellx.Cell;
 			 */
 			unsubscribe: function(listener) {
 				this
@@ -1915,7 +1914,7 @@
 			},
 	
 			/**
-			 * @typesign (): *;
+			 * @typesign () -> *;
 			 */
 			get: function() {
 				if (!currentlyRelease) {
@@ -1959,7 +1958,7 @@
 			},
 	
 			/**
-			 * @typesign (value): boolean;
+			 * @typesign (value) -> boolean;
 			 */
 			set: function(value) {
 				if (this.computed && !this._set) {
@@ -2040,14 +2039,14 @@
 			},
 	
 			/**
-			 * @typesign (): boolean|undefined;
+			 * @typesign () -> boolean|undefined;
 			 */
 			recalc: function() {
 				return this._recalc(true);
 			},
 	
 			/**
-			 * @typesign (force: boolean = false): boolean|undefined;
+			 * @typesign (force?: boolean) -> boolean|undefined;
 			 */
 			_recalc: function(force) {
 				if (!force) {
@@ -2158,7 +2157,7 @@
 			},
 	
 			/**
-			 * @typesign (): *;
+			 * @typesign () -> *;
 			 */
 			_tryFormula: function() {
 				var prevCalculatedCell = calculatedCell;
@@ -2224,7 +2223,7 @@
 			},
 	
 			/**
-			 * @typesign (): cellx.Cell;
+			 * @typesign () -> cellx.Cell;
 			 */
 			dispose: function() {
 				if (!currentlyRelease) {
@@ -2275,6 +2274,10 @@
 			var cell = owner[KEY_CELLS].get(wrapper);
 	
 			if (!cell) {
+				if (argCount >= 2 && firstArg === 'dispose') {
+					return;
+				}
+	
 				if (opts.cloneValue) {
 					initialValue = opts.cloneValue(initialValue);
 				}

@@ -8,8 +8,8 @@
 	 * @implements {ObservableCollection}
 	 *
 	 * @typesign new (entries?: Object|Array<{ 0, 1 }>|cellx.ObservableMap, opts?: {
-	 *     adoptsItemChanges: boolean = true
-	 * }): cellx.ObservableMap;
+	 *     adoptsItemChanges?: boolean
+	 * }) -> cellx.ObservableMap;
 	 */
 	var ObservableMap = createClass({
 		Extends: EventEmitter,
@@ -55,28 +55,28 @@
 		},
 
 		/**
-		 * @typesign (key): boolean;
+		 * @typesign (key) -> boolean;
 		 */
 		has: function(key) {
 			return this._entries.has(key);
 		},
 
 		/**
-		 * @typesign (value): boolean;
+		 * @typesign (value) -> boolean;
 		 */
 		contains: function(value) {
 			return this._valueCounts.has(value);
 		},
 
 		/**
-		 * @typesign (key): *;
+		 * @typesign (key) -> *;
 		 */
 		get: function(key) {
 			return this._entries.get(key);
 		},
 
 		/**
-		 * @typesign (key, value): cellx.ObservableMap;
+		 * @typesign (key, value) -> cellx.ObservableMap;
 		 */
 		set: function(key, value) {
 			var entries = this._entries;
@@ -112,7 +112,7 @@
 		},
 
 		/**
-		 * @typesign (key): boolean;
+		 * @typesign (key) -> boolean;
 		 */
 		delete: function(key) {
 			var entries = this._entries;
@@ -140,7 +140,7 @@
 		},
 
 		/**
-		 * @typesign (): cellx.ObservableMap;
+		 * @typesign () -> cellx.ObservableMap;
 		 */
 		clear: function() {
 			if (!this.size) {
@@ -173,28 +173,28 @@
 		},
 
 		/**
-		 * @typesign (): { next: (): { value, done: boolean } };
+		 * @typesign () -> { next: () -> { value, done: boolean } };
 		 */
 		keys: function() {
 			return this._entries.keys();
 		},
 
 		/**
-		 * @typesign (): { next: (): { value, done: boolean } };
+		 * @typesign () -> { next: () -> { value, done: boolean } };
 		 */
 		values: function() {
 			return this._entries.values();
 		},
 
 		/**
-		 * @typesign (): { next: (): { value: { 0, 1 }, done: boolean } };
+		 * @typesign () -> { next: () -> { value: { 0, 1 }, done: boolean } };
 		 */
 		entries: function() {
 			return this._entries.entries();
 		},
 
 		/**
-		 * @typesign (): cellx.ObservableMap;
+		 * @typesign () -> cellx.ObservableMap;
 		 */
 		clone: function() {
 			return new this.constructor(this, {
@@ -208,13 +208,13 @@
 	/**
 	 * @typesign (
 	 *     entries?: Object|Array<{ 0, 1 }>|cellx.ObservableMap,
-	 *     opts?: { adoptsItemChanges: boolean = true }
-	 * ): cellx.ObservableMap;
+	 *     opts?: { adoptsItemChanges?: boolean }
+	 * ) -> cellx.ObservableMap;
 	 *
 	 * @typesign (
 	 *     entries?: Object|Array<{ 0, 1 }>|cellx.ObservableMap,
-	 *     adoptsItemChanges: boolean = true
-	 * ): cellx.ObservableMap;
+	 *     adoptsItemChanges?: boolean
+	 * ) -> cellx.ObservableMap;
 	 */
 	function map(entries, opts) {
 		return new ObservableMap(entries, typeof opts == 'boolean' ? { adoptsItemChanges: opts } : opts);

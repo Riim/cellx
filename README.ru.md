@@ -614,122 +614,122 @@ console.log(list.toArray());
 
 ###### contains
 
-Сигнатура вызова: `(value): boolean;`.
+Сигнатура вызова: `(value) -> boolean;`.
 
 Проверяет содержится ли значение в списке. При большом колличестве значений в списке, может быть существенно быстрее
 чем `list.indexOf(value) != -1`.
 
 ###### indexOf
 
-Сигнатура вызова: `(value, fromIndex: int = 0): int;`.
+Сигнатура вызова: `(value, fromIndex?: int) -> int;`.
 
 ###### lastIndexOf
 
-Сигнатура вызова: `(value, fromIndex: int = -1): int;`.
+Сигнатура вызова: `(value, fromIndex?: int) -> int;`.
 
 ###### get
 
-Сигнатура вызова: `(index: int): *;`.
+Сигнатура вызова: `(index: int) -> *;`.
 
 ###### getRange
 
-Сигнатура вызова: `(index: int = 0, count?: uint): Array;`.
+Сигнатура вызова: `(index?: int, count?: uint) -> Array;`.
 
 При неуказанном `count`-е копирует до конца списка.
 
 ###### set
 
-Сигнатура вызова: `(index: int, value): cellx.ObservableList;`.
+Сигнатура вызова: `(index: int, value) -> cellx.ObservableList;`.
 
 ###### setRange
 
-Сигнатура вызова: `(index: int, items: Array): cellx.ObservableList;`.
+Сигнатура вызова: `(index: int, items: Array) -> cellx.ObservableList;`.
 
 ###### add
 
-Сигнатура вызова: `(item): cellx.ObservableList;`.
+Сигнатура вызова: `(item) -> cellx.ObservableList;`.
 
 ###### addRange
 
-Сигнатура вызова: `(items: Array): cellx.ObservableList;`.
+Сигнатура вызова: `(items: Array) -> cellx.ObservableList;`.
 
 ###### insert
 
-Сигнатура вызова: `(index: int, item): cellx.ObservableList;`.
+Сигнатура вызова: `(index: int, item) -> cellx.ObservableList;`.
 
 ###### insertRange
 
-Сигнатура вызова: `(index: int, items: Array): cellx.ObservableList;`.
+Сигнатура вызова: `(index: int, items: Array) -> cellx.ObservableList;`.
 
 ###### remove
 
-Сигнатура вызова: `(item, fromIndex: int = 0): cellx.ObservableList;`.
+Сигнатура вызова: `(item, fromIndex?: int) -> cellx.ObservableList;`.
 
 Удаляет первое вхождениие `item` в списке.
 
 ###### removeAll
 
-Сигнатура вызова: `(item, fromIndex: int = 0): cellx.ObservableList;`.
+Сигнатура вызова: `(item, fromIndex?: int) -> cellx.ObservableList;`.
 
 Удаляет все вхождениия `item` в списке.
 
 ###### removeAt
 
-Сигнатура вызова: `(index: int): cellx.ObservableList;`.
+Сигнатура вызова: `(index: int) -> cellx.ObservableList;`.
 
 ###### removeRange
 
-Сигнатура вызова: `(index: int = 0, count?: uint): cellx.ObservableList;`.
+Сигнатура вызова: `(index?: int, count?: uint) -> cellx.ObservableList;`.
 
 При неуказанном `count`-е удалит всё до конца списка.
 
 ###### clear
 
-Сигнатура вызова: `(): cellx.ObservableList;`.
+Сигнатура вызова: `() -> cellx.ObservableList;`.
 
 ###### join
 
-Сигнатура вызова: `(separator: string = ','): string;`.
+Сигнатура вызова: `(separator?: string) -> string;`.
 
 ###### forEach
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList), context: Object = global);`.
+Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList), context?: Object);`.
 
 ###### map
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList): *, context: Object = global): Array;`.
+Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> *, context?: Object) -> Array;`.
 
 ###### filter
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): Array;`.
+Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> Array;`.
 
 ###### every
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): boolean;`.
+Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> boolean;`.
 
 ###### some
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList): boolean, context: Object = global): boolean;`.
+Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> boolean;`.
 
 ###### reduce
 
-Сигнатура вызова: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList): *, initialValue?): *;`.
+Сигнатура вызова: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
 ###### reduceRight
 
-Сигнатура вызова: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList): *, initialValue?): *;`.
+Сигнатура вызова: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
 ###### clone
 
-Сигнатура вызова: `(): cellx.ObservableList;`.
+Сигнатура вызова: `() -> cellx.ObservableList;`.
 
 ###### toArray
 
-Сигнатура вызова: `(): Array;`.
+Сигнатура вызова: `() -> Array;`.
 
 ###### toString
 
-Сигнатура вызова: `(): string;`.
+Сигнатура вызова: `() -> string;`.
 
 ## Использованные материалы
 

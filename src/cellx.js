@@ -14,25 +14,25 @@
 	/**
 	 * @typesign (value?, opts?: {
 	 *     owner?: Object,
-	 *     cloneValue?: (value): *,
-	 *     get?: (value): *,
+	 *     cloneValue?: (value) -> *,
+	 *     get?: (value) -> *,
 	 *     validate?: (value),
-	 *     onchange?: (evt: cellx~Event): boolean|undefined,
-	 *     onerror?: (evt: cellx~Event): boolean|undefined,
+	 *     onchange?: (evt: cellx~Event) -> boolean|undefined,
+	 *     onerror?: (evt: cellx~Event) -> boolean|undefined,
 	 *     computed?: false,
 	 *     debugKey?: string
-	 * }): cellx;
+	 * }) -> cellx;
 	 *
-	 * @typesign (formula: (): *, opts?: {
+	 * @typesign (formula: () -> *, opts?: {
 	 *     owner?: Object,
-	 *     get?: (value): *,
+	 *     get?: (value) -> *,
 	 *     set?: (value),
 	 *     validate?: (value),
-	 *     onchange?: (evt: cellx~Event): boolean|undefined,
-	 *     onerror?: (evt: cellx~Event): boolean|undefined,
+	 *     onchange?: (evt: cellx~Event) -> boolean|undefined,
+	 *     onerror?: (evt: cellx~Event) -> boolean|undefined,
 	 *     computed?: true,
 	 *     debugKey?: string
-	 * }): cellx;
+	 * }) -> cellx;
 	 */
 	function cellx(value, opts) {
 		if (!opts) {
@@ -102,7 +102,7 @@
 	cellx._logError = logError;
 
 	/**
-	 * @typesign (target: Object, source: Object): Object;
+	 * @typesign (target: Object, source: Object) -> Object;
 	 */
 	function mixin(target, source) {
 		var names = Object.getOwnPropertyNames(source);
@@ -115,7 +115,7 @@
 	}
 
 	/**
-	 * @typesign (a, b): boolean;
+	 * @typesign (a, b) -> boolean;
 	 */
 	var is = Object.is || function(a, b) {
 		if (a === 0 && b === 0) {
@@ -125,7 +125,7 @@
 	};
 
 	/**
-	 * @typesign (value): boolean;
+	 * @typesign (value) -> boolean;
 	 */
 	var isArray = Array.isArray || function(value) {
 		return toString.call(value) == '[object Array]';
@@ -137,7 +137,7 @@
 	 *     Implements?: Array<Function>,
 	 *     Static?: Object,
 	 *     constructor?: Function
-	 * }): Function;
+	 * }) -> Function;
 	 */
 	function createClass(description) {
 		var parent;
