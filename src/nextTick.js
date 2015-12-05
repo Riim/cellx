@@ -39,7 +39,7 @@ var nextTick = (function() {
 					}
 				}
 			}
-		}, false);
+		});
 
 		return function(cb) {
 			if (queue) {

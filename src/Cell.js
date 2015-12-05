@@ -271,27 +271,33 @@
 		},
 
 		/**
-		 * @typesign (listener: (err: Error|null, evt: cellx~Event) -> boolean|undefined) -> cellx.Cell;
+		 * @typesign (
+		 *     listener: (err: Error|null, evt: cellx~Event) -> boolean|undefined,
+		 *     context?: Object
+		 * ) -> cellx.Cell;
 		 */
-		subscribe: function(listener) {
+		subscribe: function(listener, context) {
 			function wrapper(evt) {
 				return listener.call(this, evt.error || null, evt);
 			}
 			wrapper[KEY_INNER] = listener;
 
 			this
-				.on('change', wrapper)
-				.on('error', wrapper);
+				.on('change', wrapper, context)
+				.on('error', wrapper, context);
 
 			return this;
 		},
 		/**
-		 * @typesign (listener: (err: Error|null, evt: cellx~Event) -> boolean|undefined) -> cellx.Cell;
+		 * @typesign (
+		 *     listener: (err: Error|null, evt: cellx~Event) -> boolean|undefined,
+		 *     context?: Object
+		 * ) -> cellx.Cell;
 		 */
-		unsubscribe: function(listener) {
+		unsubscribe: function(listener, context) {
 			this
-				.off('change', listener)
-				.off('error', listener);
+				.off('change', listener, context)
+				.off('error', listener, context);
 
 			return this;
 		},

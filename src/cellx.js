@@ -47,11 +47,7 @@
 		cell.constructor = cellx;
 
 		if (opts.onchange || opts.onerror) {
-			if (!opts.owner) {
-				throw new TypeError('Owner is required');
-			}
-
-			cell.call(opts.owner);
+			cell.call(opts.owner || global);
 		}
 
 		return cell;
@@ -133,7 +129,7 @@
 
 	/**
 	 * @typesign (description: {
-	 *     Extends: Function,
+	 *     Extends?: Function,
 	 *     Implements?: Array<Function>,
 	 *     Static?: Object,
 	 *     constructor?: Function
@@ -190,13 +186,7 @@
 	//= include ./Cell.js
 	//= include ./invokeCell.js
 	//= include ./d.js
-
-	cellx.utils = {
-		logError: logError,
-		mixin: mixin,
-		createClass: createClass,
-		nextTick: nextTick
-	};
+	//= include ./utils.js
 
 	if (typeof exports == 'object') {
 		if (typeof module == 'object') {

@@ -47,11 +47,7 @@
 		cell.constructor = cellx;
 
 		if (opts.onchange || opts.onerror) {
-			if (!opts.owner) {
-				throw new TypeError('Owner is required');
-			}
-
-			cell.call(opts.owner);
+			cell.call(opts.owner || global);
 		}
 
 		return cell;
@@ -133,7 +129,7 @@
 
 	/**
 	 * @typesign (description: {
-	 *     Extends: Function,
+	 *     Extends?: Function,
 	 *     Implements?: Array<Function>,
 	 *     Static?: Object,
 	 *     constructor?: Function
@@ -222,7 +218,7 @@
 						}
 					}
 				}
-			}, false);
+			});
 	
 			return function(cb) {
 				if (queue) {
@@ -1794,27 +1790,33 @@
 			},
 	
 			/**
-			 * @typesign (listener: (err: Error|null, evt: cellx~Event) -> boolean|undefined) -> cellx.Cell;
+			 * @typesign (
+			 *     listener: (err: Error|null, evt: cellx~Event) -> boolean|undefined,
+			 *     context?: Object
+			 * ) -> cellx.Cell;
 			 */
-			subscribe: function(listener) {
+			subscribe: function(listener, context) {
 				function wrapper(evt) {
 					return listener.call(this, evt.error || null, evt);
 				}
 				wrapper[KEY_INNER] = listener;
 	
 				this
-					.on('change', wrapper)
-					.on('error', wrapper);
+					.on('change', wrapper, context)
+					.on('error', wrapper, context);
 	
 				return this;
 			},
 			/**
-			 * @typesign (listener: (err: Error|null, evt: cellx~Event) -> boolean|undefined) -> cellx.Cell;
+			 * @typesign (
+			 *     listener: (err: Error|null, evt: cellx~Event) -> boolean|undefined,
+			 *     context?: Object
+			 * ) -> cellx.Cell;
 			 */
-			unsubscribe: function(listener) {
+			unsubscribe: function(listener, context) {
 				this
-					.off('change', listener)
-					.off('error', listener);
+					.off('change', listener, context)
+					.off('error', listener, context);
 	
 				return this;
 			},
@@ -2399,13 +2401,13 @@
 		};
 	})();
 	
-
 	cellx.utils = {
 		logError: logError,
 		mixin: mixin,
 		createClass: createClass,
 		nextTick: nextTick
 	};
+	
 
 	if (typeof exports == 'object') {
 		if (typeof module == 'object') {
