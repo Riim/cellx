@@ -1,9 +1,6 @@
 var ObservableCollection;
 
 (function() {
-	var Map = cellx.Map;
-	var EventEmitter = cellx.EventEmitter;
-
 	ObservableCollection = createClass({
 		Extends: EventEmitter,
 

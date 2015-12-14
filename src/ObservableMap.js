@@ -1,7 +1,6 @@
-(function() {
-	var Map = cellx.Map;
-	var EventEmitter = cellx.EventEmitter;
+var ObservableMap;
 
+(function() {
 	/**
 	 * @class cellx.ObservableMap
 	 * @extends {cellx.EventEmitter}
@@ -11,7 +10,7 @@
 	 *     adoptsItemChanges?: boolean
 	 * }) -> cellx.ObservableMap;
 	 */
-	var ObservableMap = createClass({
+	ObservableMap = createClass({
 		Extends: EventEmitter,
 		Implements: [ObservableCollection],
 

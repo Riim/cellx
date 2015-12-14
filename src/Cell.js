@@ -1,6 +1,6 @@
-(function() {
-	var EventEmitter = cellx.EventEmitter;
+var Cell;
 
+(function() {
 	var KEY_INNER = EventEmitter.KEY_INNER;
 
 	var error = {
@@ -135,7 +135,7 @@
 	 *     debugKey?: string
 	 * }) -> cellx.Cell;
 	 */
-	var Cell = createClass({
+	Cell = createClass({
 		Extends: EventEmitter,
 
 		constructor: function(value, opts) {
@@ -268,6 +268,48 @@
 		 */
 		_off: function(type, listener, context) {
 			EventEmitter.prototype._off.call(this, type, listener, context || this.owner);
+		},
+
+		/**
+		 * @typesign (
+		 *     listener: (evt: cellx~Event) -> boolean|undefined,
+		 *     context?: Object
+		 * ) -> cellx.Cell;
+		 */
+		addChangeListener: function(listener, context) {
+			this.on('success', listener, context);
+			return this;
+		},
+		/**
+		 * @typesign (
+		 *     listener: (evt: cellx~Event) -> boolean|undefined,
+		 *     context?: Object
+		 * ) -> cellx.Cell;
+		 */
+		removeChangeListener: function(listener, context) {
+			this.off('success', listener, context);
+			return this;
+		},
+
+		/**
+		 * @typesign (
+		 *     listener: (evt: cellx~Event) -> boolean|undefined,
+		 *     context?: Object
+		 * ) -> cellx.Cell;
+		 */
+		addErrorListener: function(listener, context) {
+			this.on('error', listener, context);
+			return this;
+		},
+		/**
+		 * @typesign (
+		 *     listener: (evt: cellx~Event) -> boolean|undefined,
+		 *     context?: Object
+		 * ) -> cellx.Cell;
+		 */
+		removeErrorListener: function(listener, context) {
+			this.off('error', listener, context);
+			return this;
 		},
 
 		/**

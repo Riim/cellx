@@ -33,8 +33,8 @@ body {
 
 		<div id="bSetLayerCount">
 			<button class="-btn -btn-primary">10</button>
-			<button class="-btn -btn-primary">15</button>
-			<button class="-btn -btn-primary">25</button>
+			<button class="-btn -btn-primary">20</button>
+			<button class="-btn -btn-primary">30</button>
 			<button class="-btn -btn-danger">50</button>
 			<button class="-btn -btn-danger">100</button>
 			<button class="-btn -btn-danger">1000</button>
@@ -50,11 +50,13 @@ body {
 	Library
 	<br>
 	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="cellx" checked><span></span>cellx</label>
+	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="vanilla"><span></span>VanillaJS</label>
 	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="knockout"><span></span>Knockout</label>
-	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="angular"><span></span>AngularJS</label>
 	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="jin-atom"><span></span>jin-atom</label>
 	<br>
 	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="warp9"><span></span>Warp9</label>
+	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="reactor"><span></span>Reactor.js</label>
+	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="reactive"><span></span>Reactive.js</label>
 	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="kefir"><span></span>Kefir.js</label>
 </p>
 
@@ -72,10 +74,11 @@ body {
 </p>
 
 <script src="lib/jquery.js"></script>
-<script src="lib/knockout-3.3.0.js"></script>
-<script src="lib/angular.min.js"></script>
+<script src="lib/knockout-3.4.0.js"></script>
 <script src="lib/jin-atom.js"></script>
 <script src="lib/warp9.js"></script>
+<script src="lib/reactor.js"></script>
+<script src="lib/reactive.js"></script>
 <script src="lib/kefir.js"></script>
 <script src="../cellx.js"></script>
 <script>
@@ -109,12 +112,12 @@ function runTest(lib, layerCount) {
 				testCellx(report, layerCount, onDone);
 				break;
 			}
-			case 'knockout': {
-				testKnockout(report, layerCount, onDone);
+			case 'vanilla': {
+				testVanilla(report, layerCount, onDone);
 				break;
 			}
-			case 'angular': {
-				testAngular(report, layerCount, onDone);
+			case 'knockout': {
+				testKnockout(report, layerCount, onDone);
 				break;
 			}
 			case 'jin-atom': {
@@ -123,6 +126,14 @@ function runTest(lib, layerCount) {
 			}
 			case 'warp9': {
 				testWarp9(report, layerCount, onDone);
+				break;
+			}
+			case 'reactor': {
+				testReactor(report, layerCount, onDone);
+				break;
+			}
+			case 'reactive': {
+				testReactive(report, layerCount, onDone);
 				break;
 			}
 			case 'kefir': {
@@ -193,6 +204,56 @@ function testCellx(report, layerCount, done) {
 	done();
 }
 
+function testVanilla(report, layerCount, done) {
+	var start = {
+		prop1: 1,
+		prop2: 2,
+		prop3: 3,
+		prop4: 4
+	};
+	var layer = start;
+
+	for (var i = layerCount; i--;) {
+		layer = (function(m) {
+			var s = {};
+			
+			Object.defineProperty(s, 'prop1', { get: function() { return m.prop2; } });
+			Object.defineProperty(s, 'prop2', { get: function() { return m.prop1 - m.prop3; } });
+			Object.defineProperty(s, 'prop3', { get: function() { return m.prop2 + m.prop4; } });
+			Object.defineProperty(s, 'prop4', { get: function() { return m.prop3; } });
+
+			return s;
+		})(layer);
+	}
+
+	var end = layer;
+
+	report.beforeChange = [
+		end.prop1,
+		end.prop2,
+		end.prop3,
+		end.prop4
+	];
+
+	var st = Date.now();
+
+	start.prop1 = 4;
+	start.prop2 = 3;
+	start.prop3 = 2;
+	start.prop4 = 1;
+
+	report.afterChange = [
+		end.prop1,
+		end.prop2,
+		end.prop3,
+		end.prop4
+	];
+
+	report.recalculationTime = Date.now() - st;
+
+	done();
+}
+
 function testKnockout(report, layerCount, done) {
 	var Start = function() {
 		this.prop1 = ko.observable(1);
@@ -255,83 +316,6 @@ function testKnockout(report, layerCount, done) {
 	report.recalculationTime = Date.now() - st;
 
 	done();
-}
-
-function testAngular(report, layerCount, done) {
-	var app = angular.module('app', []);
-
-	var test;
-
-	app.controller('MyCtrl', function($scope) {
-		$scope.value_0_1 = 1;
-		$scope.value_0_2 = 2;
-		$scope.value_0_3 = 3;
-		$scope.value_0_4 = 4;
-
-		var i;
-
-		for (i = 1; i <= layerCount; i++) {
-			(function(i) {
-				var prevName1 = 'value_' + (i - 1) + '_1';
-				var prevName2 = 'value_' + (i - 1) + '_2';
-				var prevName3 = 'value_' + (i - 1) + '_3';
-				var prevName4 = 'value_' + (i - 1) + '_4';
-				var name1 = 'value_' + i + '_1';
-				var name2 = 'value_' + i + '_2';
-				var name3 = 'value_' + i + '_3';
-				var name4 = 'value_' + i + '_4';
-
-				Object.defineProperty($scope, name1, { get: function() { return $scope[prevName2]; } });
-				Object.defineProperty($scope, name2, { get: function() { return $scope[prevName1] - $scope[prevName3]; } });
-				Object.defineProperty($scope, name3, { get: function() { return $scope[prevName2] + $scope[prevName4]; } });
-				Object.defineProperty($scope, name4, { get: function() { return $scope[prevName3]; } });
-
-				report.beforeChange = [];
-
-				$scope.$watch(name1, function() {});
-				$scope.$watch(name2, function() {});
-				$scope.$watch(name3, function() {});
-				$scope.$watch(name4, function() {});
-
-				test = function() {
-					report.beforeChange = [
-						$scope[name1],
-						$scope[name2],
-						$scope[name3],
-						$scope[name4]
-					];
-
-					var st = Date.now();
-
-					$scope.value_0_1 = 4;
-					$scope.value_0_2 = 3;
-					$scope.value_0_3 = 2;
-					$scope.value_0_4 = 1;
-
-					cellx.nextTick(function() {
-						report.afterChange = [
-							$scope[name1],
-							$scope[name2],
-							$scope[name3],
-							$scope[name4]
-						];
-
-						report.recalculationTime = Date.now() - st;
-
-						done();
-					});
-				};
-			})(i);
-		}
-	});
-
-	var el = document.getElementById('angularApp');
-
-	el.innerHTML = '<div><div ng-controller="MyCtrl"><p>{{value_' + layerCount + '_1}}</p><p>{{value_' + layerCount + '_2}}</p><p>{{value_' + layerCount + '_3}}</p><p>{{value_' + layerCount + '_4}}</p></div></div>';
-
-	angular.bootstrap(el.firstElementChild, ['app']);
-
-	cellx.nextTick(test);
 }
 
 function testJinAtom(report, layerCount, done) {
@@ -463,6 +447,121 @@ function testWarp9(report, layerCount, done) {
 	done();
 }
 
+function testReactor(report, layerCount, done) {
+	var start = {
+		prop1: Signal(1),
+		prop2: Signal(2),
+		prop3: Signal(3),
+		prop4: Signal(4)
+	};
+	var layer = start;
+
+	for (var i = layerCount; i--;) {
+		layer = (function(m) {
+			var s = {
+				prop1: Signal(function() { return m.prop2(); }),
+				prop2: Signal(function() { return m.prop1() - m.prop3(); }),
+				prop3: Signal(function() { return m.prop2() + m.prop4(); }),
+				prop4: Signal(function() { return m.prop3(); })
+			};
+
+			s.prop1();
+			s.prop2();
+			s.prop3();
+			s.prop4();
+
+			return s;
+		})(layer);
+	}
+
+	var end = layer;
+
+	report.beforeChange = [
+		end.prop1(),
+		end.prop2(),
+		end.prop3(),
+		end.prop4()
+	];
+
+	var st = Date.now();
+
+	start.prop1(4);
+	start.prop2(3);
+	start.prop3(2);
+	start.prop4(1);
+
+	report.afterChange = [
+		end.prop1(),
+		end.prop2(),
+		end.prop3(),
+		end.prop4()
+	];
+
+	report.recalculationTime = Date.now() - st;
+
+	done();
+}
+
+function testReactive(report, layerCount, done) {
+	var start = {
+		prop1: $R.state(1),
+		prop2: $R.state(2),
+		prop3: $R.state(3),
+		prop4: $R.state(4)
+	};
+	var layer = start;
+
+	for (var i = layerCount; i--;) {
+		layer = (function(m) {
+			var s = {
+				prop1: $R(function(prop2) { return prop2; }),
+				prop2: $R(function(prop1, prop3) { return prop1 - prop3; }),
+				prop3: $R(function(prop2, prop4) { return prop2 + prop4; }),
+				prop4: $R(function(prop3) { return prop3; })
+			};
+			
+			s.prop1.bindTo(m.prop2);
+			s.prop2.bindTo(m.prop1, m.prop3);
+			s.prop3.bindTo(m.prop2, m.prop4);
+			s.prop4.bindTo(m.prop3);
+
+			s.prop1();
+			s.prop2();
+			s.prop3();
+			s.prop4();
+
+			return s;
+		})(layer);
+	}
+
+	var end = layer;
+
+	report.beforeChange = [
+		end.prop1(),
+		end.prop2(),
+		end.prop3(),
+		end.prop4()
+	];
+
+	var st = Date.now();
+
+	start.prop1.set(4);
+	start.prop2.set(3);
+	start.prop3.set(2);
+	start.prop4.set(1);
+
+	report.afterChange = [
+		end.prop1(),
+		end.prop2(),
+		end.prop3(),
+		end.prop4()
+	];
+
+	report.recalculationTime = Date.now() - st;
+
+	done();
+}
+
 function testKefir(report, layerCount, done) {
 	var em1;
 	var em2;
@@ -507,7 +606,7 @@ function testKefir(report, layerCount, done) {
 
 			report.beforeChange = v;
 
-			cellx.nextTick(function() {
+			cellx.utils.nextTick(function() {
 				em1.emit(4);
 				em2.emit(3);
 				em3.emit(2);
@@ -528,8 +627,6 @@ function testKefir(report, layerCount, done) {
 }
 
 </script>
-
-<div id="angularApp" style="display: none;"></div>
 
 </body>
 </html>

@@ -1,4 +1,4 @@
-/*! Kefir.js v2.6.0
+/*! Kefir.js v3.2.0
  *  https://github.com/rpominov/kefir
  */
 
@@ -6,7 +6,7 @@
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
 	else if(typeof define === 'function' && define.amd)
-		define(factory);
+		define([], factory);
 	else if(typeof exports === 'object')
 		exports["Kefir"] = factory();
 	else
@@ -110,26 +110,26 @@ return /******/ (function(modules) { // webpackBootstrap
 	// (any) -> Property
 	Kefir.constantError = __webpack_require__(23);
 
-	// (Promise) -> Property
-	Kefir.fromPromise = __webpack_require__(24);
-
 	// Convert observables
 	// -----------------------------------------------------------------------------
 
 	// (Stream|Property, Function|undefined) -> Property
-	var toProperty = __webpack_require__(25);
+	var toProperty = __webpack_require__(24);
 	Observable.prototype.toProperty = function (fn) {
 	  return toProperty(this, fn);
 	};
 
 	// (Stream|Property) -> Stream
-	var changes = __webpack_require__(27);
+	var changes = __webpack_require__(26);
 	Observable.prototype.changes = function () {
 	  return changes(this);
 	};
 
-	// Subscribe / add side effects
+	// Interoperation with other implimentations
 	// -----------------------------------------------------------------------------
+
+	// (Promise) -> Property
+	Kefir.fromPromise = __webpack_require__(27);
 
 	// (Stream|Property, Function|undefined) -> Promise
 	var toPromise = __webpack_require__(28);
@@ -137,88 +137,103 @@ return /******/ (function(modules) { // webpackBootstrap
 	  return toPromise(this, Promise);
 	};
 
+	// (ESObservable) -> Stream
+	Kefir.fromESObservable = __webpack_require__(29);
+
+	// (Stream|Property) -> ES7 Observable
+	var toESObservable = __webpack_require__(31);
+	Observable.prototype.toESObservable = toESObservable;
+	Observable.prototype[__webpack_require__(30)('observable')] = toESObservable;
+
 	// Modify an observable
 	// -----------------------------------------------------------------------------
 
 	// (Stream, Function|undefined) -> Stream
 	// (Property, Function|undefined) -> Property
-	var map = __webpack_require__(29);
+	var map = __webpack_require__(32);
 	Observable.prototype.map = function (fn) {
 	  return map(this, fn);
 	};
 
 	// (Stream, Function|undefined) -> Stream
 	// (Property, Function|undefined) -> Property
-	var filter = __webpack_require__(30);
+	var filter = __webpack_require__(33);
 	Observable.prototype.filter = function (fn) {
 	  return filter(this, fn);
 	};
 
 	// (Stream, number) -> Stream
 	// (Property, number) -> Property
-	var take = __webpack_require__(31);
+	var take = __webpack_require__(34);
 	Observable.prototype.take = function (n) {
 	  return take(this, n);
 	};
 
+	// (Stream, number) -> Stream
+	// (Property, number) -> Property
+	var takeErrors = __webpack_require__(35);
+	Observable.prototype.takeErrors = function (n) {
+	  return takeErrors(this, n);
+	};
+
 	// (Stream, Function|undefined) -> Stream
 	// (Property, Function|undefined) -> Property
-	var takeWhile = __webpack_require__(32);
+	var takeWhile = __webpack_require__(36);
 	Observable.prototype.takeWhile = function (fn) {
 	  return takeWhile(this, fn);
 	};
 
 	// (Stream) -> Stream
 	// (Property) -> Property
-	var last = __webpack_require__(33);
+	var last = __webpack_require__(37);
 	Observable.prototype.last = function () {
 	  return last(this);
 	};
 
 	// (Stream, number) -> Stream
 	// (Property, number) -> Property
-	var skip = __webpack_require__(34);
+	var skip = __webpack_require__(38);
 	Observable.prototype.skip = function (n) {
 	  return skip(this, n);
 	};
 
 	// (Stream, Function|undefined) -> Stream
 	// (Property, Function|undefined) -> Property
-	var skipWhile = __webpack_require__(35);
+	var skipWhile = __webpack_require__(39);
 	Observable.prototype.skipWhile = function (fn) {
 	  return skipWhile(this, fn);
 	};
 
 	// (Stream, Function|undefined) -> Stream
 	// (Property, Function|undefined) -> Property
-	var skipDuplicates = __webpack_require__(36);
+	var skipDuplicates = __webpack_require__(40);
 	Observable.prototype.skipDuplicates = function (fn) {
 	  return skipDuplicates(this, fn);
 	};
 
 	// (Stream, Function|falsey, any|undefined) -> Stream
 	// (Property, Function|falsey, any|undefined) -> Property
-	var diff = __webpack_require__(37);
+	var diff = __webpack_require__(41);
 	Observable.prototype.diff = function (fn, seed) {
 	  return diff(this, fn, seed);
 	};
 
 	// (Stream|Property, Function, any|undefined) -> Property
-	var scan = __webpack_require__(38);
+	var scan = __webpack_require__(42);
 	Observable.prototype.scan = function (fn, seed) {
 	  return scan(this, fn, seed);
 	};
 
 	// (Stream, Function|undefined) -> Stream
 	// (Property, Function|undefined) -> Property
-	var flatten = __webpack_require__(39);
+	var flatten = __webpack_require__(43);
 	Observable.prototype.flatten = function (fn) {
 	  return flatten(this, fn);
 	};
 
 	// (Stream, number) -> Stream
 	// (Property, number) -> Property
-	var delay = __webpack_require__(40);
+	var delay = __webpack_require__(44);
 	Observable.prototype.delay = function (wait) {
 	  return delay(this, wait);
 	};
@@ -226,7 +241,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	// Options = {leading: boolean|undefined, trailing: boolean|undefined}
 	// (Stream, number, Options|undefined) -> Stream
 	// (Property, number, Options|undefined) -> Property
-	var throttle = __webpack_require__(41);
+	var throttle = __webpack_require__(45);
 	Observable.prototype.throttle = function (wait, options) {
 	  return throttle(this, wait, options);
 	};
@@ -234,77 +249,56 @@ return /******/ (function(modules) { // webpackBootstrap
 	// Options = {immediate: boolean|undefined}
 	// (Stream, number, Options|undefined) -> Stream
 	// (Property, number, Options|undefined) -> Property
-	var debounce = __webpack_require__(43);
+	var debounce = __webpack_require__(47);
 	Observable.prototype.debounce = function (wait, options) {
 	  return debounce(this, wait, options);
 	};
 
 	// (Stream, Function|undefined) -> Stream
 	// (Property, Function|undefined) -> Property
-	var valuesToErrors = __webpack_require__(44);
-	Observable.prototype.valuesToErrors = function (fn) {
-	  return valuesToErrors(this, fn);
-	};
-
-	// (Stream, Function|undefined) -> Stream
-	// (Property, Function|undefined) -> Property
-	var errorsToValues = __webpack_require__(45);
-	Observable.prototype.errorsToValues = function (fn) {
-	  return errorsToValues(this, fn);
-	};
-
-	// (Stream, Function|undefined) -> Stream
-	// (Property, Function|undefined) -> Property
-	var mapErrors = __webpack_require__(46);
+	var mapErrors = __webpack_require__(48);
 	Observable.prototype.mapErrors = function (fn) {
 	  return mapErrors(this, fn);
 	};
 
 	// (Stream, Function|undefined) -> Stream
 	// (Property, Function|undefined) -> Property
-	var filterErrors = __webpack_require__(47);
+	var filterErrors = __webpack_require__(49);
 	Observable.prototype.filterErrors = function (fn) {
 	  return filterErrors(this, fn);
 	};
 
 	// (Stream) -> Stream
 	// (Property) -> Property
-	var endOnError = __webpack_require__(48);
-	Observable.prototype.endOnError = function () {
-	  return endOnError(this);
+	var ignoreValues = __webpack_require__(50);
+	Observable.prototype.ignoreValues = function () {
+	  return ignoreValues(this);
 	};
 
 	// (Stream) -> Stream
 	// (Property) -> Property
-	var skipValues = __webpack_require__(49);
-	Observable.prototype.skipValues = function () {
-	  return skipValues(this);
+	var ignoreErrors = __webpack_require__(51);
+	Observable.prototype.ignoreErrors = function () {
+	  return ignoreErrors(this);
 	};
 
 	// (Stream) -> Stream
 	// (Property) -> Property
-	var skipErrors = __webpack_require__(50);
-	Observable.prototype.skipErrors = function () {
-	  return skipErrors(this);
-	};
-
-	// (Stream) -> Stream
-	// (Property) -> Property
-	var skipEnd = __webpack_require__(51);
-	Observable.prototype.skipEnd = function () {
-	  return skipEnd(this);
+	var ignoreEnd = __webpack_require__(52);
+	Observable.prototype.ignoreEnd = function () {
+	  return ignoreEnd(this);
 	};
 
 	// (Stream, Function) -> Stream
 	// (Property, Function) -> Property
-	var beforeEnd = __webpack_require__(52);
+	var beforeEnd = __webpack_require__(53);
 	Observable.prototype.beforeEnd = function (fn) {
 	  return beforeEnd(this, fn);
 	};
 
 	// (Stream, number, number|undefined) -> Stream
 	// (Property, number, number|undefined) -> Property
-	var slidingWindow = __webpack_require__(53);
+	var slidingWindow = __webpack_require__(54);
 	Observable.prototype.slidingWindow = function (max, min) {
 	  return slidingWindow(this, max, min);
 	};
@@ -312,21 +306,36 @@ return /******/ (function(modules) { // webpackBootstrap
 	// Options = {flushOnEnd: boolean|undefined}
 	// (Stream, Function|falsey, Options|undefined) -> Stream
 	// (Property, Function|falsey, Options|undefined) -> Property
-	var bufferWhile = __webpack_require__(54);
+	var bufferWhile = __webpack_require__(55);
 	Observable.prototype.bufferWhile = function (fn, options) {
 	  return bufferWhile(this, fn, options);
 	};
 
+	// (Stream, number) -> Stream
+	// (Property, number) -> Property
+	var bufferWithCount = __webpack_require__(56);
+	Observable.prototype.bufferWithCount = function (count, options) {
+	  return bufferWithCount(this, count, options);
+	};
+
+	// Options = {flushOnEnd: boolean|undefined}
+	// (Stream, number, number, Options|undefined) -> Stream
+	// (Property, number, number, Options|undefined) -> Property
+	var bufferWithTimeOrCount = __webpack_require__(57);
+	Observable.prototype.bufferWithTimeOrCount = function (wait, count, options) {
+	  return bufferWithTimeOrCount(this, wait, count, options);
+	};
+
 	// (Stream, Function) -> Stream
 	// (Property, Function) -> Property
-	var transduce = __webpack_require__(55);
+	var transduce = __webpack_require__(58);
 	Observable.prototype.transduce = function (transducer) {
 	  return transduce(this, transducer);
 	};
 
 	// (Stream, Function) -> Stream
 	// (Property, Function) -> Property
-	var withHandler = __webpack_require__(56);
+	var withHandler = __webpack_require__(59);
 	Observable.prototype.withHandler = function (fn) {
 	  return withHandler(this, fn);
 	};
@@ -336,41 +345,41 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	// (Array<Stream|Property>, Function|undefiend) -> Stream
 	// (Array<Stream|Property>, Array<Stream|Property>, Function|undefiend) -> Stream
-	var combine = Kefir.combine = __webpack_require__(57);
+	var combine = Kefir.combine = __webpack_require__(60);
 	Observable.prototype.combine = function (other, combinator) {
 	  return combine([this, other], combinator);
 	};
 
 	// (Array<Stream|Property>, Function|undefiend) -> Stream
-	var zip = Kefir.zip = __webpack_require__(58);
+	var zip = Kefir.zip = __webpack_require__(61);
 	Observable.prototype.zip = function (other, combinator) {
 	  return zip([this, other], combinator);
 	};
 
 	// (Array<Stream|Property>) -> Stream
-	var merge = Kefir.merge = __webpack_require__(59);
+	var merge = Kefir.merge = __webpack_require__(62);
 	Observable.prototype.merge = function (other) {
 	  return merge([this, other]);
 	};
 
 	// (Array<Stream|Property>) -> Stream
-	var concat = Kefir.concat = __webpack_require__(61);
+	var concat = Kefir.concat = __webpack_require__(64);
 	Observable.prototype.concat = function (other) {
 	  return concat([this, other]);
 	};
 
 	// () -> Pool
-	var Pool = Kefir.Pool = __webpack_require__(63);
+	var Pool = Kefir.Pool = __webpack_require__(66);
 	Kefir.pool = function () {
 	  return new Pool();
 	};
 
 	// (Function) -> Stream
-	Kefir.repeat = __webpack_require__(62);
+	Kefir.repeat = __webpack_require__(65);
 
 	// Options = {concurLim: number|undefined, queueLim: number|undefined, drop: 'old'|'new'|undefiend}
 	// (Stream|Property, Function|falsey, Options|undefined) -> Stream
-	var FlatMap = __webpack_require__(64);
+	var FlatMap = __webpack_require__(67);
 	Observable.prototype.flatMap = function (fn) {
 	  return new FlatMap(this, fn).setName(this, 'flatMap');
 	};
@@ -388,7 +397,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	// (Stream|Property, Function|falsey) -> Stream
-	var FlatMapErrors = __webpack_require__(65);
+	var FlatMapErrors = __webpack_require__(68);
 	Observable.prototype.flatMapErrors = function (fn) {
 	  return new FlatMapErrors(this, fn).setName(this, 'flatMapErrors');
 	};
@@ -398,28 +407,28 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	// (Stream, Stream|Property) -> Stream
 	// (Property, Stream|Property) -> Property
-	var filterBy = __webpack_require__(66);
+	var filterBy = __webpack_require__(69);
 	Observable.prototype.filterBy = function (other) {
 	  return filterBy(this, other);
 	};
 
 	// (Stream, Stream|Property, Function|undefiend) -> Stream
 	// (Property, Stream|Property, Function|undefiend) -> Property
-	var sampledBy2items = __webpack_require__(68);
+	var sampledBy2items = __webpack_require__(71);
 	Observable.prototype.sampledBy = function (other, combinator) {
 	  return sampledBy2items(this, other, combinator);
 	};
 
 	// (Stream, Stream|Property) -> Stream
 	// (Property, Stream|Property) -> Property
-	var skipUntilBy = __webpack_require__(69);
+	var skipUntilBy = __webpack_require__(72);
 	Observable.prototype.skipUntilBy = function (other) {
 	  return skipUntilBy(this, other);
 	};
 
 	// (Stream, Stream|Property) -> Stream
 	// (Property, Stream|Property) -> Property
-	var takeUntilBy = __webpack_require__(70);
+	var takeUntilBy = __webpack_require__(73);
 	Observable.prototype.takeUntilBy = function (other) {
 	  return takeUntilBy(this, other);
 	};
@@ -427,7 +436,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	// Options = {flushOnEnd: boolean|undefined}
 	// (Stream, Stream|Property, Options|undefined) -> Stream
 	// (Property, Stream|Property, Options|undefined) -> Property
-	var bufferBy = __webpack_require__(71);
+	var bufferBy = __webpack_require__(74);
 	Observable.prototype.bufferBy = function (other, options) {
 	  return bufferBy(this, other, options);
 	};
@@ -435,137 +444,51 @@ return /******/ (function(modules) { // webpackBootstrap
 	// Options = {flushOnEnd: boolean|undefined}
 	// (Stream, Stream|Property, Options|undefined) -> Stream
 	// (Property, Stream|Property, Options|undefined) -> Property
-	var bufferWhileBy = __webpack_require__(72);
+	var bufferWhileBy = __webpack_require__(75);
 	Observable.prototype.bufferWhileBy = function (other, options) {
 	  return bufferWhileBy(this, other, options);
-	};
-
-	// (Stream|Property, Stream|Property) -> Property
-	var awaiting = __webpack_require__(73);
-	Observable.prototype.awaiting = function (other) {
-	  return awaiting(this, other);
 	};
 
 	// Deprecated
 	// -----------------------------------------------------------------------------
 
-	Kefir.DEPRECATION_WARNINGS = true;
-	function deprecated(name, alt, fn) {
-	  return function () {
-	    if (Kefir.DEPRECATION_WARNINGS && typeof console !== 'undefined' && console.log) {
-
-	      var message = 'Method `' + name + '` is deprecated, and to be removed in v3.0.0.\nUse `' + alt + '` instead.\nTo disable all warnings like this set `Kefir.DEPRECATION_WARNINGS = false`.';
-
-	      console.log(message);
-	    }
-	    return fn.apply(this, arguments);
-	  };
+	function warn(msg) {
+	  if (Kefir.DEPRECATION_WARNINGS !== false && console && typeof console.warn === 'function') {
+	    var msg2 = '\nHere is an Error object for you containing the call stack:';
+	    console.warn(msg, msg2, new Error());
+	  }
 	}
 
-	// () -> Emitter
-	var Emitter = Kefir.Emitter = __webpack_require__(74);
-	Kefir.emitter = deprecated('Kefir.emitter()', 'Kefir.stream()', function () {
-	  return new Emitter();
-	});
+	// (Stream|Property, Stream|Property) -> Property
+	var awaiting = __webpack_require__(76);
+	Observable.prototype.awaiting = function (other) {
+	  warn('You are using deprecated .awaiting() method, see https://github.com/rpominov/kefir/issues/145');
+	  return awaiting(this, other);
+	};
 
-	// () -> Bus
-	var Bus = Kefir.Bus = __webpack_require__(75);
-	Kefir.bus = deprecated('Kefir.bus()', 'Kefir.pool() or Kefir.stream()', function () {
-	  return new Bus();
-	});
+	// (Stream, Function|undefined) -> Stream
+	// (Property, Function|undefined) -> Property
+	var valuesToErrors = __webpack_require__(77);
+	Observable.prototype.valuesToErrors = function (fn) {
+	  warn('You are using deprecated .valuesToErrors() method, see https://github.com/rpominov/kefir/issues/149');
+	  return valuesToErrors(this, fn);
+	};
 
-	// (Stream, Function, any|undefined) -> Stream
-	// (Property, Function, any|undefined) -> Property
-	var reduce = __webpack_require__(76);
-	Observable.prototype.reduce = deprecated('.reduce(fn, seed)', '.scan(fn, seed).last()', function (fn, seed) {
-	  return reduce(this, fn, seed);
-	});
-
-	// (Array<Stream|Property>, Array<Stream|Property>, Function|undefined) -> Stream
-	var sampledByManyItems = __webpack_require__(77);
-	Kefir.sampledBy = deprecated('Kefir.sampledBy()', 'Kefir.combine()', sampledByManyItems);
-
-	// (number, Array<any>) -> Stream
-	var repeatedly = __webpack_require__(78);
-	Kefir.repeatedly = deprecated('Kefir.repeatedly()', 'Kefir.repeat(() => Kefir.sequentially(...)})', repeatedly);
-
-	// (Stream, any) -> Stream
-	// (Property, any) -> Property
-	var mapTo = __webpack_require__(79);
-	Observable.prototype.mapTo = deprecated('.mapTo()', '.map(() => value)', function (x) {
-	  return mapTo(this, x);
-	});
-
-	// (Stream, Function) -> Stream
-	// (Property, Function) -> Property
-	var tap = __webpack_require__(80);
-	Observable.prototype.tap = deprecated('.tap()', '.map((v) => {fn(v); return v})', function (fn) {
-	  return tap(this, fn);
-	});
-
-	// (Stream, string) -> Stream
-	// (Property, string) -> Property
-	var pluck = __webpack_require__(81);
-	Observable.prototype.pluck = deprecated('.pluck()', '.map((x) => x.foo)', function (propName) {
-	  return pluck(this, propName);
-	});
-
-	// (Stream, string, Array) -> Stream
-	// (Property, string, Array) -> Property
-	var invoke = __webpack_require__(82);
-	Observable.prototype.invoke = deprecated('.invoke()', '.map((x) => x.foo())', function (methodName) {
-	  for (var _len = arguments.length, args = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-	    args[_key - 1] = arguments[_key];
-	  }
-
-	  return invoke(this, methodName, args);
-	});
+	// (Stream, Function|undefined) -> Stream
+	// (Property, Function|undefined) -> Property
+	var errorsToValues = __webpack_require__(78);
+	Observable.prototype.errorsToValues = function (fn) {
+	  warn('You are using deprecated .errorsToValues() method, see https://github.com/rpominov/kefir/issues/149');
+	  return errorsToValues(this, fn);
+	};
 
 	// (Stream) -> Stream
 	// (Property) -> Property
-	var timestamp = __webpack_require__(83);
-	Observable.prototype.timestamp = deprecated('.timestamp()', '.map((x) => {value: x, time: Date.now()})', function () {
-	  return timestamp(this);
-	});
-
-	// (Array<Stream|Property>) -> Stream
-	var and = __webpack_require__(84);
-	Kefir.and = deprecated('Kefir.and()', 'Kefir.combine([a, b], (a, b) => a && b)', and);
-	Observable.prototype.and = deprecated('.and()', '.combine(other, (a, b) => a && b)', function (other) {
-	  return and([this, other]);
-	});
-
-	// (Array<Stream|Property>) -> Stream
-	var or = __webpack_require__(85);
-	Kefir.or = deprecated('Kefir.or()', 'Kefir.combine([a, b], (a, b) => a || b)', or);
-	Observable.prototype.or = deprecated('.or()', '.combine(other, (a, b) => a || b)', function (other) {
-	  return or([this, other]);
-	});
-
-	// (Stream) -> Stream
-	// (Property) -> Property
-	var not = __webpack_require__(86);
-	Observable.prototype.not = deprecated('.not()', '.map((x) => !x)', function () {
-	  return not(this);
-	});
-
-	// (Function, Function, Function|undefined) -> Stream
-	var fromSubUnsub = __webpack_require__(20);
-	Kefir.fromSubUnsub = deprecated('.fromSubUnsub()', 'Kefir.stream()', fromSubUnsub);
-
-	// (Stream, Stream|Property) -> Stream
-	// (Property, Stream|Property) -> Property
-	var takeWhileBy = __webpack_require__(87);
-	Observable.prototype.takeWhileBy = deprecated('.takeWhileBy(foo)', '.skipUntilBy(foo.filter((x) => !x))', function (other) {
-	  return takeWhileBy(this, other);
-	});
-
-	// (Stream, Stream|Property) -> Stream
-	// (Property, Stream|Property) -> Property
-	var skipWhileBy = __webpack_require__(88);
-	Observable.prototype.skipWhileBy = deprecated('.skipWhileBy(foo)', '.takeUntilBy(foo.filter((x) => !x))', function (other) {
-	  return skipWhileBy(this, other);
-	});
+	var endOnError = __webpack_require__(79);
+	Observable.prototype.endOnError = function () {
+	  warn('You are using deprecated .endOnError() method, see https://github.com/rpominov/kefir/issues/150');
+	  return endOnError(this);
+	};
 
 /***/ },
 /* 1 */
@@ -623,7 +546,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  _clear: function _clear() {
 	    this._setActive(false);
-	    this._alive = false;
+	    this._dispatcher.cleanup();
 	    this._dispatcher = null;
 	    this._logHandlers = null;
 	  },
@@ -641,19 +564,20 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  _emitValue: function _emitValue(value) {
 	    if (this._alive) {
-	      this._dispatcher.dispatch({ type: VALUE, value: value, current: this._activating });
+	      this._dispatcher.dispatch({ type: VALUE, value: value });
 	    }
 	  },
 
 	  _emitError: function _emitError(value) {
 	    if (this._alive) {
-	      this._dispatcher.dispatch({ type: ERROR, value: value, current: this._activating });
+	      this._dispatcher.dispatch({ type: ERROR, value: value });
 	    }
 	  },
 
 	  _emitEnd: function _emitEnd() {
 	    if (this._alive) {
-	      this._dispatcher.dispatch({ type: END, current: this._activating });
+	      this._alive = false;
+	      this._dispatcher.dispatch({ type: END });
 	      this._clear();
 	    }
 	  },
@@ -663,7 +587,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this._dispatcher.add(type, fn);
 	      this._setActive(true);
 	    } else {
-	      callSubscriber(type, fn, { type: END, current: true });
+	      callSubscriber(type, fn, { type: END });
 	    }
 	    return this;
 	  },
@@ -710,15 +634,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	  },
 
 	  setName: function setName(sourceObs, /* optional */selfName) {
-	    this._name = selfName ? '' + sourceObs._name + '.' + selfName : sourceObs;
+	    this._name = selfName ? sourceObs._name + '.' + selfName : sourceObs;
 	    return this;
 	  },
 
 	  log: function log() {
-	    var name = arguments[0] === undefined ? this.toString() : arguments[0];
+	    var name = arguments.length <= 0 || arguments[0] === undefined ? this.toString() : arguments[0];
 
+	    var isCurrent = undefined;
 	    var handler = function handler(event) {
-	      var type = '<' + event.type + '' + (event.current ? ':current' : '') + '>';
+	      var type = '<' + event.type + (isCurrent ? ':current' : '') + '>';
 	      if (event.type === END) {
 	        console.log(name, type);
 	      } else {
@@ -733,13 +658,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	      this._logHandlers.push({ name: name, handler: handler });
 	    }
 
+	    isCurrent = true;
 	    this.onAny(handler);
+	    isCurrent = false;
 
 	    return this;
 	  },
 
 	  offLog: function offLog() {
-	    var name = arguments[0] === undefined ? this.toString() : arguments[0];
+	    var name = arguments.length <= 0 || arguments[0] === undefined ? this.toString() : arguments[0];
 
 	    if (this._logHandlers) {
 	      var handlerIndex = findByPred(this._logHandlers, function (obj) {
@@ -753,7 +680,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    return this;
 	  }
-
 	});
 
 	// extend() can't handle `toString` in IE8
@@ -765,7 +691,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 2 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
 	"use strict";
 
@@ -802,7 +728,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 3 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
 	'use strict';
 
@@ -831,7 +757,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	var _require3 = __webpack_require__(5);
 
 	var concat = _require3.concat;
-	var removeByPred = _require3.removeByPred;
+	var findByPred = _require3.findByPred;
+	var _remove = _require3.remove;
+	var contains = _require3.contains;
 
 	function callSubscriber(type, fn, event) {
 	  if (type === ANY) {
@@ -847,6 +775,8 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	function Dispatcher() {
 	  this._items = [];
+	  this._inLoop = 0;
+	  this._removedItems = null;
 	}
 
 	extend(Dispatcher.prototype, {
@@ -857,16 +787,47 @@ return /******/ (function(modules) { // webpackBootstrap
 	  },
 
 	  remove: function remove(type, fn) {
-	    this._items = removeByPred(this._items, function (x) {
+	    var index = findByPred(this._items, function (x) {
 	      return x.type === type && x.fn === fn;
 	    });
+
+	    // if we're currently in a notification loop,
+	    // remember this subscriber was removed
+	    if (this._inLoop !== 0 && index !== -1) {
+	      if (this._removedItems === null) {
+	        this._removedItems = [];
+	      }
+	      this._removedItems.push(this._items[index]);
+	    }
+
+	    this._items = _remove(this._items, index);
 	    return this._items.length;
 	  },
 
 	  dispatch: function dispatch(event) {
+	    this._inLoop++;
 	    for (var i = 0, items = this._items; i < items.length; i++) {
+
+	      // cleanup was called
+	      if (this._items === null) {
+	        break;
+	      }
+
+	      // this subscriber was removed
+	      if (this._removedItems !== null && contains(this._removedItems, items[i])) {
+	        continue;
+	      }
+
 	      callSubscriber(items[i].type, items[i].fn, event);
 	    }
+	    this._inLoop--;
+	    if (this._inLoop === 0) {
+	      this._removedItems = null;
+	    }
+	  },
+
+	  cleanup: function cleanup() {
+	    this._items = null;
 	  }
 
 	});
@@ -875,7 +836,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 5 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
 	"use strict";
 
@@ -1090,26 +1051,27 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  _emitValue: function _emitValue(value) {
 	    if (this._alive) {
+	      this._currentEvent = { type: VALUE, value: value };
 	      if (!this._activating) {
-	        this._dispatcher.dispatch({ type: VALUE, value: value, current: this._activating });
+	        this._dispatcher.dispatch({ type: VALUE, value: value });
 	      }
-	      this._currentEvent = { type: VALUE, value: value, current: true };
 	    }
 	  },
 
 	  _emitError: function _emitError(value) {
 	    if (this._alive) {
+	      this._currentEvent = { type: ERROR, value: value };
 	      if (!this._activating) {
-	        this._dispatcher.dispatch({ type: ERROR, value: value, current: this._activating });
+	        this._dispatcher.dispatch({ type: ERROR, value: value });
 	      }
-	      this._currentEvent = { type: ERROR, value: value, current: true };
 	    }
 	  },
 
 	  _emitEnd: function _emitEnd() {
 	    if (this._alive) {
+	      this._alive = false;
 	      if (!this._activating) {
-	        this._dispatcher.dispatch({ type: END, current: this._activating });
+	        this._dispatcher.dispatch({ type: END });
 	      }
 	      this._clear();
 	    }
@@ -1124,7 +1086,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      callSubscriber(type, fn, this._currentEvent);
 	    }
 	    if (!this._alive) {
-	      callSubscriber(type, fn, { type: END, current: true });
+	      callSubscriber(type, fn, { type: END });
 	    }
 	    return this;
 	  },
@@ -1214,7 +1176,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  inherit(AnonymousStream, Stream, {
 
-	    _init: function _init(options) {},
+	    _init: function _init() {},
 	    _free: function _free() {},
 
 	    _onTick: function _onTick() {},
@@ -1387,7 +1349,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 15 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
 	"use strict";
 
@@ -1574,7 +1536,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    var handler = transformer ? function () {
 	      emitter.emit(apply(transformer, this, arguments));
-	    } : emitter.emit;
+	    } : function (x) {
+	      emitter.emit(x);
+	    };
 
 	    sub(handler);
 	    return function () {
@@ -1585,14 +1549,14 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 21 */
-/***/ function(module, exports, __webpack_require__) {
+/***/ function(module, exports) {
 
 	"use strict";
 
 	function spread(fn, length) {
 	  switch (length) {
 	    case 0:
-	      return function (a) {
+	      return function () {
 	        return fn();
 	      };
 	    case 1:
@@ -1721,44 +1685,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 
-	var stream = __webpack_require__(17);
-	var toProperty = __webpack_require__(25);
-
-	module.exports = function fromPromise(promise) {
-
-	  var called = false;
-
-	  var result = stream(function (emitter) {
-	    if (!called) {
-	      var onValue = function onValue(x) {
-	        emitter.emit(x);
-	        emitter.end();
-	      };
-	      var onError = function onError(x) {
-	        emitter.error(x);
-	        emitter.end();
-	      };
-	      var _promise = promise.then(onValue, onError);
-
-	      // prevent libraries like 'Q' or 'when' from swallowing exceptions
-	      if (_promise && typeof _promise.done === 'function') {
-	        _promise.done();
-	      }
-
-	      called = true;
-	    }
-	  });
-
-	  return toProperty(result, null).setName('fromPromise');
-	};
-
-/***/ },
-/* 25 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createProperty = _require.createProperty;
 
@@ -1781,7 +1708,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	});
 
 	module.exports = function toProperty(obs) {
-	  var fn = arguments[1] === undefined ? null : arguments[1];
+	  var fn = arguments.length <= 1 || arguments[1] === undefined ? null : arguments[1];
 
 	  if (fn !== null && typeof fn !== 'function') {
 	    throw new Error('You should call toProperty() with a function or no arguments.');
@@ -1790,7 +1717,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 26 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -1814,7 +1741,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	    BaseClass.call(this);
 	    this._source = source;
-	    this._name = '' + source._name + '.' + name;
+	    this._name = source._name + '.' + name;
 	    this._init(options);
 	    this._$handleAny = function (event) {
 	      return _this._handleAny(event);
@@ -1825,7 +1752,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	function createClassMethods(BaseClass) {
 	  return {
 
-	    _init: function _init(options) {},
+	    _init: function _init() {},
 	    _free: function _free() {},
 
 	    _handleValue: function _handleValue(x) {
@@ -1881,12 +1808,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = { createStream: createStream, createProperty: createProperty };
 
 /***/ },
-/* 27 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 
@@ -1911,10 +1838,52 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
+/* 27 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var stream = __webpack_require__(17);
+	var toProperty = __webpack_require__(24);
+
+	module.exports = function fromPromise(promise) {
+
+	  var called = false;
+
+	  var result = stream(function (emitter) {
+	    if (!called) {
+	      var onValue = function onValue(x) {
+	        emitter.emit(x);
+	        emitter.end();
+	      };
+	      var onError = function onError(x) {
+	        emitter.error(x);
+	        emitter.end();
+	      };
+	      var _promise = promise.then(onValue, onError);
+
+	      // prevent libraries like 'Q' or 'when' from swallowing exceptions
+	      if (_promise && typeof _promise.done === 'function') {
+	        _promise.done();
+	      }
+
+	      called = true;
+	    }
+	  });
+
+	  return toProperty(result, null).setName('fromPromise');
+	};
+
+/***/ },
 /* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
+
+	var _require = __webpack_require__(3);
+
+	var VALUE = _require.VALUE;
+	var END = _require.END;
 
 	function getGlodalPromise() {
 	  if (typeof Promise === 'function') {
@@ -1925,13 +1894,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 	module.exports = function (obs) {
-	  var Promise = arguments[1] === undefined ? getGlodalPromise() : arguments[1];
+	  var Promise = arguments.length <= 1 || arguments[1] === undefined ? getGlodalPromise() : arguments[1];
 
 	  var last = null;
 	  return new Promise(function (resolve, reject) {
 	    obs.onAny(function (event) {
-	      if (event.type === 'end' && last !== null) {
-	        (last.type === 'value' ? resolve : reject)(last.value);
+	      if (event.type === END && last !== null) {
+	        (last.type === VALUE ? resolve : reject)(last.value);
 	        last = null;
 	      } else {
 	        last = event;
@@ -1946,7 +1915,103 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var stream = __webpack_require__(17);
+	var symbol = __webpack_require__(30)('observable');
+
+	module.exports = function fromESObservable(_observable) {
+	  var observable = _observable[symbol] ? _observable[symbol]() : _observable;
+	  return stream(function (emitter) {
+	    var unsub = observable.subscribe({
+	      error: function error(_error) {
+	        emitter.error(_error);
+	        emitter.end();
+	      },
+	      next: function next(value) {
+	        emitter.emit(value);
+	      },
+	      complete: function complete() {
+	        emitter.end();
+	      }
+	    });
+
+	    if (unsub.unsubscribe) {
+	      return function () {
+	        unsub.unsubscribe();
+	      };
+	    } else {
+	      return unsub;
+	    }
+	  }).setName('fromESObservable');
+	};
+
+/***/ },
+/* 30 */
+/***/ function(module, exports) {
+
+	'use strict';
+
+	module.exports = function (key) {
+	  if (typeof Symbol !== 'undefined' && Symbol[key]) {
+	    return Symbol[key];
+	  } else if (typeof Symbol !== 'undefined' && typeof Symbol['for'] === 'function') {
+	    return Symbol['for'](key);
+	  } else {
+	    return '@@' + key;
+	  }
+	};
+
+/***/ },
+/* 31 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _require = __webpack_require__(2);
+
+	var extend = _require.extend;
+
+	var _require2 = __webpack_require__(3);
+
+	var VALUE = _require2.VALUE;
+	var ERROR = _require2.ERROR;
+	var END = _require2.END;
+
+	function ESObservable(observable) {
+	  this._observable = observable.takeErrors(1);
+	}
+
+	extend(ESObservable.prototype, {
+	  subscribe: function subscribe(observer) {
+	    var _this = this;
+
+	    var fn = function fn(event) {
+	      if (event.type === VALUE && observer.next) {
+	        observer.next(event.value);
+	      } else if (event.type === ERROR && observer.error) {
+	        observer.error(event.value);
+	      } else if (event.type === END && observer.complete) {
+	        observer.complete(event.value);
+	      }
+	    };
+
+	    this._observable.onAny(fn);
+	    return function () {
+	      return _this._observable.offAny(fn);
+	    };
+	  }
+	});
+
+	module.exports = function toESObservable() {
+	  return new ESObservable(this);
+	};
+
+/***/ },
+/* 32 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -1978,18 +2043,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	module.exports = function map(obs) {
-	  var fn = arguments[1] === undefined ? id : arguments[1];
+	  var fn = arguments.length <= 1 || arguments[1] === undefined ? id : arguments[1];
 
 	  return new (obs._ofSameType(S, P))(obs, { fn: fn });
 	};
 
 /***/ },
-/* 30 */
+/* 33 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -2023,18 +2088,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	module.exports = function filter(obs) {
-	  var fn = arguments[1] === undefined ? id : arguments[1];
+	  var fn = arguments.length <= 1 || arguments[1] === undefined ? id : arguments[1];
 
 	  return new (obs._ofSameType(S, P))(obs, { fn: fn });
 	};
 
 /***/ },
-/* 31 */
+/* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -2063,17 +2128,56 @@ return /******/ (function(modules) { // webpackBootstrap
 	var S = createStream('take', mixin);
 	var P = createProperty('take', mixin);
 
-	module.exports = function takeWhile(obs, n) {
+	module.exports = function take(obs, n) {
 	  return new (obs._ofSameType(S, P))(obs, { n: n });
 	};
 
 /***/ },
-/* 32 */
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
+
+	var createStream = _require.createStream;
+	var createProperty = _require.createProperty;
+
+	var mixin = {
+
+	  _init: function _init(_ref) {
+	    var n = _ref.n;
+
+	    this._n = n;
+	    if (n <= 0) {
+	      this._emitEnd();
+	    }
+	  },
+
+	  _handleError: function _handleError(x) {
+	    this._n--;
+	    this._emitError(x);
+	    if (this._n === 0) {
+	      this._emitEnd();
+	    }
+	  }
+
+	};
+
+	var S = createStream('takeErrors', mixin);
+	var P = createProperty('takeErrors', mixin);
+
+	module.exports = function takeErrors(obs, n) {
+	  return new (obs._ofSameType(S, P))(obs, { n: n });
+	};
+
+/***/ },
+/* 36 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -2109,18 +2213,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	module.exports = function takeWhile(obs) {
-	  var fn = arguments[1] === undefined ? id : arguments[1];
+	  var fn = arguments.length <= 1 || arguments[1] === undefined ? id : arguments[1];
 
 	  return new (obs._ofSameType(S, P))(obs, { fn: fn });
 	};
 
 /***/ },
-/* 33 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -2160,12 +2264,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 34 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -2196,12 +2300,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 35 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -2238,18 +2342,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	module.exports = function skipWhile(obs) {
-	  var fn = arguments[1] === undefined ? id : arguments[1];
+	  var fn = arguments.length <= 1 || arguments[1] === undefined ? id : arguments[1];
 
 	  return new (obs._ofSameType(S, P))(obs, { fn: fn });
 	};
 
 /***/ },
-/* 36 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -2290,18 +2394,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	module.exports = function skipDuplicates(obs) {
-	  var fn = arguments[1] === undefined ? eq : arguments[1];
+	  var fn = arguments.length <= 1 || arguments[1] === undefined ? eq : arguments[1];
 
 	  return new (obs._ofSameType(S, P))(obs, { fn: fn });
 	};
 
 /***/ },
-/* 37 */
+/* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -2343,18 +2447,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 	module.exports = function diff(obs, fn) {
-	  var seed = arguments[2] === undefined ? NOTHING : arguments[2];
+	  var seed = arguments.length <= 2 || arguments[2] === undefined ? NOTHING : arguments[2];
 
 	  return new (obs._ofSameType(S, P))(obs, { fn: fn || defaultFn, seed: seed });
 	};
 
 /***/ },
-/* 38 */
+/* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createProperty = _require.createProperty;
 
@@ -2370,6 +2474,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var seed = _ref.seed;
 
 	    this._fn = fn;
+	    this._seed = seed;
 	    if (seed !== NOTHING) {
 	      this._emitValue(seed);
 	    }
@@ -2377,34 +2482,35 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  _free: function _free() {
 	    this._fn = null;
+	    this._seed = null;
 	  },
 
 	  _handleValue: function _handleValue(x) {
-	    if (this._currentEvent !== null && this._currentEvent.type !== ERROR) {
-	      var fn = this._fn;
-	      x = fn(this._currentEvent.value, x);
+	    var fn = this._fn;
+	    if (this._currentEvent === null || this._currentEvent.type === ERROR) {
+	      this._emitValue(this._seed === NOTHING ? x : fn(this._seed, x));
+	    } else {
+	      this._emitValue(fn(this._currentEvent.value, x));
 	    }
-	    this._emitValue(x);
 	  }
 
 	});
 
 	module.exports = function scan(obs, fn) {
-	  var seed = arguments[2] === undefined ? NOTHING : arguments[2];
+	  var seed = arguments.length <= 2 || arguments[2] === undefined ? NOTHING : arguments[2];
 
 	  return new P(obs, { fn: fn, seed: seed });
 	};
 
 /***/ },
-/* 39 */
+/* 43 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
-	var createProperty = _require.createProperty;
 
 	var mixin = {
 
@@ -2429,28 +2535,29 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	var S = createStream('flatten', mixin);
-	var P = createProperty('flatten', mixin);
 
 	var id = function id(x) {
 	  return x;
 	};
 
 	module.exports = function flatten(obs) {
-	  var fn = arguments[1] === undefined ? id : arguments[1];
+	  var fn = arguments.length <= 1 || arguments[1] === undefined ? id : arguments[1];
 
-	  return new (obs._ofSameType(S, P))(obs, { fn: fn });
+	  return new S(obs, { fn: fn });
 	};
 
 /***/ },
-/* 40 */
+/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
+
+	var END_MARKER = {};
 
 	var mixin = {
 
@@ -2462,7 +2569,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this._wait = Math.max(0, wait);
 	    this._buff = [];
 	    this._$shiftBuff = function () {
-	      return _this._emitValue(_this._buff.shift());
+	      var value = _this._buff.shift();
+	      if (value === END_MARKER) {
+	        _this._emitEnd();
+	      } else {
+	        _this._emitValue(value);
+	      }
 	    };
 	  },
 
@@ -2481,14 +2593,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	  },
 
 	  _handleEnd: function _handleEnd() {
-	    var _this2 = this;
-
 	    if (this._activating) {
 	      this._emitEnd();
 	    } else {
-	      setTimeout(function () {
-	        return _this2._emitEnd();
-	      }, this._wait);
+	      this._buff.push(END_MARKER);
+	      setTimeout(this._$shiftBuff, this._wait);
 	    }
 	  }
 
@@ -2502,17 +2611,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 41 */
+/* 45 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
 
-	var now = __webpack_require__(42);
+	var now = __webpack_require__(46);
 
 	var mixin = {
 
@@ -2596,7 +2705,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var P = createProperty('throttle', mixin);
 
 	module.exports = function throttle(obs, wait) {
-	  var _ref2 = arguments[2] === undefined ? {} : arguments[2];
+	  var _ref2 = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
 
 	  var _ref2$leading = _ref2.leading;
 	  var leading = _ref2$leading === undefined ? true : _ref2$leading;
@@ -2607,8 +2716,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 42 */
-/***/ function(module, exports, __webpack_require__) {
+/* 46 */
+/***/ function(module, exports) {
 
 	"use strict";
 
@@ -2619,17 +2728,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 43 */
+/* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
 
-	var now = __webpack_require__(42);
+	var now = __webpack_require__(46);
 
 	var mixin = {
 
@@ -2706,7 +2815,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var P = createProperty('debounce', mixin);
 
 	module.exports = function debounce(obs, wait) {
-	  var _ref2 = arguments[2] === undefined ? {} : arguments[2];
+	  var _ref2 = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
 
 	  var _ref2$immediate = _ref2.immediate;
 	  var immediate = _ref2$immediate === undefined ? false : _ref2$immediate;
@@ -2715,108 +2824,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 44 */
+/* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
-
-	var createStream = _require.createStream;
-	var createProperty = _require.createProperty;
-
-	var mixin = {
-
-	  _init: function _init(_ref) {
-	    var fn = _ref.fn;
-
-	    this._fn = fn;
-	  },
-
-	  _free: function _free() {
-	    this._fn = null;
-	  },
-
-	  _handleValue: function _handleValue(x) {
-	    var fn = this._fn;
-	    var result = fn(x);
-	    if (result.convert) {
-	      this._emitError(result.error);
-	    } else {
-	      this._emitValue(x);
-	    }
-	  }
-
-	};
-
-	var S = createStream('valuesToErrors', mixin);
-	var P = createProperty('valuesToErrors', mixin);
-
-	var defFn = function defFn(x) {
-	  return { convert: true, error: x };
-	};
-
-	module.exports = function valuesToErrors(obs) {
-	  var fn = arguments[1] === undefined ? defFn : arguments[1];
-
-	  return new (obs._ofSameType(S, P))(obs, { fn: fn });
-	};
-
-/***/ },
-/* 45 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _require = __webpack_require__(26);
-
-	var createStream = _require.createStream;
-	var createProperty = _require.createProperty;
-
-	var mixin = {
-
-	  _init: function _init(_ref) {
-	    var fn = _ref.fn;
-
-	    this._fn = fn;
-	  },
-
-	  _free: function _free() {
-	    this._fn = null;
-	  },
-
-	  _handleError: function _handleError(x) {
-	    var fn = this._fn;
-	    var result = fn(x);
-	    if (result.convert) {
-	      this._emitValue(result.value);
-	    } else {
-	      this._emitError(x);
-	    }
-	  }
-
-	};
-
-	var S = createStream('errorsToValues', mixin);
-	var P = createProperty('errorsToValues', mixin);
-
-	var defFn = function defFn(x) {
-	  return { convert: true, value: x };
-	};
-
-	module.exports = function errorsToValues(obs) {
-	  var fn = arguments[1] === undefined ? defFn : arguments[1];
-
-	  return new (obs._ofSameType(S, P))(obs, { fn: fn });
-	};
-
-/***/ },
-/* 46 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -2848,18 +2861,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	module.exports = function mapErrors(obs) {
-	  var fn = arguments[1] === undefined ? id : arguments[1];
+	  var fn = arguments.length <= 1 || arguments[1] === undefined ? id : arguments[1];
 
 	  return new (obs._ofSameType(S, P))(obs, { fn: fn });
 	};
 
 /***/ },
-/* 47 */
+/* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -2893,58 +2906,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	module.exports = function filterErrors(obs) {
-	  var fn = arguments[1] === undefined ? id : arguments[1];
+	  var fn = arguments.length <= 1 || arguments[1] === undefined ? id : arguments[1];
 
 	  return new (obs._ofSameType(S, P))(obs, { fn: fn });
-	};
-
-/***/ },
-/* 48 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _require = __webpack_require__(26);
-
-	var createStream = _require.createStream;
-	var createProperty = _require.createProperty;
-
-	var mixin = {
-
-	  _handleError: function _handleError(x) {
-	    this._emitError(x);
-	    this._emitEnd();
-	  }
-
-	};
-
-	var S = createStream('endOnError', mixin);
-	var P = createProperty('endOnError', mixin);
-
-	module.exports = function endOnError(obs) {
-	  return new (obs._ofSameType(S, P))(obs);
-	};
-
-/***/ },
-/* 49 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _require = __webpack_require__(26);
-
-	var createStream = _require.createStream;
-	var createProperty = _require.createProperty;
-
-	var mixin = {
-	  _handleValue: function _handleValue() {}
-	};
-
-	var S = createStream('skipValues', mixin);
-	var P = createProperty('skipValues', mixin);
-
-	module.exports = function skipValues(obs) {
-	  return new (obs._ofSameType(S, P))(obs);
 	};
 
 /***/ },
@@ -2953,19 +2917,19 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
 
 	var mixin = {
-	  _handleError: function _handleError() {}
+	  _handleValue: function _handleValue() {}
 	};
 
-	var S = createStream('skipErrors', mixin);
-	var P = createProperty('skipErrors', mixin);
+	var S = createStream('ignoreValues', mixin);
+	var P = createProperty('ignoreValues', mixin);
 
-	module.exports = function skipErrors(obs) {
+	module.exports = function ignoreValues(obs) {
 	  return new (obs._ofSameType(S, P))(obs);
 	};
 
@@ -2975,19 +2939,19 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
 
 	var mixin = {
-	  _handleEnd: function _handleEnd() {}
+	  _handleError: function _handleError() {}
 	};
 
-	var S = createStream('skipEnd', mixin);
-	var P = createProperty('skipEnd', mixin);
+	var S = createStream('ignoreErrors', mixin);
+	var P = createProperty('ignoreErrors', mixin);
 
-	module.exports = function skipEnd(obs) {
+	module.exports = function ignoreErrors(obs) {
 	  return new (obs._ofSameType(S, P))(obs);
 	};
 
@@ -2997,7 +2961,29 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
+
+	var createStream = _require.createStream;
+	var createProperty = _require.createProperty;
+
+	var mixin = {
+	  _handleEnd: function _handleEnd() {}
+	};
+
+	var S = createStream('ignoreEnd', mixin);
+	var P = createProperty('ignoreEnd', mixin);
+
+	module.exports = function ignoreEnd(obs) {
+	  return new (obs._ofSameType(S, P))(obs);
+	};
+
+/***/ },
+/* 53 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -3030,12 +3016,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 53 */
+/* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -3072,18 +3058,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	var P = createProperty('slidingWindow', mixin);
 
 	module.exports = function slidingWindow(obs, max) {
-	  var min = arguments[2] === undefined ? 0 : arguments[2];
+	  var min = arguments.length <= 2 || arguments[2] === undefined ? 0 : arguments[2];
 
 	  return new (obs._ofSameType(S, P))(obs, { min: min, max: max });
 	};
 
 /***/ },
-/* 54 */
+/* 55 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -3135,7 +3121,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 	module.exports = function bufferWhile(obs, fn) {
-	  var _ref2 = arguments[2] === undefined ? {} : arguments[2];
+	  var _ref2 = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
 
 	  var _ref2$flushOnEnd = _ref2.flushOnEnd;
 	  var flushOnEnd = _ref2$flushOnEnd === undefined ? true : _ref2$flushOnEnd;
@@ -3144,12 +3130,158 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 55 */
+/* 56 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
+
+	var createStream = _require.createStream;
+	var createProperty = _require.createProperty;
+
+	var mixin = {
+
+	  _init: function _init(_ref) {
+	    var count = _ref.count;
+	    var flushOnEnd = _ref.flushOnEnd;
+
+	    this._count = count;
+	    this._flushOnEnd = flushOnEnd;
+	    this._buff = [];
+	  },
+
+	  _free: function _free() {
+	    this._buff = null;
+	  },
+
+	  _flush: function _flush() {
+	    if (this._buff !== null && this._buff.length !== 0) {
+	      this._emitValue(this._buff);
+	      this._buff = [];
+	    }
+	  },
+
+	  _handleValue: function _handleValue(x) {
+	    this._buff.push(x);
+	    if (this._buff.length >= this._count) {
+	      this._flush();
+	    }
+	  },
+
+	  _handleEnd: function _handleEnd() {
+	    if (this._flushOnEnd) {
+	      this._flush();
+	    }
+	    this._emitEnd();
+	  }
+
+	};
+
+	var S = createStream('bufferWithCount', mixin);
+	var P = createProperty('bufferWithCount', mixin);
+
+	module.exports = function bufferWhile(obs, count) {
+	  var _ref2 = arguments.length <= 2 || arguments[2] === undefined ? {} : arguments[2];
+
+	  var _ref2$flushOnEnd = _ref2.flushOnEnd;
+	  var flushOnEnd = _ref2$flushOnEnd === undefined ? true : _ref2$flushOnEnd;
+
+	  return new (obs._ofSameType(S, P))(obs, { count: count, flushOnEnd: flushOnEnd });
+	};
+
+/***/ },
+/* 57 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _require = __webpack_require__(25);
+
+	var createStream = _require.createStream;
+	var createProperty = _require.createProperty;
+
+	var mixin = {
+
+	  _init: function _init(_ref) {
+	    var _this = this;
+
+	    var wait = _ref.wait;
+	    var count = _ref.count;
+	    var flushOnEnd = _ref.flushOnEnd;
+
+	    this._wait = wait;
+	    this._count = count;
+	    this._flushOnEnd = flushOnEnd;
+	    this._intervalId = null;
+	    this._$onTick = function () {
+	      return _this._flush();
+	    };
+	    this._buff = [];
+	  },
+
+	  _free: function _free() {
+	    this._$onTick = null;
+	    this._buff = null;
+	  },
+
+	  _flush: function _flush() {
+	    if (this._buff !== null) {
+	      this._emitValue(this._buff);
+	      this._buff = [];
+	    }
+	  },
+
+	  _handleValue: function _handleValue(x) {
+	    this._buff.push(x);
+	    if (this._buff.length >= this._count) {
+	      clearInterval(this._intervalId);
+	      this._flush();
+	      this._intervalId = setInterval(this._$onTick, this._wait);
+	    }
+	  },
+
+	  _handleEnd: function _handleEnd() {
+	    if (this._flushOnEnd && this._buff.length !== 0) {
+	      this._flush();
+	    }
+	    this._emitEnd();
+	  },
+
+	  _onActivation: function _onActivation() {
+	    this._source.onAny(this._$handleAny); // copied from patterns/one-source
+	    this._intervalId = setInterval(this._$onTick, this._wait);
+	  },
+
+	  _onDeactivation: function _onDeactivation() {
+	    if (this._intervalId !== null) {
+	      clearInterval(this._intervalId);
+	      this._intervalId = null;
+	    }
+	    this._source.offAny(this._$handleAny); // copied from patterns/one-source
+	  }
+
+	};
+
+	var S = createStream('bufferWithTimeOrCount', mixin);
+	var P = createProperty('bufferWithTimeOrCount', mixin);
+
+	module.exports = function bufferWithTimeOrCount(obs, wait, count) {
+	  var _ref2 = arguments.length <= 3 || arguments[3] === undefined ? {} : arguments[3];
+
+	  var _ref2$flushOnEnd = _ref2.flushOnEnd;
+	  var flushOnEnd = _ref2$flushOnEnd === undefined ? true : _ref2$flushOnEnd;
+
+	  return new (obs._ofSameType(S, P))(obs, { wait: wait, count: count, flushOnEnd: flushOnEnd });
+	};
+
+/***/ },
+/* 58 */
+/***/ function(module, exports, __webpack_require__) {
+
+	'use strict';
+
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -3162,7 +3294,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	      return null;
 	    },
 
-	    '@@transducer/result': function transducerResult(res) {
+	    '@@transducer/result': function transducerResult() {
 	      obs._emitEnd();
 	      return null;
 	    }
@@ -3202,12 +3334,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 56 */
+/* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(26);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -3242,7 +3374,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 57 */
+/* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3350,7 +3482,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var hasErrors = false;
 	    var length = this._latestValues.length;
 	    var valuesCopy = new Array(length);
-	    var errorsCopy = new Array(length);;
+	    var errorsCopy = new Array(length);
 
 	    for (var i = 0; i < length; i++) {
 	      valuesCopy[i] = this._latestValues[i];
@@ -3424,8 +3556,8 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	});
 
-	module.exports = function combine(active, _x, combinator) {
-	  var passive = arguments[1] === undefined ? [] : arguments[1];
+	module.exports = function combine(active, passive, combinator) {
+	  if (passive === undefined) passive = [];
 
 	  if (typeof passive === 'function') {
 	    combinator = passive;
@@ -3435,7 +3567,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 58 */
+/* 61 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3572,7 +3704,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 59 */
+/* 62 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3581,7 +3713,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var inherit = _require.inherit;
 
-	var AbstractPool = __webpack_require__(60);
+	var AbstractPool = __webpack_require__(63);
 	var never = __webpack_require__(8);
 
 	function Merge(sources) {
@@ -3607,7 +3739,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 60 */
+/* 63 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3639,7 +3771,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	function AbstractPool() {
 	  var _this = this;
 
-	  var _ref = arguments[0] === undefined ? {} : arguments[0];
+	  var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
 	  var _ref$queueLim = _ref.queueLim;
 	  var queueLim = _ref$queueLim === undefined ? 0 : _ref$queueLim;
@@ -3851,12 +3983,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = AbstractPool;
 
 /***/ },
-/* 61 */
+/* 64 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var repeat = __webpack_require__(62);
+	var repeat = __webpack_require__(65);
 
 	module.exports = function concat(observables) {
 	  return repeat(function (index) {
@@ -3865,7 +3997,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 62 */
+/* 65 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3950,7 +4082,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 63 */
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3959,7 +4091,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var inherit = _require.inherit;
 
-	var AbstractPool = __webpack_require__(60);
+	var AbstractPool = __webpack_require__(63);
 
 	function Pool() {
 	  AbstractPool.call(this);
@@ -3984,7 +4116,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = Pool;
 
 /***/ },
-/* 64 */
+/* 67 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -3999,7 +4131,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var inherit = _require2.inherit;
 
-	var AbstractPool = __webpack_require__(60);
+	var AbstractPool = __webpack_require__(63);
 
 	function FlatMap(source, fn, options) {
 	  var _this = this;
@@ -4075,7 +4207,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = FlatMap;
 
 /***/ },
-/* 65 */
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -4090,7 +4222,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var inherit = _require2.inherit;
 
-	var FlatMap = __webpack_require__(64);
+	var FlatMap = __webpack_require__(67);
 
 	function FlatMapErrors(source, fn) {
 	  FlatMap.call(this, source, fn);
@@ -4128,12 +4260,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = FlatMapErrors;
 
 /***/ },
-/* 66 */
+/* 69 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(67);
+	var _require = __webpack_require__(70);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -4166,7 +4298,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 67 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
@@ -4192,7 +4324,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    BaseClass.call(this);
 	    this._primary = primary;
 	    this._secondary = secondary;
-	    this._name = '' + primary._name + '.' + name;
+	    this._name = primary._name + '.' + name;
 	    this._lastSecondary = NOTHING;
 	    this._$handleSecondaryAny = function (event) {
 	      return _this._handleSecondaryAny(event);
@@ -4206,7 +4338,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	function createClassMethods(BaseClass) {
 	  return {
-	    _init: function _init(options) {},
+	    _init: function _init() {},
 	    _free: function _free() {},
 
 	    _handlePrimaryValue: function _handlePrimaryValue(x) {
@@ -4300,12 +4432,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	module.exports = { createStream: createStream, createProperty: createProperty };
 
 /***/ },
-/* 68 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var combine = __webpack_require__(57);
+	var combine = __webpack_require__(60);
 
 	var id2 = function id2(_, x) {
 	  return x;
@@ -4319,12 +4451,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 69 */
+/* 72 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(67);
+	var _require = __webpack_require__(70);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -4357,19 +4489,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 70 */
+/* 73 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(67);
+	var _require = __webpack_require__(70);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
 
 	var mixin = {
 
-	  _handleSecondaryValue: function _handleSecondaryValue(x) {
+	  _handleSecondaryValue: function _handleSecondaryValue() {
 	    this._emitEnd();
 	  }
 
@@ -4383,12 +4515,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 71 */
+/* 74 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(67);
+	var _require = __webpack_require__(70);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -4396,7 +4528,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var mixin = {
 
 	  _init: function _init() {
-	    var _ref = arguments[0] === undefined ? {} : arguments[0];
+	    var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
 	    var _ref$flushOnEnd = _ref.flushOnEnd;
 	    var flushOnEnd = _ref$flushOnEnd === undefined ? true : _ref$flushOnEnd;
@@ -4434,11 +4566,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    this._buff.push(x);
 	  },
 
-	  _handleSecondaryValue: function _handleSecondaryValue(x) {
+	  _handleSecondaryValue: function _handleSecondaryValue() {
 	    this._flush();
 	  },
 
-	  _handleSecondaryEnd: function _handleSecondaryEnd(x) {
+	  _handleSecondaryEnd: function _handleSecondaryEnd() {
 	    if (!this._flushOnEnd) {
 	      this._emitEnd();
 	    }
@@ -4454,12 +4586,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 72 */
+/* 75 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var _require = __webpack_require__(67);
+	var _require = __webpack_require__(70);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
@@ -4471,13 +4603,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	var mixin = {
 
 	  _init: function _init() {
-	    var _ref = arguments[0] === undefined ? {} : arguments[0];
+	    var _ref = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
 
 	    var _ref$flushOnEnd = _ref.flushOnEnd;
 	    var flushOnEnd = _ref$flushOnEnd === undefined ? true : _ref$flushOnEnd;
+	    var _ref$flushOnChange = _ref.flushOnChange;
+	    var flushOnChange = _ref$flushOnChange === undefined ? false : _ref$flushOnChange;
 
 	    this._buff = [];
 	    this._flushOnEnd = flushOnEnd;
+	    this._flushOnChange = flushOnChange;
 	  },
 
 	  _free: function _free() {
@@ -4485,7 +4620,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  },
 
 	  _flush: function _flush() {
-	    if (this._buff !== null && this._buff.length !== 0) {
+	    if (this._buff !== null) {
 	      this._emitValue(this._buff);
 	      this._buff = [];
 	    }
@@ -4505,10 +4640,19 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  },
 
-	  _handleSecondaryEnd: function _handleSecondaryEnd(x) {
+	  _handleSecondaryEnd: function _handleSecondaryEnd() {
 	    if (!this._flushOnEnd && (this._lastSecondary === NOTHING || this._lastSecondary)) {
 	      this._emitEnd();
 	    }
+	  },
+
+	  _handleSecondaryValue: function _handleSecondaryValue(x) {
+	    if (this._flushOnChange && !x) {
+	      this._flush();
+	    }
+
+	    // from default _handleSecondaryValue
+	    this._lastSecondary = x;
 	  }
 
 	};
@@ -4521,15 +4665,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 73 */
+/* 76 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var merge = __webpack_require__(59);
-	var map = __webpack_require__(29);
-	var skipDuplicates = __webpack_require__(36);
-	var toProperty = __webpack_require__(25);
+	var merge = __webpack_require__(62);
+	var map = __webpack_require__(32);
+	var skipDuplicates = __webpack_require__(40);
+	var toProperty = __webpack_require__(24);
 
 	var f = function f() {
 	  return false;
@@ -4546,179 +4690,51 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 
 /***/ },
-/* 74 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _require = __webpack_require__(2);
-
-	var inherit = _require.inherit;
-
-	var Stream = __webpack_require__(6);
-
-	function Emitter() {
-	  Stream.call(this);
-	}
-
-	inherit(Emitter, Stream, {
-
-	  _name: 'emitter',
-
-	  emit: function emit(x) {
-	    this._emitValue(x);
-	    return this;
-	  },
-
-	  error: function error(x) {
-	    this._emitError(x);
-	    return this;
-	  },
-
-	  end: function end() {
-	    this._emitEnd();
-	    return this;
-	  },
-
-	  emitEvent: function emitEvent(event) {
-	    this._emit(event.type, event.value);
-	  }
-
-	});
-
-	module.exports = Emitter;
-
-/***/ },
-/* 75 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _require = __webpack_require__(2);
-
-	var inherit = _require.inherit;
-
-	var AbstractPool = __webpack_require__(60);
-
-	function Bus() {
-	  AbstractPool.call(this);
-	}
-
-	inherit(Bus, AbstractPool, {
-
-	  _name: 'bus',
-
-	  plug: function plug(obs) {
-	    this._add(obs);
-	    return this;
-	  },
-	  unplug: function unplug(obs) {
-	    this._remove(obs);
-	    return this;
-	  },
-
-	  emit: function emit(x) {
-	    this._emitValue(x);
-	    return this;
-	  },
-	  error: function error(x) {
-	    this._emitError(x);
-	    return this;
-	  },
-	  end: function end() {
-	    this._emitEnd();
-	    return this;
-	  },
-	  emitEvent: function emitEvent(event) {
-	    this._emit(event.type, event.value);
-	  }
-
-	});
-
-	module.exports = Bus;
-
-/***/ },
-/* 76 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _require = __webpack_require__(26);
-
-	var createStream = _require.createStream;
-	var createProperty = _require.createProperty;
-
-	var _require2 = __webpack_require__(3);
-
-	var NOTHING = _require2.NOTHING;
-
-	var mixin = {
-
-	  _init: function _init(_ref) {
-	    var fn = _ref.fn;
-	    var seed = _ref.seed;
-
-	    this._fn = fn;
-	    this._result = seed;
-	  },
-
-	  _free: function _free() {
-	    this._fn = null;
-	    this._result = null;
-	  },
-
-	  _handleValue: function _handleValue(x) {
-	    var fn = this._fn;
-	    this._result = this._result === NOTHING ? x : fn(this._result, x);
-	  },
-
-	  _handleEnd: function _handleEnd() {
-	    if (this._result !== NOTHING) {
-	      this._emitValue(this._result);
-	    }
-	    this._emitEnd();
-	  }
-
-	};
-
-	var S = createStream('reduce', mixin);
-	var P = createProperty('reduce', mixin);
-
-	module.exports = function reduce(obs, fn) {
-	  var seed = arguments[2] === undefined ? NOTHING : arguments[2];
-
-	  return new (obs._ofSameType(S, P))(obs, { fn: fn, seed: seed });
-	};
-
-/***/ },
 /* 77 */
 /***/ function(module, exports, __webpack_require__) {
 
 	'use strict';
 
-	var combine = __webpack_require__(57);
+	var _require = __webpack_require__(25);
 
-	var _require = __webpack_require__(21);
+	var createStream = _require.createStream;
+	var createProperty = _require.createProperty;
 
-	var apply = _require.apply;
+	var mixin = {
 
-	var _require2 = __webpack_require__(5);
+	  _init: function _init(_ref) {
+	    var fn = _ref.fn;
 
-	var circleShift = _require2.circleShift;
+	    this._fn = fn;
+	  },
 
-	module.exports = function sampledBy(passive, active, combinator) {
+	  _free: function _free() {
+	    this._fn = null;
+	  },
 
-	  var _combinator = combinator;
-
-	  // we need to flip `passive` and `active` in combinator function
-	  if (passive.length > 0) {
-	    _combinator = function () {
-	      var args = circleShift(arguments, passive.length);
-	      return combinator ? apply(combinator, null, args) : args;
-	    };
+	  _handleValue: function _handleValue(x) {
+	    var fn = this._fn;
+	    var result = fn(x);
+	    if (result.convert) {
+	      this._emitError(result.error);
+	    } else {
+	      this._emitValue(x);
+	    }
 	  }
 
-	  return combine(active, passive, _combinator).setName('sampledBy');
+	};
+
+	var S = createStream('valuesToErrors', mixin);
+	var P = createProperty('valuesToErrors', mixin);
+
+	var defFn = function defFn(x) {
+	  return { convert: true, error: x };
+	};
+
+	module.exports = function valuesToErrors(obs) {
+	  var fn = arguments.length <= 1 || arguments[1] === undefined ? defFn : arguments[1];
+
+	  return new (obs._ofSameType(S, P))(obs, { fn: fn });
 	};
 
 /***/ },
@@ -4727,34 +4743,46 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 
-	var timeBased = __webpack_require__(10);
+	var _require = __webpack_require__(25);
 
-	var _require = __webpack_require__(5);
+	var createStream = _require.createStream;
+	var createProperty = _require.createProperty;
 
-	var cloneArray = _require.cloneArray;
-
-	var S = timeBased({
-
-	  _name: 'repeatedly',
+	var mixin = {
 
 	  _init: function _init(_ref) {
-	    var xs = _ref.xs;
+	    var fn = _ref.fn;
 
-	    this._xs = cloneArray(xs);
-	    this._i = -1;
+	    this._fn = fn;
 	  },
 
-	  _onTick: function _onTick() {
-	    if (this._xs.length > 0) {
-	      this._i = (this._i + 1) % this._xs.length;
-	      this._emitValue(this._xs[this._i]);
+	  _free: function _free() {
+	    this._fn = null;
+	  },
+
+	  _handleError: function _handleError(x) {
+	    var fn = this._fn;
+	    var result = fn(x);
+	    if (result.convert) {
+	      this._emitValue(result.value);
+	    } else {
+	      this._emitError(x);
 	    }
 	  }
 
-	});
+	};
 
-	module.exports = function repeatedly(wait, xs) {
-	  return new S(wait, { xs: xs });
+	var S = createStream('errorsToValues', mixin);
+	var P = createProperty('errorsToValues', mixin);
+
+	var defFn = function defFn(x) {
+	  return { convert: true, value: x };
+	};
+
+	module.exports = function errorsToValues(obs) {
+	  var fn = arguments.length <= 1 || arguments[1] === undefined ? defFn : arguments[1];
+
+	  return new (obs._ofSameType(S, P))(obs, { fn: fn });
 	};
 
 /***/ },
@@ -4763,223 +4791,25 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	'use strict';
 
-	var map = __webpack_require__(29);
-
-	module.exports = function mapTo(obs, x) {
-	  return map(obs, function () {
-	    return x;
-	  }).setName(obs, 'mapTo');
-	};
-
-/***/ },
-/* 80 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var map = __webpack_require__(29);
-
-	module.exports = function tap(obs, fn) {
-	  return map(obs, function (x) {
-	    fn(x);return x;
-	  }).setName(obs, 'tap');
-	};
-
-/***/ },
-/* 81 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var map = __webpack_require__(29);
-
-	module.exports = function pluck(obs, propName) {
-	  return map(obs, function (x) {
-	    return x[propName];
-	  }).setName(obs, 'pluck');
-	};
-
-/***/ },
-/* 82 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var map = __webpack_require__(29);
-
-	var _require = __webpack_require__(21);
-
-	var apply = _require.apply;
-
-	module.exports = function invoke(obs, methodName, args) {
-
-	  var fn = args.length === 0 ? function (x) {
-	    return x[methodName]();
-	  } : function (x) {
-	    return apply(x[methodName], x, args);
-	  };
-
-	  return map(obs, fn).setName(obs, 'invoke');
-	};
-
-/***/ },
-/* 83 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var map = __webpack_require__(29);
-	var now = __webpack_require__(42);
-
-	module.exports = function timestamp(obs) {
-	  return map(obs, function (x) {
-	    return { value: x, time: now() };
-	  }).setName(obs, 'timestamp');
-	};
-
-/***/ },
-/* 84 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var combine = __webpack_require__(57);
-
-	function fn() {
-	  var i = undefined;
-	  for (i = 0; i < arguments.length; i++) {
-	    if (!arguments[i]) {
-	      return arguments[i];
-	    }
-	  }
-	  return arguments[i - 1];
-	}
-
-	module.exports = function and(observables) {
-	  return combine(observables, [], fn).setName('and');
-	};
-
-/***/ },
-/* 85 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var combine = __webpack_require__(57);
-
-	function fn() {
-	  var i = undefined;
-	  for (i = 0; i < arguments.length; i++) {
-	    if (arguments[i]) {
-	      return arguments[i];
-	    }
-	  }
-	  return arguments[i - 1];
-	}
-
-	module.exports = function or(observables) {
-	  return combine(observables, [], fn).setName('or');
-	};
-
-/***/ },
-/* 86 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var map = __webpack_require__(29);
-
-	module.exports = function not(obs) {
-	  return map(obs, function (x) {
-	    return !x;
-	  }).setName(obs, 'not');
-	};
-
-/***/ },
-/* 87 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _require = __webpack_require__(67);
-
-	var createStream = _require.createStream;
-	var createProperty = _require.createProperty;
-
-	var _require2 = __webpack_require__(3);
-
-	var NOTHING = _require2.NOTHING;
-
-	var mixin = {
-
-	  _handlePrimaryValue: function _handlePrimaryValue(x) {
-	    if (this._lastSecondary !== NOTHING) {
-	      this._emitValue(x);
-	    }
-	  },
-
-	  _handleSecondaryValue: function _handleSecondaryValue(x) {
-	    this._lastSecondary = x;
-	    if (!this._lastSecondary) {
-	      this._emitEnd();
-	    }
-	  },
-
-	  _handleSecondaryEnd: function _handleSecondaryEnd() {
-	    if (this._lastSecondary === NOTHING) {
-	      this._emitEnd();
-	    }
-	  }
-
-	};
-
-	var S = createStream('takeWhileBy', mixin);
-	var P = createProperty('takeWhileBy', mixin);
-
-	module.exports = function takeWhileBy(primary, secondary) {
-	  return new (primary._ofSameType(S, P))(primary, secondary);
-	};
-
-/***/ },
-/* 88 */
-/***/ function(module, exports, __webpack_require__) {
-
-	'use strict';
-
-	var _require = __webpack_require__(67);
+	var _require = __webpack_require__(25);
 
 	var createStream = _require.createStream;
 	var createProperty = _require.createProperty;
 
 	var mixin = {
 
-	  _init: function _init() {
-	    this._hasFalseyFromSecondary = false;
-	  },
-
-	  _handlePrimaryValue: function _handlePrimaryValue(x) {
-	    if (this._hasFalseyFromSecondary) {
-	      this._emitValue(x);
-	    }
-	  },
-
-	  _handleSecondaryValue: function _handleSecondaryValue(x) {
-	    this._hasFalseyFromSecondary = this._hasFalseyFromSecondary || !x;
-	  },
-
-	  _handleSecondaryEnd: function _handleSecondaryEnd() {
-	    if (!this._hasFalseyFromSecondary) {
-	      this._emitEnd();
-	    }
+	  _handleError: function _handleError(x) {
+	    this._emitError(x);
+	    this._emitEnd();
 	  }
 
 	};
 
-	var S = createStream('skipWhileBy', mixin);
-	var P = createProperty('skipWhileBy', mixin);
+	var S = createStream('endOnError', mixin);
+	var P = createProperty('endOnError', mixin);
 
-	module.exports = function skipWhileBy(primary, secondary) {
-	  return new (primary._ofSameType(S, P))(primary, secondary);
+	module.exports = function endOnError(obs) {
+	  return new (obs._ofSameType(S, P))(obs);
 	};
 
 /***/ }

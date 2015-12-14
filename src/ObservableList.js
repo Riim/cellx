@@ -1,6 +1,6 @@
-(function() {
-	var EventEmitter = cellx.EventEmitter;
+var ObservableList;
 
+(function() {
 	/**
 	 * @typesign (a, b) -> -1|1|0;
 	 */
@@ -59,7 +59,7 @@
 	 *     sorted?: boolean
 	 * }) -> cellx.ObservableList;
 	 */
-	var ObservableList = createClass({
+	ObservableList = createClass({
 		Extends: EventEmitter,
 		Implements: [ObservableCollection],
 

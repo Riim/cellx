@@ -54,18 +54,18 @@ user.lastName('Пёс');
 каждый из которых состоит из 4-x ячеек. Ячейки вычисляются из ячеек предыдущего слоя (кроме самого первого, он содержит
 исходные значения) по формуле A2=B1, B2=A1-C1, C2=B1+D1, D2=C1. Далее запоминается начальное время, меняются значения
 всех ячеек первого слоя и замеряется время, через которое все ячейки последнего слоя обновятся.
-Результаты теста (в милисекундах) с разным числом слоёв (для Google Chrome 44.0.2403.107 (64-bit)):
+Результаты теста (в милисекундах) с разным числом слоёв (для Google Chrome 47.0.2526.73 (64-bit)):
 
-| Number of computed layers ↓ \ Library → | cellx | [Knockout](http://knockoutjs.com/) | [AngularJS](https://angularjs.org/) | [jin-atom](https://github.com/nin-jin/pms-jin/) | [Warp9](http://rystsov.info/warp9/)               | [Kefir.js](https://rpominov.github.io/kefir/) |
-|-----------------------------------------|-------|------------------------------------|-------------------------------------|-------------------------------------------------|---------------------------------------------------|-----------------------------------------------|
-| 10                                      | 1     | 5                                  | 1                                   | 1                                               | 1                                                 | 30                                            |
-| 15                                      | 1     | 40                                 | 3                                   | 1                                               | 2                                                 | 250                                           |
-| 25                                      | 1     | 4500                               | 360                                 | 1                                               | 3                                                 | 29000                                         |
-| 50                                      | 1     | >300000                            | >300000                             | 1                                               | 5                                                 | >300000                                       |
-| 100                                     | 1     | >300000                            | >300000                             | 2                                               | 12                                                | >300000                                       |
-| 1000                                    | 5     | >300000                            | >300000                             | 20                                              | first call - 120                                  | >300000                                       |
-| 5000                                    | 25    | >300000                            | >300000                             | 260                                             | first call - 500, subsequent calls - >500         | >300000                                       |
-| 25000                                   | 120   | >300000                            | >300000                             | first call - 5000                               | first call - 2500, subsequent calls - crashes tab | >300000                                       |
+| Number of computed layers ↓ \ Library → | cellx | VanillaJS | [Knockout](http://knockoutjs.com/) | [jin-atom](https://github.com/nin-jin/pms-jin/) | [Warp9](http://rystsov.info/warp9/)         | [Reactor.js](https://github.com/fynyky/reactor.js) | [Reactive.js](https://github.com/mattbaker/Reactive.js) | [Kefir.js](https://rpominov.github.io/kefir/) |
+|-----------------------------------------|-------|-----------|------------------------------------|-------------------------------------------------|---------------------------------------------|----------------------------------------------------|---------------------------------------------------------|-----------------------------------------------|
+| 10                                      | 1     | 1         | 5                                  | 1                                               | 2                                           | 1                                                  | 1                                                       | 15                                            |
+| 20                                      | 1     | 15        | 350                                | 1                                               | 3                                           | 1                                                  | 1                                                       | 1360                                          |
+| 30                                      | 1     | 1940      | 42500                              | 1                                               | 4                                           | 1                                                  | 1                                                       | 170000                                        |
+| 50                                      | 1     | >300000   | >300000                            | 1                                               | 5                                           | 1                                                  | 1                                                       | >300000                                       |
+| 100                                     | 1     | >300000   | >300000                            | 2                                               | 8                                           | 2                                                  | 3                                                       | >300000                                       |
+| 1000                                    | 5     | >300000   | >300000                            | 20                                              | 90                                          | 15                                                 | 80                                                      | >300000                                       |
+| 5000                                    | 25    | >300000   | >300000                            | 340                                             | first call — 460, subsequent calls — >460   | 120                                                | RangeError: Maximum call stack size exceeded            | >300000                                       |
+| 25000                                   | 120   | >300000   | >300000                            | 7000                                            | first call — 3200, subsequent calls — >3200 | 700                                                | RangeError: Maximum call stack size exceeded            | >300000                                       |
 
 Исходники теста можно найти в папке [perf](https://github.com/Riim/cellx/tree/master/perf).  
 Плотность связей в реальных приложениях обычно ниже чем в данном тесте, то есть если в тесте определённая задержка
@@ -85,7 +85,7 @@ console.log(plusOne());
 // => 2
 ```
 
-Создавать в конструкторе класса:
+или в свойствах:
 
 ```js
 function User(name) {
@@ -98,73 +98,6 @@ var user = new User('Матроскин');
 console.log(user.upperName());
 // => 'МАТРОСКИН'
 ```
-
-Объявление ячейки в прототипе класса тоже допустимо:
-
-```js
-function User(name) {
-    this.name(name);
-}
-User.prototype = {
-    name: cellx(''),
-    upperName: cellx(function() { return this.name().toUpperCase(); })
-};
-
-var user = new User('Матроскин');
-
-console.log(user.upperName());
-// => 'МАТРОСКИН'
-```
-
-### Использование с ECMAScript 6
-
-Иногда не очень удобно постоянно дописывать скобки в конце при чтении ячейки, кроме того, бывают ситуации когда
-какое-то обычное свойство класса уже используется в приложеннии и вдруг понадобилось сделать его ячейкой,
-тут придётся пройтись по всем местам в приложении, где оно уже используется, и дописать скобки.
-Всё это может оказаться совсем неудобным. Используя декораторы из ES6 можно избежать таких проблем:
-
-```js
-import { cellx, d } from 'cellx';
-
-class User extends cellx.EventEmitter {
-	@d.observable firstName = '';
-	@d.observable lastName = '';
-
-	@d.computed fullName = function() {
-		return (this.firstName + ' ' + this.lastName).trim();
-	};
-
-	constructor(data) {
-        super();
-
-        for (let name in data) {
-            this[name] = data[name];
-        }
-	}
-}
-
-let user = new User({ firstName: 'Матроскин', lastName: 'Кот' });
-
-// добавление обработчика
-user.on('change:fullName', function() {
-    console.log(`fullName: ${this.fullName}`);
-});
-
-console.log(user.firstName);
-// => 'Матроскин'
-
-user.firstName = 'Шарик';
-user.lastName = 'Пёс';
-// => 'fullName: Шарик Пёс'
-```
-
-Теперь к любому свойству в классе всегда можно добавить декоратор `observable` и получить возможность
-подписываться на его изменения и создавать вычисляемые из него свойства. При этом в уже написанной части приложения
-ничего менять не придётся.
-
-### Использование с React
-
-Используйте npm модуль [react-bind-observables](https://github.com/Riim/react-bind-observables).
 
 ### Опции
 
@@ -277,7 +210,7 @@ console.log(num());
 
 #### computed
 
-По умолчанию, если первый аргумент cellx-а - обычная функция, то ячейка определяется как вычисляемая, а переданная
+По умолчанию, если первый аргумент cellx-а — обычная функция, то ячейка определяется как вычисляемая, а переданная
 функция используется как формула для вычисления значения ячейки. Если же необходимо создать ячейку с функцией
 в качестве значения, то можно либо установить значение уже после инициализации ячейки, либо передать опцию `computed`
 со значением `false`:
@@ -336,8 +269,8 @@ console.log(sum());
 
 ### Методы
 
-Вызов метода ячейки делается несколько необычно - вызывается сама ячейка, первым аргументом передаётся имя метода,
-остальными - аргументы. При этом аргументов должно быть не менее одного, иначе вызов ячейки будет засчитан как её
+Вызов метода ячейки делается несколько необычно — вызывается сама ячейка, первым аргументом передаётся имя метода,
+остальными — аргументы. При этом аргументов должно быть не менее одного, иначе вызов ячейки будет засчитан как её
 запись. Если у метода нет аргументов, нужно при вызове дополнительно передавать `void 0` или для краткости
 просто `0` (см. `dispose`).
 
@@ -348,7 +281,7 @@ console.log(sum());
 ```js
 var num = cellx(5);
 
-num('on', 'change', function(evt) {
+num('addChangeListener', function(evt) {
     console.log(evt);
 });
 
@@ -362,7 +295,7 @@ num(10);
 
 #### subscribe
 
-Подписывает на события `change` и `error`. В обработчик первым аргументом приходит объект ошибки, вторым - событие.
+Подписывает на события `change` и `error`. В обработчик первым аргументом приходит объект ошибки, вторым — событие.
 
 ```js
 user.fullName('subscribe', function(err, evt) {
@@ -398,7 +331,57 @@ user.name('dispose', 0);
 это снимет все обработчики не только с самой ячейки, но и со всех вычисляемых из неё ячеек,
 при отсутствии ссылок "умрёт" вся ветка зависимостей.
 
-### Схлопывание и отбрасывание событий
+### Использование с ECMAScript 6
+
+Иногда не очень удобно постоянно дописывать скобки в конце при чтении ячейки, кроме того, бывают ситуации когда
+какое-то обычное свойство класса уже используется в приложеннии и вдруг понадобилось сделать его наблюдаемым,
+тут придётся пройтись по всем местам в приложении, где оно уже используется, и дописать скобки.
+Всё это не очень удобно. Используя декораторы из ES6 можно избежать таких проблем:
+
+```js
+import { cellx, d } from 'cellx';
+
+class User extends cellx.EventEmitter {
+	@d.observable firstName = '';
+	@d.observable lastName = '';
+
+	@d.computed fullName = function() {
+		return (this.firstName + ' ' + this.lastName).trim();
+	};
+
+	constructor(data) {
+        super();
+
+        for (let name in data) {
+            this[name] = data[name];
+        }
+	}
+}
+
+let user = new User({ firstName: 'Матроскин', lastName: 'Кот' });
+
+// добавление обработчика
+user.on('change:fullName', function() {
+    console.log(`fullName: ${this.fullName}`);
+});
+
+console.log(user.firstName);
+// => 'Матроскин'
+
+user.firstName = 'Шарик';
+user.lastName = 'Пёс';
+// => 'fullName: Шарик Пёс'
+```
+
+Теперь к любому свойству в классе всегда можно добавить декоратор `observable` и получить возможность
+подписываться на его изменения и создавать вычисляемые из него свойства. При этом в уже написанной части приложения
+ничего менять не придётся.
+
+### Использование с React
+
+Используйте npm модуль [react-bind-observables](https://github.com/Riim/react-bind-observables).
+
+## Схлопывание и отбрасывание событий
 
 Для минимизации перерисовки UI cellx может "схлопывать" несколько событий в одно. Ссылка на предыдущее находится в
 `evt.prev`:
@@ -406,7 +389,7 @@ user.name('dispose', 0);
 ```js
 var num = cellx(5);
 
-num('on', 'change', function(evt) {
+num('addChangeListener', function(evt) {
     console.log(evt);
 });
 
@@ -433,7 +416,7 @@ num(20);
 ```js
 var num = cellx(5);
 
-num('on', 'change', function(evt) {
+num('addChangeListener', function(evt) {
     console.log(evt);
 });
 
@@ -456,7 +439,7 @@ var sum = cellx(function() {
     return num1() + num2();
 });
 
-sum('on', 'change', function(evt) {
+sum('addChangeListener', function(evt) {
     console.log(evt);
 });
 
@@ -472,7 +455,7 @@ num2(15);
 // }
 ```
 
-#### Динамическая актуализация зависимостей
+## Динамическая актуализация зависимостей
 
 Формула вычисляемой ячейки может быть написана так, что набор зависимостей может со временем меняться. Например:
 
@@ -495,7 +478,7 @@ var user = {
 при их изменении. В дальнейшем, если `firstName` снова станет пустой строкой, ячейка `name` вновь подпишется
 на `lastName`.
 
-### Коллекции
+## Коллекции
 
 Если в ячейку записать экземпляр класса наследующего от `cellx.EventEmitter`, то ячейка подпишется на его
 событие `change` и будет выдавать его за своё:
@@ -514,7 +497,7 @@ value().emit({ type: 'change', ok: true });
 За счёт этого можно создавать свои коллекции, при обновлении которых будет обновляться ячейка, содержащая их
 и перевычисляться зависимые от неё ячейки. Две таких коллекции уже есть в cellx-е:
 
-#### cellx.ObservableMap
+### cellx.ObservableMap
 
 Короткий синтаксис для создания:
 
@@ -536,7 +519,7 @@ var map = cellx.map({
 будут только строки, ключевое отличие объекта от Map-а как раз в том, что ключи в Map-е могут быть любого типа)
 или другого map-а.
 
-#### cellx.ObservableList
+### cellx.ObservableList
 
 Короткий синтаксис для создания:
 
@@ -584,21 +567,21 @@ console.log(list.toArray());
 // => [-100, 1, 5, 7, 10, 100]
 ```
 
-##### Свойства cellx.ObservableList
+#### Свойства cellx.ObservableList
 
-###### length
+##### length
 
 Длинна списка. Только для чтения.
 
-###### comparator
+##### comparator
 
 Функция для сравнения значений в сортированном списке. Только для чтения.
 
-###### sorted
+##### sorted
 
 Является ли список сортированным. Только для чтения.
 
-##### Методы cellx.ObservableList
+#### Методы cellx.ObservableList
 
 Важным отличем списка от массива, является то, что список не может содержать так называемых "дырок",
 то есть при попытке прочитать или установить значение по индексу вне существующего диапазона элементов,
@@ -612,127 +595,127 @@ console.log(list.toArray());
 работать неверно. Поэтому при вызове на сортированном списке они всегда генерируют исключение. Добавить значения в
 отсортированный список можно методами `add` и `addRange`, либо при инициализации списка.
 
-###### contains
+##### contains
 
 Сигнатура вызова: `(value) -> boolean;`.
 
 Проверяет содержится ли значение в списке. При большом колличестве значений в списке, может быть существенно быстрее
 чем `list.indexOf(value) != -1`.
 
-###### indexOf
+##### indexOf
 
 Сигнатура вызова: `(value, fromIndex?: int) -> int;`.
 
-###### lastIndexOf
+##### lastIndexOf
 
 Сигнатура вызова: `(value, fromIndex?: int) -> int;`.
 
-###### get
+##### get
 
 Сигнатура вызова: `(index: int) -> *;`.
 
-###### getRange
+##### getRange
 
 Сигнатура вызова: `(index?: int, count?: uint) -> Array;`.
 
 При неуказанном `count`-е копирует до конца списка.
 
-###### set
+##### set
 
 Сигнатура вызова: `(index: int, value) -> cellx.ObservableList;`.
 
-###### setRange
+##### setRange
 
 Сигнатура вызова: `(index: int, items: Array) -> cellx.ObservableList;`.
 
-###### add
+##### add
 
 Сигнатура вызова: `(item) -> cellx.ObservableList;`.
 
-###### addRange
+##### addRange
 
 Сигнатура вызова: `(items: Array) -> cellx.ObservableList;`.
 
-###### insert
+##### insert
 
 Сигнатура вызова: `(index: int, item) -> cellx.ObservableList;`.
 
-###### insertRange
+##### insertRange
 
 Сигнатура вызова: `(index: int, items: Array) -> cellx.ObservableList;`.
 
-###### remove
+##### remove
 
 Сигнатура вызова: `(item, fromIndex?: int) -> cellx.ObservableList;`.
 
 Удаляет первое вхождениие `item` в списке.
 
-###### removeAll
+##### removeAll
 
 Сигнатура вызова: `(item, fromIndex?: int) -> cellx.ObservableList;`.
 
 Удаляет все вхождениия `item` в списке.
 
-###### removeAt
+##### removeAt
 
 Сигнатура вызова: `(index: int) -> cellx.ObservableList;`.
 
-###### removeRange
+##### removeRange
 
 Сигнатура вызова: `(index?: int, count?: uint) -> cellx.ObservableList;`.
 
 При неуказанном `count`-е удалит всё до конца списка.
 
-###### clear
+##### clear
 
 Сигнатура вызова: `() -> cellx.ObservableList;`.
 
-###### join
+##### join
 
 Сигнатура вызова: `(separator?: string) -> string;`.
 
-###### forEach
+##### forEach
 
 Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList), context?: Object);`.
 
-###### map
+##### map
 
 Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> *, context?: Object) -> Array;`.
 
-###### filter
+##### filter
 
 Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> Array;`.
 
-###### every
+##### every
 
 Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> boolean;`.
 
-###### some
+##### some
 
 Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> boolean;`.
 
-###### reduce
+##### reduce
 
 Сигнатура вызова: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
-###### reduceRight
+##### reduceRight
 
 Сигнатура вызова: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
-###### clone
+##### clone
 
 Сигнатура вызова: `() -> cellx.ObservableList;`.
 
-###### toArray
+##### toArray
 
 Сигнатура вызова: `() -> Array;`.
 
-###### toString
+##### toString
 
 Сигнатура вызова: `() -> string;`.
 
 ## Использованные материалы
 
-- [Атом - минимальный кирпичик FRP приложения](http://habrahabr.ru/post/235121/)
-- [Warp9 - The next generation of reactive js libraries](http://rystsov.info/warp9/)
-- [Knockout - Simplify dynamic JavaScript UIs with the Model-View-View Model (MVVM) pattern](http://knockoutjs.com/)
+- [Атом — минимальный кирпичик FRP приложения](http://habrahabr.ru/post/235121/)
+- [Warp9 — The next generation of reactive js libraries](http://rystsov.info/warp9/)
+- [Knockout — Simplify dynamic JavaScript UIs with the Model-View-View Model (MVVM) pattern](http://knockoutjs.com/)

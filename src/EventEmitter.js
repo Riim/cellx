@@ -7,6 +7,8 @@
  * }} cellx~Event
  */
 
+var EventEmitter;
+
 (function() {
 	var KEY_INNER = '__cellx_EventEmitter_inner__';
 
@@ -19,7 +21,7 @@
 	 * @extends {Object}
 	 * @typesign new () -> cellx.EventEmitter;
 	 */
-	var EventEmitter = createClass({
+	EventEmitter = createClass({
 		Static: {
 			KEY_INNER: KEY_INNER
 		},

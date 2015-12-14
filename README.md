@@ -68,18 +68,18 @@ One test, which is used for measuring the performance, generates grid with multi
 each of which is composed of 4 cells. Cells are calculated from the previous layer of cells (except the first one,
 which contains initial values) by the formula A2=B1, B2=A1-C1, C2=B1+D1, D2=C1. After that start time is stored,
 values of all first layer cells are changed and time needed to update all last layer cells is measured.
-Test results (in milliseconds) for different number of layers (for Google Chrome 44.0.2403.107 (64-bit)):
+Test results (in milliseconds) for different number of layers (for Google Chrome 47.0.2526.73 (64-bit)):
 
-| Number of computed layers v \ Library > | cellx | [Knockout](http://knockoutjs.com/) | [AngularJS](https://angularjs.org/) | [jin-atom](https://github.com/nin-jin/pms-jin/) | [Warp9](http://rystsov.info/warp9/)               | [Kefir.js](https://rpominov.github.io/kefir/) |
-|-----------------------------------------|-------|------------------------------------|-------------------------------------|-------------------------------------------------|---------------------------------------------------|-----------------------------------------------|
-| 10                                      | 1     | 5                                  | 1                                   | 1                                               | 1                                                 | 30                                            |
-| 15                                      | 1     | 40                                 | 3                                   | 1                                               | 2                                                 | 250                                           |
-| 25                                      | 1     | 4500                               | 360                                 | 1                                               | 3                                                 | 29000                                         |
-| 50                                      | 1     | >300000                            | >300000                             | 1                                               | 5                                                 | >300000                                       |
-| 100                                     | 1     | >300000                            | >300000                             | 2                                               | 12                                                | >300000                                       |
-| 1000                                    | 5     | >300000                            | >300000                             | 20                                              | first call - 120                                  | >300000                                       |
-| 5000                                    | 25    | >300000                            | >300000                             | 260                                             | first call - 500, subsequent calls - >500         | >300000                                       |
-| 25000                                   | 120   | >300000                            | >300000                             | first call - 5000                               | first call - 2500, subsequent calls - crashes tab | >300000                                       |
+| Number of computed layers ↓ \ Library → | cellx | VanillaJS | [Knockout](http://knockoutjs.com/) | [jin-atom](https://github.com/nin-jin/pms-jin/) | [Warp9](http://rystsov.info/warp9/)         | [Reactor.js](https://github.com/fynyky/reactor.js) | [Reactive.js](https://github.com/mattbaker/Reactive.js) | [Kefir.js](https://rpominov.github.io/kefir/) |
+|-----------------------------------------|-------|-----------|------------------------------------|-------------------------------------------------|---------------------------------------------|----------------------------------------------------|---------------------------------------------------------|-----------------------------------------------|
+| 10                                      | 1     | 1         | 5                                  | 1                                               | 2                                           | 1                                                  | 1                                                       | 15                                            |
+| 20                                      | 1     | 15        | 350                                | 1                                               | 3                                           | 1                                                  | 1                                                       | 1360                                          |
+| 30                                      | 1     | 1940      | 42500                              | 1                                               | 4                                           | 1                                                  | 1                                                       | 170000                                        |
+| 50                                      | 1     | >300000   | >300000                            | 1                                               | 5                                           | 1                                                  | 1                                                       | >300000                                       |
+| 100                                     | 1     | >300000   | >300000                            | 2                                               | 8                                           | 2                                                  | 3                                                       | >300000                                       |
+| 1000                                    | 5     | >300000   | >300000                            | 20                                              | 90                                          | 15                                                 | 80                                                      | >300000                                       |
+| 5000                                    | 25    | >300000   | >300000                            | 340                                             | first call — 460, subsequent calls — >460   | 120                                                | RangeError: Maximum call stack size exceeded            | >300000                                       |
+| 25000                                   | 120   | >300000   | >300000                            | 7000                                            | first call — 3200, subsequent calls — >3200 | 700                                                | RangeError: Maximum call stack size exceeded            | >300000                                       |
 
 Test sources can be found in the folder [perf](https://github.com/Riim/cellx/tree/master/perf).  
 Density of connections in real applications is usually lower than in the present test, that is,
@@ -99,7 +99,7 @@ console.log(plusOne());
 // => 2
 ```
 
-Create in the class constructor:
+or in the property:
 
 ```js
 function User(name) {
@@ -112,64 +112,6 @@ var user = new User('Matroskin');
 console.log(user.upperName());
 // => 'MATROSKIN'
 ```
-
-Announcement of the cell in the class prototype is also acceptable:
-
-```js
-function User(name) {
-    this.name(name);
-}
-User.prototype = {
-    name: cellx(''),
-    upperName: cellx(function() { return this.name().toUpperCase(); })
-};
-
-var user = new User('Matroskin');
-
-console.log(user.upperName());
-// => 'MATROSKIN'
-```
-
-### Use with ECMAScript 6
-
-```js
-import { cellx, d } from 'cellx';
-
-class User extends cellx.EventEmitter {
-	@d.observable firstName = '';
-	@d.observable lastName = '';
-
-	@d.computed fullName = function() {
-		return (this.firstName + ' ' + this.lastName).trim();
-	};
-
-	constructor(data) {
-        super();
-
-        for (let name in data) {
-            this[name] = data[name];
-        }
-	}
-}
-
-let user = new User({ firstName: 'Matroskin', lastName: 'Cat' });
-
-// add listener
-user.on('change:fullName', function() {
-    console.log(`fullName: ${this.fullName}`);
-});
-
-console.log(user.firstName);
-// => 'Matroskin'
-
-user.firstName = 'Sharik';
-user.lastName = 'Dog';
-// => 'fullName: Sharik Dog'
-```
-
-### Use with React
-
-Use npm module [react-bind-observables](https://github.com/Riim/react-bind-observables).
 
 ### Options
 
@@ -341,8 +283,8 @@ console.log(sum());
 
 ### Methods
 
-Calling the cell method is somewhat unusual - the cell itself is called, the first argument passes the method name,
-rest ones - the arguments. In this case, there must be at least one argument, or call of the cell will be counted as its
+Calling the cell method is somewhat unusual — the cell itself is called, the first argument passes the method name,
+rest ones — the arguments. In this case, there must be at least one argument, or call of the cell will be counted as its
 recording. If the method has no arguments, you need to transfer an additional `void 0` with a call or to shorten it
 just `0` (see `dispose`).
 
@@ -353,7 +295,7 @@ Adds an event handler. Among the events there are `change` and `error`:
 ```js
 var num = cellx(5);
 
-num('on', 'change', function(evt) {
+num('addChangeListener', function(evt) {
     console.log(evt);
 });
 
@@ -367,7 +309,7 @@ Removes previously added event handler.
 
 #### subscribe
 
-Subscribes to the events `change` and `error`. First argument comes into handler is an error object, second - an event.
+Subscribes to the events `change` and `error`. First argument comes into handler is an error object, second — an event.
 
 ```js
 user.fullName('subscribe', function(err, evt) {
@@ -403,7 +345,48 @@ user.name('dispose', 0);
 This will remove all the handlers, not only from the cell itself, but also from all cells calculated from it,
 and in the absence of links all branch of dependencies will "die".
 
-### Collapse and discarding of events
+### Use with ECMAScript 6
+
+```js
+import { cellx, d } from 'cellx';
+
+class User extends cellx.EventEmitter {
+	@d.observable firstName = '';
+	@d.observable lastName = '';
+
+	@d.computed fullName = function() {
+		return (this.firstName + ' ' + this.lastName).trim();
+	};
+
+	constructor(data) {
+        super();
+
+        for (let name in data) {
+            this[name] = data[name];
+        }
+	}
+}
+
+let user = new User({ firstName: 'Matroskin', lastName: 'Cat' });
+
+// add listener
+user.on('change:fullName', function() {
+    console.log(`fullName: ${this.fullName}`);
+});
+
+console.log(user.firstName);
+// => 'Matroskin'
+
+user.firstName = 'Sharik';
+user.lastName = 'Dog';
+// => 'fullName: Sharik Dog'
+```
+
+### Use with React
+
+Use npm module [react-bind-observables](https://github.com/Riim/react-bind-observables).
+
+## Collapse and discarding of events
 
 To minimize redraw of UI cellx may "collapse" several events into one. Link to the previous event is stored in
 `evt.prev`:
@@ -411,7 +394,7 @@ To minimize redraw of UI cellx may "collapse" several events into one. Link to t
 ```js
 var num = cellx(5);
 
-num('on', 'change', function(evt) {
+num('addChangeListener', function(evt) {
     console.log(evt);
 });
 
@@ -438,7 +421,7 @@ In cases when the cell comes to the initial value before generation of event, it
 ```js
 var num = cellx(5);
 
-num('on', 'change', function(evt) {
+num('addChangeListener', function(evt) {
     console.log(evt);
 });
 
@@ -461,7 +444,7 @@ var sum = cellx(function() {
     return num1() + num2();
 });
 
-sum('on', 'change', function(evt) {
+sum('addChangeListener', function(evt) {
     console.log(evt);
 });
 
@@ -477,7 +460,7 @@ num2(15);
 // }
 ```
 
-#### Dynamic actualisation of dependencies
+## Dynamic actualisation of dependencies
 
 Calculated cell formula can be written so that a set of dependencies may change over time. For example:
 
@@ -500,7 +483,7 @@ In such cases, cells automatically unsubscribe from dependencies insignificant f
 when they change. In the future, if the `firstName` again become an empty string, the cell `name` will re-subscribe
 to the `lastName`.
 
-### Collections
+## Collections
 
 If you record to the cell an instance of class which inherits of `cellx.EventEmitter`,
 then the cell will subscribe to its `change` event and will claim it as own:
@@ -519,7 +502,7 @@ value().emit({ type: 'change', ok: true });
 Due to this, you can create your collections, upon updating those collections you will update the cell containing them
 and dependent cells will be recalculated. Two such collections already is added to the cellx:
 
-#### cellx.ObservableMap
+### cellx.ObservableMap
 
 The short syntax to create:
 
@@ -542,7 +525,7 @@ without going over all of its values;
 only strings will be counted as keys, and the key difference between object and Map is in
 the fact that the keys in the Map can be of any type) or another map.
 
-#### cellx.ObservableList
+### cellx.ObservableList
 
 Short creation syntax:
 
@@ -590,21 +573,21 @@ console.log(list.toArray());
 // => [-100, 1, 5, 7, 10, 100]
 ```
 
-##### Properties of cellx.ObservableList
+#### Properties of cellx.ObservableList
 
-###### length
+##### length
 
 Length of the list. Read-only.
 
-###### comparator
+##### comparator
 
 Function for comparing values in the sorted list. Read-only.
 
-###### sorted
+##### sorted
 
 Whether or not the list is sorted. Read-only.
 
-##### Methods of cellx.ObservableList
+#### Methods of cellx.ObservableList
 
 Important difference between list and array is that the list can't contain so-called "holes"
 that is, when it will try to read or set the value of the index beyond the existing range of elements,
@@ -618,127 +601,127 @@ of sorting or (for preservation of this order) will install/paste past the speci
 will not work properly. Therefore, when you call the sorted list, they always generate an exception. It is possible to
 add values to the sorted list through the methods `add` and `addRange`, or during initialization of the list.
 
-###### contains
+##### contains
 
 Type signature: `(value) -> boolean;`.
 
 Checks if the value is in the list. In cases of a large amount of values in the list it may be significantly faster
 than `list.indexOf(value) != -1`.
 
-###### indexOf
+##### indexOf
 
 Type signature: `(value, fromIndex?: int) -> int;`.
 
-###### lastIndexOf
+##### lastIndexOf
 
 Type signature: `(value, fromIndex?: int) -> int;`.
 
-###### get
+##### get
 
 Type signature: `(index: int) -> *;`.
 
-###### getRange
+##### getRange
 
 Type signature: `(index?: int, count?: uint) -> Array;`.
 
 If `count` is unspecified it makes copies till the end of the list.
 
-###### set
+##### set
 
 Type signature: `(index: int, value) -> cellx.ObservableList;`.
 
-###### setRange
+##### setRange
 
 Type signature: `(index: int, items: Array) -> cellx.ObservableList;`.
 
-###### add
+##### add
 
 Type signature: `(item) -> cellx.ObservableList;`.
 
-###### addRange
+##### addRange
 
 Type signature: `(items: Array) -> cellx.ObservableList;`.
 
-###### insert
+##### insert
 
 Type signature: `(index: int, item) -> cellx.ObservableList;`.
 
-###### insertRange
+##### insertRange
 
 Type signature: `(index: int, items: Array) -> cellx.ObservableList;`.
 
-###### remove
+##### remove
 
 Type signature: `(item, fromIndex?: int) -> cellx.ObservableList;`.
 
 Removes the first occurrence of `item` in the list.
 
-###### removeAll
+##### removeAll
 
 Type signature: `(item, fromIndex?: int) -> cellx.ObservableList;`.
 
 It removes all occurrences of `item` list.
 
-###### removeAt
+##### removeAt
 
 Type signature: `(index: int) -> cellx.ObservableList;`.
 
-###### removeRange
+##### removeRange
 
 Type signature: `(index?: int, count?: uint) -> cellx.ObservableList;`.
 
 If `count` is unspecified it will remove everything till the end of the list.
 
-###### clear
+##### clear
 
 Type signature: `() -> cellx.ObservableList;`.
 
-###### join
+##### join
 
 Type signature: `(separator?: string) -> string;`.
 
-###### forEach
+##### forEach
 
 Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList), context?: Object);`.
 
-###### map
+##### map
 
 Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> *, context?: Object) -> Array;`.
 
-###### filter
+##### filter
 
 Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> Array;`.
 
-###### every
+##### every
 
 Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> boolean;`.
 
-###### some
+##### some
 
 Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> boolean;`.
 
-###### reduce
+##### reduce
 
 Type signature: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
-###### reduceRight
+##### reduceRight
 
 Type signature: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
-###### clone
+##### clone
 
 Type signature: `() -> cellx.ObservableList;`.
 
-###### toArray
+##### toArray
 
 Type signature: `() -> Array;`.
 
-###### toString
+##### toString
 
 Type signature: `() -> string;`.
 
 ## List of references
 
-- [Атом - минимальный кирпичик FRP приложения](http://habrahabr.ru/post/235121/)
-- [Warp9 - The next generation of reactive js libraries](http://rystsov.info/warp9/)
-- [Knockout - Simplify dynamic JavaScript UIs with the Model-View-View Model (MVVM) pattern](http://knockoutjs.com/)
+- [Атом — минимальный кирпичик FRP приложения](http://habrahabr.ru/post/235121/)
+- [Warp9 — The next generation of reactive js libraries](http://rystsov.info/warp9/)
+- [Knockout — Simplify dynamic JavaScript UIs with the Model-View-View Model (MVVM) pattern](http://knockoutjs.com/)

@@ -235,8 +235,10 @@
 		};
 	})();
 	
+	var Map;
+	
 	(function() {
-		var Map = global.Map;
+		Map = global.Map;
 	
 		if (!Map) {
 			var entryStub = {
@@ -479,6 +481,8 @@
 	 * }} cellx~Event
 	 */
 	
+	var EventEmitter;
+	
 	(function() {
 		var KEY_INNER = '__cellx_EventEmitter_inner__';
 	
@@ -491,7 +495,7 @@
 		 * @extends {Object}
 		 * @typesign new () -> cellx.EventEmitter;
 		 */
-		var EventEmitter = createClass({
+		EventEmitter = createClass({
 			Static: {
 				KEY_INNER: KEY_INNER
 			},
@@ -732,9 +736,6 @@
 	var ObservableCollection;
 	
 	(function() {
-		var Map = cellx.Map;
-		var EventEmitter = cellx.EventEmitter;
-	
 		ObservableCollection = createClass({
 			Extends: EventEmitter,
 	
@@ -804,10 +805,9 @@
 		});
 	})();
 	
-	(function() {
-		var Map = cellx.Map;
-		var EventEmitter = cellx.EventEmitter;
+	var ObservableMap;
 	
+	(function() {
 		/**
 		 * @class cellx.ObservableMap
 		 * @extends {cellx.EventEmitter}
@@ -817,7 +817,7 @@
 		 *     adoptsItemChanges?: boolean
 		 * }) -> cellx.ObservableMap;
 		 */
-		var ObservableMap = createClass({
+		ObservableMap = createClass({
 			Extends: EventEmitter,
 			Implements: [ObservableCollection],
 	
@@ -1029,9 +1029,9 @@
 		cellx.map = map;
 	})();
 	
-	(function() {
-		var EventEmitter = cellx.EventEmitter;
+	var ObservableList;
 	
+	(function() {
 		/**
 		 * @typesign (a, b) -> -1|1|0;
 		 */
@@ -1090,7 +1090,7 @@
 		 *     sorted?: boolean
 		 * }) -> cellx.ObservableList;
 		 */
-		var ObservableList = createClass({
+		ObservableList = createClass({
 			Extends: EventEmitter,
 			Implements: [ObservableCollection],
 	
@@ -1517,9 +1517,9 @@
 		cellx.list = list;
 	})();
 	
-	(function() {
-		var EventEmitter = cellx.EventEmitter;
+	var Cell;
 	
+	(function() {
 		var KEY_INNER = EventEmitter.KEY_INNER;
 	
 		var error = {
@@ -1654,7 +1654,7 @@
 		 *     debugKey?: string
 		 * }) -> cellx.Cell;
 		 */
-		var Cell = createClass({
+		Cell = createClass({
 			Extends: EventEmitter,
 	
 			constructor: function(value, opts) {
@@ -1787,6 +1787,48 @@
 			 */
 			_off: function(type, listener, context) {
 				EventEmitter.prototype._off.call(this, type, listener, context || this.owner);
+			},
+	
+			/**
+			 * @typesign (
+			 *     listener: (evt: cellx~Event) -> boolean|undefined,
+			 *     context?: Object
+			 * ) -> cellx.Cell;
+			 */
+			addChangeListener: function(listener, context) {
+				this.on('success', listener, context);
+				return this;
+			},
+			/**
+			 * @typesign (
+			 *     listener: (evt: cellx~Event) -> boolean|undefined,
+			 *     context?: Object
+			 * ) -> cellx.Cell;
+			 */
+			removeChangeListener: function(listener, context) {
+				this.off('success', listener, context);
+				return this;
+			},
+	
+			/**
+			 * @typesign (
+			 *     listener: (evt: cellx~Event) -> boolean|undefined,
+			 *     context?: Object
+			 * ) -> cellx.Cell;
+			 */
+			addErrorListener: function(listener, context) {
+				this.on('error', listener, context);
+				return this;
+			},
+			/**
+			 * @typesign (
+			 *     listener: (evt: cellx~Event) -> boolean|undefined,
+			 *     context?: Object
+			 * ) -> cellx.Cell;
+			 */
+			removeErrorListener: function(listener, context) {
+				this.off('error', listener, context);
+				return this;
 			},
 	
 			/**

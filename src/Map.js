@@ -1,5 +1,7 @@
+var Map;
+
 (function() {
-	var Map = global.Map;
+	Map = global.Map;
 
 	if (!Map) {
 		var entryStub = {
