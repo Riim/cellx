@@ -277,7 +277,7 @@ var Cell;
 		 * ) -> cellx.Cell;
 		 */
 		addChangeListener: function(listener, context) {
-			this.on('success', listener, context);
+			this.on('change', listener, context);
 			return this;
 		},
 		/**
@@ -287,7 +287,7 @@ var Cell;
 		 * ) -> cellx.Cell;
 		 */
 		removeChangeListener: function(listener, context) {
-			this.off('success', listener, context);
+			this.off('change', listener, context);
 			return this;
 		},
 

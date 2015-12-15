@@ -274,9 +274,9 @@ console.log(sum());
 запись. Если у метода нет аргументов, нужно при вызове дополнительно передавать `void 0` или для краткости
 просто `0` (см. `dispose`).
 
-#### on
+#### addChangeListener
 
-Добавляет обработчик события. Из событий есть `change` и `error`:
+Добавляет обработчик изменения:
 
 ```js
 var num = cellx(5);
@@ -289,9 +289,36 @@ num(10);
 // => { oldValue: 5, value: 10 }
 ```
 
-#### off
+#### removeChangeListener
 
-Снимает ранее добавленный обработчик события.
+Снимает ранее добавленный обработчик изменения.
+
+#### addErrorListener
+
+Добавляет обработчик ошибки:
+
+```js
+var value = cellx(1);
+
+var num = cellx(function() { return value(); }, {
+    validate: function(v) {
+        if (v > 1) {
+            throw new TypeError('Oops!');
+        }
+    }
+});
+
+num('addErrorListener', function(evt) {
+    console.log(evt.error.message);
+});
+
+value(2);
+// => 'Oops!'
+```
+
+#### removeErrorListener
+
+Снимает ранее добавленный обработчик ошибки.
 
 #### subscribe
 

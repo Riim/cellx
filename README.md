@@ -288,9 +288,9 @@ rest ones — the arguments. In this case, there must be at least one argument, 
 recording. If the method has no arguments, you need to transfer an additional `void 0` with a call or to shorten it
 just `0` (see `dispose`).
 
-#### on
+#### addChangeListener
 
-Adds an event handler. Among the events there are `change` and `error`:
+Adds a change listener:
 
 ```js
 var num = cellx(5);
@@ -303,9 +303,36 @@ num(10);
 // => { oldValue: 5, value: 10 }
 ```
 
-#### off
+#### removeChangeListener
 
-Removes previously added event handler.
+Removes previously added change listener.
+
+#### addErrorListener
+
+Adds a error listener:
+
+```js
+var value = cellx(1);
+
+var num = cellx(function() { return value(); }, {
+    validate: function(v) {
+        if (v > 1) {
+            throw new TypeError('Oops!');
+        }
+    }
+});
+
+num('addErrorListener', function(evt) {
+    console.log(evt.error.message);
+});
+
+value(2);
+// => 'Oops!'
+```
+
+#### removeErrorListener
+
+Removes previously added error listener.
 
 #### subscribe
 
