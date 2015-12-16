@@ -14,7 +14,6 @@
 	/**
 	 * @typesign (value?, opts?: {
 	 *     owner?: Object,
-	 *     cloneValue?: (value) -> *,
 	 *     get?: (value) -> *,
 	 *     validate?: (value),
 	 *     onchange?: (evt: cellx~Event) -> boolean|undefined,
@@ -2320,10 +2319,6 @@
 			if (!cell) {
 				if (argCount >= 2 && firstArg === 'dispose') {
 					return;
-				}
-	
-				if (opts.cloneValue) {
-					initialValue = opts.cloneValue(initialValue);
 				}
 	
 				opts = Object.create(opts);

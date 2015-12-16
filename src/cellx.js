@@ -14,7 +14,6 @@
 	/**
 	 * @typesign (value?, opts?: {
 	 *     owner?: Object,
-	 *     cloneValue?: (value) -> *,
 	 *     get?: (value) -> *,
 	 *     validate?: (value),
 	 *     onchange?: (evt: cellx~Event) -> boolean|undefined,

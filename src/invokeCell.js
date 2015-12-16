@@ -22,10 +22,6 @@
 				return;
 			}
 
-			if (opts.cloneValue) {
-				initialValue = opts.cloneValue(initialValue);
-			}
-
 			opts = Object.create(opts);
 			opts.owner = owner;
 
