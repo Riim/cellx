@@ -118,8 +118,8 @@ var Cell;
 	 *     owner?: Object,
 	 *     get?: (value) -> *,
 	 *     validate?: (value),
-	 *     onchange?: (evt: cellx~Event) -> boolean|undefined,
-	 *     onerror?: (evt: cellx~Event) -> boolean|undefined,
+	 *     onChange?: (evt: cellx~Event) -> boolean|undefined,
+	 *     onError?: (evt: cellx~Event) -> boolean|undefined,
 	 *     computed?: false,
 	 *     debugKey?: string
 	 * }) -> cellx.Cell;
@@ -129,8 +129,8 @@ var Cell;
 	 *     get?: (value) -> *,
 	 *     set?: (value),
 	 *     validate?: (value),
-	 *     onchange?: (evt: cellx~Event) -> boolean|undefined,
-	 *     onerror?: (evt: cellx~Event) -> boolean|undefined,
+	 *     onChange?: (evt: cellx~Event) -> boolean|undefined,
+	 *     onError?: (evt: cellx~Event) -> boolean|undefined,
 	 *     computed?: true,
 	 *     debugKey?: string
 	 * }) -> cellx.Cell;
@@ -205,11 +205,11 @@ var Cell;
 				}
 			}
 
-			if (opts.onchange) {
-				this.on('change', opts.onchange);
+			if (opts.onChange) {
+				this.on('change', opts.onChange);
 			}
-			if (opts.onerror) {
-				this.on('error', opts.onerror);
+			if (opts.onError) {
+				this.on('error', opts.onError);
 			}
 		},
 

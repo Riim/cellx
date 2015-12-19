@@ -5,7 +5,7 @@ describe('Cell.js', function() {
 		it('Нет изменения, если установить значение равное текущему', function(done) {
 			var onChangeSpy = sinon.spy();
 
-			var a = new cellx.Cell(1, { onchange: onChangeSpy });
+			var a = new cellx.Cell(1, { onChange: onChangeSpy });
 
 			a.set(1);
 
@@ -20,7 +20,7 @@ describe('Cell.js', function() {
 		it('Нет изменения, если установить значение (NaN) равное текущему', function(done) {
 			var onChangeSpy = sinon.spy();
 
-			var a = new cellx.Cell(NaN, { onchange: onChangeSpy });
+			var a = new cellx.Cell(NaN, { onChange: onChangeSpy });
 
 			a.set(NaN);
 
@@ -38,7 +38,7 @@ describe('Cell.js', function() {
 			var a = new cellx.Cell(1);
 			var b = new cellx.Cell(function() {
 				return a.get() + NaN;
-			}, { onchange: onChangeSpy });
+			}, { onChange: onChangeSpy });
 
 			a.set(2);
 
@@ -55,7 +55,7 @@ describe('Cell.js', function() {
 			function(done) {
 				var onChangeSpy = sinon.spy();
 
-				var a = new cellx.Cell(1, { onchange: onChangeSpy });
+				var a = new cellx.Cell(1, { onChange: onChangeSpy });
 
 				a.set(5);
 				a.set(1);
@@ -80,7 +80,7 @@ describe('Cell.js', function() {
 
 				var onChangeSpy = sinon.spy();
 
-				var a = new cellx.Cell(ee1, { onchange: onChangeSpy });
+				var a = new cellx.Cell(ee1, { onChange: onChangeSpy });
 
 				a.set(ee2);
 				a.set(ee1);
@@ -103,7 +103,7 @@ describe('Cell.js', function() {
 
 				var onChangeSpy = sinon.spy();
 
-				var a = new cellx.Cell(ee1, { onchange: onChangeSpy });
+				var a = new cellx.Cell(ee1, { onChange: onChangeSpy });
 
 				a.set(ee2);
 
@@ -129,7 +129,7 @@ describe('Cell.js', function() {
 
 				var onChangeSpy = sinon.spy();
 
-				var a = new cellx.Cell(ee1, { onchange: onChangeSpy });
+				var a = new cellx.Cell(ee1, { onChange: onChangeSpy });
 
 				ee1.emit('change');
 
@@ -153,7 +153,7 @@ describe('Cell.js', function() {
 				return a.get() + b.get();
 			});
 
-			var c = new cellx.Cell(cFormulaSpy, { onchange: function() {} });
+			var c = new cellx.Cell(cFormulaSpy, { onChange: function() {} });
 
 			setTimeout(function() {
 				expect(cFormulaSpy.calledOnce)
@@ -177,7 +177,7 @@ describe('Cell.js', function() {
 				return a.get() + b.get();
 			});
 
-			var c = new cellx.Cell(cFormulaSpy, { onchange: function() {} });
+			var c = new cellx.Cell(cFormulaSpy, { onChange: function() {} });
 
 			setTimeout(function() {
 				cFormulaSpy.reset();
@@ -210,7 +210,7 @@ describe('Cell.js', function() {
 				return aa.get() + bb.get();
 			});
 
-			var c = new cellx.Cell(cFormulaSpy, { onchange: function() {} });
+			var c = new cellx.Cell(cFormulaSpy, { onChange: function() {} });
 
 			setTimeout(function() {
 				cFormulaSpy.reset();
@@ -247,9 +247,9 @@ describe('Cell.js', function() {
 					var aValue = a.get();
 				});
 
-				var a = new cellx.Cell(1, { onchange: aChangeSpy });
-				var b = new cellx.Cell(2, { onchange: bChangeSpy });
-				var c = new cellx.Cell(3, { onchange: cChangeSpy });
+				var a = new cellx.Cell(1, { onChange: aChangeSpy });
+				var b = new cellx.Cell(2, { onChange: bChangeSpy });
+				var c = new cellx.Cell(3, { onChange: cChangeSpy });
 
 				setTimeout(function() {
 					a.set(5);
@@ -283,11 +283,11 @@ describe('Cell.js', function() {
 				}
 
 				return a.get() + 1;
-			}, { onchange: function() {} });
+			}, { onChange: function() {} });
 
 			var bb = new cellx.Cell(function() {
 				return b.get() + 1;
-			}, { onchange: function() {} });
+			}, { onChange: function() {} });
 
 			a.set(5);
 
@@ -349,11 +349,11 @@ describe('Cell.js', function() {
 				}
 
 				return a.get() + 1;
-			}, { onerror: bOnErrorSpy });
+			}, { onError: bOnErrorSpy });
 
-			var c1 = new cellx.Cell(function() { return b.get() + 1; }, { onerror: c1OnErrorSpy });
-			var c2 = new cellx.Cell(function() { return b.get() + 1; }, { onerror: c2OnErrorSpy });
-			var d = new cellx.Cell(function() { return c1.get() + c2.get(); }, { onerror: dOnErrorSpy });
+			var c1 = new cellx.Cell(function() { return b.get() + 1; }, { onError: c1OnErrorSpy });
+			var c2 = new cellx.Cell(function() { return b.get() + 1; }, { onError: c2OnErrorSpy });
+			var d = new cellx.Cell(function() { return c1.get() + c2.get(); }, { onError: dOnErrorSpy });
 
 			a.set(2);
 

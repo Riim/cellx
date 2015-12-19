@@ -50,7 +50,7 @@ body {
 	Library
 	<br>
 	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="cellx" checked><span></span>cellx</label>
-	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="vanilla"><span></span>VanillaJS</label>
+	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="vanilla"><span></span>VanillaJS (naive)</label>
 	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="knockout"><span></span>Knockout</label>
 	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="jin-atom"><span></span>jin-atom</label>
 	<br>
@@ -185,7 +185,7 @@ function testCellx(report, layerCount, done) {
 		end.prop4.get()
 	];
 
-	var st = Date.now();
+	var st = performance.now();
 
 	start.prop1.set(4);
 	start.prop2.set(3);
@@ -199,7 +199,7 @@ function testCellx(report, layerCount, done) {
 		end.prop4.get()
 	];
 
-	report.recalculationTime = Date.now() - st;
+	report.recalculationTime = performance.now() - st;
 
 	done();
 }
@@ -215,12 +215,12 @@ function testVanilla(report, layerCount, done) {
 
 	for (var i = layerCount; i--;) {
 		layer = (function(m) {
-			var s = {};
-			
-			Object.defineProperty(s, 'prop1', { get: function() { return m.prop2; } });
-			Object.defineProperty(s, 'prop2', { get: function() { return m.prop1 - m.prop3; } });
-			Object.defineProperty(s, 'prop3', { get: function() { return m.prop2 + m.prop4; } });
-			Object.defineProperty(s, 'prop4', { get: function() { return m.prop3; } });
+			var s = {
+				get prop1() { return m.prop2; },
+				get prop2() { return m.prop1 - m.prop3; },
+				get prop3() { return m.prop2 + m.prop4; },
+				get prop4() { return m.prop3; }
+			};
 
 			return s;
 		})(layer);
@@ -235,7 +235,7 @@ function testVanilla(report, layerCount, done) {
 		end.prop4
 	];
 
-	var st = Date.now();
+	var st = performance.now();
 
 	start.prop1 = 4;
 	start.prop2 = 3;
@@ -249,7 +249,7 @@ function testVanilla(report, layerCount, done) {
 		end.prop4
 	];
 
-	report.recalculationTime = Date.now() - st;
+	report.recalculationTime = performance.now() - st;
 
 	done();
 }
@@ -299,7 +299,7 @@ function testKnockout(report, layerCount, done) {
 		end.prop4()
 	];
 
-	var st = Date.now();
+	var st = performance.now();
 
 	start.prop1(4);
 	start.prop2(3);
@@ -313,7 +313,7 @@ function testKnockout(report, layerCount, done) {
 		end.prop4()
 	];
 
-	report.recalculationTime = Date.now() - st;
+	report.recalculationTime = performance.now() - st;
 
 	done();
 }
@@ -366,7 +366,7 @@ function testJinAtom(report, layerCount, done) {
 		end.prop4.get()
 	];
 
-	var st = Date.now();
+	var st = performance.now();
 
 	start.prop1.push(4);
 	start.prop2.push(3);
@@ -381,7 +381,7 @@ function testJinAtom(report, layerCount, done) {
 			end.prop4.get()
 		];
 
-		report.recalculationTime = Date.now() - st;
+		report.recalculationTime = performance.now() - st;
 
 		done();
 	});
@@ -428,7 +428,7 @@ function testWarp9(report, layerCount, done) {
 		end.prop4.get()
 	];
 
-	var st = Date.now();
+	var st = performance.now();
 
 	start.prop1.set(4);
 	start.prop2.set(3);
@@ -442,7 +442,7 @@ function testWarp9(report, layerCount, done) {
 		end.prop4.get()
 	];
 
-	report.recalculationTime = Date.now() - st;
+	report.recalculationTime = performance.now() - st;
 
 	done();
 }
@@ -483,7 +483,7 @@ function testReactor(report, layerCount, done) {
 		end.prop4()
 	];
 
-	var st = Date.now();
+	var st = performance.now();
 
 	start.prop1(4);
 	start.prop2(3);
@@ -497,7 +497,7 @@ function testReactor(report, layerCount, done) {
 		end.prop4()
 	];
 
-	report.recalculationTime = Date.now() - st;
+	report.recalculationTime = performance.now() - st;
 
 	done();
 }
@@ -519,7 +519,7 @@ function testReactive(report, layerCount, done) {
 				prop3: $R(function(prop2, prop4) { return prop2 + prop4; }),
 				prop4: $R(function(prop3) { return prop3; })
 			};
-			
+
 			s.prop1.bindTo(m.prop2);
 			s.prop2.bindTo(m.prop1, m.prop3);
 			s.prop3.bindTo(m.prop2, m.prop4);
@@ -543,7 +543,7 @@ function testReactive(report, layerCount, done) {
 		end.prop4()
 	];
 
-	var st = Date.now();
+	var st = performance.now();
 
 	start.prop1.set(4);
 	start.prop2.set(3);
@@ -557,7 +557,7 @@ function testReactive(report, layerCount, done) {
 		end.prop4()
 	];
 
-	report.recalculationTime = Date.now() - st;
+	report.recalculationTime = performance.now() - st;
 
 	done();
 }
@@ -602,7 +602,7 @@ function testKefir(report, layerCount, done) {
 		return [a, b, c, d];
 	}).onValue(function(v) {
 		if (!st) {
-			st = Date.now();
+			st = performance.now();
 
 			report.beforeChange = v;
 
@@ -614,7 +614,7 @@ function testKefir(report, layerCount, done) {
 			});
 		} else {
 			report.afterChange = v;
-			report.recalculationTime = Date.now() - st;
+			report.recalculationTime = performance.now() - st;
 
 			done();
 		}
