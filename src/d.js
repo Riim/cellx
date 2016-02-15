@@ -1,4 +1,5 @@
 (function() {
+
 	function observable(target, name, descr, opts) {
 		if (arguments.length == 1) {
 			opts = target;
@@ -19,7 +20,7 @@
 		target[_name] = cellx(descr.initializer.call(target), opts);
 
 		return {
-			configurable: descr.configurable,
+			configurable: true,
 			enumerable: descr.enumerable,
 
 			get: function() {
@@ -58,7 +59,7 @@
 		target[_name] = cellx(value, opts);
 
 		var descriptor = {
-			configurable: descr.configurable,
+			configurable: true,
 			enumerable: descr.enumerable,
 
 			get: function() {
@@ -79,4 +80,5 @@
 		observable: observable,
 		computed: computed
 	};
+
 })();

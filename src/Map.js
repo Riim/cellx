@@ -1,6 +1,7 @@
 var Map;
 
 (function() {
+
 	Map = global.Map;
 
 	if (!Map) {
@@ -9,7 +10,7 @@ var Map;
 		};
 
 		Map = createClass({
-			constructor: function(entries) {
+			constructor: function Map(entries) {
 				this._entries = Object.create(null);
 				this._objectStamps = {};
 
@@ -25,15 +26,15 @@ var Map;
 				}
 			},
 
-			has: function(key) {
+			has: function has(key) {
 				return !!this._entries[this._getValueStamp(key)];
 			},
 
-			get: function(key) {
+			get: function get(key) {
 				return (this._entries[this._getValueStamp(key)] || entryStub).value;
 			},
 
-			set: function(key, value) {
+			set: function set(key, value) {
 				var entries = this._entries;
 				var keyStamp = this._getValueStamp(key);
 
@@ -60,7 +61,7 @@ var Map;
 				return this;
 			},
 
-			delete: function(key) {
+			delete: function _delete(key) {
 				var keyStamp = this._getValueStamp(key);
 				var entry = this._entries[keyStamp];
 
@@ -94,7 +95,7 @@ var Map;
 				return true;
 			},
 
-			clear: function() {
+			clear: function clear() {
 				var entries = this._entries;
 
 				for (var stamp in entries) {
@@ -109,7 +110,7 @@ var Map;
 				this.size = 0;
 			},
 
-			_getValueStamp: function(value) {
+			_getValueStamp: function _getValueStamp(value) {
 				switch (typeof value) {
 					case 'undefined': {
 						return 'undefined';
@@ -135,14 +136,14 @@ var Map;
 				return this._getObjectStamp(value);
 			},
 
-			_getObjectStamp: function(obj) {
+			_getObjectStamp: function _getObjectStamp(obj) {
 				if (!hasOwn.call(obj, KEY_UID)) {
 					if (!Object.isExtensible(obj)) {
 						var stamps = this._objectStamps;
 						var stamp;
 
 						for (stamp in stamps) {
-							if (stamps[stamp] == obj) {
+							if (hasOwn.call(stamps, stamp) && stamps[stamp] == obj) {
 								return stamp;
 							}
 						}
@@ -161,7 +162,7 @@ var Map;
 				return obj[KEY_UID];
 			},
 
-			forEach: function(cb, context) {
+			forEach: function forEach(cb, context) {
 				if (context == null) {
 					context = global;
 				}
@@ -177,19 +178,19 @@ var Map;
 				}
 			},
 
-			toString: function() {
+			toString: function toString() {
 				return '[object Map]';
 			}
 		});
 
 		[
-			['keys', function(entry) {
+			['keys', function keys(entry) {
 				return entry.key;
 			}],
-			['values', function(entry) {
+			['values', function values(entry) {
 				return entry.value;
 			}],
-			['entries', function(entry) {
+			['entries', function entries(entry) {
 				return [entry.key, entry.value];
 			}]
 		].forEach(function(iterator) {
@@ -233,4 +234,5 @@ var Map;
 	}
 
 	cellx.Map = Map;
+
 })();

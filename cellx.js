@@ -6,6 +6,7 @@
 	var push = Array.prototype.push;
 	var slice = Array.prototype.slice;
 	var splice = Array.prototype.splice;
+	var reduce = Array.prototype.reduce;
 
 	var global = Function('return this;')();
 
@@ -65,23 +66,18 @@
 
 	var uidCounter = 0;
 
-	/**
-	 * @typesign (err);
-	 */
-	var logError;
+	function noop() {}
 
-	if (global.console) {
-		if (console.error) {
-			logError = function(err) {
-				console.error(err === Object(err) && err.stack || err);
-			};
-		} else {
-			logError = function(err) {
-				console.log('Error: ' + (err === Object(err) && err.stack || err));
-			};
-		}
-	} else {
-		logError = function() {};
+	/**
+	 * @typesign (...msg);
+	 */
+	function logError() {
+		var console = global.console;
+
+		(console && console.error || noop).call(console || global, reduce.call(arguments, function(msg, part) {
+			msg.push(part === Object(part) && part.stack || part);
+			return msg;
+		}, []).join(' '));
 	}
 
 	/**
@@ -112,7 +108,7 @@
 	/**
 	 * @typesign (a, b) -> boolean;
 	 */
-	var is = Object.is || function(a, b) {
+	var is = Object.is || function is(a, b) {
 		if (a === 0 && b === 0) {
 			return 1 / a == 1 / b;
 		}
@@ -122,7 +118,7 @@
 	/**
 	 * @typesign (value) -> boolean;
 	 */
-	var isArray = Array.isArray || function(value) {
+	var isArray = Array.isArray || function isArray(value) {
 		return toString.call(value) == '[object Array]';
 	};
 
@@ -175,17 +171,65 @@
 		return constr;
 	}
 
+	/**
+	 * @typesign (obj: Object, name: string, value);
+	 */
+	function defineObservableProperty(obj, name, value) {
+		var _name = '_' + name;
+
+		obj[_name] = typeof value == 'function' && value.constructor == cellx ? value : cellx(value);
+
+		Object.defineProperty(obj, name, {
+			configurable: true,
+			enumerable: true,
+
+			get: function() {
+				return this[_name]();
+			},
+
+			set: function(value) {
+				this[_name](value);
+			}
+		});
+	}
+
+	/**
+	 * @typesign (obj: Object, props: Object);
+	 */
+	function defineObservableProperties(obj, props) {
+		Object.keys(props).forEach(function(name) {
+			defineObservableProperty(obj, name, props[name]);
+		});
+	}
+
+	/**
+	 * @typesign (obj: Object, name: string, value) -> Object;
+	 * @typesign (obj: Object, props: Object) -> Object;
+	 */
+	function define(obj, name, value) {
+		if (arguments.length == 3) {
+			defineObservableProperty(obj, name, value);
+		} else {
+			defineObservableProperties(obj, name);
+		}
+
+		return obj;
+	}
+
+	cellx.define = define;
+
 	// gulp-include
 	/**
 	 * @typesign (cb: ());
 	 */
 	var nextTick = (function() {
+	
 		if (global.process && process.toString() == '[object process]' && process.nextTick) {
 			return process.nextTick;
 		}
 	
 		if (global.setImmediate) {
-			return function(cb) {
+			return function nextTick(cb) {
 				setImmediate(cb);
 			};
 		}
@@ -193,7 +237,7 @@
 		if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
 			var prm = Promise.resolve();
 	
-			return function(cb) {
+			return function nextTick(cb) {
 				prm.then(function() {
 					cb();
 				});
@@ -219,7 +263,7 @@
 				}
 			});
 	
-			return function(cb) {
+			return function nextTick(cb) {
 				if (queue) {
 					queue.push(cb);
 				} else {
@@ -229,14 +273,16 @@
 			};
 		}
 	
-		return function(cb) {
+		return function nextTick(cb) {
 			setTimeout(cb, 1);
 		};
+	
 	})();
 	
 	var Map;
 	
 	(function() {
+	
 		Map = global.Map;
 	
 		if (!Map) {
@@ -245,7 +291,7 @@
 			};
 	
 			Map = createClass({
-				constructor: function(entries) {
+				constructor: function Map(entries) {
 					this._entries = Object.create(null);
 					this._objectStamps = {};
 	
@@ -261,15 +307,15 @@
 					}
 				},
 	
-				has: function(key) {
+				has: function has(key) {
 					return !!this._entries[this._getValueStamp(key)];
 				},
 	
-				get: function(key) {
+				get: function get(key) {
 					return (this._entries[this._getValueStamp(key)] || entryStub).value;
 				},
 	
-				set: function(key, value) {
+				set: function set(key, value) {
 					var entries = this._entries;
 					var keyStamp = this._getValueStamp(key);
 	
@@ -296,7 +342,7 @@
 					return this;
 				},
 	
-				delete: function(key) {
+				delete: function _delete(key) {
 					var keyStamp = this._getValueStamp(key);
 					var entry = this._entries[keyStamp];
 	
@@ -330,7 +376,7 @@
 					return true;
 				},
 	
-				clear: function() {
+				clear: function clear() {
 					var entries = this._entries;
 	
 					for (var stamp in entries) {
@@ -345,7 +391,7 @@
 					this.size = 0;
 				},
 	
-				_getValueStamp: function(value) {
+				_getValueStamp: function _getValueStamp(value) {
 					switch (typeof value) {
 						case 'undefined': {
 							return 'undefined';
@@ -371,14 +417,14 @@
 					return this._getObjectStamp(value);
 				},
 	
-				_getObjectStamp: function(obj) {
+				_getObjectStamp: function _getObjectStamp(obj) {
 					if (!hasOwn.call(obj, KEY_UID)) {
 						if (!Object.isExtensible(obj)) {
 							var stamps = this._objectStamps;
 							var stamp;
 	
 							for (stamp in stamps) {
-								if (stamps[stamp] == obj) {
+								if (hasOwn.call(stamps, stamp) && stamps[stamp] == obj) {
 									return stamp;
 								}
 							}
@@ -397,7 +443,7 @@
 					return obj[KEY_UID];
 				},
 	
-				forEach: function(cb, context) {
+				forEach: function forEach(cb, context) {
 					if (context == null) {
 						context = global;
 					}
@@ -413,19 +459,19 @@
 					}
 				},
 	
-				toString: function() {
+				toString: function toString() {
 					return '[object Map]';
 				}
 			});
 	
 			[
-				['keys', function(entry) {
+				['keys', function keys(entry) {
 					return entry.key;
 				}],
-				['values', function(entry) {
+				['values', function values(entry) {
 					return entry.value;
 				}],
-				['entries', function(entry) {
+				['entries', function entries(entry) {
 					return [entry.key, entry.value];
 				}]
 			].forEach(function(iterator) {
@@ -469,6 +515,7 @@
 		}
 	
 		cellx.Map = Map;
+	
 	})();
 	
 	/**
@@ -483,6 +530,7 @@
 	var EventEmitter;
 	
 	(function() {
+	
 		var KEY_INNER = '__cellx_EventEmitter_inner__';
 	
 		if (global.Symbol && typeof Symbol.iterator == 'symbol') {
@@ -499,7 +547,7 @@
 				KEY_INNER: KEY_INNER
 			},
 	
-			constructor: function() {
+			constructor: function EventEmitter() {
 				/**
 				 * @type {Object<Array<{ listener: (evt: cellx~Event) -> boolean|undefined, context: Object }>>}
 				 */
@@ -518,14 +566,16 @@
 			 *     context?: Object
 			 * ) -> cellx.EventEmitter;
 			 */
-			on: function(type, listener, context) {
+			on: function on(type, listener, context) {
 				if (typeof type == 'object') {
 					context = listener;
 	
 					var listeners = type;
 	
 					for (type in listeners) {
-						this._on(type, listeners[type], context);
+						if (hasOwn.call(listeners, type)) {
+							this._on(type, listeners[type], context);
+						}
 					}
 				} else {
 					this._on(type, listener, context);
@@ -547,7 +597,7 @@
 			 *
 			 * @typesign () -> cellx.EventEmitter;
 			 */
-			off: function(type, listener, context) {
+			off: function off(type, listener, context) {
 				if (type) {
 					if (typeof type == 'object') {
 						context = listener;
@@ -555,7 +605,9 @@
 						var listeners = type;
 	
 						for (type in listeners) {
-							this._off(type, listeners[type], context);
+							if (hasOwn.call(listeners, type)) {
+								this._off(type, listeners[type], context);
+							}
 						}
 					} else {
 						this._off(type, listener, context);
@@ -574,7 +626,7 @@
 			 *     context?: Object
 			 * );
 			 */
-			_on: function(type, listener, context) {
+			_on: function _on(type, listener, context) {
 				var index = type.indexOf(':');
 	
 				if (index != -1) {
@@ -599,7 +651,7 @@
 			 *     context?: Object
 			 * );
 			 */
-			_off: function(type, listener, context) {
+			_off: function _off(type, listener, context) {
 				var index = type.indexOf(':');
 	
 				if (index != -1) {
@@ -637,7 +689,7 @@
 			 *     context?: Object
 			 * ) -> cellx.EventEmitter;
 			 */
-			once: function(type, listener, context) {
+			once: function once(type, listener, context) {
 				function wrapper() {
 					this._off(type, wrapper, context);
 					return listener.apply(this, arguments);
@@ -653,7 +705,7 @@
 			 * @typesign (evt: cellx~Event) -> cellx~Event;
 			 * @typesign (type: string) -> cellx~Event;
 			 */
-			emit: function(evt) {
+			emit: function emit(evt) {
 				if (typeof evt == 'string') {
 					evt = {
 						target: this,
@@ -703,7 +755,7 @@
 			 *     }
 			 * };
 			 */
-			_handleEvent: function(evt) {
+			_handleEvent: function _handleEvent(evt) {
 				var events = this._events && this._events[evt.type];
 	
 				if (events) {
@@ -722,23 +774,25 @@
 			},
 	
 			/**
-			 * @typesign (err);
+			 * @typesign (...msg);
 			 */
-			_logError: function(err) {
-				cellx._logError(err);
+			_logError: function _logError() {
+				cellx._logError.apply(cellx, arguments);
 			}
 		});
 	
 		cellx.EventEmitter = EventEmitter;
+	
 	})();
 	
 	var ObservableCollection;
 	
 	(function() {
+	
 		ObservableCollection = createClass({
 			Extends: EventEmitter,
 	
-			constructor: function() {
+			constructor: function ObservableCollection() {
 				/**
 				 * @type {Map<*, uint>}
 				 */
@@ -748,14 +802,14 @@
 			/**
 			 * @typesign (evt: cellx~Event);
 			 */
-			_onItemChange: function(evt) {
+			_onItemChange: function _onItemChange(evt) {
 				this._handleEvent(evt);
 			},
 	
 			/**
 			 * @typesign (value);
 			 */
-			_registerValue: function(value) {
+			_registerValue: function _registerValue(value) {
 				var valueCounts = this._valueCounts;
 				var valueCount = valueCounts.get(value);
 	
@@ -773,7 +827,7 @@
 			/**
 			 * @typesign (value);
 			 */
-			_unregisterValue: function(value) {
+			_unregisterValue: function _unregisterValue(value) {
 				var valueCounts = this._valueCounts;
 				var valueCount = valueCounts.get(value);
 	
@@ -792,7 +846,7 @@
 			 * Освобождает занятые инстансом ресурсы.
 			 * @typesign ();
 			 */
-			dispose: function() {
+			dispose: function dispose() {
 				if (this.adoptsItemChanges) {
 					this._valueCounts.forEach(function(value) {
 						if (value instanceof EventEmitter) {
@@ -802,11 +856,13 @@
 				}
 			}
 		});
+	
 	})();
 	
 	var ObservableMap;
 	
 	(function() {
+	
 		/**
 		 * @class cellx.ObservableMap
 		 * @extends {cellx.EventEmitter}
@@ -820,7 +876,7 @@
 			Extends: EventEmitter,
 			Implements: [ObservableCollection],
 	
-			constructor: function(entries, opts) {
+			constructor: function ObservableMap(entries, opts) {
 				EventEmitter.call(this);
 				ObservableCollection.call(this);
 	
@@ -850,8 +906,10 @@
 						}
 					} else {
 						for (var key in entries) {
-							mapEntries.set(key, entries[key]);
-							this._registerValue(entries[key]);
+							if (hasOwn.call(entries, key)) {
+								mapEntries.set(key, entries[key]);
+								this._registerValue(entries[key]);
+							}
 						}
 					}
 	
@@ -862,28 +920,28 @@
 			/**
 			 * @typesign (key) -> boolean;
 			 */
-			has: function(key) {
+			has: function has(key) {
 				return this._entries.has(key);
 			},
 	
 			/**
 			 * @typesign (value) -> boolean;
 			 */
-			contains: function(value) {
+			contains: function contains(value) {
 				return this._valueCounts.has(value);
 			},
 	
 			/**
 			 * @typesign (key) -> *;
 			 */
-			get: function(key) {
+			get: function get(key) {
 				return this._entries.get(key);
 			},
 	
 			/**
 			 * @typesign (key, value) -> cellx.ObservableMap;
 			 */
-			set: function(key, value) {
+			set: function set(key, value) {
 				var entries = this._entries;
 				var hasKey = entries.has(key);
 				var oldValue;
@@ -919,7 +977,7 @@
 			/**
 			 * @typesign (key) -> boolean;
 			 */
-			delete: function(key) {
+			delete: function _delete(key) {
 				var entries = this._entries;
 	
 				if (!entries.has(key)) {
@@ -947,7 +1005,7 @@
 			/**
 			 * @typesign () -> cellx.ObservableMap;
 			 */
-			clear: function() {
+			clear: function clear() {
 				if (!this.size) {
 					return this;
 				}
@@ -967,7 +1025,7 @@
 			/**
 			 * @typesign (cb: (value, key, map: cellx.ObservableMap), context?: Object);
 			 */
-			forEach: function(cb, context) {
+			forEach: function forEach(cb, context) {
 				if (context == null) {
 					context = global;
 				}
@@ -980,28 +1038,28 @@
 			/**
 			 * @typesign () -> { next: () -> { value, done: boolean } };
 			 */
-			keys: function() {
+			keys: function keys() {
 				return this._entries.keys();
 			},
 	
 			/**
 			 * @typesign () -> { next: () -> { value, done: boolean } };
 			 */
-			values: function() {
+			values: function values() {
 				return this._entries.values();
 			},
 	
 			/**
 			 * @typesign () -> { next: () -> { value: { 0, 1 }, done: boolean } };
 			 */
-			entries: function() {
+			entries: function entries() {
 				return this._entries.entries();
 			},
 	
 			/**
 			 * @typesign () -> cellx.ObservableMap;
 			 */
-			clone: function() {
+			clone: function clone() {
 				return new this.constructor(this, {
 					adoptsItemChanges: this.adoptsItemChanges
 				});
@@ -1026,11 +1084,13 @@
 		}
 	
 		cellx.map = map;
+	
 	})();
 	
 	var ObservableList;
 	
 	(function() {
+	
 		/**
 		 * @typesign (a, b) -> -1|1|0;
 		 */
@@ -1093,7 +1153,7 @@
 			Extends: EventEmitter,
 			Implements: [ObservableCollection],
 	
-			constructor: function(items, opts) {
+			constructor: function ObservableList(items, opts) {
 				EventEmitter.call(this);
 				ObservableCollection.call(this);
 	
@@ -1130,7 +1190,7 @@
 			/**
 			 * @typesign (index: int, allowEndIndex?: boolean) -> uint|undefined;
 			 */
-			_validateIndex: function(index, allowEndIndex) {
+			_validateIndex: function _validateIndex(index, allowEndIndex) {
 				if (index === undefined) {
 					return index;
 				}
@@ -1151,35 +1211,35 @@
 			/**
 			 * @typesign (value) -> boolean;
 			 */
-			contains: function(value) {
+			contains: function contains(value) {
 				return this._valueCounts.has(value);
 			},
 	
 			/**
 			 * @typesign (value, fromIndex?: int) -> int;
 			 */
-			indexOf: function(value, fromIndex) {
+			indexOf: function indexOf(value, fromIndex) {
 				return this._items.indexOf(value, this._validateIndex(fromIndex));
 			},
 	
 			/**
 			 * @typesign (value, fromIndex?: int) -> int;
 			 */
-			lastIndexOf: function(value, fromIndex) {
+			lastIndexOf: function lastIndexOf(value, fromIndex) {
 				return this._items.lastIndexOf(value, this._validateIndex(fromIndex));
 			},
 	
 			/**
 			 * @typesign (index: int) -> *;
 			 */
-			get: function(index) {
+			get: function get(index) {
 				return this._items[this._validateIndex(index)];
 			},
 	
 			/**
 			 * @typesign (index?: int, count?: uint) -> Array;
 			 */
-			getRange: function(index, count) {
+			getRange: function getRange(index, count) {
 				index = this._validateIndex(index || 0, true);
 	
 				var items = this._items;
@@ -1198,7 +1258,7 @@
 			/**
 			 * @typesign (index: int, value) -> cellx.ObservableList;
 			 */
-			set: function(index, value) {
+			set: function set(index, value) {
 				if (this.sorted) {
 					throw new TypeError('Can\'t set to sorted list');
 				}
@@ -1224,7 +1284,7 @@
 			/**
 			 * @typesign (index: int, items: Array) -> cellx.ObservableList;
 			 */
-			setRange: function(index, items) {
+			setRange: function setRange(index, items) {
 				if (this.sorted) {
 					throw new TypeError('Can\'t set to sorted list');
 				}
@@ -1267,7 +1327,7 @@
 			/**
 			 * @typesign (item) -> cellx.ObservableList;
 			 */
-			add: function(item) {
+			add: function add(item) {
 				this.addRange([item]);
 				return this;
 			},
@@ -1275,7 +1335,7 @@
 			/**
 			 * @typesign (items: Array) -> cellx.ObservableList;
 			 */
-			addRange: function(items) {
+			addRange: function _addRange(items) {
 				if (!items.length) {
 					return this;
 				}
@@ -1289,7 +1349,7 @@
 			/**
 			 * @typesign (index: int, item) -> cellx.ObservableList;
 			 */
-			insert: function(index, item) {
+			insert: function insert(index, item) {
 				this.insertRange(index, [item]);
 				return this;
 			},
@@ -1297,7 +1357,7 @@
 			/**
 			 * @typesign (index: int, items: Array) -> cellx.ObservableList;
 			 */
-			insertRange: function(index, items) {
+			insertRange: function insertRange(index, items) {
 				if (this.sorted) {
 					throw new TypeError('Can\'t insert to sorted list');
 				}
@@ -1326,7 +1386,7 @@
 			/**
 			 * @typesign (item, fromIndex?: int) -> cellx.ObservableList;
 			 */
-			remove: function(item, fromIndex) {
+			remove: function remove(item, fromIndex) {
 				var index = this._items.indexOf(item, this._validateIndex(fromIndex));
 	
 				if (index == -1) {
@@ -1346,7 +1406,7 @@
 			/**
 			 * @typesign (item, fromIndex?: int) -> cellx.ObservableList;
 			 */
-			removeAll: function(item, fromIndex) {
+			removeAll: function removeAll(item, fromIndex) {
 				var items = this._items;
 				var index = this._validateIndex(fromIndex);
 				var changed = false;
@@ -1369,7 +1429,7 @@
 			/**
 			 * @typesign (index: int) -> cellx.ObservableList;
 			 */
-			removeAt: function(index) {
+			removeAt: function removeAt(index) {
 				this._unregisterValue(this._items.splice(this._validateIndex(index), 1)[0]);
 				this.length--;
 	
@@ -1381,7 +1441,7 @@
 			/**
 			 * @typesign (index?: int, count?: uint) -> cellx.ObservableList;
 			 */
-			removeRange: function(index, count) {
+			removeRange: function removeRange(index, count) {
 				index = this._validateIndex(index || 0, true);
 	
 				var items = this._items;
@@ -1411,7 +1471,7 @@
 			/**
 			 * @typesign () -> cellx.ObservableList;
 			 */
-			clear: function() {
+			clear: function clear() {
 				if (this.length) {
 					this._items.length = 0;
 					this._valueCounts.clear();
@@ -1427,7 +1487,7 @@
 			/**
 			 * @typesign (separator?: string) -> string;
 			 */
-			join: function(separator) {
+			join: function join(separator) {
 				return this._items.join(separator);
 			},
 	
@@ -1457,19 +1517,19 @@
 			some: null,
 	
 			/**
-			 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;
+			 * @typesign (cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;
 			 */
 			reduce: null,
 	
 			/**
-			 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;
+			 * @typesign (cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;
 			 */
 			reduceRight: null,
 	
 			/**
 			 * @typesign () -> cellx.ObservableList;
 			 */
-			clone: function() {
+			clone: function clone() {
 				return new this.constructor(this, {
 					adoptsItemChanges: this.adoptsItemChanges,
 					comparator: this.comparator,
@@ -1480,14 +1540,14 @@
 			/**
 			 * @typesign () -> Array;
 			 */
-			toArray: function() {
+			toArray: function toArray() {
 				return this._items.slice();
 			},
 	
 			/**
 			 * @typesign () -> string;
 			 */
-			toString: function() {
+			toString: function toString() {
 				return this._items.join();
 			}
 		});
@@ -1514,11 +1574,13 @@
 		}
 	
 		cellx.list = list;
+	
 	})();
 	
 	var Cell;
 	
 	(function() {
+	
 		var KEY_INNER = EventEmitter.KEY_INNER;
 	
 		var error = {
@@ -1656,7 +1718,7 @@
 		Cell = createClass({
 			Extends: EventEmitter,
 	
-			constructor: function(value, opts) {
+			constructor: function Cell(value, opts) {
 				EventEmitter.call(this);
 	
 				if (!opts) {
@@ -1745,7 +1807,7 @@
 			/**
 			 * @override
 			 */
-			on: function(type, listener, context) {
+			on: function on(type, listener, context) {
 				if (!currentlyRelease) {
 					release();
 				}
@@ -1761,7 +1823,7 @@
 			/**
 			 * @override
 			 */
-			off: function(type, listener, context) {
+			off: function off(type, listener, context) {
 				if (!currentlyRelease) {
 					release();
 				}
@@ -1778,13 +1840,13 @@
 			/**
 			 * @override
 			 */
-			_on: function(type, listener, context) {
+			_on: function _on(type, listener, context) {
 				EventEmitter.prototype._on.call(this, type, listener, context || this.owner);
 			},
 			/**
 			 * @override
 			 */
-			_off: function(type, listener, context) {
+			_off: function _off(type, listener, context) {
 				EventEmitter.prototype._off.call(this, type, listener, context || this.owner);
 			},
 	
@@ -1794,7 +1856,7 @@
 			 *     context?: Object
 			 * ) -> cellx.Cell;
 			 */
-			addChangeListener: function(listener, context) {
+			addChangeListener: function addChangeListener(listener, context) {
 				this.on('change', listener, context);
 				return this;
 			},
@@ -1804,7 +1866,7 @@
 			 *     context?: Object
 			 * ) -> cellx.Cell;
 			 */
-			removeChangeListener: function(listener, context) {
+			removeChangeListener: function removeChangeListener(listener, context) {
 				this.off('change', listener, context);
 				return this;
 			},
@@ -1815,7 +1877,7 @@
 			 *     context?: Object
 			 * ) -> cellx.Cell;
 			 */
-			addErrorListener: function(listener, context) {
+			addErrorListener: function addErrorListener(listener, context) {
 				this.on('error', listener, context);
 				return this;
 			},
@@ -1825,7 +1887,7 @@
 			 *     context?: Object
 			 * ) -> cellx.Cell;
 			 */
-			removeErrorListener: function(listener, context) {
+			removeErrorListener: function removeErrorListener(listener, context) {
 				this.off('error', listener, context);
 				return this;
 			},
@@ -1836,7 +1898,7 @@
 			 *     context?: Object
 			 * ) -> cellx.Cell;
 			 */
-			subscribe: function(listener, context) {
+			subscribe: function subscribe(listener, context) {
 				function wrapper(evt) {
 					return listener.call(this, evt.error || null, evt);
 				}
@@ -1854,7 +1916,7 @@
 			 *     context?: Object
 			 * ) -> cellx.Cell;
 			 */
-			unsubscribe: function(listener, context) {
+			unsubscribe: function unsubscribe(listener, context) {
 				this
 					.off('change', listener, context)
 					.off('error', listener, context);
@@ -1865,7 +1927,7 @@
 			/**
 			 * @typesign (slave: cellx.Cell);
 			 */
-			_registerSlave: function(slave) {
+			_registerSlave: function _registerSlave(slave) {
 				if (this.computed && !this._events.change && !this._slaves.length) {
 					this._activate();
 				}
@@ -1875,7 +1937,7 @@
 			/**
 			 * @typesign (slave: cellx.Cell);
 			 */
-			_unregisterSlave: function(slave) {
+			_unregisterSlave: function _unregisterSlave(slave) {
 				this._slaves.splice(this._slaves.indexOf(slave), 1);
 	
 				if (this.computed && !this._events.change && !this._slaves.length) {
@@ -1886,7 +1948,7 @@
 			/**
 			 * @typesign ();
 			 */
-			_activate: function() {
+			_activate: function _activate() {
 				if (this._version != releaseVersion) {
 					this._masters = null;
 					this._level = 0;
@@ -1914,7 +1976,7 @@
 			/**
 			 * @typesign ();
 			 */
-			_deactivate: function() {
+			_deactivate: function _deactivate() {
 				var masters = this._masters || [];
 	
 				for (var i = masters.length; i;) {
@@ -1927,7 +1989,7 @@
 			/**
 			 * @typesign (evt: cellx~Event);
 			 */
-			_onValueChange: function(evt) {
+			_onValueChange: function _onValueChange(evt) {
 				if (this._changeEvent) {
 					evt.prev = this._changeEvent;
 	
@@ -1959,7 +2021,7 @@
 			/**
 			 * @typesign () -> *;
 			 */
-			get: function() {
+			get: function get() {
 				if (!currentlyRelease) {
 					release();
 				}
@@ -2003,7 +2065,7 @@
 			/**
 			 * @typesign (value) -> boolean;
 			 */
-			set: function(value) {
+			set: function set(value) {
 				if (this.computed && !this._set) {
 					throw new TypeError(
 						(this.debugKey ? '[' + this.debugKey + '] ' : '') + 'Cannot write to read-only cell'
@@ -2084,14 +2146,14 @@
 			/**
 			 * @typesign () -> boolean|undefined;
 			 */
-			recalc: function() {
+			recalc: function recalc() {
 				return this._recalc(true);
 			},
 	
 			/**
 			 * @typesign (force?: boolean) -> boolean|undefined;
 			 */
-			_recalc: function(force) {
+			_recalc: function _recalc(force) {
 				if (!force) {
 					if (this._version == releaseVersion + 1) {
 						if (++this._circularityCounter == 10) {
@@ -2202,7 +2264,7 @@
 			/**
 			 * @typesign () -> *;
 			 */
-			_tryFormula: function() {
+			_tryFormula: function _tryFormula() {
 				var prevCalculatedCell = calculatedCell;
 				calculatedCell = this;
 	
@@ -2223,33 +2285,38 @@
 			},
 	
 			/**
-			 * @typesign (err: Error);
+			 * @typesign (err);
 			 */
-			_handleError: function(err) {
+			_handleError: function _handleError(err) {
 				this._logError(err);
 	
 				this._handleErrorEvent({
 					type: 'error',
-					error: err
+					error: err === Object(err) ? err : { message: err }
 				});
 			},
 	
 			/**
 			 * @override
-			 * @typesign (err: Error);
+			 * @typesign (...msg);
 			 */
-			_logError: function(err) {
-				cellx._logError((this.debugKey ? '[' + this.debugKey + '] ' : '') + err.stack);
+			_logError: function _logError() {
+				var msg = slice.call(arguments);
+	
+				if (this.debugKey) {
+					msg.unshift('[' + this.debugKey + ']');
+				}
+	
+				EventEmitter.prototype._logError.apply(this, msg);
 			},
 	
 			/**
 			 * @typesign (evt: cellx~Event);
 			 */
-			_handleErrorEvent: function(evt) {
+			_handleErrorEvent: function _handleErrorEvent(evt) {
 				if (this._lastErrorEvent === evt) {
 					return;
 				}
-	
 				this._lastErrorEvent = evt;
 	
 				this._handleEvent(evt);
@@ -2268,7 +2335,7 @@
 			/**
 			 * @typesign () -> cellx.Cell;
 			 */
-			dispose: function() {
+			dispose: function dispose() {
 				if (!currentlyRelease) {
 					release();
 				}
@@ -2281,7 +2348,7 @@
 			/**
 			 * @typesign ();
 			 */
-			_dispose: function() {
+			_dispose: function _dispose() {
 				this.off();
 	
 				if (this._active) {
@@ -2295,15 +2362,17 @@
 		});
 	
 		cellx.Cell = Cell;
+	
 	})();
 	
 	(function() {
+	
 		var Map = cellx.Map;
 		var Cell = cellx.Cell;
 	
 		var cellProto = Cell.prototype;
 	
-		invokeCell = function(wrapper, initialValue, opts, owner, firstArg, otherArgs, argCount) {
+		invokeCell = function invokeCell(wrapper, initialValue, opts, owner, firstArg, otherArgs, argCount) {
 			if (!owner || owner == global) {
 				owner = wrapper;
 			}
@@ -2353,9 +2422,11 @@
 				}
 			}
 		};
+	
 	})();
 	
 	(function() {
+	
 		function observable(target, name, descr, opts) {
 			if (arguments.length == 1) {
 				opts = target;
@@ -2376,7 +2447,7 @@
 			target[_name] = cellx(descr.initializer.call(target), opts);
 	
 			return {
-				configurable: descr.configurable,
+				configurable: true,
 				enumerable: descr.enumerable,
 	
 				get: function() {
@@ -2415,7 +2486,7 @@
 			target[_name] = cellx(value, opts);
 	
 			var descriptor = {
-				configurable: descr.configurable,
+				configurable: true,
 				enumerable: descr.enumerable,
 	
 				get: function() {
@@ -2436,13 +2507,16 @@
 			observable: observable,
 			computed: computed
 		};
+	
 	})();
 	
 	cellx.utils = {
 		logError: logError,
 		mixin: mixin,
 		createClass: createClass,
-		nextTick: nextTick
+		nextTick: nextTick,
+		defineObservableProperty: defineObservableProperty,
+		defineObservableProperties: defineObservableProperties
 	};
 	
 
@@ -2455,4 +2529,5 @@
 	} else {
 		global.cellx = cellx;
 	}
+
 })();

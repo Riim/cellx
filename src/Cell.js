@@ -1,6 +1,7 @@
 var Cell;
 
 (function() {
+
 	var KEY_INNER = EventEmitter.KEY_INNER;
 
 	var error = {
@@ -138,7 +139,7 @@ var Cell;
 	Cell = createClass({
 		Extends: EventEmitter,
 
-		constructor: function(value, opts) {
+		constructor: function Cell(value, opts) {
 			EventEmitter.call(this);
 
 			if (!opts) {
@@ -227,7 +228,7 @@ var Cell;
 		/**
 		 * @override
 		 */
-		on: function(type, listener, context) {
+		on: function on(type, listener, context) {
 			if (!currentlyRelease) {
 				release();
 			}
@@ -243,7 +244,7 @@ var Cell;
 		/**
 		 * @override
 		 */
-		off: function(type, listener, context) {
+		off: function off(type, listener, context) {
 			if (!currentlyRelease) {
 				release();
 			}
@@ -260,13 +261,13 @@ var Cell;
 		/**
 		 * @override
 		 */
-		_on: function(type, listener, context) {
+		_on: function _on(type, listener, context) {
 			EventEmitter.prototype._on.call(this, type, listener, context || this.owner);
 		},
 		/**
 		 * @override
 		 */
-		_off: function(type, listener, context) {
+		_off: function _off(type, listener, context) {
 			EventEmitter.prototype._off.call(this, type, listener, context || this.owner);
 		},
 
@@ -276,7 +277,7 @@ var Cell;
 		 *     context?: Object
 		 * ) -> cellx.Cell;
 		 */
-		addChangeListener: function(listener, context) {
+		addChangeListener: function addChangeListener(listener, context) {
 			this.on('change', listener, context);
 			return this;
 		},
@@ -286,7 +287,7 @@ var Cell;
 		 *     context?: Object
 		 * ) -> cellx.Cell;
 		 */
-		removeChangeListener: function(listener, context) {
+		removeChangeListener: function removeChangeListener(listener, context) {
 			this.off('change', listener, context);
 			return this;
 		},
@@ -297,7 +298,7 @@ var Cell;
 		 *     context?: Object
 		 * ) -> cellx.Cell;
 		 */
-		addErrorListener: function(listener, context) {
+		addErrorListener: function addErrorListener(listener, context) {
 			this.on('error', listener, context);
 			return this;
 		},
@@ -307,7 +308,7 @@ var Cell;
 		 *     context?: Object
 		 * ) -> cellx.Cell;
 		 */
-		removeErrorListener: function(listener, context) {
+		removeErrorListener: function removeErrorListener(listener, context) {
 			this.off('error', listener, context);
 			return this;
 		},
@@ -318,7 +319,7 @@ var Cell;
 		 *     context?: Object
 		 * ) -> cellx.Cell;
 		 */
-		subscribe: function(listener, context) {
+		subscribe: function subscribe(listener, context) {
 			function wrapper(evt) {
 				return listener.call(this, evt.error || null, evt);
 			}
@@ -336,7 +337,7 @@ var Cell;
 		 *     context?: Object
 		 * ) -> cellx.Cell;
 		 */
-		unsubscribe: function(listener, context) {
+		unsubscribe: function unsubscribe(listener, context) {
 			this
 				.off('change', listener, context)
 				.off('error', listener, context);
@@ -347,7 +348,7 @@ var Cell;
 		/**
 		 * @typesign (slave: cellx.Cell);
 		 */
-		_registerSlave: function(slave) {
+		_registerSlave: function _registerSlave(slave) {
 			if (this.computed && !this._events.change && !this._slaves.length) {
 				this._activate();
 			}
@@ -357,7 +358,7 @@ var Cell;
 		/**
 		 * @typesign (slave: cellx.Cell);
 		 */
-		_unregisterSlave: function(slave) {
+		_unregisterSlave: function _unregisterSlave(slave) {
 			this._slaves.splice(this._slaves.indexOf(slave), 1);
 
 			if (this.computed && !this._events.change && !this._slaves.length) {
@@ -368,7 +369,7 @@ var Cell;
 		/**
 		 * @typesign ();
 		 */
-		_activate: function() {
+		_activate: function _activate() {
 			if (this._version != releaseVersion) {
 				this._masters = null;
 				this._level = 0;
@@ -396,7 +397,7 @@ var Cell;
 		/**
 		 * @typesign ();
 		 */
-		_deactivate: function() {
+		_deactivate: function _deactivate() {
 			var masters = this._masters || [];
 
 			for (var i = masters.length; i;) {
@@ -409,7 +410,7 @@ var Cell;
 		/**
 		 * @typesign (evt: cellx~Event);
 		 */
-		_onValueChange: function(evt) {
+		_onValueChange: function _onValueChange(evt) {
 			if (this._changeEvent) {
 				evt.prev = this._changeEvent;
 
@@ -441,7 +442,7 @@ var Cell;
 		/**
 		 * @typesign () -> *;
 		 */
-		get: function() {
+		get: function get() {
 			if (!currentlyRelease) {
 				release();
 			}
@@ -485,7 +486,7 @@ var Cell;
 		/**
 		 * @typesign (value) -> boolean;
 		 */
-		set: function(value) {
+		set: function set(value) {
 			if (this.computed && !this._set) {
 				throw new TypeError(
 					(this.debugKey ? '[' + this.debugKey + '] ' : '') + 'Cannot write to read-only cell'
@@ -566,14 +567,14 @@ var Cell;
 		/**
 		 * @typesign () -> boolean|undefined;
 		 */
-		recalc: function() {
+		recalc: function recalc() {
 			return this._recalc(true);
 		},
 
 		/**
 		 * @typesign (force?: boolean) -> boolean|undefined;
 		 */
-		_recalc: function(force) {
+		_recalc: function _recalc(force) {
 			if (!force) {
 				if (this._version == releaseVersion + 1) {
 					if (++this._circularityCounter == 10) {
@@ -684,7 +685,7 @@ var Cell;
 		/**
 		 * @typesign () -> *;
 		 */
-		_tryFormula: function() {
+		_tryFormula: function _tryFormula() {
 			var prevCalculatedCell = calculatedCell;
 			calculatedCell = this;
 
@@ -705,33 +706,38 @@ var Cell;
 		},
 
 		/**
-		 * @typesign (err: Error);
+		 * @typesign (err);
 		 */
-		_handleError: function(err) {
+		_handleError: function _handleError(err) {
 			this._logError(err);
 
 			this._handleErrorEvent({
 				type: 'error',
-				error: err
+				error: err === Object(err) ? err : { message: err }
 			});
 		},
 
 		/**
 		 * @override
-		 * @typesign (err: Error);
+		 * @typesign (...msg);
 		 */
-		_logError: function(err) {
-			cellx._logError((this.debugKey ? '[' + this.debugKey + '] ' : '') + err.stack);
+		_logError: function _logError() {
+			var msg = slice.call(arguments);
+
+			if (this.debugKey) {
+				msg.unshift('[' + this.debugKey + ']');
+			}
+
+			EventEmitter.prototype._logError.apply(this, msg);
 		},
 
 		/**
 		 * @typesign (evt: cellx~Event);
 		 */
-		_handleErrorEvent: function(evt) {
+		_handleErrorEvent: function _handleErrorEvent(evt) {
 			if (this._lastErrorEvent === evt) {
 				return;
 			}
-
 			this._lastErrorEvent = evt;
 
 			this._handleEvent(evt);
@@ -750,7 +756,7 @@ var Cell;
 		/**
 		 * @typesign () -> cellx.Cell;
 		 */
-		dispose: function() {
+		dispose: function dispose() {
 			if (!currentlyRelease) {
 				release();
 			}
@@ -763,7 +769,7 @@ var Cell;
 		/**
 		 * @typesign ();
 		 */
-		_dispose: function() {
+		_dispose: function _dispose() {
 			this.off();
 
 			if (this._active) {
@@ -777,4 +783,5 @@ var Cell;
 	});
 
 	cellx.Cell = Cell;
+
 })();

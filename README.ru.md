@@ -723,11 +723,11 @@ console.log(list.toArray());
 
 ##### reduce
 
-Сигнатура вызова: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
+Сигнатура вызова: `(cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
 ##### reduceRight
 
-Сигнатура вызова: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
+Сигнатура вызова: `(cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
 ##### clone
 

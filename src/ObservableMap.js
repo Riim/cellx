@@ -1,6 +1,7 @@
 var ObservableMap;
 
 (function() {
+
 	/**
 	 * @class cellx.ObservableMap
 	 * @extends {cellx.EventEmitter}
@@ -14,7 +15,7 @@ var ObservableMap;
 		Extends: EventEmitter,
 		Implements: [ObservableCollection],
 
-		constructor: function(entries, opts) {
+		constructor: function ObservableMap(entries, opts) {
 			EventEmitter.call(this);
 			ObservableCollection.call(this);
 
@@ -44,8 +45,10 @@ var ObservableMap;
 					}
 				} else {
 					for (var key in entries) {
-						mapEntries.set(key, entries[key]);
-						this._registerValue(entries[key]);
+						if (hasOwn.call(entries, key)) {
+							mapEntries.set(key, entries[key]);
+							this._registerValue(entries[key]);
+						}
 					}
 				}
 
@@ -56,28 +59,28 @@ var ObservableMap;
 		/**
 		 * @typesign (key) -> boolean;
 		 */
-		has: function(key) {
+		has: function has(key) {
 			return this._entries.has(key);
 		},
 
 		/**
 		 * @typesign (value) -> boolean;
 		 */
-		contains: function(value) {
+		contains: function contains(value) {
 			return this._valueCounts.has(value);
 		},
 
 		/**
 		 * @typesign (key) -> *;
 		 */
-		get: function(key) {
+		get: function get(key) {
 			return this._entries.get(key);
 		},
 
 		/**
 		 * @typesign (key, value) -> cellx.ObservableMap;
 		 */
-		set: function(key, value) {
+		set: function set(key, value) {
 			var entries = this._entries;
 			var hasKey = entries.has(key);
 			var oldValue;
@@ -113,7 +116,7 @@ var ObservableMap;
 		/**
 		 * @typesign (key) -> boolean;
 		 */
-		delete: function(key) {
+		delete: function _delete(key) {
 			var entries = this._entries;
 
 			if (!entries.has(key)) {
@@ -141,7 +144,7 @@ var ObservableMap;
 		/**
 		 * @typesign () -> cellx.ObservableMap;
 		 */
-		clear: function() {
+		clear: function clear() {
 			if (!this.size) {
 				return this;
 			}
@@ -161,7 +164,7 @@ var ObservableMap;
 		/**
 		 * @typesign (cb: (value, key, map: cellx.ObservableMap), context?: Object);
 		 */
-		forEach: function(cb, context) {
+		forEach: function forEach(cb, context) {
 			if (context == null) {
 				context = global;
 			}
@@ -174,28 +177,28 @@ var ObservableMap;
 		/**
 		 * @typesign () -> { next: () -> { value, done: boolean } };
 		 */
-		keys: function() {
+		keys: function keys() {
 			return this._entries.keys();
 		},
 
 		/**
 		 * @typesign () -> { next: () -> { value, done: boolean } };
 		 */
-		values: function() {
+		values: function values() {
 			return this._entries.values();
 		},
 
 		/**
 		 * @typesign () -> { next: () -> { value: { 0, 1 }, done: boolean } };
 		 */
-		entries: function() {
+		entries: function entries() {
 			return this._entries.entries();
 		},
 
 		/**
 		 * @typesign () -> cellx.ObservableMap;
 		 */
-		clone: function() {
+		clone: function clone() {
 			return new this.constructor(this, {
 				adoptsItemChanges: this.adoptsItemChanges
 			});
@@ -220,4 +223,5 @@ var ObservableMap;
 	}
 
 	cellx.map = map;
+
 })();

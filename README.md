@@ -729,11 +729,11 @@ Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean,
 
 ##### reduce
 
-Type signature: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
+Type signature: `(cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
 ##### reduceRight
 
-Type signature: `(cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
+Type signature: `(cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
 ##### clone
 

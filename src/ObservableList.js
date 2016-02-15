@@ -1,6 +1,7 @@
 var ObservableList;
 
 (function() {
+
 	/**
 	 * @typesign (a, b) -> -1|1|0;
 	 */
@@ -63,7 +64,7 @@ var ObservableList;
 		Extends: EventEmitter,
 		Implements: [ObservableCollection],
 
-		constructor: function(items, opts) {
+		constructor: function ObservableList(items, opts) {
 			EventEmitter.call(this);
 			ObservableCollection.call(this);
 
@@ -100,7 +101,7 @@ var ObservableList;
 		/**
 		 * @typesign (index: int, allowEndIndex?: boolean) -> uint|undefined;
 		 */
-		_validateIndex: function(index, allowEndIndex) {
+		_validateIndex: function _validateIndex(index, allowEndIndex) {
 			if (index === undefined) {
 				return index;
 			}
@@ -121,35 +122,35 @@ var ObservableList;
 		/**
 		 * @typesign (value) -> boolean;
 		 */
-		contains: function(value) {
+		contains: function contains(value) {
 			return this._valueCounts.has(value);
 		},
 
 		/**
 		 * @typesign (value, fromIndex?: int) -> int;
 		 */
-		indexOf: function(value, fromIndex) {
+		indexOf: function indexOf(value, fromIndex) {
 			return this._items.indexOf(value, this._validateIndex(fromIndex));
 		},
 
 		/**
 		 * @typesign (value, fromIndex?: int) -> int;
 		 */
-		lastIndexOf: function(value, fromIndex) {
+		lastIndexOf: function lastIndexOf(value, fromIndex) {
 			return this._items.lastIndexOf(value, this._validateIndex(fromIndex));
 		},
 
 		/**
 		 * @typesign (index: int) -> *;
 		 */
-		get: function(index) {
+		get: function get(index) {
 			return this._items[this._validateIndex(index)];
 		},
 
 		/**
 		 * @typesign (index?: int, count?: uint) -> Array;
 		 */
-		getRange: function(index, count) {
+		getRange: function getRange(index, count) {
 			index = this._validateIndex(index || 0, true);
 
 			var items = this._items;
@@ -168,7 +169,7 @@ var ObservableList;
 		/**
 		 * @typesign (index: int, value) -> cellx.ObservableList;
 		 */
-		set: function(index, value) {
+		set: function set(index, value) {
 			if (this.sorted) {
 				throw new TypeError('Can\'t set to sorted list');
 			}
@@ -194,7 +195,7 @@ var ObservableList;
 		/**
 		 * @typesign (index: int, items: Array) -> cellx.ObservableList;
 		 */
-		setRange: function(index, items) {
+		setRange: function setRange(index, items) {
 			if (this.sorted) {
 				throw new TypeError('Can\'t set to sorted list');
 			}
@@ -237,7 +238,7 @@ var ObservableList;
 		/**
 		 * @typesign (item) -> cellx.ObservableList;
 		 */
-		add: function(item) {
+		add: function add(item) {
 			this.addRange([item]);
 			return this;
 		},
@@ -245,7 +246,7 @@ var ObservableList;
 		/**
 		 * @typesign (items: Array) -> cellx.ObservableList;
 		 */
-		addRange: function(items) {
+		addRange: function _addRange(items) {
 			if (!items.length) {
 				return this;
 			}
@@ -259,7 +260,7 @@ var ObservableList;
 		/**
 		 * @typesign (index: int, item) -> cellx.ObservableList;
 		 */
-		insert: function(index, item) {
+		insert: function insert(index, item) {
 			this.insertRange(index, [item]);
 			return this;
 		},
@@ -267,7 +268,7 @@ var ObservableList;
 		/**
 		 * @typesign (index: int, items: Array) -> cellx.ObservableList;
 		 */
-		insertRange: function(index, items) {
+		insertRange: function insertRange(index, items) {
 			if (this.sorted) {
 				throw new TypeError('Can\'t insert to sorted list');
 			}
@@ -296,7 +297,7 @@ var ObservableList;
 		/**
 		 * @typesign (item, fromIndex?: int) -> cellx.ObservableList;
 		 */
-		remove: function(item, fromIndex) {
+		remove: function remove(item, fromIndex) {
 			var index = this._items.indexOf(item, this._validateIndex(fromIndex));
 
 			if (index == -1) {
@@ -316,7 +317,7 @@ var ObservableList;
 		/**
 		 * @typesign (item, fromIndex?: int) -> cellx.ObservableList;
 		 */
-		removeAll: function(item, fromIndex) {
+		removeAll: function removeAll(item, fromIndex) {
 			var items = this._items;
 			var index = this._validateIndex(fromIndex);
 			var changed = false;
@@ -339,7 +340,7 @@ var ObservableList;
 		/**
 		 * @typesign (index: int) -> cellx.ObservableList;
 		 */
-		removeAt: function(index) {
+		removeAt: function removeAt(index) {
 			this._unregisterValue(this._items.splice(this._validateIndex(index), 1)[0]);
 			this.length--;
 
@@ -351,7 +352,7 @@ var ObservableList;
 		/**
 		 * @typesign (index?: int, count?: uint) -> cellx.ObservableList;
 		 */
-		removeRange: function(index, count) {
+		removeRange: function removeRange(index, count) {
 			index = this._validateIndex(index || 0, true);
 
 			var items = this._items;
@@ -381,7 +382,7 @@ var ObservableList;
 		/**
 		 * @typesign () -> cellx.ObservableList;
 		 */
-		clear: function() {
+		clear: function clear() {
 			if (this.length) {
 				this._items.length = 0;
 				this._valueCounts.clear();
@@ -397,7 +398,7 @@ var ObservableList;
 		/**
 		 * @typesign (separator?: string) -> string;
 		 */
-		join: function(separator) {
+		join: function join(separator) {
 			return this._items.join(separator);
 		},
 
@@ -427,19 +428,19 @@ var ObservableList;
 		some: null,
 
 		/**
-		 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;
+		 * @typesign (cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;
 		 */
 		reduce: null,
 
 		/**
-		 * @typesign (cb: (accumulator: *, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;
+		 * @typesign (cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;
 		 */
 		reduceRight: null,
 
 		/**
 		 * @typesign () -> cellx.ObservableList;
 		 */
-		clone: function() {
+		clone: function clone() {
 			return new this.constructor(this, {
 				adoptsItemChanges: this.adoptsItemChanges,
 				comparator: this.comparator,
@@ -450,14 +451,14 @@ var ObservableList;
 		/**
 		 * @typesign () -> Array;
 		 */
-		toArray: function() {
+		toArray: function toArray() {
 			return this._items.slice();
 		},
 
 		/**
 		 * @typesign () -> string;
 		 */
-		toString: function() {
+		toString: function toString() {
 			return this._items.join();
 		}
 	});
@@ -484,4 +485,5 @@ var ObservableList;
 	}
 
 	cellx.list = list;
+
 })();

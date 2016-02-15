@@ -10,6 +10,7 @@
 var EventEmitter;
 
 (function() {
+
 	var KEY_INNER = '__cellx_EventEmitter_inner__';
 
 	if (global.Symbol && typeof Symbol.iterator == 'symbol') {
@@ -26,7 +27,7 @@ var EventEmitter;
 			KEY_INNER: KEY_INNER
 		},
 
-		constructor: function() {
+		constructor: function EventEmitter() {
 			/**
 			 * @type {Object<Array<{ listener: (evt: cellx~Event) -> boolean|undefined, context: Object }>>}
 			 */
@@ -45,14 +46,16 @@ var EventEmitter;
 		 *     context?: Object
 		 * ) -> cellx.EventEmitter;
 		 */
-		on: function(type, listener, context) {
+		on: function on(type, listener, context) {
 			if (typeof type == 'object') {
 				context = listener;
 
 				var listeners = type;
 
 				for (type in listeners) {
-					this._on(type, listeners[type], context);
+					if (hasOwn.call(listeners, type)) {
+						this._on(type, listeners[type], context);
+					}
 				}
 			} else {
 				this._on(type, listener, context);
@@ -74,7 +77,7 @@ var EventEmitter;
 		 *
 		 * @typesign () -> cellx.EventEmitter;
 		 */
-		off: function(type, listener, context) {
+		off: function off(type, listener, context) {
 			if (type) {
 				if (typeof type == 'object') {
 					context = listener;
@@ -82,7 +85,9 @@ var EventEmitter;
 					var listeners = type;
 
 					for (type in listeners) {
-						this._off(type, listeners[type], context);
+						if (hasOwn.call(listeners, type)) {
+							this._off(type, listeners[type], context);
+						}
 					}
 				} else {
 					this._off(type, listener, context);
@@ -101,7 +106,7 @@ var EventEmitter;
 		 *     context?: Object
 		 * );
 		 */
-		_on: function(type, listener, context) {
+		_on: function _on(type, listener, context) {
 			var index = type.indexOf(':');
 
 			if (index != -1) {
@@ -126,7 +131,7 @@ var EventEmitter;
 		 *     context?: Object
 		 * );
 		 */
-		_off: function(type, listener, context) {
+		_off: function _off(type, listener, context) {
 			var index = type.indexOf(':');
 
 			if (index != -1) {
@@ -164,7 +169,7 @@ var EventEmitter;
 		 *     context?: Object
 		 * ) -> cellx.EventEmitter;
 		 */
-		once: function(type, listener, context) {
+		once: function once(type, listener, context) {
 			function wrapper() {
 				this._off(type, wrapper, context);
 				return listener.apply(this, arguments);
@@ -180,7 +185,7 @@ var EventEmitter;
 		 * @typesign (evt: cellx~Event) -> cellx~Event;
 		 * @typesign (type: string) -> cellx~Event;
 		 */
-		emit: function(evt) {
+		emit: function emit(evt) {
 			if (typeof evt == 'string') {
 				evt = {
 					target: this,
@@ -230,7 +235,7 @@ var EventEmitter;
 		 *     }
 		 * };
 		 */
-		_handleEvent: function(evt) {
+		_handleEvent: function _handleEvent(evt) {
 			var events = this._events && this._events[evt.type];
 
 			if (events) {
@@ -249,12 +254,13 @@ var EventEmitter;
 		},
 
 		/**
-		 * @typesign (err);
+		 * @typesign (...msg);
 		 */
-		_logError: function(err) {
-			cellx._logError(err);
+		_logError: function _logError() {
+			cellx._logError.apply(cellx, arguments);
 		}
 	});
 
 	cellx.EventEmitter = EventEmitter;
+
 })();

@@ -1,10 +1,11 @@
 var ObservableCollection;
 
 (function() {
+
 	ObservableCollection = createClass({
 		Extends: EventEmitter,
 
-		constructor: function() {
+		constructor: function ObservableCollection() {
 			/**
 			 * @type {Map<*, uint>}
 			 */
@@ -14,14 +15,14 @@ var ObservableCollection;
 		/**
 		 * @typesign (evt: cellx~Event);
 		 */
-		_onItemChange: function(evt) {
+		_onItemChange: function _onItemChange(evt) {
 			this._handleEvent(evt);
 		},
 
 		/**
 		 * @typesign (value);
 		 */
-		_registerValue: function(value) {
+		_registerValue: function _registerValue(value) {
 			var valueCounts = this._valueCounts;
 			var valueCount = valueCounts.get(value);
 
@@ -39,7 +40,7 @@ var ObservableCollection;
 		/**
 		 * @typesign (value);
 		 */
-		_unregisterValue: function(value) {
+		_unregisterValue: function _unregisterValue(value) {
 			var valueCounts = this._valueCounts;
 			var valueCount = valueCounts.get(value);
 
@@ -58,7 +59,7 @@ var ObservableCollection;
 		 * Освобождает занятые инстансом ресурсы.
 		 * @typesign ();
 		 */
-		dispose: function() {
+		dispose: function dispose() {
 			if (this.adoptsItemChanges) {
 				this._valueCounts.forEach(function(value) {
 					if (value instanceof EventEmitter) {
@@ -68,4 +69,5 @@ var ObservableCollection;
 			}
 		}
 	});
+
 })();

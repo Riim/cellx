@@ -2,12 +2,13 @@
  * @typesign (cb: ());
  */
 var nextTick = (function() {
+
 	if (global.process && process.toString() == '[object process]' && process.nextTick) {
 		return process.nextTick;
 	}
 
 	if (global.setImmediate) {
-		return function(cb) {
+		return function nextTick(cb) {
 			setImmediate(cb);
 		};
 	}
@@ -15,7 +16,7 @@ var nextTick = (function() {
 	if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
 		var prm = Promise.resolve();
 
-		return function(cb) {
+		return function nextTick(cb) {
 			prm.then(function() {
 				cb();
 			});
@@ -41,7 +42,7 @@ var nextTick = (function() {
 			}
 		});
 
-		return function(cb) {
+		return function nextTick(cb) {
 			if (queue) {
 				queue.push(cb);
 			} else {
@@ -51,7 +52,8 @@ var nextTick = (function() {
 		};
 	}
 
-	return function(cb) {
+	return function nextTick(cb) {
 		setTimeout(cb, 1);
 	};
+
 })();

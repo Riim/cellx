@@ -1,10 +1,11 @@
 (function() {
+
 	var Map = cellx.Map;
 	var Cell = cellx.Cell;
 
 	var cellProto = Cell.prototype;
 
-	invokeCell = function(wrapper, initialValue, opts, owner, firstArg, otherArgs, argCount) {
+	invokeCell = function invokeCell(wrapper, initialValue, opts, owner, firstArg, otherArgs, argCount) {
 		if (!owner || owner == global) {
 			owner = wrapper;
 		}
@@ -54,4 +55,5 @@
 			}
 		}
 	};
+
 })();
