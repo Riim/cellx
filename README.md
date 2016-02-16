@@ -709,23 +709,31 @@ Type signature: `(separator?: string) -> string;`.
 
 ##### forEach
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList), context?: Object);`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList), context?);`.
 
 ##### map
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> *, context?: Object) -> Array;`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> *, context?) -> Array;`.
 
 ##### filter
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> Array;`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> Array;`.
+
+##### find
+
+Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> *;`.
+
+##### findIndex
+
+Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> int;`.
 
 ##### every
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> boolean;`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> boolean;`.
 
 ##### some
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> boolean;`.
+Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> boolean;`.
 
 ##### reduce
 

@@ -703,23 +703,31 @@ console.log(list.toArray());
 
 ##### forEach
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList), context?: Object);`.
+Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList), context?);`.
 
 ##### map
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> *, context?: Object) -> Array;`.
+Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> *, context?) -> Array;`.
 
 ##### filter
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> Array;`.
+Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> Array;`.
+
+##### find
+
+Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> *;`.
+
+##### findIndex
+
+Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> int;`.
 
 ##### every
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> boolean;`.
+Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> boolean;`.
 
 ##### some
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> boolean;`.
+Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> boolean;`.
 
 ##### reduce
 

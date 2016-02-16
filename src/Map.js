@@ -193,10 +193,10 @@ var Map;
 			['entries', function entries(entry) {
 				return [entry.key, entry.value];
 			}]
-		].forEach(function(iterator) {
-			var getStepValue = iterator[1];
+		].forEach(function(settings) {
+			var getStepValue = settings[1];
 
-			Map.prototype[iterator[0]] = function() {
+			Map.prototype[settings[0]] = function() {
 				var entries = this._entries;
 				var entry;
 				var done = false;
@@ -231,6 +231,10 @@ var Map;
 				};
 			};
 		});
+	}
+
+	if (global.Symbol && Symbol.iterator && !Map[Symbol.iterator]) {
+		Map.prototype[Symbol.iterator] = Map.prototype.entries;
 	}
 
 	cellx.Map = Map;

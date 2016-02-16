@@ -403,27 +403,67 @@ var ObservableList;
 		},
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList), context?: Object);
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList), context?);
 		 */
 		forEach: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> *, context?: Object) -> Array;
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> *, context?) -> Array;
 		 */
 		map: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> Array;
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> Array;
 		 */
 		filter: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> boolean;
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> *;
+		 */
+		find: function(cb, context) {
+			if (context == null) {
+				context = this;
+			}
+
+			var items = this._items;
+
+			for (var i = 0, l = items.length; i < l; i++) {
+				var item = items[i];
+
+				if (cb.call(this, item, i, context)) {
+					return item;
+				}
+			}
+		},
+
+		/**
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> int;
+		 */
+		findIndex: function(cb, context) {
+			if (context == null) {
+				context = this;
+			}
+
+			var items = this._items;
+
+			for (var i = 0, l = items.length; i < l; i++) {
+				var item = items[i];
+
+				if (cb.call(this, item, i, context)) {
+					return i;
+				}
+			}
+
+			return -1;
+		},
+
+		/**
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> boolean;
 		 */
 		every: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean, context?: Object) -> boolean;
+		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> boolean;
 		 */
 		some: null,
 
@@ -468,6 +508,50 @@ var ObservableList;
 			return Array.prototype[name].apply(this._items, arguments);
 		};
 	});
+
+	[
+		['keys', function keys(index, item) {
+			return index;
+		}],
+		['values', function values(index, item) {
+			return item;
+		}],
+		['entries', function entries(index, item) {
+			return [index, item];
+		}]
+	].forEach(function(settings) {
+		var getStepValue = settings[1];
+
+		ObservableList.prototype[settings[0]] = function() {
+			var items = this._items;
+			var index;
+			var done = false;
+
+			return {
+				next: function() {
+					if (!done) {
+						if (index < items.length) {
+							return {
+								value: getStepValue(index, items[index++]),
+								done: false
+							};
+						}
+
+						done = true;
+					}
+
+					return {
+						value: undefined,
+						done: true
+					};
+				}
+			};
+		};
+	});
+
+	if (global.Symbol && Symbol.iterator) {
+		ObservableList.prototype[Symbol.iterator] = ObservableList.prototype.values;
+	}
 
 	cellx.ObservableList = ObservableList;
 

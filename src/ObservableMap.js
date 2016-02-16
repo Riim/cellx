@@ -162,7 +162,7 @@ var ObservableMap;
 		},
 
 		/**
-		 * @typesign (cb: (value, key, map: cellx.ObservableMap), context?: Object);
+		 * @typesign (cb: (value, key, map: cellx.ObservableMap), context?);
 		 */
 		forEach: function forEach(cb, context) {
 			if (context == null) {
@@ -204,6 +204,10 @@ var ObservableMap;
 			});
 		}
 	});
+
+	if (global.Symbol && Symbol.iterator) {
+		ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;
+	}
 
 	cellx.ObservableMap = ObservableMap;
 
