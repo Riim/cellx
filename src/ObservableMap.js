@@ -11,8 +11,7 @@ var ObservableMap;
 	 *     adoptsItemChanges?: boolean
 	 * }) -> cellx.ObservableMap;
 	 */
-	ObservableMap = createClass({
-		Extends: EventEmitter,
+	ObservableMap = EventEmitter.extend({
 		Implements: [ObservableCollection],
 
 		constructor: function ObservableMap(entries, opts) {
@@ -162,7 +161,10 @@ var ObservableMap;
 		},
 
 		/**
-		 * @typesign (cb: (value, key, map: cellx.ObservableMap), context?);
+		 * @typesign (
+		 *     cb: (value, key, map: cellx.ObservableMap),
+		 *     context?
+		 * );
 		 */
 		forEach: function forEach(cb, context) {
 			if (context == null) {

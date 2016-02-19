@@ -119,7 +119,7 @@
 
 	"maximumLineLength": 120,
 	"disallowMixedSpacesAndTabs": true,
-	// "disallowTrailingWhitespace": true,
+	"disallowTrailingWhitespace": true,
 	// "disallowMultipleLineBreaks": true,
 	"validateIndentation": "\t",
 	"validateLineBreaks": "LF",

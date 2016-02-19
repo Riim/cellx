@@ -10,7 +10,7 @@
 
 	var global = Function('return this;')();
 
-	var invokeCell;
+	var applyCell;
 
 	/**
 	 * @typesign (value?, opts?: {
@@ -41,16 +41,16 @@
 
 		var initialValue = value;
 
-		function cell(value) {
-			return invokeCell(cell, initialValue, opts, this, value, slice.call(arguments, 1), arguments.length);
+		function cx(value) {
+			return applyCell(cx, initialValue, opts, this, value, slice.call(arguments, 1), arguments.length);
 		}
-		cell.constructor = cellx;
+		cx.constructor = cellx;
 
 		if (opts.onChange || opts.onError) {
-			cell.call(opts.owner || global);
+			cx.call(opts.owner || global);
 		}
 
-		return cell;
+		return cx;
 	}
 	cellx.cellx = cellx; // for destructuring
 
@@ -122,6 +122,8 @@
 		return toString.call(value) == '[object Array]';
 	};
 
+	var extend;
+
 	/**
 	 * @typesign (description: {
 	 *     Extends?: Function,
@@ -146,19 +148,31 @@
 			constr = description.constructor;
 			delete description.constructor;
 		} else {
-			constr = function() {};
+			constr = parent == Object ?
+				function() {} :
+				function() {
+					return parent.apply(this, arguments);
+				};
 		}
+
+		Object.keys(parent).forEach(function(name) {
+			Object.defineProperty(constr, name, Object.getOwnPropertyDescriptor(parent, name));
+		});
 
 		if (description.Static) {
 			mixin(constr, description.Static);
 			delete description.Static;
 		}
 
+		if (constr.extend === undefined) {
+			constr.extend = extend;
+		}
+
 		var proto = constr.prototype = Object.create(parent.prototype);
 
 		if (description.Implements) {
 			description.Implements.forEach(function(impl) {
-				mixin(proto, impl.prototype);
+				mixin(proto, typeof impl == 'function' ? impl.prototype : impl);
 			});
 
 			delete description.Implements;
@@ -166,10 +180,28 @@
 
 		mixin(proto, description);
 
-		proto.constructor = constr;
+		Object.defineProperty(proto, 'constructor', {
+			configurable: true,
+			writable: true,
+			value: constr
+		});
 
 		return constr;
 	}
+
+	/**
+	 * @this {Function}
+	 *
+	 * @typesign (description: {
+	 *     Implements?: Array<Function>,
+	 *     Static?: Object,
+	 *     constructor?: Function
+	 * }) -> Function;
+	 */
+	extend = function extend(description) {
+		description.Extends = this;
+		return createClass(description);
+	};
 
 	/**
 	 * @typesign (obj: Object, name: string, value);
@@ -223,102 +255,96 @@
 	 * @typesign (cb: ());
 	 */
 	var nextTick = (function() {
-	
+
 		if (global.process && process.toString() == '[object process]' && process.nextTick) {
 			return process.nextTick;
 		}
-	
+
 		if (global.setImmediate) {
 			return function nextTick(cb) {
 				setImmediate(cb);
 			};
 		}
-	
+
 		if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
 			var prm = Promise.resolve();
-	
+
 			return function nextTick(cb) {
 				prm.then(function() {
 					cb();
 				});
 			};
 		}
-	
-		if (global.postMessage && !global.ActiveXObject) {
-			var queue;
-	
-			global.addEventListener('message', function() {
-				if (queue) {
-					var q = queue;
-	
-					queue = null;
-	
-					for (var i = 0, l = q.length; i < l; i++) {
-						try {
-							q[i]();
-						} catch (err) {
-							cellx._logError(err);
-						}
+
+		var queue;
+
+		global.addEventListener('message', function() {
+			if (queue) {
+				var track = queue;
+
+				queue = null;
+
+				for (var i = 0, l = track.length; i < l; i++) {
+					try {
+						track[i]();
+					} catch (err) {
+						cellx._logError(err);
 					}
 				}
-			});
-	
-			return function nextTick(cb) {
-				if (queue) {
-					queue.push(cb);
-				} else {
-					queue = [cb];
-					postMessage('__tic__', '*');
-				}
-			};
-		}
-	
+			}
+		});
+
 		return function nextTick(cb) {
-			setTimeout(cb, 1);
+			if (queue) {
+				queue.push(cb);
+			} else {
+				queue = [cb];
+				postMessage('__tic__', '*');
+			}
 		};
-	
+
 	})();
-	
+
 	var Map;
-	
+
 	(function() {
-	
+
 		Map = global.Map;
-	
+
 		if (!Map) {
 			var entryStub = {
 				value: undefined
 			};
-	
+
 			Map = createClass({
 				constructor: function Map(entries) {
 					this._entries = Object.create(null);
 					this._objectStamps = {};
-	
+
 					this._first = null;
 					this._last = null;
-	
+
 					this.size = 0;
-	
+
 					if (entries) {
 						for (var i = 0, l = entries.length; i < l; i++) {
 							this.set(entries[i][0], entries[i][1]);
 						}
 					}
 				},
-	
+
 				has: function has(key) {
 					return !!this._entries[this._getValueStamp(key)];
 				},
-	
+
 				get: function get(key) {
 					return (this._entries[this._getValueStamp(key)] || entryStub).value;
 				},
-	
+
 				set: function set(key, value) {
 					var entries = this._entries;
 					var keyStamp = this._getValueStamp(key);
-	
+
 					if (entries[keyStamp]) {
 						entries[keyStamp].value = value;
 					} else {
@@ -329,37 +355,37 @@
 							prev: this._last,
 							next: null
 						};
-	
+
 						if (this.size++) {
 							this._last.next = entry;
 						} else {
 							this._first = entry;
 						}
-	
+
 						this._last = entry;
 					}
-	
+
 					return this;
 				},
-	
+
 				delete: function _delete(key) {
 					var keyStamp = this._getValueStamp(key);
 					var entry = this._entries[keyStamp];
-	
+
 					if (!entry) {
 						return false;
 					}
-	
+
 					if (--this.size) {
 						var prev = entry.prev;
 						var next = entry.next;
-	
+
 						if (prev) {
 							prev.next = next;
 						} else {
 							this._first = next;
 						}
-	
+
 						if (next) {
 							next.prev = prev;
 						} else {
@@ -369,28 +395,28 @@
 						this._first = null;
 						this._last = null;
 					}
-	
+
 					delete this._entries[keyStamp];
 					delete this._objectStamps[keyStamp];
-	
+
 					return true;
 				},
-	
+
 				clear: function clear() {
 					var entries = this._entries;
-	
+
 					for (var stamp in entries) {
 						delete entries[stamp];
 					}
-	
+
 					this._objectStamps = {};
-	
+
 					this._first = null;
 					this._last = null;
-	
+
 					this.size = 0;
 				},
-	
+
 				_getValueStamp: function _getValueStamp(value) {
 					switch (typeof value) {
 						case 'undefined': {
@@ -400,7 +426,7 @@
 							if (value === null) {
 								return 'null';
 							}
-	
+
 							break;
 						}
 						case 'boolean': {
@@ -413,57 +439,57 @@
 							return ',' + value;
 						}
 					}
-	
+
 					return this._getObjectStamp(value);
 				},
-	
+
 				_getObjectStamp: function _getObjectStamp(obj) {
 					if (!hasOwn.call(obj, KEY_UID)) {
 						if (!Object.isExtensible(obj)) {
 							var stamps = this._objectStamps;
 							var stamp;
-	
+
 							for (stamp in stamps) {
 								if (hasOwn.call(stamps, stamp) && stamps[stamp] == obj) {
 									return stamp;
 								}
 							}
-	
+
 							stamp = String(++uidCounter);
 							stamps[stamp] = obj;
-	
+
 							return stamp;
 						}
-	
+
 						Object.defineProperty(obj, KEY_UID, {
 							value: String(++uidCounter)
 						});
 					}
-	
+
 					return obj[KEY_UID];
 				},
-	
+
 				forEach: function forEach(cb, context) {
 					if (context == null) {
 						context = global;
 					}
-	
+
 					var entry = this._first;
-	
+
 					while (entry) {
 						cb.call(context, entry.value, entry.key, this);
-	
+
 						do {
 							entry = entry.next;
 						} while (entry && !this._entries[entry.keyStamp]);
 					}
 				},
-	
+
 				toString: function toString() {
 					return '[object Map]';
 				}
 			});
-	
+
 			[
 				['keys', function keys(entry) {
 					return entry.key;
@@ -476,13 +502,13 @@
 				}]
 			].forEach(function(settings) {
 				var getStepValue = settings[1];
-	
+
 				Map.prototype[settings[0]] = function() {
 					var entries = this._entries;
 					var entry;
 					var done = false;
 					var map = this;
-	
+
 					return {
 						next: function() {
 							if (!done) {
@@ -493,17 +519,17 @@
 								} else {
 									entry = map._first;
 								}
-	
+
 								if (entry) {
 									return {
 										value: getStepValue(entry),
 										done: false
 									};
 								}
-	
+
 								done = true;
 							}
-	
+
 							return {
 								value: undefined,
 								done: true
@@ -513,15 +539,15 @@
 				};
 			});
 		}
-	
+
 		if (global.Symbol && Symbol.iterator && !Map[Symbol.iterator]) {
 			Map.prototype[Symbol.iterator] = Map.prototype.entries;
 		}
-	
+
 		cellx.Map = Map;
-	
+
 	})();
-	
+
 	/**
 	 * @typedef {{
 	 *     target?: Object,
@@ -530,17 +556,17 @@
 	 *     isPropagationStopped?: boolean
 	 * }} cellx~Event
 	 */
-	
+
 	var EventEmitter;
-	
+
 	(function() {
-	
+
 		var KEY_INNER = '__cellx_EventEmitter_inner__';
-	
+
 		if (global.Symbol && typeof Symbol.iterator == 'symbol') {
 			KEY_INNER = Symbol(KEY_INNER);
 		}
-	
+
 		/**
 		 * @class cellx.EventEmitter
 		 * @extends {Object}
@@ -550,32 +576,35 @@
 			Static: {
 				KEY_INNER: KEY_INNER
 			},
-	
+
 			constructor: function EventEmitter() {
 				/**
-				 * @type {Object<Array<{ listener: (evt: cellx~Event) -> boolean|undefined, context: Object }>>}
+				 * @type {Object<Array<{
+				 *     listener: (evt: cellx~Event) -> boolean|undefined,
+				 *     context
+				 * }>>}
 				 */
 				this._events = Object.create(null);
 			},
-	
+
 			/**
 			 * @typesign (
 			 *     type: string,
 			 *     listener: (evt: cellx~Event) -> boolean|undefined,
-			 *     context?: Object
+			 *     context?
 			 * ) -> cellx.EventEmitter;
 			 *
 			 * @typesign (
 			 *     listeners: Object<(evt: cellx~Event) -> boolean|undefined>,
-			 *     context?: Object
+			 *     context?
 			 * ) -> cellx.EventEmitter;
 			 */
 			on: function on(type, listener, context) {
 				if (typeof type == 'object') {
 					context = listener;
-	
+
 					var listeners = type;
-	
+
 					for (type in listeners) {
 						if (hasOwn.call(listeners, type)) {
 							this._on(type, listeners[type], context);
@@ -584,19 +613,19 @@
 				} else {
 					this._on(type, listener, context);
 				}
-	
+
 				return this;
 			},
 			/**
 			 * @typesign (
 			 *     type: string,
 			 *     listener: (evt: cellx~Event) -> boolean|undefined,
-			 *     context?: Object
+			 *     context?
 			 * ) -> cellx.EventEmitter;
 			 *
 			 * @typesign (
 			 *     listeners: Object<(evt: cellx~Event) -> boolean|undefined>,
-			 *     context?: Object
+			 *     context?
 			 * ) -> cellx.EventEmitter;
 			 *
 			 * @typesign () -> cellx.EventEmitter;
@@ -605,9 +634,9 @@
 				if (type) {
 					if (typeof type == 'object') {
 						context = listener;
-	
+
 						var listeners = type;
-	
+
 						for (type in listeners) {
 							if (hasOwn.call(listeners, type)) {
 								this._off(type, listeners[type], context);
@@ -619,32 +648,32 @@
 				} else if (this._events) {
 					this._events = Object.create(null);
 				}
-	
+
 				return this;
 			},
-	
+
 			/**
 			 * @typesign (
 			 *     type: string,
 			 *     listener: (evt: cellx~Event) -> boolean|undefined,
-			 *     context?: Object
+			 *     context?
 			 * );
 			 */
 			_on: function _on(type, listener, context) {
 				var index = type.indexOf(':');
-	
+
 				if (index != -1) {
 					this['_' + type.slice(index + 1)]('on', type.slice(0, index), listener, context);
 				} else {
 					var events = (this._events || (this._events = Object.create(null)))[type];
-	
+
 					if (!events) {
 						events = this._events[type] = [];
 					}
-	
+
 					events.push({
 						listener: listener,
-						context: context || this
+						context: context == null ? this : context
 					});
 				}
 			},
@@ -652,45 +681,45 @@
 			 * @typesign (
 			 *     type: string,
 			 *     listener: (evt: cellx~Event) -> boolean|undefined,
-			 *     context?: Object
+			 *     context?
 			 * );
 			 */
 			_off: function _off(type, listener, context) {
 				var index = type.indexOf(':');
-	
+
 				if (index != -1) {
 					this['_' + type.slice(index + 1)]('off', type.slice(0, index), listener, context);
 				} else {
 					var events = this._events && this._events[type];
-	
+
 					if (!events) {
 						return;
 					}
-	
-					if (!context) {
+
+					if (context == null) {
 						context = this;
 					}
-	
+
 					for (var i = events.length; i;) {
 						var evt = events[--i];
-	
-						if (evt.context == context && (evt.listener == listener || evt.listener[KEY_INNER] === listener)) {
+
+						if ((evt.listener == listener || evt.listener[KEY_INNER] === listener) && evt.context === context) {
 							events.splice(i, 1);
 							break;
 						}
 					}
-	
+
 					if (!events.length) {
 						delete this._events[type];
 					}
 				}
 			},
-	
+
 			/**
 			 * @typesign (
 			 *     type: string,
 			 *     listener: (evt: cellx~Event) -> boolean|undefined,
-			 *     context?: Object
+			 *     context?
 			 * ) -> cellx.EventEmitter;
 			 */
 			once: function once(type, listener, context) {
@@ -699,12 +728,12 @@
 					return listener.apply(this, arguments);
 				}
 				wrapper[KEY_INNER] = listener;
-	
+
 				this._on(type, wrapper, context);
-	
+
 				return this;
 			},
-	
+
 			/**
 			 * @typesign (evt: cellx~Event) -> cellx~Event;
 			 * @typesign (type: string) -> cellx~Event;
@@ -718,12 +747,12 @@
 				} else if (!evt.target) {
 					evt.target = this;
 				}
-	
+
 				this._handleEvent(evt);
-	
+
 				return evt;
 			},
-	
+
 			/**
 			 * @typesign (evt: cellx~Event);
 			 *
@@ -761,10 +790,10 @@
 			 */
 			_handleEvent: function _handleEvent(evt) {
 				var events = this._events && this._events[evt.type];
-	
+
 				if (events) {
 					events = events.slice();
-	
+
 					for (var i = 0, l = events.length; i < l; i++) {
 						try {
 							if (events[i].listener.call(events[i].context, evt) === false) {
@@ -776,7 +805,7 @@
 					}
 				}
 			},
-	
+
 			/**
 			 * @typesign (...msg);
 			 */
@@ -784,68 +813,66 @@
 				cellx._logError.apply(cellx, arguments);
 			}
 		});
-	
+
 		cellx.EventEmitter = EventEmitter;
-	
+
 	})();
-	
+
 	var ObservableCollection;
-	
+
 	(function() {
-	
-		ObservableCollection = createClass({
-			Extends: EventEmitter,
-	
+
+		ObservableCollection = EventEmitter.extend({
 			constructor: function ObservableCollection() {
 				/**
 				 * @type {Map<*, uint>}
 				 */
 				this._valueCounts = new Map();
 			},
-	
+
 			/**
 			 * @typesign (evt: cellx~Event);
 			 */
 			_onItemChange: function _onItemChange(evt) {
 				this._handleEvent(evt);
 			},
-	
+
 			/**
 			 * @typesign (value);
 			 */
 			_registerValue: function _registerValue(value) {
 				var valueCounts = this._valueCounts;
 				var valueCount = valueCounts.get(value);
-	
+
 				if (valueCount) {
 					valueCounts.set(value, valueCount + 1);
 				} else {
 					valueCounts.set(value, 1);
-	
+
 					if (this.adoptsItemChanges && value instanceof EventEmitter) {
 						value.on('change', this._onItemChange, this);
 					}
 				}
 			},
-	
+
 			/**
 			 * @typesign (value);
 			 */
 			_unregisterValue: function _unregisterValue(value) {
 				var valueCounts = this._valueCounts;
 				var valueCount = valueCounts.get(value);
-	
+
 				if (valueCount > 1) {
 					valueCounts.set(value, valueCount - 1);
 				} else {
 					valueCounts.delete(value);
-	
+
 					if (this.adoptsItemChanges && value instanceof EventEmitter) {
 						value.off('change', this._onItemChange, this);
 					}
 				}
 			},
-	
+
 			/**
 			 * Освобождает занятые инстансом ресурсы.
 			 * @typesign ();
@@ -860,13 +887,13 @@
 				}
 			}
 		});
-	
+
 	})();
-	
+
 	var ObservableMap;
-	
+
 	(function() {
-	
+
 		/**
 		 * @class cellx.ObservableMap
 		 * @extends {cellx.EventEmitter}
@@ -876,26 +903,25 @@
 		 *     adoptsItemChanges?: boolean
 		 * }) -> cellx.ObservableMap;
 		 */
-		ObservableMap = createClass({
-			Extends: EventEmitter,
+		ObservableMap = EventEmitter.extend({
 			Implements: [ObservableCollection],
-	
+
 			constructor: function ObservableMap(entries, opts) {
 				EventEmitter.call(this);
 				ObservableCollection.call(this);
-	
+
 				this._entries = new Map();
-	
+
 				this.size = 0;
-	
+
 				/**
 				 * @type {boolean}
 				 */
 				this.adoptsItemChanges = !opts || opts.adoptsItemChanges !== false;
-	
+
 				if (entries) {
 					var mapEntries = this._entries;
-	
+
 					if (entries instanceof ObservableMap) {
 						entries._entries.forEach(function(value, key) {
 							mapEntries.set(key, value);
@@ -904,7 +930,7 @@
 					} else if (isArray(entries)) {
 						for (var i = 0, l = entries.length; i < l; i++) {
 							var entry = entries[i];
-	
+
 							mapEntries.set(entry[0], entry[1]);
 							this._registerValue(entry[1]);
 						}
@@ -916,32 +942,32 @@
 							}
 						}
 					}
-	
+
 					this.size = mapEntries.size;
 				}
 			},
-	
+
 			/**
 			 * @typesign (key) -> boolean;
 			 */
 			has: function has(key) {
 				return this._entries.has(key);
 			},
-	
+
 			/**
 			 * @typesign (value) -> boolean;
 			 */
 			contains: function contains(value) {
 				return this._valueCounts.has(value);
 			},
-	
+
 			/**
 			 * @typesign (key) -> *;
 			 */
 			get: function get(key) {
 				return this._entries.get(key);
 			},
-	
+
 			/**
 			 * @typesign (key, value) -> cellx.ObservableMap;
 			 */
@@ -949,24 +975,24 @@
 				var entries = this._entries;
 				var hasKey = entries.has(key);
 				var oldValue;
-	
+
 				if (hasKey) {
 					oldValue = entries.get(key);
-	
+
 					if (is(oldValue, value)) {
 						return this;
 					}
-	
+
 					this._unregisterValue(oldValue);
 				}
-	
+
 				entries.set(key, value);
 				this._registerValue(value);
-	
+
 				if (!hasKey) {
 					this.size++;
 				}
-	
+
 				this.emit({
 					type: 'change',
 					subtype: hasKey ? 'update' : 'add',
@@ -974,27 +1000,27 @@
 					oldValue: oldValue,
 					value: value
 				});
-	
+
 				return this;
 			},
-	
+
 			/**
 			 * @typesign (key) -> boolean;
 			 */
 			delete: function _delete(key) {
 				var entries = this._entries;
-	
+
 				if (!entries.has(key)) {
 					return false;
 				}
-	
+
 				var value = entries.get(key);
-	
+
 				entries.delete(key);
 				this._unregisterValue(value);
-	
+
 				this.size--;
-	
+
 				this.emit({
 					type: 'change',
 					subtype: 'delete',
@@ -1002,10 +1028,10 @@
 					oldValue: value,
 					value: undefined
 				});
-	
+
 				return true;
 			},
-	
+
 			/**
 			 * @typesign () -> cellx.ObservableMap;
 			 */
@@ -1013,53 +1039,56 @@
 				if (!this.size) {
 					return this;
 				}
-	
+
 				this._entries.clear();
 				this._valueCounts.clear();
 				this.size = 0;
-	
+
 				this.emit({
 					type: 'change',
 					subtype: 'clear'
 				});
-	
+
 				return this;
 			},
-	
+
 			/**
-			 * @typesign (cb: (value, key, map: cellx.ObservableMap), context?);
+			 * @typesign (
+			 *     cb: (value, key, map: cellx.ObservableMap),
+			 *     context?
+			 * );
 			 */
 			forEach: function forEach(cb, context) {
 				if (context == null) {
 					context = global;
 				}
-	
+
 				this._entries.forEach(function(value, key) {
 					cb.call(context, value, key, this);
 				}, this);
 			},
-	
+
 			/**
 			 * @typesign () -> { next: () -> { value, done: boolean } };
 			 */
 			keys: function keys() {
 				return this._entries.keys();
 			},
-	
+
 			/**
 			 * @typesign () -> { next: () -> { value, done: boolean } };
 			 */
 			values: function values() {
 				return this._entries.values();
 			},
-	
+
 			/**
 			 * @typesign () -> { next: () -> { value: { 0, 1 }, done: boolean } };
 			 */
 			entries: function entries() {
 				return this._entries.entries();
 			},
-	
+
 			/**
 			 * @typesign () -> cellx.ObservableMap;
 			 */
@@ -1069,13 +1098,13 @@
 				});
 			}
 		});
-	
+
 		if (global.Symbol && Symbol.iterator) {
 			ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;
 		}
-	
+
 		cellx.ObservableMap = ObservableMap;
-	
+
 		/**
 		 * @typesign (
 		 *     entries?: Object|Array<{ 0, 1 }>|cellx.ObservableMap,
@@ -1090,15 +1119,15 @@
 		function map(entries, opts) {
 			return new ObservableMap(entries, typeof opts == 'boolean' ? { adoptsItemChanges: opts } : opts);
 		}
-	
+
 		cellx.map = map;
-	
+
 	})();
-	
+
 	var ObservableList;
-	
+
 	(function() {
-	
+
 		/**
 		 * @typesign (a, b) -> -1|1|0;
 		 */
@@ -1107,45 +1136,45 @@
 			if (a > b) { return 1; }
 			return 0;
 		}
-	
+
 		/**
 		 * @typesign (list: cellx.ObservableList, items: Array);
 		 */
 		function addRange(list, items) {
 			var listItems = list._items;
-	
+
 			if (list.sorted) {
 				var comparator = list.comparator;
-	
+
 				for (var i = 0, l = items.length; i < l; i++) {
 					var item = items[i];
 					var low = 0;
 					var high = listItems.length;
-	
+
 					while (low != high) {
 						var mid = (low + high) >> 1;
-	
+
 						if (comparator(item, listItems[mid]) < 0) {
 							high = mid;
 						} else {
 							low = mid + 1;
 						}
 					}
-	
+
 					listItems.splice(low, 0, item);
 					list._registerValue(item);
 				}
 			} else {
 				push.apply(listItems, items);
-	
+
 				for (var j = items.length; j;) {
 					list._registerValue(items[--j]);
 				}
 			}
-	
+
 			list.length = listItems.length;
 		}
-	
+
 		/**
 		 * @class cellx.ObservableList
 		 * @extends {cellx.EventEmitter}
@@ -1157,44 +1186,43 @@
 		 *     sorted?: boolean
 		 * }) -> cellx.ObservableList;
 		 */
-		ObservableList = createClass({
-			Extends: EventEmitter,
+		ObservableList = EventEmitter.extend({
 			Implements: [ObservableCollection],
-	
+
 			constructor: function ObservableList(items, opts) {
 				EventEmitter.call(this);
 				ObservableCollection.call(this);
-	
+
 				if (!opts) {
 					opts = {};
 				}
-	
+
 				this._items = [];
-	
+
 				this.length = 0;
-	
+
 				/**
 				 * @type {boolean}
 				 */
 				this.adoptsItemChanges = opts.adoptsItemChanges !== false;
-	
+
 				/**
 				 * @type {?(a, b) -> int}
 				 */
 				this.comparator = null;
-	
+
 				this.sorted = false;
-	
+
 				if (opts.sorted || (opts.comparator && opts.sorted !== false)) {
 					this.comparator = opts.comparator || defaultComparator;
 					this.sorted = true;
 				}
-	
+
 				if (items) {
 					addRange(this, items instanceof ObservableList ? items._items : items);
 				}
 			},
-	
+
 			/**
 			 * @typesign (index: int, allowEndIndex?: boolean) -> uint|undefined;
 			 */
@@ -1202,67 +1230,67 @@
 				if (index === undefined) {
 					return index;
 				}
-	
+
 				if (index < 0) {
 					index += this.length;
-	
+
 					if (index < 0) {
 						throw new RangeError('Index out of range');
 					}
 				} else if (index >= (this.length + (allowEndIndex ? 1 : 0))) {
 					throw new RangeError('Index out of range');
 				}
-	
+
 				return index;
 			},
-	
+
 			/**
 			 * @typesign (value) -> boolean;
 			 */
 			contains: function contains(value) {
 				return this._valueCounts.has(value);
 			},
-	
+
 			/**
 			 * @typesign (value, fromIndex?: int) -> int;
 			 */
 			indexOf: function indexOf(value, fromIndex) {
 				return this._items.indexOf(value, this._validateIndex(fromIndex));
 			},
-	
+
 			/**
 			 * @typesign (value, fromIndex?: int) -> int;
 			 */
 			lastIndexOf: function lastIndexOf(value, fromIndex) {
 				return this._items.lastIndexOf(value, this._validateIndex(fromIndex));
 			},
-	
+
 			/**
 			 * @typesign (index: int) -> *;
 			 */
 			get: function get(index) {
 				return this._items[this._validateIndex(index)];
 			},
-	
+
 			/**
 			 * @typesign (index?: int, count?: uint) -> Array;
 			 */
 			getRange: function getRange(index, count) {
 				index = this._validateIndex(index || 0, true);
-	
+
 				var items = this._items;
-	
+
 				if (count === undefined) {
 					return items.slice(index);
 				}
-	
+
 				if (index + count > items.length) {
 					throw new RangeError('"index" and "count" do not denote a valid range');
 				}
-	
+
 				return items.slice(index, index + count);
 			},
-	
+
 			/**
 			 * @typesign (index: int, value) -> cellx.ObservableList;
 			 */
@@ -1270,25 +1298,25 @@
 				if (this.sorted) {
 					throw new TypeError('Can\'t set to sorted list');
 				}
-	
+
 				index = this._validateIndex(index);
-	
+
 				var items = this._items;
-	
+
 				if (is(items[index], value)) {
 					return this;
 				}
-	
+
 				this._unregisterValue(items[index]);
-	
+
 				items[index] = value;
 				this._registerValue(value);
-	
+
 				this.emit('change');
-	
+
 				return this;
 			},
-	
+
 			/**
 			 * @typesign (index: int, items: Array) -> cellx.ObservableList;
 			 */
@@ -1296,42 +1324,42 @@
 				if (this.sorted) {
 					throw new TypeError('Can\'t set to sorted list');
 				}
-	
+
 				index = this._validateIndex(index);
-	
+
 				var itemCount = items.length;
-	
+
 				if (!itemCount) {
 					return this;
 				}
-	
+
 				if (index + itemCount > this.length) {
 					throw new RangeError('"index" and length of "items" do not denote a valid range');
 				}
-	
+
 				var listItems = this._items;
 				var changed = false;
-	
+
 				for (var i = index + itemCount; i > index;) {
 					var item = items[--i];
-	
+
 					if (!is(listItems[i], item)) {
 						this._unregisterValue(listItems[i]);
-	
+
 						listItems[i] = item;
 						this._registerValue(item);
-	
+
 						changed = true;
 					}
 				}
-	
+
 				if (changed) {
 					this.emit('change');
 				}
-	
+
 				return this;
 			},
-	
+
 			/**
 			 * @typesign (item) -> cellx.ObservableList;
 			 */
@@ -1339,7 +1367,7 @@
 				this.addRange([item]);
 				return this;
 			},
-	
+
 			/**
 			 * @typesign (items: Array) -> cellx.ObservableList;
 			 */
@@ -1347,13 +1375,13 @@
 				if (!items.length) {
 					return this;
 				}
-	
+
 				addRange(this, items);
 				this.emit('change');
-	
+
 				return this;
 			},
-	
+
 			/**
 			 * @typesign (index: int, item) -> cellx.ObservableList;
 			 */
@@ -1361,7 +1389,7 @@
 				this.insertRange(index, [item]);
 				return this;
 			},
-	
+
 			/**
 			 * @typesign (index: int, items: Array) -> cellx.ObservableList;
 			 */
@@ -1369,48 +1397,48 @@
 				if (this.sorted) {
 					throw new TypeError('Can\'t insert to sorted list');
 				}
-	
+
 				index = this._validateIndex(index, true);
-	
+
 				var itemCount = items.length;
-	
+
 				if (!itemCount) {
 					return this;
 				}
-	
+
 				splice.apply(this._items, [].concat(index, 0, items));
-	
+
 				for (var i = itemCount; i;) {
 					this._registerValue(items[--i]);
 				}
-	
+
 				this.length += itemCount;
-	
+
 				this.emit('change');
-	
+
 				return this;
 			},
-	
+
 			/**
 			 * @typesign (item, fromIndex?: int) -> cellx.ObservableList;
 			 */
 			remove: function remove(item, fromIndex) {
 				var index = this._items.indexOf(item, this._validateIndex(fromIndex));
-	
+
 				if (index == -1) {
 					return this;
 				}
-	
+
 				this._items.splice(index, 1);
 				this._unregisterValue(item);
-	
+
 				this.length--;
-	
+
 				this.emit('change');
-	
+
 				return this;
 			},
-	
+
 			/**
 			 * @typesign (item, fromIndex?: int) -> cellx.ObservableList;
 			 */
@@ -1418,64 +1446,64 @@
 				var items = this._items;
 				var index = this._validateIndex(fromIndex);
 				var changed = false;
-	
+
 				while ((index = items.indexOf(item, index)) != -1) {
 					items.splice(index, 1);
 					this._unregisterValue(item);
-	
+
 					changed = true;
 				}
-	
+
 				if (changed) {
 					this.length = items.length;
 					this.emit('change');
 				}
-	
+
 				return this;
 			},
-	
+
 			/**
 			 * @typesign (index: int) -> cellx.ObservableList;
 			 */
 			removeAt: function removeAt(index) {
 				this._unregisterValue(this._items.splice(this._validateIndex(index), 1)[0]);
 				this.length--;
-	
+
 				this.emit('change');
-	
+
 				return this;
 			},
-	
+
 			/**
 			 * @typesign (index?: int, count?: uint) -> cellx.ObservableList;
 			 */
 			removeRange: function removeRange(index, count) {
 				index = this._validateIndex(index || 0, true);
-	
+
 				var items = this._items;
-	
+
 				if (count === undefined) {
 					count = items.length - index;
 				} else if (index + count > items.length) {
 					throw new RangeError('"index" and "count" do not denote a valid range');
 				}
-	
+
 				if (!count) {
 					return this;
 				}
-	
+
 				for (var i = index + count; i > index;) {
 					this._unregisterValue(items[--i]);
 				}
 				items.splice(index, count);
-	
+
 				this.length -= count;
-	
+
 				this.emit('change');
-	
+
 				return this;
 			},
-	
+
 			/**
 			 * @typesign () -> cellx.ObservableList;
 			 */
@@ -1483,97 +1511,124 @@
 				if (this.length) {
 					this._items.length = 0;
 					this._valueCounts.clear();
-	
+
 					this.length = 0;
-	
+
 					this.emit('change');
 				}
-	
+
 				return this;
 			},
-	
+
 			/**
 			 * @typesign (separator?: string) -> string;
 			 */
 			join: function join(separator) {
 				return this._items.join(separator);
 			},
-	
+
 			/**
-			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList), context?);
+			 * @typesign (
+			 *     cb: (item, index: uint, arr: cellx.ObservableList),
+			 *     context?
+			 * );
 			 */
 			forEach: null,
-	
+
 			/**
-			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> *, context?) -> Array;
+			 * @typesign (
+			 *     cb: (item, index: uint, arr: cellx.ObservableList) -> *,
+			 *     context?
+			 * ) -> Array;
 			 */
 			map: null,
-	
+
 			/**
-			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> Array;
+			 * @typesign (
+			 *     cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined,
+			 *     context?
+			 * ) -> Array;
 			 */
 			filter: null,
-	
+
 			/**
-			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> *;
+			 * @typesign (
+			 *     cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined,
+			 *     context?
+			 * ) -> *;
 			 */
 			find: function(cb, context) {
 				if (context == null) {
 					context = this;
 				}
-	
+
 				var items = this._items;
-	
+
 				for (var i = 0, l = items.length; i < l; i++) {
 					var item = items[i];
-	
+
 					if (cb.call(this, item, i, context)) {
 						return item;
 					}
 				}
 			},
-	
+
 			/**
-			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> int;
+			 * @typesign (
+			 *     cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined,
+			 *     context?
+			 * ) -> int;
 			 */
 			findIndex: function(cb, context) {
 				if (context == null) {
 					context = this;
 				}
-	
+
 				var items = this._items;
-	
+
 				for (var i = 0, l = items.length; i < l; i++) {
 					var item = items[i];
-	
+
 					if (cb.call(this, item, i, context)) {
 						return i;
 					}
 				}
-	
+
 				return -1;
 			},
-	
+
 			/**
-			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> boolean;
+			 * @typesign (
+			 *     cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined,
+			 *     context?
+			 * ) -> boolean;
 			 */
 			every: null,
-	
+
 			/**
-			 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> boolean;
+			 * @typesign (
+			 *     cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined,
+			 *     context?
+			 * ) -> boolean;
 			 */
 			some: null,
-	
+
 			/**
-			 * @typesign (cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;
+			 * @typesign (
+			 *     cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *,
+			 *     initialValue?
+			 * ) -> *;
 			 */
 			reduce: null,
-	
+
 			/**
-			 * @typesign (cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;
+			 * @typesign (
+			 *     cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *,
+			 *     initialValue?
+			 * ) -> *;
 			 */
 			reduceRight: null,
-	
+
 			/**
 			 * @typesign () -> cellx.ObservableList;
 			 */
@@ -1584,14 +1639,14 @@
 					sorted: this.sorted
 				});
 			},
-	
+
 			/**
 			 * @typesign () -> Array;
 			 */
 			toArray: function toArray() {
 				return this._items.slice();
 			},
-	
+
 			/**
 			 * @typesign () -> string;
 			 */
@@ -1599,13 +1654,13 @@
 				return this._items.join();
 			}
 		});
-	
+
 		['forEach', 'map', 'filter', 'every', 'some', 'reduce', 'reduceRight'].forEach(function(name) {
 			ObservableList.prototype[name] = function() {
 				return Array.prototype[name].apply(this._items, arguments);
 			};
 		});
-	
+
 		[
 			['keys', function keys(index, item) {
 				return index;
@@ -1618,12 +1673,12 @@
 			}]
 		].forEach(function(settings) {
 			var getStepValue = settings[1];
-	
+
 			ObservableList.prototype[settings[0]] = function() {
 				var items = this._items;
 				var index;
 				var done = false;
-	
+
 				return {
 					next: function() {
 						if (!done) {
@@ -1633,10 +1688,10 @@
 									done: false
 								};
 							}
-	
+
 							done = true;
 						}
-	
+
 						return {
 							value: undefined,
 							done: true
@@ -1645,13 +1700,13 @@
 				};
 			};
 		});
-	
+
 		if (global.Symbol && Symbol.iterator) {
 			ObservableList.prototype[Symbol.iterator] = ObservableList.prototype.values;
 		}
-	
+
 		cellx.ObservableList = ObservableList;
-	
+
 		/**
 		 * @typesign (items?: Array|cellx.ObservableList, opts?: {
 		 *     adoptsItemChanges?: boolean,
@@ -1664,90 +1719,90 @@
 		function list(items, opts) {
 			return new ObservableList(items, typeof opts == 'boolean' ? { adoptsItemChanges: opts } : opts);
 		}
-	
+
 		cellx.list = list;
-	
+
 	})();
-	
+
 	var Cell;
-	
+
 	(function() {
-	
+
 		var KEY_INNER = EventEmitter.KEY_INNER;
-	
+
 		var error = {
 			original: null
 		};
-	
+
 		var currentlyRelease = false;
-	
+
 		/**
 		 * @type {Array<Array<cellx.Cell>|null>}
 		 */
 		var releasePlan = [[]];
-	
+
 		var releasePlanIndex = 0;
 		var maxLevel = -1;
-	
+
 		var calculatedCell = null;
-	
+
 		var releaseVersion = 1;
-	
+
 		function release() {
 			if (releasePlanIndex > maxLevel) {
 				return;
 			}
-	
+
 			currentlyRelease = true;
-	
+
 			do {
 				var bundle = releasePlan[releasePlanIndex];
-	
+
 				if (bundle) {
 					var cell = bundle.shift();
-	
+
 					if (releasePlanIndex) {
 						var index = releasePlanIndex;
-	
+
 						if (cell._active) {
 							cell._recalc();
 						}
-	
+
 						if (!releasePlan[index].length) {
 							releasePlan[index] = null;
-	
+
 							if (releasePlanIndex) {
 								releasePlanIndex++;
 							}
 						}
 					} else {
 						var changeEvent = cell._changeEvent;
-	
+
 						cell._fixedValue = cell._value;
 						cell._changeEvent = null;
-	
+
 						cell._changed = true;
-	
+
 						if (cell._events.change) {
 							cell._handleEvent(changeEvent);
 						}
-	
+
 						var slaves = cell._slaves;
-	
+
 						for (var i = 0, l = slaves.length; i < l; i++) {
 							var slave = slaves[i];
-	
+
 							if (slave._fixed) {
 								(releasePlan[1] || (releasePlan[1] = [])).push(slave);
-	
+
 								if (!maxLevel) {
 									maxLevel = 1;
 								}
-	
+
 								slave._fixed = false;
 							}
 						}
-	
+
 						if (!releasePlan[0].length) {
 							releasePlanIndex++;
 						}
@@ -1756,14 +1811,14 @@
 					releasePlanIndex++;
 				}
 			} while (releasePlanIndex <= maxLevel);
-	
+
 			maxLevel = -1;
-	
+
 			releaseVersion++;
-	
+
 			currentlyRelease = false;
 		}
-	
+
 		/**
 		 * @class cellx.Cell
 		 * @extends {cellx.EventEmitter}
@@ -1807,31 +1862,29 @@
 		 *     debugKey?: string
 		 * }) -> cellx.Cell;
 		 */
-		Cell = createClass({
-			Extends: EventEmitter,
-	
+		Cell = EventEmitter.extend({
 			constructor: function Cell(value, opts) {
 				EventEmitter.call(this);
-	
+
 				if (!opts) {
 					opts = {};
 				}
-	
+
 				this.owner = opts.owner || null;
-	
+
 				this.computed = typeof value == 'function' &&
 					(opts.computed !== undefined ? opts.computed : value.constructor == Function);
-	
+
 				this._value = undefined;
 				this._fixedValue = undefined;
 				this.initialValue = undefined;
 				this._formula = null;
-	
+
 				this._get = opts.get || null;
 				this._set = opts.set || null;
-	
+
 				this._validate = opts.validate || null;
-	
+
 				/**
 				 * Ведущие ячейки.
 				 * @type {?Array<cellx.Cell>}
@@ -1842,41 +1895,41 @@
 				 * @type {Array<cellx.Cell>}
 				 */
 				this._slaves = [];
-	
+
 				/**
 				 * @type {uint|undefined}
 				 */
 				this._level = 0;
-	
+
 				this._active = !this.computed;
-	
+
 				this._changeEvent = null;
 				this._isChangeCancellable = true;
-	
+
 				this._lastErrorEvent = null;
-	
+
 				this._fixed = true;
-	
+
 				this._version = 0;
-	
+
 				this._changed = false;
-	
+
 				this._circularityCounter = 0;
-	
+
 				if (this.computed) {
 					this._formula = value;
 				} else {
 					if (this._validate) {
 						this._validate.call(this.owner || this, value);
 					}
-	
+
 					this._value = this._fixedValue = this.initialValue = value;
-	
+
 					if (value instanceof EventEmitter) {
 						value.on('change', this._onValueChange, this);
 					}
 				}
-	
+
 				if (opts.onChange) {
 					this.on('change', opts.onChange);
 				}
@@ -1884,7 +1937,7 @@
 					this.on('error', opts.onError);
 				}
 			},
-	
+
 			/**
 			 * @type {boolean}
 			 */
@@ -1892,10 +1945,10 @@
 				if (!currentlyRelease) {
 					release();
 				}
-	
+
 				return this._changed;
 			},
-	
+
 			/**
 			 * @override
 			 */
@@ -1903,13 +1956,13 @@
 				if (!currentlyRelease) {
 					release();
 				}
-	
+
 				if (this.computed && !this._events.change && !this._slaves.length) {
 					this._activate();
 				}
-	
+
 				EventEmitter.prototype.on.call(this, type, listener, context);
-	
+
 				return this;
 			},
 			/**
@@ -1919,33 +1972,33 @@
 				if (!currentlyRelease) {
 					release();
 				}
-	
+
 				EventEmitter.prototype.off.call(this, type, listener, context);
-	
+
 				if (this.computed && !this._events.change && !this._slaves.length) {
 					this._deactivate();
 				}
-	
+
 				return this;
 			},
-	
+
 			/**
 			 * @override
 			 */
 			_on: function _on(type, listener, context) {
-				EventEmitter.prototype._on.call(this, type, listener, context || this.owner);
+				EventEmitter.prototype._on.call(this, type, listener, context == null ? this.owner : context);
 			},
 			/**
 			 * @override
 			 */
 			_off: function _off(type, listener, context) {
-				EventEmitter.prototype._off.call(this, type, listener, context || this.owner);
+				EventEmitter.prototype._off.call(this, type, listener, context == null ? this.owner : context);
 			},
-	
+
 			/**
 			 * @typesign (
 			 *     listener: (evt: cellx~Event) -> boolean|undefined,
-			 *     context?: Object
+			 *     context?
 			 * ) -> cellx.Cell;
 			 */
 			addChangeListener: function addChangeListener(listener, context) {
@@ -1955,18 +2008,18 @@
 			/**
 			 * @typesign (
 			 *     listener: (evt: cellx~Event) -> boolean|undefined,
-			 *     context?: Object
+			 *     context?
 			 * ) -> cellx.Cell;
 			 */
 			removeChangeListener: function removeChangeListener(listener, context) {
 				this.off('change', listener, context);
 				return this;
 			},
-	
+
 			/**
 			 * @typesign (
 			 *     listener: (evt: cellx~Event) -> boolean|undefined,
-			 *     context?: Object
+			 *     context?
 			 * ) -> cellx.Cell;
 			 */
 			addErrorListener: function addErrorListener(listener, context) {
@@ -1976,18 +2029,18 @@
 			/**
 			 * @typesign (
 			 *     listener: (evt: cellx~Event) -> boolean|undefined,
-			 *     context?: Object
+			 *     context?
 			 * ) -> cellx.Cell;
 			 */
 			removeErrorListener: function removeErrorListener(listener, context) {
 				this.off('error', listener, context);
 				return this;
 			},
-	
+
 			/**
 			 * @typesign (
 			 *     listener: (err: Error|null, evt: cellx~Event) -> boolean|undefined,
-			 *     context?: Object
+			 *     context?
 			 * ) -> cellx.Cell;
 			 */
 			subscribe: function subscribe(listener, context) {
@@ -1995,27 +2048,27 @@
 					return listener.call(this, evt.error || null, evt);
 				}
 				wrapper[KEY_INNER] = listener;
-	
+
 				this
 					.on('change', wrapper, context)
 					.on('error', wrapper, context);
-	
+
 				return this;
 			},
 			/**
 			 * @typesign (
 			 *     listener: (err: Error|null, evt: cellx~Event) -> boolean|undefined,
-			 *     context?: Object
+			 *     context?
 			 * ) -> cellx.Cell;
 			 */
 			unsubscribe: function unsubscribe(listener, context) {
 				this
 					.off('change', listener, context)
 					.off('error', listener, context);
-	
+
 				return this;
 			},
-	
+
 			/**
 			 * @typesign (slave: cellx.Cell);
 			 */
@@ -2023,7 +2076,7 @@
 				if (this.computed && !this._events.change && !this._slaves.length) {
 					this._activate();
 				}
-	
+
 				this._slaves.push(slave);
 			},
 			/**
@@ -2031,12 +2084,12 @@
 			 */
 			_unregisterSlave: function _unregisterSlave(slave) {
 				this._slaves.splice(this._slaves.indexOf(slave), 1);
-	
+
 				if (this.computed && !this._events.change && !this._slaves.length) {
 					this._deactivate();
 				}
 			},
-	
+
 			/**
 			 * @typesign ();
 			 */
@@ -2044,25 +2097,25 @@
 				if (this._version != releaseVersion) {
 					this._masters = null;
 					this._level = 0;
-	
+
 					var value = this._tryFormula();
-	
+
 					if (value === error) {
 						this._handleError(error.original);
 					} else if (!is(this._value, value)) {
 						this._value = value;
 						this._changed = true;
 					}
-	
+
 					this._version = releaseVersion;
 				}
-	
+
 				var masters = this._masters || [];
-	
+
 				for (var i = masters.length; i;) {
 					masters[--i]._registerSlave(this);
 				}
-	
+
 				this._active = true;
 			},
 			/**
@@ -2070,46 +2123,46 @@
 			 */
 			_deactivate: function _deactivate() {
 				var masters = this._masters || [];
-	
+
 				for (var i = masters.length; i;) {
 					masters[--i]._unregisterSlave(this);
 				}
-	
+
 				this._active = false;
 			},
-	
+
 			/**
 			 * @typesign (evt: cellx~Event);
 			 */
 			_onValueChange: function _onValueChange(evt) {
 				if (this._changeEvent) {
 					evt.prev = this._changeEvent;
-	
+
 					this._changeEvent = evt;
-	
+
 					if (this._value === this._fixedValue) {
 						this._isChangeCancellable = false;
 					}
 				} else {
 					releasePlan[0].push(this);
-	
+
 					releasePlanIndex = 0;
-	
+
 					if (maxLevel == -1) {
 						maxLevel = 0;
 					}
-	
+
 					evt.prev = null;
-	
+
 					this._changeEvent = evt;
 					this._isChangeCancellable = false;
-	
+
 					if (!currentlyRelease) {
 						nextTick(release);
 					}
 				}
 			},
-	
+
 			/**
 			 * @typesign () -> *;
 			 */
@@ -2117,13 +2170,13 @@
 				if (!currentlyRelease) {
 					release();
 				}
-	
+
 				if (this.computed && !this._active && this._version != releaseVersion) {
 					this._masters = null;
 					this._level = 0;
-	
+
 					var value = this._tryFormula();
-	
+
 					if (value === error) {
 						this._handleError(error.original);
 					} else {
@@ -2132,15 +2185,15 @@
 							this._changed = true;
 						}
 					}
-	
+
 					this._version = releaseVersion;
 				}
-	
+
 				if (calculatedCell) {
 					if (calculatedCell._masters) {
 						if (calculatedCell._masters.indexOf(this) == -1) {
 							calculatedCell._masters.push(this);
-	
+
 							if (calculatedCell._level <= this._level) {
 								calculatedCell._level = this._level + 1;
 							}
@@ -2150,10 +2203,10 @@
 						calculatedCell._level = this._level + 1;
 					}
 				}
-	
+
 				return this._get ? this._get.call(this.owner || this, this._value) : this._value;
 			},
-	
+
 			/**
 			 * @typesign (value) -> boolean;
 			 */
@@ -2163,41 +2216,41 @@
 						(this.debugKey ? '[' + this.debugKey + '] ' : '') + 'Cannot write to read-only cell'
 					);
 				}
-	
+
 				var oldValue = this._value;
-	
+
 				if (is(oldValue, value)) {
 					return false;
 				}
-	
+
 				if (this._validate) {
 					this._validate.call(this.owner || this, value);
 				}
-	
+
 				if (this.computed) {
 					this._set.call(this.owner || this, value);
 				} else {
 					this._value = value;
-	
+
 					if (oldValue instanceof EventEmitter) {
 						oldValue.off('change', this._onValueChange, this);
 					}
 					if (value instanceof EventEmitter) {
 						value.on('change', this._onValueChange, this);
 					}
-	
+
 					if (this._changeEvent) {
 						if (is(value, this._fixedValue) && this._isChangeCancellable) {
 							if (releasePlan[0].length == 1) {
 								releasePlan[0].pop();
-	
+
 								if (!maxLevel) {
 									maxLevel = -1;
 								}
 							} else {
 								releasePlan[0].splice(releasePlan[0].indexOf(this), 1);
 							}
-	
+
 							this._changeEvent = null;
 						} else {
 							this._changeEvent = {
@@ -2210,13 +2263,13 @@
 						}
 					} else {
 						releasePlan[0].push(this);
-	
+
 						releasePlanIndex = 0;
-	
+
 						if (maxLevel == -1) {
 							maxLevel = 0;
 						}
-	
+
 						this._changeEvent = {
 							target: this,
 							type: 'change',
@@ -2225,23 +2278,23 @@
 							prev: null
 						};
 						this._isChangeCancellable = true;
-	
+
 						if (!currentlyRelease) {
 							nextTick(release);
 						}
 					}
 				}
-	
+
 				return true;
 			},
-	
+
 			/**
 			 * @typesign () -> boolean|undefined;
 			 */
 			recalc: function recalc() {
 				return this._recalc(true);
 			},
-	
+
 			/**
 			 * @typesign (force?: boolean) -> boolean|undefined;
 			 */
@@ -2251,74 +2304,74 @@
 						if (++this._circularityCounter == 10) {
 							this._fixed = true;
 							this._version = releaseVersion + 1;
-	
+
 							this._handleError(new RangeError('Circular dependency detected'));
-	
+
 							return false;
 						}
 					} else {
 						this._circularityCounter = 1;
 					}
 				}
-	
+
 				var oldMasters = this._masters;
 				this._masters = null;
-	
+
 				var oldLevel = this._level;
 				this._level = 0;
-	
+
 				var value = this._tryFormula();
-	
+
 				var masters = this._masters || [];
 				var haveRemovedMasters = false;
-	
+
 				for (var i = oldMasters.length; i;) {
 					var oldMaster = oldMasters[--i];
-	
+
 					if (masters.indexOf(oldMaster) == -1) {
 						oldMaster._unregisterSlave(this);
 						haveRemovedMasters = true;
 					}
 				}
-	
+
 				if (haveRemovedMasters || oldMasters.length < masters.length) {
 					for (var j = masters.length; j;) {
 						var master = masters[--j];
-	
+
 						if (oldMasters.indexOf(master) == -1) {
 							master._registerSlave(this);
 						}
 					}
-	
+
 					var level = this._level;
-	
+
 					if (level > oldLevel) {
 						(releasePlan[level] || (releasePlan[level] = [])).push(this);
-	
+
 						if (maxLevel < level) {
 							maxLevel = level;
 						}
-	
+
 						if (force) {
 							nextTick(release);
 						}
-	
+
 						return;
 					}
 				}
-	
+
 				this._fixed = true;
 				this._version = releaseVersion + 1;
-	
+
 				if (value === error) {
 					this._handleError(error.original);
 				} else {
 					var oldValue = this._value;
-	
+
 					if (!is(oldValue, value) || value instanceof EventEmitter) {
 						this._value = value;
 						this._changed = true;
-	
+
 						if (this._events.change) {
 							this.emit({
 								type: 'change',
@@ -2327,46 +2380,46 @@
 								prev: null
 							});
 						}
-	
+
 						var slaves = this._slaves;
-	
+
 						for (var k = 0, n = slaves.length; k < n; k++) {
 							var slave = slaves[k];
-	
+
 							if (slave._fixed) {
 								var slaveLevel = slave._level;
-	
+
 								(releasePlan[slaveLevel] || (releasePlan[slaveLevel] = [])).push(slave);
-	
+
 								if (maxLevel < slaveLevel) {
 									maxLevel = slaveLevel;
 								}
-	
+
 								slave._fixed = false;
 							}
 						}
-	
+
 						return true;
 					}
 				}
-	
+
 				return false;
 			},
-	
+
 			/**
 			 * @typesign () -> *;
 			 */
 			_tryFormula: function _tryFormula() {
 				var prevCalculatedCell = calculatedCell;
 				calculatedCell = this;
-	
+
 				try {
 					var value = this._formula.call(this.owner || this);
-	
+
 					if (this._validate) {
 						this._validate.call(this.owner || this, value);
 					}
-	
+
 					return value;
 				} catch (err) {
 					error.original = err;
@@ -2375,33 +2428,33 @@
 					calculatedCell = prevCalculatedCell;
 				}
 			},
-	
+
 			/**
 			 * @typesign (err);
 			 */
 			_handleError: function _handleError(err) {
 				this._logError(err);
-	
+
 				this._handleErrorEvent({
 					type: 'error',
 					error: err === Object(err) ? err : { message: err }
 				});
 			},
-	
+
 			/**
 			 * @override
 			 * @typesign (...msg);
 			 */
 			_logError: function _logError() {
 				var msg = slice.call(arguments);
-	
+
 				if (this.debugKey) {
 					msg.unshift('[' + this.debugKey + ']');
 				}
-	
+
 				EventEmitter.prototype._logError.apply(this, msg);
 			},
-	
+
 			/**
 			 * @typesign (evt: cellx~Event);
 			 */
@@ -2410,20 +2463,20 @@
 					return;
 				}
 				this._lastErrorEvent = evt;
-	
+
 				this._handleEvent(evt);
-	
+
 				var slaves = this._slaves;
-	
+
 				for (var i = 0, l = slaves.length; i < l; i++) {
 					if (evt.isPropagationStopped) {
 						break;
 					}
-	
+
 					slaves[i]._handleErrorEvent(evt);
 				}
 			},
-	
+
 			/**
 			 * @typesign () -> cellx.Cell;
 			 */
@@ -2431,65 +2484,62 @@
 				if (!currentlyRelease) {
 					release();
 				}
-	
+
 				this._dispose();
-	
+
 				return this;
 			},
-	
+
 			/**
 			 * @typesign ();
 			 */
 			_dispose: function _dispose() {
 				this.off();
-	
+
 				if (this._active) {
 					var slaves = this._slaves;
-	
+
 					for (var i = 0, l = slaves.length; i < l; i++) {
 						slaves[i]._dispose();
 					}
 				}
 			}
 		});
-	
+
 		cellx.Cell = Cell;
-	
+
 	})();
-	
+
 	(function() {
-	
-		var Map = cellx.Map;
-		var Cell = cellx.Cell;
-	
+
 		var cellProto = Cell.prototype;
-	
-		invokeCell = function invokeCell(wrapper, initialValue, opts, owner, firstArg, otherArgs, argCount) {
+
+		applyCell = function applyCell(cx, initialValue, opts, owner, firstArg, otherArgs, argCount) {
 			if (!owner || owner == global) {
-				owner = wrapper;
+				owner = cx;
 			}
-	
+
 			if (!hasOwn.call(owner, KEY_CELLS)) {
 				Object.defineProperty(owner, KEY_CELLS, {
 					value: new Map()
 				});
 			}
-	
-			var cell = owner[KEY_CELLS].get(wrapper);
-	
+
+			var cell = owner[KEY_CELLS].get(cx);
+
 			if (!cell) {
 				if (argCount >= 2 && firstArg === 'dispose') {
 					return;
 				}
-	
+
 				opts = Object.create(opts);
 				opts.owner = owner;
-	
+
 				cell = new Cell(initialValue, opts);
-	
-				owner[KEY_CELLS].set(wrapper, cell);
+
+				owner[KEY_CELLS].set(cx, cell);
 			}
-	
+
 			switch (argCount) {
 				case 0: {
 					return cell.get();
@@ -2500,9 +2550,9 @@
 				default: {
 					switch (firstArg) {
 						case 'bind': {
-							wrapper = wrapper.bind(owner);
-							wrapper.constructor = cellx;
-							return wrapper;
+							cx = cx.bind(owner);
+							cx.constructor = cellx;
+							return cx;
 						}
 						case 'unwrap': {
 							return cell;
@@ -2514,94 +2564,94 @@
 				}
 			}
 		};
-	
+
 	})();
-	
+
 	(function() {
-	
+
 		function observable(target, name, descr, opts) {
 			if (arguments.length == 1) {
 				opts = target;
-	
+
 				return function(target, name, descr) {
 					return observable(target, name, descr, opts);
 				};
 			}
-	
+
 			if (!opts) {
 				opts = {};
 			}
-	
+
 			opts.computed = false;
-	
+
 			var _name = '_' + name;
-	
+
 			target[_name] = cellx(descr.initializer.call(target), opts);
-	
+
 			return {
 				configurable: true,
 				enumerable: descr.enumerable,
-	
+
 				get: function() {
 					return this[_name]();
 				},
-	
+
 				set: function(value) {
 					this[_name](value);
 				}
 			};
 		}
-	
+
 		function computed(target, name, descr, opts) {
 			if (arguments.length == 1) {
 				opts = target;
-	
+
 				return function(target, name, descr) {
 					return computed(target, name, descr, opts);
 				};
 			}
-	
+
 			var value = descr.initializer();
-	
+
 			if (typeof value != 'function') {
 				throw new TypeError('Property value must be a function');
 			}
-	
+
 			if (!opts) {
 				opts = {};
 			}
-	
+
 			opts.computed = true;
-	
+
 			var _name = '_' + name;
-	
+
 			target[_name] = cellx(value, opts);
-	
+
 			var descriptor = {
 				configurable: true,
 				enumerable: descr.enumerable,
-	
+
 				get: function() {
 					return this[_name]();
 				}
 			};
-	
+
 			if (opts.set) {
 				descriptor.set = function(value) {
 					this[_name](value);
 				};
 			}
-	
+
 			return descriptor;
 		}
-	
+
 		cellx.d = {
 			observable: observable,
 			computed: computed
 		};
-	
+
 	})();
-	
+
 	cellx.utils = {
 		logError: logError,
 		mixin: mixin,
@@ -2610,7 +2660,7 @@
 		defineObservableProperty: defineObservableProperty,
 		defineObservableProperties: defineObservableProperties
 	};
-	
+
 
 	if (typeof exports == 'object') {
 		if (typeof module == 'object') {

@@ -23,37 +23,31 @@ var nextTick = (function() {
 		};
 	}
 
-	if (global.postMessage && !global.ActiveXObject) {
-		var queue;
+	var queue;
 
-		global.addEventListener('message', function() {
-			if (queue) {
-				var q = queue;
+	global.addEventListener('message', function() {
+		if (queue) {
+			var track = queue;
 
-				queue = null;
+			queue = null;
 
-				for (var i = 0, l = q.length; i < l; i++) {
-					try {
-						q[i]();
-					} catch (err) {
-						cellx._logError(err);
-					}
+			for (var i = 0, l = track.length; i < l; i++) {
+				try {
+					track[i]();
+				} catch (err) {
+					cellx._logError(err);
 				}
 			}
-		});
-
-		return function nextTick(cb) {
-			if (queue) {
-				queue.push(cb);
-			} else {
-				queue = [cb];
-				postMessage('__tic__', '*');
-			}
-		};
-	}
+		}
+	});
 
 	return function nextTick(cb) {
-		setTimeout(cb, 1);
+		if (queue) {
+			queue.push(cb);
+		} else {
+			queue = [cb];
+			postMessage('__tic__', '*');
+		}
 	};
 
 })();

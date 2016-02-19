@@ -11,7 +11,6 @@
 		"no-array-constructor": 2,
 		"no-caller": 2,
 		"no-catch-shadow": 2,
-		"no-empty-label": 2,
 		"no-eval": 2,
 		"no-extra-bind": 2,
 		"no-extra-parens": [2, "functions"],
@@ -41,7 +40,6 @@
 		"semi": 2,
 		"semi-spacing": [2, {"before": false, "after": true}],
 		"space-infix-ops": 2,
-		"space-return-throw-case": 2,
 		"space-unary-ops": [2, { "words": true, "nonwords": false }],
 		"yoda": [2, "never"]
 	},

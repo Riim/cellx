@@ -8,10 +8,10 @@
 
 Ultra-fast implementation of reactivity for javascript.
 
-[![npm package](https://badge.fury.io/js/cellx.svg)](https://www.npmjs.com/package/cellx)
-[![devDependencies](https://david-dm.org/Riim/cellx/dev-status.svg)](https://david-dm.org/Riim/cellx#info=devDependencies)
-[![tonic](https://img.shields.io/badge/tonic-cellx-blue.svg)](https://tonicdev.com/npm/cellx)
-[![license](https://img.shields.io/npm/l/cellx.svg)](https://www.npmjs.com/package/cellx)
+[![NPM version](https://badge.fury.io/js/cellx.svg)](https://www.npmjs.com/package/cellx)
+[![Dependency Status](https://david-dm.org/Riim/cellx/status.svg)](https://david-dm.org/Riim/cellx#info=dependencies)
+[![Dev Dependency Status](https://david-dm.org/Riim/cellx/dev-status.svg)](https://david-dm.org/Riim/cellx#info=devDependencies)
+[![License](https://img.shields.io/npm/l/cellx.svg)](https://www.npmjs.com/package/cellx)
 
 ## Installation
 

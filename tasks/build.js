@@ -9,6 +9,7 @@ gulp.task('build-scripts', function() {
 			notifier.notify({ title: err.name, message: err.message });
 		}))
 		.pipe($.include())
+		.pipe($.trimlines({ leading: false }))
 		.pipe(gulp.dest(''))
 		.pipe($.uglify())
 		.pipe($.rename({ suffix: '.min' }))

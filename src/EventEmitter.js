@@ -29,7 +29,10 @@ var EventEmitter;
 
 		constructor: function EventEmitter() {
 			/**
-			 * @type {Object<Array<{ listener: (evt: cellx~Event) -> boolean|undefined, context: Object }>>}
+			 * @type {Object<Array<{
+			 *     listener: (evt: cellx~Event) -> boolean|undefined,
+			 *     context
+			 * }>>}
 			 */
 			this._events = Object.create(null);
 		},
@@ -38,12 +41,12 @@ var EventEmitter;
 		 * @typesign (
 		 *     type: string,
 		 *     listener: (evt: cellx~Event) -> boolean|undefined,
-		 *     context?: Object
+		 *     context?
 		 * ) -> cellx.EventEmitter;
 		 *
 		 * @typesign (
 		 *     listeners: Object<(evt: cellx~Event) -> boolean|undefined>,
-		 *     context?: Object
+		 *     context?
 		 * ) -> cellx.EventEmitter;
 		 */
 		on: function on(type, listener, context) {
@@ -67,12 +70,12 @@ var EventEmitter;
 		 * @typesign (
 		 *     type: string,
 		 *     listener: (evt: cellx~Event) -> boolean|undefined,
-		 *     context?: Object
+		 *     context?
 		 * ) -> cellx.EventEmitter;
 		 *
 		 * @typesign (
 		 *     listeners: Object<(evt: cellx~Event) -> boolean|undefined>,
-		 *     context?: Object
+		 *     context?
 		 * ) -> cellx.EventEmitter;
 		 *
 		 * @typesign () -> cellx.EventEmitter;
@@ -103,7 +106,7 @@ var EventEmitter;
 		 * @typesign (
 		 *     type: string,
 		 *     listener: (evt: cellx~Event) -> boolean|undefined,
-		 *     context?: Object
+		 *     context?
 		 * );
 		 */
 		_on: function _on(type, listener, context) {
@@ -120,7 +123,7 @@ var EventEmitter;
 
 				events.push({
 					listener: listener,
-					context: context || this
+					context: context == null ? this : context
 				});
 			}
 		},
@@ -128,7 +131,7 @@ var EventEmitter;
 		 * @typesign (
 		 *     type: string,
 		 *     listener: (evt: cellx~Event) -> boolean|undefined,
-		 *     context?: Object
+		 *     context?
 		 * );
 		 */
 		_off: function _off(type, listener, context) {
@@ -143,14 +146,14 @@ var EventEmitter;
 					return;
 				}
 
-				if (!context) {
+				if (context == null) {
 					context = this;
 				}
 
 				for (var i = events.length; i;) {
 					var evt = events[--i];
 
-					if (evt.context == context && (evt.listener == listener || evt.listener[KEY_INNER] === listener)) {
+					if ((evt.listener == listener || evt.listener[KEY_INNER] === listener) && evt.context === context) {
 						events.splice(i, 1);
 						break;
 					}
@@ -166,7 +169,7 @@ var EventEmitter;
 		 * @typesign (
 		 *     type: string,
 		 *     listener: (evt: cellx~Event) -> boolean|undefined,
-		 *     context?: Object
+		 *     context?
 		 * ) -> cellx.EventEmitter;
 		 */
 		once: function once(type, listener, context) {

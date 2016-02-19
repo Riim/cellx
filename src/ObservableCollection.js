@@ -2,9 +2,7 @@ var ObservableCollection;
 
 (function() {
 
-	ObservableCollection = createClass({
-		Extends: EventEmitter,
-
+	ObservableCollection = EventEmitter.extend({
 		constructor: function ObservableCollection() {
 			/**
 			 * @type {Map<*, uint>}

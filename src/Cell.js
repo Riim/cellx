@@ -136,9 +136,7 @@ var Cell;
 	 *     debugKey?: string
 	 * }) -> cellx.Cell;
 	 */
-	Cell = createClass({
-		Extends: EventEmitter,
-
+	Cell = EventEmitter.extend({
 		constructor: function Cell(value, opts) {
 			EventEmitter.call(this);
 
@@ -262,19 +260,19 @@ var Cell;
 		 * @override
 		 */
 		_on: function _on(type, listener, context) {
-			EventEmitter.prototype._on.call(this, type, listener, context || this.owner);
+			EventEmitter.prototype._on.call(this, type, listener, context == null ? this.owner : context);
 		},
 		/**
 		 * @override
 		 */
 		_off: function _off(type, listener, context) {
-			EventEmitter.prototype._off.call(this, type, listener, context || this.owner);
+			EventEmitter.prototype._off.call(this, type, listener, context == null ? this.owner : context);
 		},
 
 		/**
 		 * @typesign (
 		 *     listener: (evt: cellx~Event) -> boolean|undefined,
-		 *     context?: Object
+		 *     context?
 		 * ) -> cellx.Cell;
 		 */
 		addChangeListener: function addChangeListener(listener, context) {
@@ -284,7 +282,7 @@ var Cell;
 		/**
 		 * @typesign (
 		 *     listener: (evt: cellx~Event) -> boolean|undefined,
-		 *     context?: Object
+		 *     context?
 		 * ) -> cellx.Cell;
 		 */
 		removeChangeListener: function removeChangeListener(listener, context) {
@@ -295,7 +293,7 @@ var Cell;
 		/**
 		 * @typesign (
 		 *     listener: (evt: cellx~Event) -> boolean|undefined,
-		 *     context?: Object
+		 *     context?
 		 * ) -> cellx.Cell;
 		 */
 		addErrorListener: function addErrorListener(listener, context) {
@@ -305,7 +303,7 @@ var Cell;
 		/**
 		 * @typesign (
 		 *     listener: (evt: cellx~Event) -> boolean|undefined,
-		 *     context?: Object
+		 *     context?
 		 * ) -> cellx.Cell;
 		 */
 		removeErrorListener: function removeErrorListener(listener, context) {
@@ -316,7 +314,7 @@ var Cell;
 		/**
 		 * @typesign (
 		 *     listener: (err: Error|null, evt: cellx~Event) -> boolean|undefined,
-		 *     context?: Object
+		 *     context?
 		 * ) -> cellx.Cell;
 		 */
 		subscribe: function subscribe(listener, context) {
@@ -334,7 +332,7 @@ var Cell;
 		/**
 		 * @typesign (
 		 *     listener: (err: Error|null, evt: cellx~Event) -> boolean|undefined,
-		 *     context?: Object
+		 *     context?
 		 * ) -> cellx.Cell;
 		 */
 		unsubscribe: function unsubscribe(listener, context) {

@@ -60,8 +60,7 @@ var ObservableList;
 	 *     sorted?: boolean
 	 * }) -> cellx.ObservableList;
 	 */
-	ObservableList = createClass({
-		Extends: EventEmitter,
+	ObservableList = EventEmitter.extend({
 		Implements: [ObservableCollection],
 
 		constructor: function ObservableList(items, opts) {
@@ -403,22 +402,34 @@ var ObservableList;
 		},
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList), context?);
+		 * @typesign (
+		 *     cb: (item, index: uint, arr: cellx.ObservableList),
+		 *     context?
+		 * );
 		 */
 		forEach: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> *, context?) -> Array;
+		 * @typesign (
+		 *     cb: (item, index: uint, arr: cellx.ObservableList) -> *,
+		 *     context?
+		 * ) -> Array;
 		 */
 		map: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> Array;
+		 * @typesign (
+		 *     cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined,
+		 *     context?
+		 * ) -> Array;
 		 */
 		filter: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> *;
+		 * @typesign (
+		 *     cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined,
+		 *     context?
+		 * ) -> *;
 		 */
 		find: function(cb, context) {
 			if (context == null) {
@@ -437,7 +448,10 @@ var ObservableList;
 		},
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> int;
+		 * @typesign (
+		 *     cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined,
+		 *     context?
+		 * ) -> int;
 		 */
 		findIndex: function(cb, context) {
 			if (context == null) {
@@ -458,22 +472,34 @@ var ObservableList;
 		},
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> boolean;
+		 * @typesign (
+		 *     cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined,
+		 *     context?
+		 * ) -> boolean;
 		 */
 		every: null,
 
 		/**
-		 * @typesign (cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> boolean;
+		 * @typesign (
+		 *     cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined,
+		 *     context?
+		 * ) -> boolean;
 		 */
 		some: null,
 
 		/**
-		 * @typesign (cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;
+		 * @typesign (
+		 *     cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *,
+		 *     initialValue?
+		 * ) -> *;
 		 */
 		reduce: null,
 
 		/**
-		 * @typesign (cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;
+		 * @typesign (
+		 *     cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *,
+		 *     initialValue?
+		 * ) -> *;
 		 */
 		reduceRight: null,
 

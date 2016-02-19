@@ -10,7 +10,7 @@
 
 	var global = Function('return this;')();
 
-	var invokeCell;
+	var applyCell;
 
 	/**
 	 * @typesign (value?, opts?: {
@@ -41,16 +41,16 @@
 
 		var initialValue = value;
 
-		function cell(value) {
-			return invokeCell(cell, initialValue, opts, this, value, slice.call(arguments, 1), arguments.length);
+		function cx(value) {
+			return applyCell(cx, initialValue, opts, this, value, slice.call(arguments, 1), arguments.length);
 		}
-		cell.constructor = cellx;
+		cx.constructor = cellx;
 
 		if (opts.onChange || opts.onError) {
-			cell.call(opts.owner || global);
+			cx.call(opts.owner || global);
 		}
 
-		return cell;
+		return cx;
 	}
 	cellx.cellx = cellx; // for destructuring
 
@@ -122,6 +122,8 @@
 		return toString.call(value) == '[object Array]';
 	};
 
+	var extend;
+
 	/**
 	 * @typesign (description: {
 	 *     Extends?: Function,
@@ -146,19 +148,31 @@
 			constr = description.constructor;
 			delete description.constructor;
 		} else {
-			constr = function() {};
+			constr = parent == Object ?
+				function() {} :
+				function() {
+					return parent.apply(this, arguments);
+				};
 		}
+
+		Object.keys(parent).forEach(function(name) {
+			Object.defineProperty(constr, name, Object.getOwnPropertyDescriptor(parent, name));
+		});
 
 		if (description.Static) {
 			mixin(constr, description.Static);
 			delete description.Static;
 		}
 
+		if (constr.extend === undefined) {
+			constr.extend = extend;
+		}
+
 		var proto = constr.prototype = Object.create(parent.prototype);
 
 		if (description.Implements) {
 			description.Implements.forEach(function(impl) {
-				mixin(proto, impl.prototype);
+				mixin(proto, typeof impl == 'function' ? impl.prototype : impl);
 			});
 
 			delete description.Implements;
@@ -166,10 +180,28 @@
 
 		mixin(proto, description);
 
-		proto.constructor = constr;
+		Object.defineProperty(proto, 'constructor', {
+			configurable: true,
+			writable: true,
+			value: constr
+		});
 
 		return constr;
 	}
+
+	/**
+	 * @this {Function}
+	 *
+	 * @typesign (description: {
+	 *     Implements?: Array<Function>,
+	 *     Static?: Object,
+	 *     constructor?: Function
+	 * }) -> Function;
+	 */
+	extend = function extend(description) {
+		description.Extends = this;
+		return createClass(description);
+	};
 
 	/**
 	 * @typesign (obj: Object, name: string, value);
@@ -226,7 +258,7 @@
 	//= include ./ObservableMap.js
 	//= include ./ObservableList.js
 	//= include ./Cell.js
-	//= include ./invokeCell.js
+	//= include ./applyCell.js
 	//= include ./d.js
 	//= include ./utils.js
 

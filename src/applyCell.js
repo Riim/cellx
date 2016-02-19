@@ -1,13 +1,10 @@
 (function() {
 
-	var Map = cellx.Map;
-	var Cell = cellx.Cell;
-
 	var cellProto = Cell.prototype;
 
-	invokeCell = function invokeCell(wrapper, initialValue, opts, owner, firstArg, otherArgs, argCount) {
+	applyCell = function applyCell(cx, initialValue, opts, owner, firstArg, otherArgs, argCount) {
 		if (!owner || owner == global) {
-			owner = wrapper;
+			owner = cx;
 		}
 
 		if (!hasOwn.call(owner, KEY_CELLS)) {
@@ -16,7 +13,7 @@
 			});
 		}
 
-		var cell = owner[KEY_CELLS].get(wrapper);
+		var cell = owner[KEY_CELLS].get(cx);
 
 		if (!cell) {
 			if (argCount >= 2 && firstArg === 'dispose') {
@@ -28,7 +25,7 @@
 
 			cell = new Cell(initialValue, opts);
 
-			owner[KEY_CELLS].set(wrapper, cell);
+			owner[KEY_CELLS].set(cx, cell);
 		}
 
 		switch (argCount) {
@@ -41,9 +38,9 @@
 			default: {
 				switch (firstArg) {
 					case 'bind': {
-						wrapper = wrapper.bind(owner);
-						wrapper.constructor = cellx;
-						return wrapper;
+						cx = cx.bind(owner);
+						cx.constructor = cellx;
+						return cx;
 					}
 					case 'unwrap': {
 						return cell;
