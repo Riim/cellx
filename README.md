@@ -9,9 +9,10 @@
 Ultra-fast implementation of reactivity for javascript.
 
 [![NPM version](https://badge.fury.io/js/cellx.svg)](https://www.npmjs.com/package/cellx)
+[![Build Status](https://travis-ci.org/Riim/cellx.svg?branch=master)](https://travis-ci.org/Riim/cellx)
+[![Coverage Status](https://coveralls.io/repos/github/Riim/cellx/badge.svg?branch=master)](https://coveralls.io/github/Riim/cellx?branch=master)
 [![Dependency Status](https://david-dm.org/Riim/cellx/status.svg)](https://david-dm.org/Riim/cellx#info=dependencies)
 [![Dev Dependency Status](https://david-dm.org/Riim/cellx/dev-status.svg)](https://david-dm.org/Riim/cellx#info=devDependencies)
-[![License](https://img.shields.io/npm/l/cellx.svg)](https://www.npmjs.com/package/cellx)
 
 ## Installation
 

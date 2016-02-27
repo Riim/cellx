@@ -120,7 +120,7 @@
 	"maximumLineLength": 120,
 	"disallowMixedSpacesAndTabs": true,
 	"disallowTrailingWhitespace": true,
-	// "disallowMultipleLineBreaks": true,
+	"disallowMultipleLineBreaks": true,
 	"validateIndentation": "\t",
 	"validateLineBreaks": "LF",
 	"requireLineFeedAtFileEnd": true

@@ -1,16 +1,16 @@
 describe('cellx', function() {
 
 	it('должна подписывать через EventEmitter', function(done) {
-		var ee = new cellx.EventEmitter();
-		var onChangeSpy = sinon.spy();
+		let emitter = new cellx.EventEmitter();
+		let onChangeSpy = sinon.spy();
 
-		cellx.define(ee, {
+		cellx.define(emitter, {
 			foo: 1
 		});
 
-		ee.on('change:foo', onChangeSpy);
+		emitter.on('change:foo', onChangeSpy);
 
-		ee.foo = 2;
+		emitter.foo = 2;
 
 		setTimeout(function() {
 			expect(onChangeSpy.called)

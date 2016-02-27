@@ -1,27 +1,24 @@
 <?xml version="1.0"?>
-<svg width="474" height="258" xmlns="http://www.w3.org/2000/svg">
-
- <metadata id="metadata40">image/svg+xmlimage/svg+xml</metadata>
- <g id="g5">
-  <title>background</title>
-  <rect x="-1" y="-1" width="476" height="260" id="canvas_background" fill="#ffffff"/>
- </g>
- <g id="g10" transform="matrix(0.99944726,0,0,0.994856,-0.00055274493,1.994856) ">
-  <title>Layer 1</title>
-  <text font-family="Helvetica, Arial, sans-serif" fill="#007fff" stroke="#007fff" stroke-width="0" x="315.31741" y="155.61105" font-size="80px" text-anchor="left" id="text34">cellx</text>
-  <line fill="none" stroke="#007fff" stroke-width="8" stroke-linecap="null" stroke-linejoin="null" y2="232.99548" x2="109.33406" y1="22.68914" x1="136.79381" id="line6"/>
-  <line fill="none" stroke="#007fff" stroke-width="8" stroke-linecap="null" stroke-linejoin="null" y2="183.07133" x2="225.69067" y1="21.583677" x1="142.26466" id="line8"/>
-  <line fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="null" stroke-linejoin="null" y2="113.19034" x2="218.74989" y1="134.79503" x1="170.71425" id="line10"/>
-  <line fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="null" stroke-linejoin="null" y2="84.898148" x2="155.90892" y1="74.624374" x1="101.39037" id="line12"/>
-  <line fill="none" stroke="#ffffff" stroke-width="8" stroke-linecap="null" stroke-linejoin="null" y2="196.63536" x2="139.99095" y1="194.35634" x1="86.259354" id="line14"/>
-  <circle fill="#ffffff" stroke="#007fff" stroke-width="8" r="11" cy="12.995152" cx="138.33441" id="circle22"/>
-  <circle fill="#ffffff" stroke="#007fff" stroke-width="8" r="11" cy="242.32884" cx="108.26768" id="circle24"/>
-  <line fill="none" stroke="#007fff" stroke-width="8" stroke-linecap="null" stroke-linejoin="null" y2="52.236187" x2="24.66716" y1="91.798996" x1="234.23976" id="line16"/>
-  <line fill="none" stroke="#007fff" stroke-width="8" stroke-linecap="null" stroke-linejoin="null" y2="185.174" x2="51.399025" y1="192.21539" x1="221.09082" id="line18"/>
-  <line fill="none" stroke="#007fff" stroke-width="8" stroke-linecap="null" stroke-linejoin="null" y2="97.853073" x2="234.29596" y1="179.6618" x1="51.333946" id="line20"/>
-  <circle fill="#ffffff" stroke="#007fff" stroke-width="8" r="11" cy="191.99586" cx="230.33464" id="circle26"/>
-  <circle fill="#ffffff" stroke="#007fff" stroke-width="8" r="11" cy="184.66182" cx="41.667358" id="circle28"/>
-  <circle fill="#ffffff" stroke="#007fff" stroke-width="8" r="11" cy="93.22406" cx="245.09688" id="circle30"/>
-  <circle fill="#ffffff" stroke="#007fff" stroke-width="8" r="11" cy="49.994827" cx="15.000553" id="circle32"/>
- </g>
+<svg width="478" height="258" viewBox="0 0 478 258" xmlns="http://www.w3.org/2000/svg">
+	<g id="g1">
+		<rect id="background" x="-1" y="-1" width="480" height="260" fill="#FFFFFF"/>
+	</g>
+	<g id="g2" transform="translate(4, 4)">
+		<path id="line5" d="M135,11 L105,239" stroke="#007FFF" stroke-width="8"/>
+		<path id="line4" d="M227,189 L135,11" stroke="#007FFF" stroke-width="8"/>
+		<path id="line8" d="M79,192 L142,194" stroke="#FFFFFF" stroke-width="8"/>
+		<path id="line7" d="M220,109 L163,135" stroke="#FFFFFF" stroke-width="8"/>
+		<path id="line6" d="M94,72 L160,84" stroke="#FFFFFF" stroke-width="8"/>
+		<path id="line3" d="M39,183 L227,189" stroke="#007FFF" stroke-width="8"/>
+		<path id="line2" d="M241,91 L39,183" stroke="#007FFF" stroke-width="8"/>
+		<path id="line1" d="M11,49 L241,91" stroke="#007FFF" stroke-width="8"/>
+		<circle id="circle6" cx="105" cy="239" r="11" fill="#FFFFFF" stroke="#007FFF" stroke-width="8"/>
+		<circle id="circle5" cx="135" cy="11" r="11" fill="#FFFFFF" stroke="#007FFF" stroke-width="8"/>
+		<circle id="circle4" cx="227" cy="189" r="11" fill="#FFFFFF" stroke="#007FFF" stroke-width="8"/>
+		<circle id="circle3" cx="39" cy="183" r="11" fill="#FFFFFF" stroke="#007FFF" stroke-width="8"/>
+		<circle id="circle2" cx="241" cy="91" r="11" fill="#FFFFFF" stroke="#007FFF" stroke-width="8"/>
+		<circle id="circle1" cx="11" cy="49" r="11" fill="#FFFFFF" stroke="#007FFF" stroke-width="8"/>
+		<text id="text1" x="473" y="152" fill="#007FFF" stroke="#007FFF" stroke-width="1"
+				font-family="Helvetica, Arial, sans-serif" font-size="80" text-anchor="end">cellx</text>
+	</g>
 </svg>
