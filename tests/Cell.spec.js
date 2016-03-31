@@ -292,18 +292,48 @@ describe('Cell', function() {
 	});
 
 	it('не должна вызывать обработчик `change` при добавлении его после изменения', function(done) {
-		let changeSpy = sinon.spy();
-		let changeSpy2 = sinon.spy();
+		let aChangeSpy = sinon.spy();
 
-		let a = new cellx.Cell(1, { onChange: changeSpy });
+		let a = new cellx.Cell(1, { onChange: function() {} });
 
 		a.set(2);
 
-		a.on('change', changeSpy2);
+		a.on('change', aChangeSpy);
 
 		setTimeout(function() {
-			expect(changeSpy2.called)
+			expect(aChangeSpy.called)
 				.to.not.be.ok;
+
+			done();
+		}, 1);
+	});
+
+	it('должна применять изменения при чтении вычисляемой ячейки', function() {
+		let a = new cellx.Cell(1);
+		let b = new cellx.Cell(function() { return a.get() + 1; });
+
+		a.set(2);
+
+		expect(b.get())
+			.to.equal(3);
+	});
+
+	it('не должна применять изменения при чтении невычисляемой ячейки', function(done) {
+		let cChangeSpy = sinon.spy();
+
+		let a = new cellx.Cell(1);
+		let b = new cellx.Cell(2);
+		let c = new cellx.Cell(function() { return a.get() + b.get(); }, { onChange: cChangeSpy });
+
+		a.set(2);
+		b.get();
+
+		expect(cChangeSpy.called)
+			.to.not.be.ok;
+
+		setTimeout(function() {
+			expect(cChangeSpy.called)
+				.to.be.ok;
 
 			done();
 		}, 1);

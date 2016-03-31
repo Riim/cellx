@@ -218,7 +218,7 @@ var Cell = EventEmitter.extend({
 	 * @type {boolean}
 	 */
 	get changed() {
-		if (!currentlyRelease) {
+		if (!currentlyRelease && this.computed) {
 			release();
 		}
 
@@ -443,7 +443,7 @@ var Cell = EventEmitter.extend({
 	 * @typesign () -> *;
 	 */
 	get: function get() {
-		if (!currentlyRelease) {
+		if (!currentlyRelease && this.computed) {
 			release();
 		}
 

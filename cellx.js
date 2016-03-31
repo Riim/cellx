@@ -2286,7 +2286,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * @type {boolean}
 		 */
 		get changed() {
-			if (!currentlyRelease) {
+			if (!currentlyRelease && this.computed) {
 				release();
 			}
 
@@ -2511,7 +2511,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * @typesign () -> *;
 		 */
 		get: function get() {
-			if (!currentlyRelease) {
+			if (!currentlyRelease && this.computed) {
 				release();
 			}
 
