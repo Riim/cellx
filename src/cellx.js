@@ -18,30 +18,25 @@ var KEY_CELLS = keys.CELLS;
 var hasOwn = Object.prototype.hasOwnProperty;
 var slice = Array.prototype.slice;
 
-var cellProto = Cell.prototype;
-
 ErrorLogger.setHandler(logError);
 
 /**
  * @typesign (value?, opts?: {
  *     debugKey?: string,
  *     owner?: Object,
- *     get?: (value) -> *,
- *     validate?: (value),
- *     onChange?: (evt: cellx~Event) -> boolean|undefined,
- *     onError?: (evt: cellx~Event) -> boolean|undefined,
- *     computed?: false
+ *     validate?: (value, oldValue),
+ *     onChange?: (evt: cellx~Event) -> ?boolean,
+ *     onError?: (evt: cellx~Event) -> ?boolean
  * }) -> cellx;
  *
- * @typesign (formula: () -> *, opts?: {
+ * @typesign (pull: (push: (value), fail: (err), oldValue) -> *, opts?: {
  *     debugKey?: string
  *     owner?: Object,
- *     get?: (value) -> *,
- *     set?: (value),
- *     validate?: (value),
- *     onChange?: (evt: cellx~Event) -> boolean|undefined,
- *     onError?: (evt: cellx~Event) -> boolean|undefined,
- *     computed?: true
+ *     validate?: (value, oldValue),
+ *     put?: (value, push: (value), fail: (err), oldValue),
+ *     reap?: (),
+ *     onChange?: (evt: cellx~Event) -> ?boolean,
+ *     onError?: (evt: cellx~Event) -> ?boolean
  * }) -> cellx;
  */
 function cellx(value, opts) {
@@ -84,7 +79,8 @@ function cellx(value, opts) {
 				return cell.get();
 			}
 			case 1: {
-				return cell.set(value);
+				cell.set(value);
+				return value;
 			}
 			default: {
 				switch (value) {
@@ -97,7 +93,8 @@ function cellx(value, opts) {
 						return cell;
 					}
 					default: {
-						return cellProto[value].apply(cell, slice.call(arguments, 1));
+						var result = Cell.prototype[value].apply(cell, slice.call(arguments, 1));
+						return result === cell ? cx : result;
 					}
 				}
 			}
@@ -111,7 +108,6 @@ function cellx(value, opts) {
 
 	return cx;
 }
-cellx.cellx = cellx; // for destructuring
 
 cellx.KEY_UID = KEY_UID;
 cellx.ErrorLogger = ErrorLogger;
@@ -153,7 +149,7 @@ function list(items, opts) {
 cellx.list = list;
 
 /**
- * @typesign (obj: Object, name: string, value);
+ * @typesign (obj: cellx.EventEmitter, name: string, value) -> cellx.EventEmitter;
  */
 function defineObservableProperty(obj, name, value) {
 	var _name = '_' + name;
@@ -172,20 +168,24 @@ function defineObservableProperty(obj, name, value) {
 			this[_name](value);
 		}
 	});
+
+	return obj;
 }
 
 /**
- * @typesign (obj: Object, props: Object);
+ * @typesign (obj: cellx.EventEmitter, props: Object) -> cellx.EventEmitter;
  */
 function defineObservableProperties(obj, props) {
 	Object.keys(props).forEach(function(name) {
 		defineObservableProperty(obj, name, props[name]);
 	});
+
+	return obj;
 }
 
 /**
- * @typesign (obj: Object, name: string, value) -> Object;
- * @typesign (obj: Object, props: Object) -> Object;
+ * @typesign (obj: cellx.EventEmitter, name: string, value) -> cellx.EventEmitter;
+ * @typesign (obj: cellx.EventEmitter, props: Object) -> cellx.EventEmitter;
  */
 function define(obj, name, value) {
 	if (arguments.length == 3) {
@@ -198,87 +198,6 @@ function define(obj, name, value) {
 }
 
 cellx.define = define;
-
-function observable(target, name, descr, opts) {
-	if (arguments.length == 1) {
-		opts = target;
-
-		return function(target, name, descr) {
-			return observable(target, name, descr, opts);
-		};
-	}
-
-	if (!opts) {
-		opts = {};
-	}
-
-	opts.computed = false;
-
-	var _name = '_' + name;
-
-	target[_name] = cellx(descr.initializer.call(target), opts);
-
-	return {
-		configurable: true,
-		enumerable: descr.enumerable,
-
-		get: function() {
-			return this[_name]();
-		},
-
-		set: function(value) {
-			this[_name](value);
-		}
-	};
-}
-
-function computed(target, name, descr, opts) {
-	if (arguments.length == 1) {
-		opts = target;
-
-		return function(target, name, descr) {
-			return computed(target, name, descr, opts);
-		};
-	}
-
-	var value = descr.initializer();
-
-	if (typeof value != 'function') {
-		throw new TypeError('Property value must be a function');
-	}
-
-	if (!opts) {
-		opts = {};
-	}
-
-	opts.computed = true;
-
-	var _name = '_' + name;
-
-	target[_name] = cellx(value, opts);
-
-	var descriptor = {
-		configurable: true,
-		enumerable: descr.enumerable,
-
-		get: function() {
-			return this[_name]();
-		}
-	};
-
-	if (opts.set) {
-		descriptor.set = function(value) {
-			this[_name](value);
-		};
-	}
-
-	return descriptor;
-}
-
-cellx.d = {
-	observable: observable,
-	computed: computed
-};
 
 cellx.js = {
 	Symbol: Symbol,
@@ -294,5 +213,7 @@ cellx.utils = {
 	defineObservableProperty: defineObservableProperty,
 	defineObservableProperties: defineObservableProperties
 };
+
+cellx.cellx = cellx; // for destructuring
 
 module.exports = cellx;

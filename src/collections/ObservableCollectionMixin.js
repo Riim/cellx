@@ -50,20 +50,6 @@ var ObservableCollectionMixin = EventEmitter.extend({
 				value.off('change', this._onItemChange, this);
 			}
 		}
-	},
-
-	/**
-	 * Освобождает занятые инстансом ресурсы.
-	 * @typesign ();
-	 */
-	dispose: function dispose() {
-		if (this.adoptsItemChanges) {
-			this._valueCounts.forEach(function(value) {
-				if (value instanceof EventEmitter) {
-					value.off('change', this._onItemChange, this);
-				}
-			}, this);
-		}
 	}
 });
 

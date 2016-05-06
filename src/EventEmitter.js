@@ -28,7 +28,7 @@ var EventEmitter = createClass({
 	constructor: function EventEmitter() {
 		/**
 		 * @type {Object<Array<{
-		 *     listener: (evt: cellx~Event) -> boolean|undefined,
+		 *     listener: (evt: cellx~Event) -> ?boolean,
 		 *     context
 		 * }>>}
 		 */
@@ -38,12 +38,12 @@ var EventEmitter = createClass({
 	/**
 	 * @typesign (
 	 *     type: string,
-	 *     listener: (evt: cellx~Event) -> boolean|undefined,
+	 *     listener: (evt: cellx~Event) -> ?boolean,
 	 *     context?
 	 * ) -> cellx.EventEmitter;
 	 *
 	 * @typesign (
-	 *     listeners: Object<(evt: cellx~Event) -> boolean|undefined>,
+	 *     listeners: Object<(evt: cellx~Event) -> ?boolean>,
 	 *     context?
 	 * ) -> cellx.EventEmitter;
 	 */
@@ -67,12 +67,12 @@ var EventEmitter = createClass({
 	/**
 	 * @typesign (
 	 *     type: string,
-	 *     listener: (evt: cellx~Event) -> boolean|undefined,
+	 *     listener: (evt: cellx~Event) -> ?boolean,
 	 *     context?
 	 * ) -> cellx.EventEmitter;
 	 *
 	 * @typesign (
-	 *     listeners: Object<(evt: cellx~Event) -> boolean|undefined>,
+	 *     listeners: Object<(evt: cellx~Event) -> ?boolean>,
 	 *     context?
 	 * ) -> cellx.EventEmitter;
 	 *
@@ -103,7 +103,7 @@ var EventEmitter = createClass({
 	/**
 	 * @typesign (
 	 *     type: string,
-	 *     listener: (evt: cellx~Event) -> boolean|undefined,
+	 *     listener: (evt: cellx~Event) -> ?boolean,
 	 *     context?
 	 * );
 	 */
@@ -128,7 +128,7 @@ var EventEmitter = createClass({
 	/**
 	 * @typesign (
 	 *     type: string,
-	 *     listener: (evt: cellx~Event) -> boolean|undefined,
+	 *     listener: (evt: cellx~Event) -> ?boolean,
 	 *     context?
 	 * );
 	 */
@@ -166,7 +166,7 @@ var EventEmitter = createClass({
 	/**
 	 * @typesign (
 	 *     type: string,
-	 *     listener: (evt: cellx~Event) -> boolean|undefined,
+	 *     listener: (evt: cellx~Event) -> ?boolean,
 	 *     context?
 	 * ) -> cellx.EventEmitter;
 	 */
@@ -194,6 +194,8 @@ var EventEmitter = createClass({
 			};
 		} else if (!evt.target) {
 			evt.target = this;
+		} else if (evt.target != this) {
+			throw new TypeError('Event cannot be emitted on this object');
 		}
 
 		this._handleEvent(evt);

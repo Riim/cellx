@@ -9,7 +9,8 @@ var extend;
  *     Extends?: Function,
  *     Implements?: Array<Object|Function>,
  *     Static?: Object,
- *     constructor?: Function
+ *     constructor?: Function,
+ *     [key: string]
  * }) -> Function;
  */
 function createClass(description) {
@@ -83,7 +84,8 @@ function createClass(description) {
  * @typesign (description: {
  *     Implements?: Array<Object|Function>,
  *     Static?: Object,
- *     constructor?: Function
+ *     constructor?: Function,
+ *     [key: string]
  * }) -> Function;
  */
 extend = function extend(description) {

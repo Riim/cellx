@@ -102,10 +102,10 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (index: int, allowEndIndex?: boolean) -> uint|undefined;
+	 * @typesign (index: int, allowedEndIndex?: boolean) -> ?uint;
 	 */
-	_validateIndex: function _validateIndex(index, allowEndIndex) {
-		if (index === undefined) {
+	_validateIndex: function _validateIndex(index, allowedEndIndex) {
+		if (index === void 0) {
 			return index;
 		}
 
@@ -113,10 +113,10 @@ var ObservableList = EventEmitter.extend({
 			index += this.length;
 
 			if (index < 0) {
-				throw new RangeError('Index out of range');
+				throw new RangeError('Index out of valid range');
 			}
-		} else if (index >= (this.length + (allowEndIndex ? 1 : 0))) {
-			throw new RangeError('Index out of range');
+		} else if (index >= (this.length + (allowedEndIndex ? 1 : 0))) {
+			throw new RangeError('Index out of valid range');
 		}
 
 		return index;
@@ -140,7 +140,7 @@ var ObservableList = EventEmitter.extend({
 	 * @typesign (value, fromIndex?: int) -> int;
 	 */
 	lastIndexOf: function lastIndexOf(value, fromIndex) {
-		return this._items.lastIndexOf(value, this._validateIndex(fromIndex));
+		return this._items.lastIndexOf(value, fromIndex === void 0 ? -1 : this._validateIndex(fromIndex));
 	},
 
 	/**
@@ -158,12 +158,12 @@ var ObservableList = EventEmitter.extend({
 
 		var items = this._items;
 
-		if (count === undefined) {
+		if (count === void 0) {
 			return items.slice(index);
 		}
 
 		if (index + count > items.length) {
-			throw new RangeError('"index" and "count" do not denote a valid range');
+			throw new RangeError('Sum of "index" and "count" out of valid range');
 		}
 
 		return items.slice(index, index + count);
@@ -174,7 +174,7 @@ var ObservableList = EventEmitter.extend({
 	 */
 	set: function set(index, value) {
 		if (this.sorted) {
-			throw new TypeError('Can\'t set to sorted list');
+			throw new TypeError('Cannot set to sorted list');
 		}
 
 		index = this._validateIndex(index);
@@ -200,7 +200,7 @@ var ObservableList = EventEmitter.extend({
 	 */
 	setRange: function setRange(index, items) {
 		if (this.sorted) {
-			throw new TypeError('Can\'t set to sorted list');
+			throw new TypeError('Cannot set to sorted list');
 		}
 
 		index = this._validateIndex(index);
@@ -212,14 +212,14 @@ var ObservableList = EventEmitter.extend({
 		}
 
 		if (index + itemCount > this.length) {
-			throw new RangeError('"index" and length of "items" do not denote a valid range');
+			throw new RangeError('Sum of "index" and "items.length" out of valid range');
 		}
 
 		var listItems = this._items;
 		var changed = false;
 
 		for (var i = index + itemCount; i > index;) {
-			var item = items[--i];
+			var item = items[--i - index];
 
 			if (!is(listItems[i], item)) {
 				this._unregisterValue(listItems[i]);
@@ -273,7 +273,7 @@ var ObservableList = EventEmitter.extend({
 	 */
 	insertRange: function insertRange(index, items) {
 		if (this.sorted) {
-			throw new TypeError('Can\'t insert to sorted list');
+			throw new TypeError('Cannot insert to sorted list');
 		}
 
 		index = this._validateIndex(index, true);
@@ -284,7 +284,7 @@ var ObservableList = EventEmitter.extend({
 			return this;
 		}
 
-		splice.apply(this._items, [].concat(index, 0, items));
+		splice.apply(this._items, [index, 0].concat(items));
 
 		for (var i = itemCount; i;) {
 			this._registerValue(items[--i]);
@@ -298,13 +298,13 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (item, fromIndex?: int) -> cellx.ObservableList;
+	 * @typesign (item, fromIndex?: int) -> boolean;
 	 */
 	remove: function remove(item, fromIndex) {
 		var index = this._items.indexOf(item, this._validateIndex(fromIndex));
 
 		if (index == -1) {
-			return this;
+			return false;
 		}
 
 		this._items.splice(index, 1);
@@ -314,11 +314,11 @@ var ObservableList = EventEmitter.extend({
 
 		this.emit('change');
 
-		return this;
+		return true;
 	},
 
 	/**
-	 * @typesign (item, fromIndex?: int) -> cellx.ObservableList;
+	 * @typesign (item, fromIndex?: int) -> boolean;
 	 */
 	removeAll: function removeAll(item, fromIndex) {
 		var items = this._items;
@@ -332,54 +332,59 @@ var ObservableList = EventEmitter.extend({
 			changed = true;
 		}
 
-		if (changed) {
-			this.length = items.length;
-			this.emit('change');
+		if (!changed) {
+			return false;
 		}
 
-		return this;
+		this.length = items.length;
+
+		this.emit('change');
+
+		return true;
 	},
 
 	/**
-	 * @typesign (index: int) -> cellx.ObservableList;
+	 * @typesign (index: int) -> *;
 	 */
 	removeAt: function removeAt(index) {
-		this._unregisterValue(this._items.splice(this._validateIndex(index), 1)[0]);
+		var removedItem = this._items.splice(this._validateIndex(index), 1)[0];
+
+		this._unregisterValue(removedItem);
 		this.length--;
 
 		this.emit('change');
 
-		return this;
+		return removedItem;
 	},
 
 	/**
-	 * @typesign (index?: int, count?: uint) -> cellx.ObservableList;
+	 * @typesign (index?: int, count?: uint) -> Array;
 	 */
 	removeRange: function removeRange(index, count) {
 		index = this._validateIndex(index || 0, true);
 
 		var items = this._items;
 
-		if (count === undefined) {
+		if (count === void 0) {
 			count = items.length - index;
 		} else if (index + count > items.length) {
-			throw new RangeError('"index" and "count" do not denote a valid range');
+			throw new RangeError('Sum of "index" and "count" out of valid range');
 		}
 
 		if (!count) {
-			return this;
+			return [];
 		}
 
 		for (var i = index + count; i > index;) {
 			this._unregisterValue(items[--i]);
 		}
-		items.splice(index, count);
+		var removedItems = items.splice(index, count);
 
 		this.length -= count;
 
 		this.emit('change');
 
-		return this;
+		return removedItems;
 	},
 
 	/**
@@ -387,6 +392,14 @@ var ObservableList = EventEmitter.extend({
 	 */
 	clear: function clear() {
 		if (this.length) {
+			if (this.adoptsItemChanges) {
+				this._valueCounts.forEach(function(value) {
+					if (value instanceof EventEmitter) {
+						value.off('change', this._onItemChange, this);
+					}
+				}, this);
+			}
+
 			this._items.length = 0;
 			this._valueCounts.clear();
 
@@ -407,7 +420,7 @@ var ObservableList = EventEmitter.extend({
 
 	/**
 	 * @typesign (
-	 *     cb: (item, index: uint, arr: cellx.ObservableList),
+	 *     cb: (item, index: uint, list: cellx.ObservableList),
 	 *     context?
 	 * );
 	 */
@@ -415,7 +428,7 @@ var ObservableList = EventEmitter.extend({
 
 	/**
 	 * @typesign (
-	 *     cb: (item, index: uint, arr: cellx.ObservableList) -> *,
+	 *     cb: (item, index: uint, list: cellx.ObservableList) -> *,
 	 *     context?
 	 * ) -> Array;
 	 */
@@ -423,7 +436,7 @@ var ObservableList = EventEmitter.extend({
 
 	/**
 	 * @typesign (
-	 *     cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined,
+	 *     cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean,
 	 *     context?
 	 * ) -> Array;
 	 */
@@ -431,7 +444,7 @@ var ObservableList = EventEmitter.extend({
 
 	/**
 	 * @typesign (
-	 *     cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined,
+	 *     cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean,
 	 *     context?
 	 * ) -> *;
 	 */
@@ -445,7 +458,7 @@ var ObservableList = EventEmitter.extend({
 		for (var i = 0, l = items.length; i < l; i++) {
 			var item = items[i];
 
-			if (cb.call(this, item, i, context)) {
+			if (cb.call(context, item, i, this)) {
 				return item;
 			}
 		}
@@ -453,7 +466,7 @@ var ObservableList = EventEmitter.extend({
 
 	/**
 	 * @typesign (
-	 *     cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined,
+	 *     cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean,
 	 *     context?
 	 * ) -> int;
 	 */
@@ -467,7 +480,7 @@ var ObservableList = EventEmitter.extend({
 		for (var i = 0, l = items.length; i < l; i++) {
 			var item = items[i];
 
-			if (cb.call(this, item, i, context)) {
+			if (cb.call(context, item, i, this)) {
 				return i;
 			}
 		}
@@ -477,7 +490,7 @@ var ObservableList = EventEmitter.extend({
 
 	/**
 	 * @typesign (
-	 *     cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined,
+	 *     cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean,
 	 *     context?
 	 * ) -> boolean;
 	 */
@@ -485,7 +498,7 @@ var ObservableList = EventEmitter.extend({
 
 	/**
 	 * @typesign (
-	 *     cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined,
+	 *     cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean,
 	 *     context?
 	 * ) -> boolean;
 	 */
@@ -493,7 +506,7 @@ var ObservableList = EventEmitter.extend({
 
 	/**
 	 * @typesign (
-	 *     cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *,
+	 *     cb: (accumulator, item, index: uint, list: cellx.ObservableList) -> *,
 	 *     initialValue?
 	 * ) -> *;
 	 */
@@ -501,7 +514,7 @@ var ObservableList = EventEmitter.extend({
 
 	/**
 	 * @typesign (
-	 *     cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *,
+	 *     cb: (accumulator, item, index: uint, list: cellx.ObservableList) -> *,
 	 *     initialValue?
 	 * ) -> *;
 	 */
@@ -533,9 +546,25 @@ var ObservableList = EventEmitter.extend({
 	}
 });
 
-['forEach', 'map', 'filter', 'every', 'some', 'reduce', 'reduceRight'].forEach(function(name) {
-	ObservableList.prototype[name] = function() {
-		return Array.prototype[name].apply(this._items, arguments);
+['forEach', 'map', 'filter', 'every', 'some'].forEach(function(name) {
+	ObservableList.prototype[name] = function(cb, context) {
+		context = arguments.length >= 2 ? context : global;
+
+		return this._items[name](function(item, index) {
+			return cb.call(context, item, index, this);
+		}, this);
+	};
+});
+
+['reduce', 'reduceRight'].forEach(function(name) {
+	ObservableList.prototype[name] = function(cb, initialValue) {
+		var list = this;
+		var items = this._items;
+		var wrappedCallback = function(accumulator, item, index) {
+			return cb(accumulator, item, index, list);
+		};
+
+		return arguments.length >= 2 ? items[name](wrappedCallback, initialValue) : items[name](wrappedCallback);
 	};
 });
 
@@ -571,7 +600,7 @@ var ObservableList = EventEmitter.extend({
 				}
 
 				return {
-					value: undefined,
+					value: void 0,
 					done: true
 				};
 			}

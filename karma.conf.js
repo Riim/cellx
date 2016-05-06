@@ -16,12 +16,13 @@ module.exports = function(config) {
 		frameworks: ['mocha', 'chai', 'sinon'],
 
 		files: [
-			'cellx.js',
+			'tests/es6-promise.js',
+			'dist/cellx.js',
 			'tests/*.spec.js'
 		],
 
 		preprocessors: {
-			'cellx.js': preprocessors,
+			'dist/cellx.js': preprocessors,
 			'tests/*.spec.js': ['babel']
 		},
 

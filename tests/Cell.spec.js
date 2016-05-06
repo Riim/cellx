@@ -1,5 +1,7 @@
 describe('Cell', function() {
 
+	function noop() {}
+
 	it('не должна создавать событие `change` при установке значения равного текущему', function(done) {
 		let changeSpy = sinon.spy();
 		let a = new cellx.Cell(1, { onChange: changeSpy });
@@ -127,20 +129,17 @@ describe('Cell', function() {
 		let a = new cellx.Cell(1);
 		let b = new cellx.Cell(2);
 
-		let cFormulaSpy = sinon.spy(function() {
+		let cPullSpy = sinon.spy(function() {
 			return a.get() + b.get();
 		});
 
-		let c = new cellx.Cell(cFormulaSpy, { onChange: function() {} });
+		let c = new cellx.Cell(cPullSpy, { onChange() {} });
 
 		setTimeout(function() {
-			expect(cFormulaSpy.calledOnce)
+			expect(cPullSpy.calledOnce)
 				.to.be.ok;
 
-			expect(cFormulaSpy.firstCall.args.length)
-				.to.equal(0);
-
-			expect(cFormulaSpy.firstCall.returnValue)
+			expect(cPullSpy.firstCall.returnValue)
 				.to.equal(3);
 
 			done();
@@ -148,29 +147,29 @@ describe('Cell', function() {
 	});
 
 	it('должна вычисляться только 1 раз, даже если поменять сразу несколько родительских ячеек', function(done) {
-		let a = new cellx.Cell(1);
-		let b = new cellx.Cell(2);
+		let a = new cellx.Cell(1, { debugKey: 'a' });
+		let b = new cellx.Cell(2, { debugKey: 'b' });
 
-		let cFormulaSpy = sinon.spy(function() {
+		let cPullSpy = sinon.spy(function() {
 			return a.get() + b.get();
 		});
 
-		let c = new cellx.Cell(cFormulaSpy, { onChange: function() {} });
+		let c = new cellx.Cell(cPullSpy, {
+			debugKey: 'c',
+			onChange() {}
+		});
 
 		setTimeout(function() {
-			cFormulaSpy.reset();
+			cPullSpy.reset();
 
 			a.set(5);
 			b.set(10);
 
 			setTimeout(function() {
-				expect(cFormulaSpy.calledOnce)
+				expect(cPullSpy.calledOnce)
 					.to.be.ok;
 
-				expect(cFormulaSpy.firstCall.args.length)
-					.to.equal(0);
-
-				expect(cFormulaSpy.firstCall.returnValue)
+				expect(cPullSpy.firstCall.returnValue)
 					.to.equal(15);
 
 				done();
@@ -184,26 +183,23 @@ describe('Cell', function() {
 		let aa = new cellx.Cell(function() { return a.get() + 1; });
 		let bb = new cellx.Cell(function() { return b.get() + 1; });
 
-		let cFormulaSpy = sinon.spy(function() {
+		let cPullSpy = sinon.spy(function() {
 			return aa.get() + bb.get();
 		});
 
-		let c = new cellx.Cell(cFormulaSpy, { onChange: function() {} });
+		let c = new cellx.Cell(cPullSpy, { onChange() {} });
 
 		setTimeout(function() {
-			cFormulaSpy.reset();
+			cPullSpy.reset();
 
 			a.set(5);
 			b.set(10);
 
 			setTimeout(function() {
-				expect(cFormulaSpy.calledOnce)
+				expect(cPullSpy.calledOnce)
 					.to.be.ok;
 
-				expect(cFormulaSpy.firstCall.args.length)
-					.to.equal(0);
-
-				expect(cFormulaSpy.firstCall.returnValue)
+				expect(cPullSpy.firstCall.returnValue)
 					.to.equal(17);
 
 				done();
@@ -247,8 +243,8 @@ describe('Cell', function() {
 	});
 
 	it('один поток не должен мешать другому', function() {
-		let a = new cellx.Cell(1);
-		let b = new cellx.Cell(2);
+		let a = new cellx.Cell(1, { debugKey: 'a' });
+		let b = new cellx.Cell(2, { debugKey: 'b' });
 
 		let t = 0;
 		let aa = new cellx.Cell(function() {
@@ -257,11 +253,11 @@ describe('Cell', function() {
 			}
 
 			return a.get() + 1;
-		}, { onChange: function() {} });
+		}, { debugKey: 'aa', onChange() {} });
 
 		let bb = new cellx.Cell(function() {
 			return b.get() + 1;
-		}, { onChange: function() {} });
+		}, { debugKey: 'bb', onChange() {} });
 
 		a.set(5);
 
@@ -281,20 +277,16 @@ describe('Cell', function() {
 
 			return b.get() + 1;
 		});
-		let d = new cellx.Cell(function() {
-			return c.get() + 1;
-		});
 
 		a.set(2);
 
-		expect(d.get())
-			.to.equal(13);
+		expect(c.get())
+			.to.equal(12);
 	});
 
 	it('не должна вызывать обработчик `change` при добавлении его после изменения', function(done) {
 		let aChangeSpy = sinon.spy();
-
-		let a = new cellx.Cell(1, { onChange: function() {} });
+		let a = new cellx.Cell(1, { onChange: noop });
 
 		a.set(2);
 
@@ -379,36 +371,235 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	// Возможность хитробага.
-	// Если в get устанавливать _level раньше запуска _tryFormula,
-	// то на уровнях 2+ _level будет всегда 1, что уже неверно.
-	// Дальше если, при перерасчёте ячейки с неверным _level,
-	// доходит до проверки "level > oldLevel" (для этого нужно чтобы как-то поменялись ведущие ячейки),
-	// то её формула посчитается лишний второй раз.
-	it('должна правильно вычислять _level в пассивном режиме', function(done) {
-		let a = new cellx.Cell(1);
-		let b = new cellx.Cell(2);
+	// Если в get устанавливать _level раньше запуска _tryPull,
+	// то на уровнях 2+ _level всегда будет 1, что как-то не очень хорошо.
+	it('должна минимизировать число лишних вызовов pull', function(done) {
+		let a = new cellx.Cell(1, { debugKey: 'a' });
+		let b = new cellx.Cell(2, { debugKey: 'b' });
 
-		let c = new cellx.Cell(function() { return a.get() + 1; });
+		let c = new cellx.Cell(function() {
+			return b.get() + 1;
+		}, { debugKey: 'c' });
 
-		let dFormulaSpy = sinon.spy(function() {
-			return c.get() + (c.get() == 2 ? 1 : b.get());
+		let dPullSpy = sinon.spy(function() {
+			return a.get() + c.get();
 		});
 
-		let d = new cellx.Cell(dFormulaSpy);
+		let d = new cellx.Cell(dPullSpy, { debugKey: 'd' });
 
-		d.on('change', function() {});
+		d.on('change', noop);
 
-		dFormulaSpy.reset();
+		dPullSpy.reset();
 
 		a.set(2);
+		b.set(3);
 
 		setTimeout(function() {
-			expect(dFormulaSpy.calledOnce)
+			expect(dPullSpy.calledOnce)
 				.to.be.ok;
 
 			done();
 		}, 1);
+	});
+
+	it('должна минимизировать число лишних вызовов pull (2)', function(done) {
+		let a = new cellx.Cell(1, { debugKey: 'a' });
+		let b = new cellx.Cell(function() { return a.get() + 1; }, { debugKey: 'b', onChange: noop });
+
+		let c = new cellx.Cell(function() {
+			if (a.get() == 2) {
+				return b.get() + 1;
+			}
+
+			return a.get() + 1;
+		}, {
+			debugKey: 'c',
+			onChange: function() {
+				d.set(10);
+			}
+		});
+		let d = new cellx.Cell(function() { return c.get() + 1; }, { debugKey: 'd' });
+		let e = new cellx.Cell(function() { return c.get() + 1; }, { debugKey: 'e' });
+
+		let fChangeSpy = sinon.spy(function() {
+			return d.get() + e.get();
+		});
+
+		let f = new cellx.Cell(fChangeSpy, { debugKey: 'f', onChange: noop });
+
+		fChangeSpy.reset();
+
+		a.set(2);
+
+		setTimeout(function() {
+			expect(fChangeSpy.calledOnce)
+				.to.be.ok;
+
+			done();
+		}, 1);
+	});
+
+	it('должна учитывать последний set как более приоритетный', function() {
+		let a = new cellx.Cell(1);
+		let b = new cellx.Cell(function() { return a.get() + 1; });
+		let c = new cellx.Cell(function() { return b.get() + 1; }, { onChange: noop });
+
+		a.set(2);
+		b.set(4);
+
+		expect(c.get())
+			.to.equal(5);
+	});
+
+	it('должна учитывать последний set как более приоритетный (2)', function() {
+		let a = new cellx.Cell(1);
+		let b = new cellx.Cell(function() { return a.get() + 1; });
+		let c = new cellx.Cell(function() { return b.get() + 1; }, { onChange: noop });
+
+		b.set(4);
+		a.set(2);
+
+		expect(c.get())
+			.to.equal(4);
+	});
+
+	it('должна учитывать последний set как более приоритетный (3)', function() {
+		let a = new cellx.Cell(1);
+		let b = new cellx.Cell(function() { return a.get() + 1; });
+		let c = new cellx.Cell(function() { return b.get() + 1; }, { onChange: noop });
+
+		a.set(2);
+		b.set(2);
+
+		expect(c.get())
+			.to.equal(3);
+	});
+
+	it('не должна создавать бесконечный цикл', function(done) {
+		let a = new cellx.Cell(1);
+		let b = new cellx.Cell(function() { return a.get() + 1; });
+		let c = new cellx.Cell(function() { return b.get() + 1; });
+
+		let d = new cellx.Cell(1);
+		let e = new cellx.Cell(function() { return c.get() + d.get(); }, { onChange: noop });
+
+		c.get();
+
+		d.set(2);
+
+		setTimeout(function() {
+			expect(e.get())
+				.to.equal(5);
+
+			done();
+		}, 1);
+	});
+
+	it('должна уметь синхронизировать своё значение с внешним хранилищем', function() {
+		localStorage.clear();
+
+		let a = new cellx.Cell(function() {
+			return +(localStorage.a || 1);
+		}, {
+			put(value) {
+				localStorage.a = value;
+				this.push(value);
+			}
+		});
+
+		let b = new cellx.Cell(function() {
+			return a.get() + 1;
+		});
+
+		expect(b.get())
+			.to.equal(2);
+
+		a.set(5);
+
+		expect(b.get())
+			.to.equal(6);
+	});
+
+	it('validation', function() {
+		let a = new cellx.Cell(1, {
+			validate: function(value) {
+				if (typeof value != 'number') {
+					throw 1;
+				}
+			}
+		});
+		let error = null;
+
+		try {
+			a.set('1');
+		} catch (err) {
+			error = err;
+		}
+
+		expect(error)
+			.to.not.equal(null);
+
+		expect(a.get())
+			.to.equal(1);
+	});
+
+	it('#subscribe(), #unsubscribe()', function() {
+		let a = new cellx.Cell(1);
+		let changeSpy = sinon.spy();
+
+		a.set(2);
+		a.subscribe(changeSpy);
+		a.set(3);
+		a.unsubscribe(changeSpy);
+		a.set(4);
+
+		expect(changeSpy.calledOnce)
+			.to.be.ok;
+
+		expect(changeSpy.firstCall.args)
+			.to.eql([null, {
+				type: 'change',
+				target: a,
+				oldValue: 2,
+				value: 3,
+				prev: null
+			}]);
+	});
+
+	it('#then', function(done) {
+		let a = new cellx.Cell(function(push) {
+			setTimeout(function() {
+				push(5);
+			}, 1);
+		});
+
+		a.then(function(value) {
+			expect(value)
+				.to.equal(5);
+
+			expect(a.get())
+				.to.equal(5);
+
+			done();
+		});
+	});
+
+	it('#catch', function(done) {
+		let a = new cellx.Cell(function(push, fail) {
+			setTimeout(function() {
+				fail('5');
+			}, 1);
+		});
+
+		a.catch(function(err) {
+			expect(err.message)
+				.to.equal('5');
+
+			expect(a.getError())
+				.to.equal(err);
+
+			done();
+		});
 	});
 
 });

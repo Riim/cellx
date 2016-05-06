@@ -1,4 +1,3 @@
-/*global Promise*/
 var ErrorLogger = require('../ErrorLogger');
 
 /**

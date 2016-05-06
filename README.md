@@ -60,11 +60,11 @@ user.lastName('Dog');
 // => 'fullName: Sharik Dog'
 ```
 
-Despite the fact that the two dependencies of the cell `fullName` has been changed, event handler worked only once.  
+Despite the fact that the two dependencies of the cell `fullName` has been changed, event handler worked only once.
 Important feature of cellx is that it tries to get rid of unnecessary calls
 of the event handlers as well as of unnecessary calls of the dependent cells calculation formulas.
 In combination with some special optimizations, this leads to an ideal speed of calculation of
-the complex dependencies networks.  
+the complex dependencies networks.
 One test, which is used for measuring the performance, generates grid with multiply "layers"
 each of which is composed of 4 cells. Cells are calculated from the previous layer of cells (except the first one,
 which contains initial values) by the formula A2=B1, B2=A1-C1, C2=B1+D1, D2=C1. After that start time is stored,
@@ -79,10 +79,10 @@ Test results (in milliseconds) for different number of layers (for Google Chrome
 | 50                                      | 1     | >300000           | >300000                            | 1                                               | 5                                           | 1                                                  | 1                                                       | >300000                                       |
 | 100                                     | 1     | >300000           | >300000                            | 2                                               | 8                                           | 2                                                  | 3                                                       | >300000                                       |
 | 1000                                    | 5     | >300000           | >300000                            | 20                                              | 90                                          | 15                                                 | 80                                                      | >300000                                       |
-| 5000                                    | 25    | >300000           | >300000                            | 340                                             | first call — 460, subsequent calls — >460   | 120                                                | RangeError: Maximum call stack size exceeded            | >300000                                       |
-| 25000                                   | 120   | >300000           | >300000                            | 7000                                            | first call — 3200, subsequent calls — >3200 | 700                                                | RangeError: Maximum call stack size exceeded            | >300000                                       |
+| 5000                                    | 30    | >300000           | >300000                            | 340                                             | first call — 460, subsequent calls — >460   | 120                                                | RangeError: Maximum call stack size exceeded            | >300000                                       |
+| 25000                                   | 140   | >300000           | >300000                            | 7000                                            | first call — 3200, subsequent calls — >3200 | 700                                                | RangeError: Maximum call stack size exceeded            | >300000                                       |
 
-Test sources can be found in the folder [perf](https://github.com/Riim/cellx/tree/master/perf).  
+Test sources can be found in the folder [perf](https://github.com/Riim/cellx/tree/master/perf).
 Density of connections in real applications is usually lower than in the present test, that is,
 if a certain delay in the test is visible in 100 calculated cells (25 layers), in a real application,
 this delay will either be visible in the greater number of cells, or cells formulas will include
@@ -137,7 +137,7 @@ console.log(arr()[0]);
 // => 1
 ```
 
-#### set
+#### put
 
 Used to create recordable calculated cells:
 
@@ -149,7 +149,7 @@ function User() {
     this.fullName = cellx(function() {
         return (this.firstName() + ' ' + this.lastName()).trim();
     }, {
-        set: function(name) {
+        put: function(name) {
             name = name.split(' ');
 
             this.firstName(name[0]);
@@ -221,65 +221,6 @@ console.log(value());
 
 console.log(num());
 // => 5
-```
-
-#### computed
-
-By default, if the first argument of cell-a is a normal function, the cell is defined as a calculated and passed
-function is used as a formula to calculate the value of the cell. But if you need to create cell with a function
-as a value, you can either set a value after the initialization of the cell or pass the option `computed`
-with the value `false`:
-
-```js
-var value = cellx(Number, { computed: false });
-```
-
-And vice versa, functions may be instances of some custom type and for their detection they usually get
-the property `constructor` (ECMAScript 6 will allow to change the behavior of `instanceof` using `Symbol.hasInstance`).
-Functions redefined as `constructor` are counted as usual values by default.
-Cellx instances are like this:
-
-```js
-var num = cellx(5);
-
-console.log(
-    typeof num == 'function',
-    num.constructor == cellx,
-    num.constructor == Function
-);
-// => true true false
-```
-
-as a result, you can put one cell inside another:
-
-```js
-var num = cellx(5);
-var container = cellx(num);
-
-console.log(container()());
-// => 5
-```
-
-If the custom function still has to be counted as a formula for the calculated cell, you need to pass
-option `computed` with a value `true`:
-
-```js
-function FormulaSum(a, b) {
-    var formula = function() {
-        return a() + b();
-    };
-
-    formula.constructor = FormulaSum;
-
-    return formula;
-}
-
-var a = cellx(5);
-var b = cellx(10);
-var sum = cellx(new FormulaSum(a, b), { computed: true });
-
-console.log(sum());
-// => 15
 ```
 
 ### Methods
@@ -372,43 +313,6 @@ user.name('dispose', 0);
 
 This will remove all the handlers, not only from the cell itself, but also from all cells calculated from it,
 and in the absence of links all branch of dependencies will "die".
-
-### Use with ECMAScript 6
-
-```js
-import { cellx, d } from 'cellx';
-
-class User extends cellx.EventEmitter {
-	@d.observable firstName = '';
-	@d.observable lastName = '';
-
-	@d.computed fullName = function() {
-		return (this.firstName + ' ' + this.lastName).trim();
-	};
-
-	constructor(data) {
-        super();
-
-        for (let name in data) {
-            this[name] = data[name];
-        }
-	}
-}
-
-let user = new User({ firstName: 'Matroskin', lastName: 'Cat' });
-
-// add listener
-user.on('change:fullName', function() {
-    console.log(`fullName: ${this.fullName}`);
-});
-
-console.log(user.firstName);
-// => 'Matroskin'
-
-user.firstName = 'Sharik';
-user.lastName = 'Dog';
-// => 'fullName: Sharik Dog'
-```
 
 ### Use with React
 
@@ -510,6 +414,99 @@ i.e. the value of the cell `name` from this moment will not depend on `lastName`
 In such cases, cells automatically unsubscribe from dependencies insignificant for them and are not recalculated
 when they change. In the future, if the `firstName` again become an empty string, the cell `name` will re-subscribe
 to the `lastName`.
+
+## Synchronization of value with synchronous storage
+
+```js
+var foo = cellx(function() {
+	return localStorage.foo || 'foo';
+}, {
+	put: function(value) {
+		localStorage.foo = value;
+		this.push(value);
+	}
+});
+
+var foobar = cellx(function() {
+	return foo() + 'bar';
+});
+
+console.log(foobar()); // => 'foobar'
+console.log(localStorage.foo); // => undefined
+foo('FOO');
+console.log(foobar()); // => 'FOObar'
+console.log(localStorage.foo); // => 'FOO'
+```
+
+## Synchronization of value with asynchronous storage
+
+```js
+var request = (function() {
+	var value = 1;
+
+	return {
+		get: function(url) {
+			return new Promise(function(resolve, reject) {
+				setTimeout(function() {
+					resolve({
+						ok: true,
+						value: value
+					});
+				}, 1000);
+			});
+		},
+
+		put: function(url, params) {
+			return new Promise(function(resolve, reject) {
+				setTimeout(function() {
+					value = params.value;
+
+					resolve({
+						ok: true
+					});
+				}, 1000);
+			});
+		}
+	};
+})();
+
+var foo = cellx(function(push, fail, oldValue) {
+	request.get('http://...').then(function(res) {
+		if (res.ok) {
+			push(res.value);
+		} else {
+			fail(res.error);
+		}
+	});
+
+	return oldValue || 0;
+}, {
+	put: function(value, push, fail, oldValue) {
+		request.put('http://...', { value: value }).then(function(res) {
+			if (res.ok) {
+				push(value);
+			} else {
+				fail(res.error);
+			}
+		});
+	}
+});
+
+foo('subscribe', function() {
+	console.log('New foo value: ' + foo());
+	foo(5);
+});
+
+console.log(foo());
+// => 0
+
+foo('unwrap', 0).then(function() {
+    console.log(foo());
+});
+// => 'New foo value: 1'
+// => 1
+// => 'New foo value: 5'
+```
 
 ## Collections
 
@@ -680,23 +677,23 @@ Type signature: `(index: int, items: Array) -> cellx.ObservableList;`.
 
 ##### remove
 
-Type signature: `(item, fromIndex?: int) -> cellx.ObservableList;`.
+Type signature: `(item, fromIndex?: int) -> boolean;`.
 
 Removes the first occurrence of `item` in the list.
 
 ##### removeAll
 
-Type signature: `(item, fromIndex?: int) -> cellx.ObservableList;`.
+Type signature: `(item, fromIndex?: int) -> boolean;`.
 
 It removes all occurrences of `item` list.
 
 ##### removeAt
 
-Type signature: `(index: int) -> cellx.ObservableList;`.
+Type signature: `(index: int) -> *;`.
 
 ##### removeRange
 
-Type signature: `(index?: int, count?: uint) -> cellx.ObservableList;`.
+Type signature: `(index?: int, count?: uint) -> Array;`.
 
 If `count` is unspecified it will remove everything till the end of the list.
 
@@ -710,39 +707,39 @@ Type signature: `(separator?: string) -> string;`.
 
 ##### forEach
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList), context?);`.
+Type signature: `(cb: (item, index: uint, list: cellx.ObservableList), context?);`.
 
 ##### map
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> *, context?) -> Array;`.
+Type signature: `(cb: (item, index: uint, list: cellx.ObservableList) -> *, context?) -> Array;`.
 
 ##### filter
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> Array;`.
+Type signature: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> Array;`.
 
 ##### find
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> *;`.
+Type signature: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> *;`.
 
 ##### findIndex
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> int;`.
+Type signature: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> int;`.
 
 ##### every
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> boolean;`.
+Type signature: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> boolean;`.
 
 ##### some
 
-Type signature: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> boolean;`.
+Type signature: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> boolean;`.
 
 ##### reduce
 
-Type signature: `(cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
+Type signature: `(cb: (accumulator, item, index: uint, list: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
 ##### reduceRight
 
-Type signature: `(cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
+Type signature: `(cb: (accumulator, item, index: uint, list: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
 ##### clone
 

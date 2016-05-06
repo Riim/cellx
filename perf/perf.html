@@ -146,31 +146,31 @@ function runTest(lib, layerCount) {
 
 function testCellx(report, layerCount, done) {
 	var start = {
-		prop1: cellx(1),
-		prop2: cellx(2),
-		prop3: cellx(3),
-		prop4: cellx(4)
+		prop1: new cellx.Cell(1),
+		prop2: new cellx.Cell(2),
+		prop3: new cellx.Cell(3),
+		prop4: new cellx.Cell(4)
 	};
 	var layer = start;
 
 	for (var i = layerCount; i--;) {
 		layer = (function(m) {
 			var s = {
-				prop1: cellx(function() { return m.prop2(); }),
-				prop2: cellx(function() { return m.prop1() - m.prop3(); }),
-				prop3: cellx(function() { return m.prop2() + m.prop4(); }),
-				prop4: cellx(function() { return m.prop3(); })
+				prop1: new cellx.Cell(function() { return m.prop2.get(); }),
+				prop2: new cellx.Cell(function() { return m.prop1.get() - m.prop3.get(); }),
+				prop3: new cellx.Cell(function() { return m.prop2.get() + m.prop4.get(); }),
+				prop4: new cellx.Cell(function() { return m.prop3.get(); })
 			};
 
-			s.prop1('on', 'change', function() {});
-			s.prop2('on', 'change', function() {});
-			s.prop3('on', 'change', function() {});
-			s.prop4('on', 'change', function() {});
+			s.prop1.on('change', function() {});
+			s.prop2.on('change', function() {});
+			s.prop3.on('change', function() {});
+			s.prop4.on('change', function() {});
 
-			s.prop1();
-			s.prop2();
-			s.prop3();
-			s.prop4();
+			s.prop1.get();
+			s.prop2.get();
+			s.prop3.get();
+			s.prop4.get();
 
 			return s;
 		})(layer);
@@ -179,24 +179,24 @@ function testCellx(report, layerCount, done) {
 	var end = layer;
 
 	report.beforeChange = [
-		end.prop1(),
-		end.prop2(),
-		end.prop3(),
-		end.prop4()
+		end.prop1.get(),
+		end.prop2.get(),
+		end.prop3.get(),
+		end.prop4.get()
 	];
 
 	var st = performance.now();
 
-	start.prop1(4);
-	start.prop2(3);
-	start.prop3(2);
-	start.prop4(1);
+	start.prop1.set(4);
+	start.prop2.set(3);
+	start.prop3.set(2);
+	start.prop4.set(1);
 
 	report.afterChange = [
-		end.prop1(),
-		end.prop2(),
-		end.prop3(),
-		end.prop4()
+		end.prop1.get(),
+		end.prop2.get(),
+		end.prop3.get(),
+		end.prop4.get()
 	];
 
 	report.recalculationTime = performance.now() - st;

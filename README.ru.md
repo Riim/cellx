@@ -46,10 +46,10 @@ user.lastName('Пёс');
 // => 'fullName: Шарик Пёс'
 ```
 
-Несмотря на то, что изменились две зависимости ячейки `fullName`, обработчик её изменения сработал только один раз.  
+Несмотря на то, что изменились две зависимости ячейки `fullName`, обработчик её изменения сработал только один раз.
 Важной особенностью cellx-а является то, что он старается максимально избавиться как от лишних вызовов
 обработчиков изменений, так и от лишних вызовов расчётных формул зависимых ячеек. В сочетании с ещё некоторыми особыми
-оптимизациями это приводит к идеальной скорости расчёта сложнейших сеток зависимостей.  
+оптимизациями это приводит к идеальной скорости расчёта сложнейших сеток зависимостей.
 В одном из тестов, который используется для замера производительности, генерируется сетка из множества "слоёв",
 каждый из которых состоит из 4-x ячеек. Ячейки вычисляются из ячеек предыдущего слоя (кроме самого первого, он содержит
 исходные значения) по формуле A2=B1, B2=A1-C1, C2=B1+D1, D2=C1. Далее запоминается начальное время, меняются значения
@@ -64,10 +64,10 @@ user.lastName('Пёс');
 | 50                                      | 1     | >300000           | >300000                            | 1                                               | 5                                           | 1                                                  | 1                                                       | >300000                                       |
 | 100                                     | 1     | >300000           | >300000                            | 2                                               | 8                                           | 2                                                  | 3                                                       | >300000                                       |
 | 1000                                    | 5     | >300000           | >300000                            | 20                                              | 90                                          | 15                                                 | 80                                                      | >300000                                       |
-| 5000                                    | 25    | >300000           | >300000                            | 340                                             | first call — 460, subsequent calls — >460   | 120                                                | RangeError: Maximum call stack size exceeded            | >300000                                       |
-| 25000                                   | 120   | >300000           | >300000                            | 7000                                            | first call — 3200, subsequent calls — >3200 | 700                                                | RangeError: Maximum call stack size exceeded            | >300000                                       |
+| 5000                                    | 30    | >300000           | >300000                            | 340                                             | first call — 460, subsequent calls — >460   | 120                                                | RangeError: Maximum call stack size exceeded            | >300000                                       |
+| 25000                                   | 140   | >300000           | >300000                            | 7000                                            | first call — 3200, subsequent calls — >3200 | 700                                                | RangeError: Maximum call stack size exceeded            | >300000                                       |
 
-Исходники теста можно найти в папке [perf](https://github.com/Riim/cellx/tree/master/perf).  
+Исходники теста можно найти в папке [perf](https://github.com/Riim/cellx/tree/master/perf).
 Плотность связей в реальных приложениях обычно ниже чем в данном тесте, то есть если в тесте определённая задержка
 появляется на 100 вычисляемых ячейках (25 слоёв), то в реальном приложении подобная задержка будет либо
 на большем числе ячеек, либо в формулах ячеек будут какие-то сложные расчёты (например, вычисление одного массива
@@ -122,7 +122,7 @@ console.log(arr()[0]);
 // => 1
 ```
 
-#### set
+#### put
 
 Используется для создания записываемых вычисляемых ячеек:
 
@@ -134,7 +134,7 @@ function User() {
     this.fullName = cellx(function() {
         return (this.firstName() + ' ' + this.lastName()).trim();
     }, {
-        set: function(name) {
+        put: function(name) {
             name = name.split(' ');
 
             this.firstName(name[0]);
@@ -206,65 +206,6 @@ console.log(value());
 
 console.log(num());
 // => 5
-```
-
-#### computed
-
-По умолчанию, если первый аргумент cellx-а — обычная функция, то ячейка определяется как вычисляемая, а переданная
-функция используется как формула для вычисления значения ячейки. Если же необходимо создать ячейку с функцией
-в качестве значения, то можно либо установить значение уже после инициализации ячейки, либо передать опцию `computed`
-со значением `false`:
-
-```js
-var value = cellx(Number, { computed: false });
-```
-
-И наоборот, функции могут быть экземплярами какого-то кастомного типа, для их детекции им обычно переопределяют
-свойство `constructor` (в ECMAScript 6 можно будет менять поведение `instanceof` с помощью `Symbol.hasInstance`).
-Функции с переопределённым `constructor`-ом, по умолчанию, засчитываются как обычные значения.
-Экземпляры cellx-а сами являются такими:
-
-```js
-var num = cellx(5);
-
-console.log(
-    typeof num == 'function',
-    num.constructor == cellx,
-    num.constructor == Function
-);
-// => true true false
-```
-
-в результате вы можете ложить одну ячейку во-внутрь другой:
-
-```js
-var num = cellx(5);
-var container = cellx(num);
-
-console.log(container()());
-// => 5
-```
-
-Если же кастомная функция всё равно должна быть засчитана как формула для вычисляемой ячейки, то нужно передать
-опцию `computed` со значением `true`:
-
-```js
-function FormulaSum(a, b) {
-    var formula = function() {
-        return a() + b();
-    };
-
-    formula.constructor = FormulaSum;
-
-    return formula;
-}
-
-var a = cellx(5);
-var b = cellx(10);
-var sum = cellx(new FormulaSum(a, b), { computed: true });
-
-console.log(sum());
-// => 15
 ```
 
 ### Методы
@@ -357,52 +298,6 @@ user.name('dispose', 0);
 
 это снимет все обработчики не только с самой ячейки, но и со всех вычисляемых из неё ячеек,
 при отсутствии ссылок "умрёт" вся ветка зависимостей.
-
-### Использование с ECMAScript 6
-
-Иногда не очень удобно постоянно дописывать скобки в конце при чтении ячейки, кроме того, бывают ситуации когда
-какое-то обычное свойство класса уже используется в приложеннии и вдруг понадобилось сделать его наблюдаемым,
-тут придётся пройтись по всем местам в приложении, где оно уже используется, и дописать скобки.
-Всё это не очень удобно. Используя декораторы из ES6 можно избежать таких проблем:
-
-```js
-import { cellx, d } from 'cellx';
-
-class User extends cellx.EventEmitter {
-	@d.observable firstName = '';
-	@d.observable lastName = '';
-
-	@d.computed fullName = function() {
-		return (this.firstName + ' ' + this.lastName).trim();
-	};
-
-	constructor(data) {
-        super();
-
-        for (let name in data) {
-            this[name] = data[name];
-        }
-	}
-}
-
-let user = new User({ firstName: 'Матроскин', lastName: 'Кот' });
-
-// добавление обработчика
-user.on('change:fullName', function() {
-    console.log(`fullName: ${this.fullName}`);
-});
-
-console.log(user.firstName);
-// => 'Матроскин'
-
-user.firstName = 'Шарик';
-user.lastName = 'Пёс';
-// => 'fullName: Шарик Пёс'
-```
-
-Теперь к любому свойству в классе всегда можно добавить декоратор `observable` и получить возможность
-подписываться на его изменения и создавать вычисляемые из него свойства. При этом в уже написанной части приложения
-ничего менять не придётся.
 
 ### Использование с React
 
@@ -504,6 +399,99 @@ var user = {
 В таких случаях ячейки автоматически отписываются от незначимых для них зависимостей и не перевычисляются
 при их изменении. В дальнейшем, если `firstName` снова станет пустой строкой, ячейка `name` вновь подпишется
 на `lastName`.
+
+## Синхронизация значения с синхронным хранилищем
+
+```js
+var foo = cellx(function() {
+	return localStorage.foo || 'foo';
+}, {
+	put: function(value) {
+		localStorage.foo = value;
+		this.push(value);
+	}
+});
+
+var foobar = cellx(function() {
+	return foo() + 'bar';
+});
+
+console.log(foobar()); // => 'foobar'
+console.log(localStorage.foo); // => undefined
+foo('FOO');
+console.log(foobar()); // => 'FOObar'
+console.log(localStorage.foo); // => 'FOO'
+```
+
+## Синхронизация значения с асинхронным хранилищем
+
+```js
+var request = (function() {
+	var value = 1;
+
+	return {
+		get: function(url) {
+			return new Promise(function(resolve, reject) {
+				setTimeout(function() {
+					resolve({
+						ok: true,
+						value: value
+					});
+				}, 1000);
+			});
+		},
+
+		put: function(url, params) {
+			return new Promise(function(resolve, reject) {
+				setTimeout(function() {
+					value = params.value;
+
+					resolve({
+						ok: true
+					});
+				}, 1000);
+			});
+		}
+	};
+})();
+
+var foo = cellx(function(push, fail, oldValue) {
+	request.get('http://...').then(function(res) {
+		if (res.ok) {
+			push(res.value);
+		} else {
+			fail(res.error);
+		}
+	});
+
+	return oldValue || 0;
+}, {
+	put: function(value, push, fail, oldValue) {
+		request.put('http://...', { value: value }).then(function(res) {
+			if (res.ok) {
+				push(value);
+			} else {
+				fail(res.error);
+			}
+		});
+	}
+});
+
+foo('subscribe', function() {
+	console.log('New foo value: ' + foo());
+	foo(5);
+});
+
+console.log(foo());
+// => 0
+
+foo('unwrap', 0).then(function() {
+    console.log(foo());
+});
+// => 'New foo value: 1'
+// => 1
+// => 'New foo value: 5'
+```
 
 ## Коллекции
 
@@ -673,23 +661,23 @@ console.log(list.toArray());
 
 ##### remove
 
-Сигнатура вызова: `(item, fromIndex?: int) -> cellx.ObservableList;`.
+Сигнатура вызова: `(item, fromIndex?: int) -> boolean;`.
 
 Удаляет первое вхождениие `item` в списке.
 
 ##### removeAll
 
-Сигнатура вызова: `(item, fromIndex?: int) -> cellx.ObservableList;`.
+Сигнатура вызова: `(item, fromIndex?: int) -> boolean;`.
 
 Удаляет все вхождениия `item` в списке.
 
 ##### removeAt
 
-Сигнатура вызова: `(index: int) -> cellx.ObservableList;`.
+Сигнатура вызова: `(index: int) -> *;`.
 
 ##### removeRange
 
-Сигнатура вызова: `(index?: int, count?: uint) -> cellx.ObservableList;`.
+Сигнатура вызова: `(index?: int, count?: uint) -> Array;`.
 
 При неуказанном `count`-е удалит всё до конца списка.
 
@@ -703,39 +691,39 @@ console.log(list.toArray());
 
 ##### forEach
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList), context?);`.
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList), context?);`.
 
 ##### map
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> *, context?) -> Array;`.
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> *, context?) -> Array;`.
 
 ##### filter
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> Array;`.
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> Array;`.
 
 ##### find
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> *;`.
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> *;`.
 
 ##### findIndex
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> int;`.
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> int;`.
 
 ##### every
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> boolean;`.
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> boolean;`.
 
 ##### some
 
-Сигнатура вызова: `(cb: (item, index: uint, arr: cellx.ObservableList) -> boolean|undefined, context?) -> boolean;`.
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> boolean;`.
 
 ##### reduce
 
-Сигнатура вызова: `(cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
+Сигнатура вызова: `(cb: (accumulator, item, index: uint, list: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
 ##### reduceRight
 
-Сигнатура вызова: `(cb: (accumulator, item, index: uint, arr: cellx.ObservableList) -> *, initialValue?) -> *;`.
+Сигнатура вызова: `(cb: (accumulator, item, index: uint, list: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
 ##### clone
 

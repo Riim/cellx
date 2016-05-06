@@ -12,7 +12,7 @@ var isArray = Array.isArray;
  * @extends {cellx.EventEmitter}
  * @implements {ObservableCollectionMixin}
  *
- * @typesign new (entries?: Object|Array<{ 0, 1 }>|cellx.ObservableMap, opts?: {
+ * @typesign new (entries?: Object|cellx.ObservableMap|Map|Array<{ 0, 1 }>, opts?: {
  *     adoptsItemChanges?: boolean
  * }) -> cellx.ObservableMap;
  */
@@ -35,7 +35,7 @@ var ObservableMap = EventEmitter.extend({
 		if (entries) {
 			var mapEntries = this._entries;
 
-			if (entries instanceof ObservableMap) {
+			if (entries instanceof ObservableMap || entries instanceof Map) {
 				entries._entries.forEach(function(value, key) {
 					mapEntries.set(key, value);
 					this._registerValue(value);
@@ -139,7 +139,7 @@ var ObservableMap = EventEmitter.extend({
 			subtype: 'delete',
 			key: key,
 			oldValue: value,
-			value: undefined
+			value: void 0
 		});
 
 		return true;
@@ -151,6 +151,14 @@ var ObservableMap = EventEmitter.extend({
 	clear: function clear() {
 		if (!this.size) {
 			return this;
+		}
+
+		if (this.adoptsItemChanges) {
+			this._valueCounts.forEach(function(value) {
+				if (value instanceof EventEmitter) {
+					value.off('change', this._onItemChange, this);
+				}
+			}, this);
 		}
 
 		this._entries.clear();
