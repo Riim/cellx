@@ -192,7 +192,7 @@ var Cell = EventEmitter.extend({
 
 		var cell = this;
 
-		this.debugKey = opts.debugKey || void 0;
+		this.debugKey = opts.debugKey;
 
 		this.owner = opts.owner || this;
 
@@ -275,7 +275,12 @@ var Cell = EventEmitter.extend({
 
 		this._activate();
 
-		EventEmitter.prototype.on.call(this, type, listener, context);
+		if (typeof type == 'object') {
+			EventEmitter.prototype.on.call(this, type, arguments.length >= 2 ? listener : this.owner);
+		} else {
+			EventEmitter.prototype.on.call(this, type, listener, arguments.length >= 3 ? context : this.owner);
+		}
+
 		this._hasFollowers = true;
 
 		return this;
@@ -288,7 +293,17 @@ var Cell = EventEmitter.extend({
 			release();
 		}
 
-		EventEmitter.prototype.off.call(this, type, listener, context);
+		var argCount = arguments.length;
+
+		if (argCount) {
+			if (typeof type == 'object') {
+				EventEmitter.prototype.off.call(this, type, argCount >= 2 ? listener : this.owner);
+			} else {
+				EventEmitter.prototype.off.call(this, type, listener, argCount >= 3 ? context : this.owner);
+			}
+		} else {
+			EventEmitter.prototype.off.call(this);
+		}
 
 		if (!this._slaves.length && !this._events.change && !this._events.error) {
 			this._hasFollowers = false;
@@ -299,26 +314,13 @@ var Cell = EventEmitter.extend({
 	},
 
 	/**
-	 * @override
-	 */
-	_on: function _on(type, listener, context) {
-		EventEmitter.prototype._on.call(this, type, listener, context == null ? this.owner : context);
-	},
-	/**
-	 * @override
-	 */
-	_off: function _off(type, listener, context) {
-		EventEmitter.prototype._off.call(this, type, listener, context == null ? this.owner : context);
-	},
-
-	/**
 	 * @typesign (
 	 *     listener: (evt: cellx~Event) -> ?boolean,
 	 *     context?
 	 * ) -> cellx.Cell;
 	 */
 	addChangeListener: function addChangeListener(listener, context) {
-		return this.on('change', listener, context);
+		return this.on('change', listener, arguments.length >= 2 ? context : this.owner);
 	},
 	/**
 	 * @typesign (
@@ -327,7 +329,7 @@ var Cell = EventEmitter.extend({
 	 * ) -> cellx.Cell;
 	 */
 	removeChangeListener: function removeChangeListener(listener, context) {
-		return this.off('change', listener, context);
+		return this.off('change', listener, arguments.length >= 2 ? context : this.owner);
 	},
 
 	/**
@@ -337,7 +339,7 @@ var Cell = EventEmitter.extend({
 	 * ) -> cellx.Cell;
 	 */
 	addErrorListener: function addErrorListener(listener, context) {
-		return this.on('error', listener, context);
+		return this.on('error', listener, arguments.length >= 2 ? context : this.owner);
 	},
 	/**
 	 * @typesign (
@@ -346,7 +348,7 @@ var Cell = EventEmitter.extend({
 	 * ) -> cellx.Cell;
 	 */
 	removeErrorListener: function removeErrorListener(listener, context) {
-		return this.off('error', listener, context);
+		return this.off('error', listener, arguments.length >= 2 ? context : this.owner);
 	},
 
 	/**
@@ -361,6 +363,10 @@ var Cell = EventEmitter.extend({
 		}
 		wrapper[KEY_INNER] = listener;
 
+		if (arguments.length < 2) {
+			context = this.owner;
+		}
+
 		return this
 			.on('change', wrapper, context)
 			.on('error', wrapper, context);
@@ -372,6 +378,10 @@ var Cell = EventEmitter.extend({
 	 * ) -> cellx.Cell;
 	 */
 	unsubscribe: function unsubscribe(listener, context) {
+		if (arguments.length < 2) {
+			context = this.owner;
+		}
+
 		return this
 			.off('change', listener, context)
 			.off('error', listener, context);

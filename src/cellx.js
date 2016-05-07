@@ -83,7 +83,9 @@ function cellx(value, opts) {
 				return value;
 			}
 			default: {
-				switch (value) {
+				var method = value;
+
+				switch (method) {
 					case 'bind': {
 						cx = cx.bind(owner);
 						cx.constructor = cellx;
@@ -93,7 +95,7 @@ function cellx(value, opts) {
 						return cell;
 					}
 					default: {
-						var result = Cell.prototype[value].apply(cell, slice.call(arguments, 1));
+						var result = Cell.prototype[method].apply(cell, slice.call(arguments, 1));
 						return result === cell ? cx : result;
 					}
 				}

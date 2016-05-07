@@ -40,9 +40,10 @@ export class EventEmitter {
 
 	off(type: string, listener: IEventEmitterListener, context?: any): EventEmitter;
 	off(listeners: { [key: string]: IEventEmitterListener }, context?: any): EventEmitter;
+	off(): EventEmitter;
 
-	protected _on(type: string, listener: IEventEmitterListener, context?: any): void;
-	protected _off(type: string, listener: IEventEmitterListener, context?: any): void;
+	protected _on(type: string, listener: IEventEmitterListener, context: any): void;
+	protected _off(type: string, listener: IEventEmitterListener, context: any): void;
 
 	once(type: string, listener: IEventEmitterListener, context?: any): EventEmitter;
 
@@ -105,7 +106,7 @@ export class ObservableList<T> extends EventEmitter implements IObservableCollec
 	lastIndexOf(value: T, fromIndex?: number): number;
 
 	get(index: number): T;
-	getRange(index?: number, count?: number): Array<T>;
+	getRange(index: number, count?: number): Array<T>;
 	set(index: number, value: T): ObservableList<T>;
 	setRange(index: number, items: Array<T>): ObservableList<T>;
 	add(item: T): ObservableList<T>;
@@ -115,7 +116,7 @@ export class ObservableList<T> extends EventEmitter implements IObservableCollec
 	remove(item: T, fromIndex?: number): boolean;
 	removeAll(item: T, fromIndex?: number): boolean;
 	removeAt(index: number): T;
-	removeRange(index?: number, count?: number): Array<T>;
+	removeRange(index: number, count?: number): Array<T>;
 	clear(): ObservableList<T>;
 
 	join(separator?: string): string;

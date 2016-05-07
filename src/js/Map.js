@@ -168,9 +168,7 @@ if (!Map) {
 		},
 
 		forEach: function forEach(cb, context) {
-			if (context == null) {
-				context = global;
-			}
+			context = arguments.length >= 2 ? context : global;
 
 			var entry = this._first;
 

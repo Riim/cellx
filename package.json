@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "",
   "main": "src/cellx.js",
   "typings": "src/cellx.d.ts",
@@ -35,13 +35,13 @@
     "karma-chai": "^0.1.0",
     "karma-coverage": "^1.0.0",
     "karma-mocha": "^1.0.1",
-    "karma-mocha-reporter": "^2.0.2",
+    "karma-mocha-reporter": "^2.0.3",
     "karma-phantomjs-launcher": "^1.0.0",
     "karma-sinon": "^1.0.4",
     "mocha": "^2.4.5",
     "phantomjs-prebuilt": "^2.1.7",
     "sinon": "^1.17.4",
     "webpack": "^1.13.0",
-    "yargs": "^4.6.0"
+    "yargs": "^4.7.0"
   }
 }

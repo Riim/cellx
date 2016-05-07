@@ -9,7 +9,7 @@ describe('ObservableList', function() {
 			sorted: true
 		});
 
-		expect(list.getRange())
+		expect(list.toArray())
 			.to.eql([1, 2, 3, 4, 5]);
 	});
 
@@ -115,7 +115,7 @@ describe('ObservableList', function() {
 		expect(list.insert(3, 4))
 			.to.equal(list);
 
-		expect(list.getRange())
+		expect(list.toArray())
 			.to.eql([1, 2, 3, 4, 2, 1]);
 	});
 
@@ -125,7 +125,7 @@ describe('ObservableList', function() {
 		expect(list.insertRange(3, [4, 5]))
 			.to.equal(list);
 
-		expect(list.getRange())
+		expect(list.toArray())
 			.to.eql([1, 2, 3, 4, 5, 2, 1]);
 	});
 
@@ -138,7 +138,7 @@ describe('ObservableList', function() {
 		expect(list.remove(4))
 			.to.be.not.ok;
 
-		expect(list.getRange())
+		expect(list.toArray())
 			.to.eql([2, 3, 2, 1]);
 	});
 
@@ -151,7 +151,7 @@ describe('ObservableList', function() {
 		expect(list.remove(4))
 			.to.be.not.ok;
 
-		expect(list.getRange())
+		expect(list.toArray())
 			.to.eql([2, 3, 2]);
 	});
 
@@ -161,7 +161,7 @@ describe('ObservableList', function() {
 		expect(list.removeAt(2))
 			.to.equal(3);
 
-		expect(list.getRange())
+		expect(list.toArray())
 			.to.eql([1, 2, 2, 1]);
 	});
 
@@ -171,13 +171,13 @@ describe('ObservableList', function() {
 		expect(list.removeRange(2, 2))
 			.to.eql([3, 2]);
 
-		expect(list.getRange())
+		expect(list.toArray())
 			.to.eql([1, 2, 1]);
 
 		expect(list.removeRange(1))
 			.to.eql([2, 1]);
 
-		expect(list.getRange())
+		expect(list.toArray())
 			.to.eql([1]);
 	});
 
@@ -187,7 +187,7 @@ describe('ObservableList', function() {
 		expect(list.clear())
 			.to.equal(list);
 
-		expect(list.getRange())
+		expect(list.toArray())
 			.to.eql([]);
 	});
 
@@ -298,8 +298,8 @@ describe('ObservableList', function() {
 		expect(clonedList.length)
 			.to.equal(list.length);
 
-		expect(clonedList.getRange())
-			.to.eql(list.getRange());
+		expect(clonedList.toArray())
+			.to.eql(list.toArray());
 	});
 
 	it('#toArray()', function() {

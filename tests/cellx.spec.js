@@ -13,7 +13,10 @@ describe('cellx', function() {
 		emitter.foo = 2;
 
 		setTimeout(function() {
-			expect(onChangeSpy.called)
+			expect(onChangeSpy.calledOnce)
+				.to.be.ok;
+
+			expect(onChangeSpy.firstCall.calledOn(emitter))
 				.to.be.ok;
 
 			done();

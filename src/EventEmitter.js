@@ -49,7 +49,7 @@ var EventEmitter = createClass({
 	 */
 	on: function on(type, listener, context) {
 		if (typeof type == 'object') {
-			context = listener;
+			context = arguments.length >= 2 ? listener : this;
 
 			var listeners = type;
 
@@ -59,7 +59,7 @@ var EventEmitter = createClass({
 				}
 			}
 		} else {
-			this._on(type, listener, context);
+			this._on(type, listener, arguments.length >= 3 ? context : this);
 		}
 
 		return this;
@@ -79,9 +79,11 @@ var EventEmitter = createClass({
 	 * @typesign () -> cellx.EventEmitter;
 	 */
 	off: function off(type, listener, context) {
-		if (type) {
+		var argCount = arguments.length;
+
+		if (argCount) {
 			if (typeof type == 'object') {
-				context = listener;
+				context = argCount >= 2 ? listener : this;
 
 				var listeners = type;
 
@@ -91,7 +93,7 @@ var EventEmitter = createClass({
 					}
 				}
 			} else {
-				this._off(type, listener, context);
+				this._off(type, listener, argCount >= 3 ? context : this);
 			}
 		} else if (this._events) {
 			this._events = Object.create(null);
@@ -104,7 +106,7 @@ var EventEmitter = createClass({
 	 * @typesign (
 	 *     type: string,
 	 *     listener: (evt: cellx~Event) -> ?boolean,
-	 *     context?
+	 *     context
 	 * );
 	 */
 	_on: function _on(type, listener, context) {
@@ -121,7 +123,7 @@ var EventEmitter = createClass({
 
 			events.push({
 				listener: listener,
-				context: context == null ? this : context
+				context: context
 			});
 		}
 	},
@@ -129,7 +131,7 @@ var EventEmitter = createClass({
 	 * @typesign (
 	 *     type: string,
 	 *     listener: (evt: cellx~Event) -> ?boolean,
-	 *     context?
+	 *     context
 	 * );
 	 */
 	_off: function _off(type, listener, context) {
@@ -142,10 +144,6 @@ var EventEmitter = createClass({
 
 			if (!events) {
 				return;
-			}
-
-			if (context == null) {
-				context = this;
 			}
 
 			for (var i = events.length; i;) {
@@ -171,6 +169,10 @@ var EventEmitter = createClass({
 	 * ) -> cellx.EventEmitter;
 	 */
 	once: function once(type, listener, context) {
+		if (arguments.length < 3) {
+			context = this;
+		}
+
 		function wrapper() {
 			this._off(type, wrapper, context);
 			return listener.apply(this, arguments);

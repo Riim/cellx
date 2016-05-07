@@ -139,7 +139,9 @@ return /******/ (function(modules) { // webpackBootstrap
 					return value;
 				}
 				default: {
-					switch (value) {
+					var method = value;
+
+					switch (method) {
 						case 'bind': {
 							cx = cx.bind(owner);
 							cx.constructor = cellx;
@@ -149,7 +151,7 @@ return /******/ (function(modules) { // webpackBootstrap
 							return cell;
 						}
 						default: {
-							var result = Cell.prototype[value].apply(cell, slice.call(arguments, 1));
+							var result = Cell.prototype[method].apply(cell, slice.call(arguments, 1));
 							return result === cell ? cx : result;
 						}
 					}
@@ -450,9 +452,7 @@ return /******/ (function(modules) { // webpackBootstrap
 			},
 
 			forEach: function forEach(cb, context) {
-				if (context == null) {
-					context = global;
-				}
+				context = arguments.length >= 2 ? context : global;
 
 				var entry = this._first;
 
@@ -862,7 +862,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		 */
 		on: function on(type, listener, context) {
 			if (typeof type == 'object') {
-				context = listener;
+				context = arguments.length >= 2 ? listener : this;
 
 				var listeners = type;
 
@@ -872,7 +872,7 @@ return /******/ (function(modules) { // webpackBootstrap
 					}
 				}
 			} else {
-				this._on(type, listener, context);
+				this._on(type, listener, arguments.length >= 3 ? context : this);
 			}
 
 			return this;
@@ -892,9 +892,11 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * @typesign () -> cellx.EventEmitter;
 		 */
 		off: function off(type, listener, context) {
-			if (type) {
+			var argCount = arguments.length;
+
+			if (argCount) {
 				if (typeof type == 'object') {
-					context = listener;
+					context = argCount >= 2 ? listener : this;
 
 					var listeners = type;
 
@@ -904,7 +906,7 @@ return /******/ (function(modules) { // webpackBootstrap
 						}
 					}
 				} else {
-					this._off(type, listener, context);
+					this._off(type, listener, argCount >= 3 ? context : this);
 				}
 			} else if (this._events) {
 				this._events = Object.create(null);
@@ -917,7 +919,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * @typesign (
 		 *     type: string,
 		 *     listener: (evt: cellx~Event) -> ?boolean,
-		 *     context?
+		 *     context
 		 * );
 		 */
 		_on: function _on(type, listener, context) {
@@ -934,7 +936,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 				events.push({
 					listener: listener,
-					context: context == null ? this : context
+					context: context
 				});
 			}
 		},
@@ -942,7 +944,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * @typesign (
 		 *     type: string,
 		 *     listener: (evt: cellx~Event) -> ?boolean,
-		 *     context?
+		 *     context
 		 * );
 		 */
 		_off: function _off(type, listener, context) {
@@ -955,10 +957,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 				if (!events) {
 					return;
-				}
-
-				if (context == null) {
-					context = this;
 				}
 
 				for (var i = events.length; i;) {
@@ -984,6 +982,10 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * ) -> cellx.EventEmitter;
 		 */
 		once: function once(type, listener, context) {
+			if (arguments.length < 3) {
+				context = this;
+			}
+
 			function wrapper() {
 				this._off(type, wrapper, context);
 				return listener.apply(this, arguments);
@@ -1268,9 +1270,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * );
 		 */
 		forEach: function forEach(cb, context) {
-			if (context == null) {
-				context = global;
-			}
+			context = arguments.length >= 2 ? context : global;
 
 			this._entries.forEach(function(value, key) {
 				cb.call(context, value, key, this);
@@ -1501,7 +1501,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		},
 
 		/**
-		 * @typesign (index: int, allowedEndIndex?: boolean) -> ?uint;
+		 * @typesign (index: ?int, allowedEndIndex?: boolean) -> ?uint;
 		 */
 		_validateIndex: function _validateIndex(index, allowedEndIndex) {
 			if (index === void 0) {
@@ -1550,10 +1550,10 @@ return /******/ (function(modules) { // webpackBootstrap
 		},
 
 		/**
-		 * @typesign (index?: int, count?: uint) -> Array;
+		 * @typesign (index: int, count?: uint) -> Array;
 		 */
 		getRange: function getRange(index, count) {
-			index = this._validateIndex(index || 0, true);
+			index = this._validateIndex(index, true);
 
 			var items = this._items;
 
@@ -1757,10 +1757,10 @@ return /******/ (function(modules) { // webpackBootstrap
 		},
 
 		/**
-		 * @typesign (index?: int, count?: uint) -> Array;
+		 * @typesign (index: int, count?: uint) -> Array;
 		 */
 		removeRange: function removeRange(index, count) {
-			index = this._validateIndex(index || 0, true);
+			index = this._validateIndex(index, true);
 
 			var items = this._items;
 
@@ -1848,9 +1848,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * ) -> *;
 		 */
 		find: function(cb, context) {
-			if (context == null) {
-				context = this;
-			}
+			context = arguments.length >= 2 ? context : global;
 
 			var items = this._items;
 
@@ -1870,9 +1868,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * ) -> int;
 		 */
 		findIndex: function(cb, context) {
-			if (context == null) {
-				context = this;
-			}
+			context = arguments.length >= 2 ? context : global;
 
 			var items = this._items;
 
@@ -1959,11 +1955,12 @@ return /******/ (function(modules) { // webpackBootstrap
 		ObservableList.prototype[name] = function(cb, initialValue) {
 			var list = this;
 			var items = this._items;
-			var wrappedCallback = function(accumulator, item, index) {
-				return cb(accumulator, item, index, list);
-			};
 
-			return arguments.length >= 2 ? items[name](wrappedCallback, initialValue) : items[name](wrappedCallback);
+			function wrapper(accumulator, item, index) {
+				return cb(accumulator, item, index, list);
+			}
+
+			return arguments.length >= 2 ? items[name](wrapper, initialValue) : items[name](wrapper);
 		};
 	});
 
@@ -2211,7 +2208,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 			var cell = this;
 
-			this.debugKey = opts.debugKey || void 0;
+			this.debugKey = opts.debugKey;
 
 			this.owner = opts.owner || this;
 
@@ -2294,7 +2291,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 			this._activate();
 
-			EventEmitter.prototype.on.call(this, type, listener, context);
+			if (typeof type == 'object') {
+				EventEmitter.prototype.on.call(this, type, arguments.length >= 2 ? listener : this.owner);
+			} else {
+				EventEmitter.prototype.on.call(this, type, listener, arguments.length >= 3 ? context : this.owner);
+			}
+
 			this._hasFollowers = true;
 
 			return this;
@@ -2307,7 +2309,17 @@ return /******/ (function(modules) { // webpackBootstrap
 				release();
 			}
 
-			EventEmitter.prototype.off.call(this, type, listener, context);
+			var argCount = arguments.length;
+
+			if (argCount) {
+				if (typeof type == 'object') {
+					EventEmitter.prototype.off.call(this, type, argCount >= 2 ? listener : this.owner);
+				} else {
+					EventEmitter.prototype.off.call(this, type, listener, argCount >= 3 ? context : this.owner);
+				}
+			} else {
+				EventEmitter.prototype.off.call(this);
+			}
 
 			if (!this._slaves.length && !this._events.change && !this._events.error) {
 				this._hasFollowers = false;
@@ -2318,26 +2330,13 @@ return /******/ (function(modules) { // webpackBootstrap
 		},
 
 		/**
-		 * @override
-		 */
-		_on: function _on(type, listener, context) {
-			EventEmitter.prototype._on.call(this, type, listener, context == null ? this.owner : context);
-		},
-		/**
-		 * @override
-		 */
-		_off: function _off(type, listener, context) {
-			EventEmitter.prototype._off.call(this, type, listener, context == null ? this.owner : context);
-		},
-
-		/**
 		 * @typesign (
 		 *     listener: (evt: cellx~Event) -> ?boolean,
 		 *     context?
 		 * ) -> cellx.Cell;
 		 */
 		addChangeListener: function addChangeListener(listener, context) {
-			return this.on('change', listener, context);
+			return this.on('change', listener, arguments.length >= 2 ? context : this.owner);
 		},
 		/**
 		 * @typesign (
@@ -2346,7 +2345,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * ) -> cellx.Cell;
 		 */
 		removeChangeListener: function removeChangeListener(listener, context) {
-			return this.off('change', listener, context);
+			return this.off('change', listener, arguments.length >= 2 ? context : this.owner);
 		},
 
 		/**
@@ -2356,7 +2355,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * ) -> cellx.Cell;
 		 */
 		addErrorListener: function addErrorListener(listener, context) {
-			return this.on('error', listener, context);
+			return this.on('error', listener, arguments.length >= 2 ? context : this.owner);
 		},
 		/**
 		 * @typesign (
@@ -2365,7 +2364,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * ) -> cellx.Cell;
 		 */
 		removeErrorListener: function removeErrorListener(listener, context) {
-			return this.off('error', listener, context);
+			return this.off('error', listener, arguments.length >= 2 ? context : this.owner);
 		},
 
 		/**
@@ -2380,6 +2379,10 @@ return /******/ (function(modules) { // webpackBootstrap
 			}
 			wrapper[KEY_INNER] = listener;
 
+			if (arguments.length < 2) {
+				context = this.owner;
+			}
+
 			return this
 				.on('change', wrapper, context)
 				.on('error', wrapper, context);
@@ -2391,6 +2394,10 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * ) -> cellx.Cell;
 		 */
 		unsubscribe: function unsubscribe(listener, context) {
+			if (arguments.length < 2) {
+				context = this.owner;
+			}
+
 			return this
 				.off('change', listener, context)
 				.off('error', listener, context);

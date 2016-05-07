@@ -102,7 +102,7 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (index: int, allowedEndIndex?: boolean) -> ?uint;
+	 * @typesign (index: ?int, allowedEndIndex?: boolean) -> ?uint;
 	 */
 	_validateIndex: function _validateIndex(index, allowedEndIndex) {
 		if (index === void 0) {
@@ -151,10 +151,10 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (index?: int, count?: uint) -> Array;
+	 * @typesign (index: int, count?: uint) -> Array;
 	 */
 	getRange: function getRange(index, count) {
-		index = this._validateIndex(index || 0, true);
+		index = this._validateIndex(index, true);
 
 		var items = this._items;
 
@@ -358,10 +358,10 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (index?: int, count?: uint) -> Array;
+	 * @typesign (index: int, count?: uint) -> Array;
 	 */
 	removeRange: function removeRange(index, count) {
-		index = this._validateIndex(index || 0, true);
+		index = this._validateIndex(index, true);
 
 		var items = this._items;
 
@@ -449,9 +449,7 @@ var ObservableList = EventEmitter.extend({
 	 * ) -> *;
 	 */
 	find: function(cb, context) {
-		if (context == null) {
-			context = this;
-		}
+		context = arguments.length >= 2 ? context : global;
 
 		var items = this._items;
 
@@ -471,9 +469,7 @@ var ObservableList = EventEmitter.extend({
 	 * ) -> int;
 	 */
 	findIndex: function(cb, context) {
-		if (context == null) {
-			context = this;
-		}
+		context = arguments.length >= 2 ? context : global;
 
 		var items = this._items;
 
@@ -560,11 +556,12 @@ var ObservableList = EventEmitter.extend({
 	ObservableList.prototype[name] = function(cb, initialValue) {
 		var list = this;
 		var items = this._items;
-		var wrappedCallback = function(accumulator, item, index) {
-			return cb(accumulator, item, index, list);
-		};
 
-		return arguments.length >= 2 ? items[name](wrappedCallback, initialValue) : items[name](wrappedCallback);
+		function wrapper(accumulator, item, index) {
+			return cb(accumulator, item, index, list);
+		}
+
+		return arguments.length >= 2 ? items[name](wrapper, initialValue) : items[name](wrapper);
 	};
 });
 

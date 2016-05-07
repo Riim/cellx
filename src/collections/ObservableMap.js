@@ -180,9 +180,7 @@ var ObservableMap = EventEmitter.extend({
 	 * );
 	 */
 	forEach: function forEach(cb, context) {
-		if (context == null) {
-			context = global;
-		}
+		context = arguments.length >= 2 ? context : global;
 
 		this._entries.forEach(function(value, key) {
 			cb.call(context, value, key, this);
