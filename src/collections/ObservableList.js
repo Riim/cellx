@@ -58,7 +58,7 @@ function addRange(list, items) {
  * @extends {cellx.EventEmitter}
  * @implements {ObservableCollectionMixin}
  *
- * @typesign new (items?: Array|cellx.ObservableList, opts?: {
+ * @typesign new ObservableList(items?: Array|cellx.ObservableList, opts?: {
  *     adoptsItemChanges?: boolean,
  *     comparator?: (a, b) -> int,
  *     sorted?: boolean

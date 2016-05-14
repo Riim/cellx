@@ -12,7 +12,7 @@ var isArray = Array.isArray;
  * @extends {cellx.EventEmitter}
  * @implements {ObservableCollectionMixin}
  *
- * @typesign new (entries?: Object|cellx.ObservableMap|Map|Array<{ 0, 1 }>, opts?: {
+ * @typesign new ObservableMap(entries?: Object|cellx.ObservableMap|Map|Array<{ 0, 1 }>, opts?: {
  *     adoptsItemChanges?: boolean
  * }) -> cellx.ObservableMap;
  */

@@ -831,7 +831,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/**
 	 * @class cellx.EventEmitter
 	 * @extends {Object}
-	 * @typesign new () -> cellx.EventEmitter;
+	 * @typesign new EventEmitter() -> cellx.EventEmitter;
 	 */
 	var EventEmitter = createClass({
 		Static: {
@@ -1102,7 +1102,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @extends {cellx.EventEmitter}
 	 * @implements {ObservableCollectionMixin}
 	 *
-	 * @typesign new (entries?: Object|cellx.ObservableMap|Map|Array<{ 0, 1 }>, opts?: {
+	 * @typesign new ObservableMap(entries?: Object|cellx.ObservableMap|Map|Array<{ 0, 1 }>, opts?: {
 	 *     adoptsItemChanges?: boolean
 	 * }) -> cellx.ObservableMap;
 	 */
@@ -1457,7 +1457,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @extends {cellx.EventEmitter}
 	 * @implements {ObservableCollectionMixin}
 	 *
-	 * @typesign new (items?: Array|cellx.ObservableList, opts?: {
+	 * @typesign new ObservableList(items?: Array|cellx.ObservableList, opts?: {
 	 *     adoptsItemChanges?: boolean,
 	 *     comparator?: (a, b) -> int,
 	 *     sorted?: boolean
@@ -2154,8 +2154,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	/**
 	 * @typesign (value);
 	 */
-	function defaultPut(value) {
-		this.push(value);
+	function defaultPut(value, push) {
+		push(value);
 	}
 
 	/**
@@ -2180,18 +2180,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * b.set(10);
 	 * // => 'c = 15'
 	 *
-	 * @typesign new (value?, opts?: {
+	 * @typesign new Cell(value?, opts?: {
 	 *     debugKey?: string,
 	 *     owner?: Object,
+	 *     get?: (value) -> *,
 	 *     validate?: (value, oldValue),
+	 *     merge: (value, oldValue) -> *,
 	 *     onChange?: (evt: cellx~Event) -> ?boolean,
 	 *     onError?: (evt: cellx~Event) -> ?boolean
 	 * }) -> cellx.Cell;
 	 *
-	 * @typesign new (pull: (push: (value), fail: (err), oldValue) -> *, opts?: {
+	 * @typesign new Cell(pull: (push: (value), fail: (err), oldValue) -> *, opts?: {
 	 *     debugKey?: string,
 	 *     owner?: Object,
+	 *     get?: (value) -> *,
 	 *     validate?: (value, oldValue),
+	 *     merge: (value, oldValue) -> *,
 	 *     put?: (value, push: (value), fail: (err), oldValue),
 	 *     reap?: (),
 	 *     onChange?: (evt: cellx~Event) -> ?boolean,
@@ -2213,8 +2217,11 @@ return /******/ (function(modules) { // webpackBootstrap
 			this.owner = opts.owner || this;
 
 			this._pull = typeof value == 'function' ? value : null;
+			this._get = opts.get || null;
 
 			this._validate = opts.validate || null;
+			this._merge = opts.merge || null;
+
 			this._put = opts.put || defaultPut;
 
 			var push = this.push;
@@ -2228,13 +2235,16 @@ return /******/ (function(modules) { // webpackBootstrap
 			this._reap = opts.reap || null;
 
 			if (this._pull) {
-				this.initialValue = this._fixedValue = this._value = void 0;
+				this._fixedValue = this._value = void 0;
 			} else {
 				if (this._validate) {
-					this._validate.call(this.owner, value, void 0);
+					this._validate(value, void 0);
+				}
+				if (this._merge) {
+					value = this._merge(value, void 0);
 				}
 
-				this.initialValue = this._fixedValue = this._value = value;
+				this._fixedValue = this._value = value;
 
 				if (value instanceof EventEmitter) {
 					value.on('change', this._onValueChange, this);
@@ -2604,13 +2614,7 @@ return /******/ (function(modules) { // webpackBootstrap
 			this._level = 0;
 
 			try {
-				var value = this._pull.call(this.owner, this.push, this.fail, this._value);
-
-				if (this._validate) {
-					this._validate.call(this.owner, value);
-				}
-
-				return value;
+				return this._pull.call(this.owner, this.push, this.fail, this._value);
 			} catch (err) {
 				error.original = err;
 				return error;
@@ -2672,7 +2676,7 @@ return /******/ (function(modules) { // webpackBootstrap
 				}
 			}
 
-			return this._value;
+			return this._get ? this._get(this._value) : this._value;
 		},
 
 		/**
@@ -2682,10 +2686,13 @@ return /******/ (function(modules) { // webpackBootstrap
 			var oldValue = this._value;
 
 			if (this._validate) {
-				this._validate.call(this.owner, value, oldValue);
+				this._validate(value, oldValue);
+			}
+			if (this._merge) {
+				value = this._merge(value, oldValue);
 			}
 
-			this._put(value, this.push, this.fail, oldValue);
+			this._put.call(this.owner, value, this.push, this.fail, oldValue);
 
 			return this;
 		},
@@ -2702,10 +2709,6 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * @typesign (value, afterPull: boolean = false);
 		 */
 		_push: function _push(value, afterPull) {
-			if (!afterPull && this._validate) {
-				this._validate.call(this.owner, value, this._value);
-			}
-
 			this._setError(null);
 
 			if (!afterPull) {
@@ -2863,7 +2866,7 @@ return /******/ (function(modules) { // webpackBootstrap
 			}
 
 			if (this._fulfilled) {
-				return Promise.resolve(this._value).then(onFulfilled);
+				return Promise.resolve(this._get ? this._get(this._value) : this._value).then(onFulfilled);
 			}
 
 			if (this._rejected) {
@@ -2875,7 +2878,7 @@ return /******/ (function(modules) { // webpackBootstrap
 			var promise = new Promise(function(resolve, reject) {
 				cell._onFulfilled = function onFulfilled(value) {
 					cell._onFulfilled = cell._onRejected = null;
-					resolve(value);
+					resolve(cell._get ? cell._get(value) : value);
 				};
 
 				cell._onRejected = function onRejected(err) {

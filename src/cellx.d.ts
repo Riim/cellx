@@ -138,46 +138,46 @@ export class ObservableList<T> extends EventEmitter implements IObservableCollec
 	toString(): string;
 }
 
-interface ICellPull<T> {
-	(push: (value: T) => void, fail: (err: any) => void, oldValue: T): T|void;
+interface ICellPull {
+	(push: (value: any) => void, fail: (err: any) => void, oldValue: any): any;
 }
 
 interface ICellOptions<T> {
 	debugKey?: string;
 	owner?: Object;
-	validate?: (value: T, oldValue: T) => void;
-	put?: (value: T, push: (value: T) => void, fail: (err: any) => void, oldValue: T) => void;
+	get?: (value: any) => T,
+	validate?: (value: T, oldValue: any) => void;
+	merge?: (value: T, oldValue: any) => any;
+	put?: (value: any, push: (value: any) => void, fail: (err: any) => void, oldValue: any) => void;
 	reap?: () => void;
 	onChange?: IEventEmitterListener;
 	onError?: IEventEmitterListener;
 }
 
-interface ICellEvent<T> extends IEvent {
-	oldValue: T;
-	value: T;
-	prev: ICellEvent<T>
+interface ICellEvent extends IEvent {
+	oldValue: any;
+	value: any;
+	prev: ICellEvent
 }
 
 export class Cell<T> extends EventEmitter {
 	debugKey: string;
 	owner: Object;
 
-	initialValue: T;
-
 	constructor(value?: T, opts?: ICellOptions<T>);
-	constructor(pull: ICellPull<T>, opts?: ICellOptions<T>);
+	constructor(pull: ICellPull, opts?: ICellOptions<T>);
 
 	addChangeListener(listener: IEventEmitterListener, context?: any): Cell<T>;
 	removeChangeListener(listener: IEventEmitterListener, context?: any): Cell<T>;
 	addErrorListener(listener: IEventEmitterListener, context?: any): Cell<T>;
 	removeErrorListener(listener: IEventEmitterListener, context?: any): Cell<T>;
-	subscribe(listener: (err: Error|void, evt: ICellEvent<T>) => boolean|void, context?: any): Cell<T>;
-	unsubscribe(listener: (err: Error|void, evt: ICellEvent<T>) => boolean|void, context?: any): Cell<T>;
+	subscribe(listener: (err: Error|void, evt: ICellEvent) => boolean|void, context?: any): Cell<T>;
+	unsubscribe(listener: (err: Error|void, evt: ICellEvent) => boolean|void, context?: any): Cell<T>;
 
 	pull(): Cell<T>;
 	get(): T;
 	set(value: T): Cell<T>;
-	push(value: T): Cell<T>;
+	push(value: any): Cell<T>;
 	fail(err: any): Cell<T>;
 	getError(): Error;
 
@@ -214,4 +214,4 @@ interface ICellx<T> {
 }
 
 export function cellx<T>(value?: T, opts?: ICellOptions<T>): ICellx<T>;
-export function cellx<T>(pull: ICellPull<T>, opts?: ICellOptions<T>): ICellx<T>;
+export function cellx<T>(pull: ICellPull, opts?: ICellOptions<T>): ICellx<T>;

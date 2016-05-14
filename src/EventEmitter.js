@@ -18,7 +18,7 @@ var KEY_INNER = Symbol('inner');
 /**
  * @class cellx.EventEmitter
  * @extends {Object}
- * @typesign new () -> cellx.EventEmitter;
+ * @typesign new EventEmitter() -> cellx.EventEmitter;
  */
 var EventEmitter = createClass({
 	Static: {

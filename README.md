@@ -60,11 +60,11 @@ user.lastName('Dog');
 // => 'fullName: Sharik Dog'
 ```
 
-Despite the fact that the two dependencies of the cell `fullName` has been changed, event handler worked only once.
+Despite the fact that the two dependencies of the cell `fullName` has been changed, event handler worked only once.  
 Important feature of cellx is that it tries to get rid of unnecessary calls
 of the event handlers as well as of unnecessary calls of the dependent cells calculation formulas.
 In combination with some special optimizations, this leads to an ideal speed of calculation of
-the complex dependencies networks.
+the complex dependencies networks.  
 One test, which is used for measuring the performance, generates grid with multiply "layers"
 each of which is composed of 4 cells. Cells are calculated from the previous layer of cells (except the first one,
 which contains initial values) by the formula A2=B1, B2=A1-C1, C2=B1+D1, D2=C1. After that start time is stored,
@@ -82,7 +82,7 @@ Test results (in milliseconds) for different number of layers (for Google Chrome
 | 5000                                    | 30    | >300000           | >300000                            | 340                                             | first call — 460, subsequent calls — >460   | 120                                                | RangeError: Maximum call stack size exceeded            | >300000                                       |
 | 25000                                   | 140   | >300000           | >300000                            | 7000                                            | first call — 3200, subsequent calls — >3200 | 700                                                | RangeError: Maximum call stack size exceeded            | >300000                                       |
 
-Test sources can be found in the folder [perf](https://github.com/Riim/cellx/tree/master/perf).
+Test sources can be found in the folder [perf](https://github.com/Riim/cellx/tree/master/perf).  
 Density of connections in real applications is usually lower than in the present test, that is,
 if a certain delay in the test is visible in 100 calculated cells (25 layers), in a real application,
 this delay will either be visible in the greater number of cells, or cells formulas will include
