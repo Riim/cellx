@@ -17,6 +17,7 @@ var KEY_CELLS = keys.CELLS;
 
 var hasOwn = Object.prototype.hasOwnProperty;
 var slice = Array.prototype.slice;
+var global = Function('return this;')();
 
 ErrorLogger.setHandler(logError);
 

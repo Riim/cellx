@@ -1,6 +1,7 @@
 function noop() {}
 
 var map = Array.prototype.map;
+var global = Function('return this;')();
 
 /**
  * @typesign (...msg);

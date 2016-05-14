@@ -5,6 +5,7 @@ var ObservableCollectionMixin = require('./ObservableCollectionMixin');
 
 var push = Array.prototype.push;
 var splice = Array.prototype.splice;
+var global = Function('return this;')();
 
 /**
  * @typesign (a, b) -> -1|1|0;

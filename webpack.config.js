@@ -21,7 +21,7 @@ module.exports = {
 
 	node: {
 		console: false,
-		global: true,
+		global: false,
 		process: false,
 		Buffer: false,
 		__filename: false,

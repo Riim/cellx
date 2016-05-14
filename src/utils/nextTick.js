@@ -1,5 +1,7 @@
 var ErrorLogger = require('../ErrorLogger');
 
+var global = Function('return this;')();
+
 /**
  * @typesign (cb: ());
  */

@@ -6,6 +6,7 @@ var ObservableCollectionMixin = require('./ObservableCollectionMixin');
 
 var hasOwn = Object.prototype.hasOwnProperty;
 var isArray = Array.isArray;
+var global = Function('return this;')();
 
 /**
  * @class cellx.ObservableMap

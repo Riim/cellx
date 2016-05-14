@@ -1,6 +1,6 @@
 var nextUID = require('../utils/nextUID');
 
-var Symbol = global.Symbol;
+var Symbol = Function('return this;')().Symbol;
 
 if (!Symbol) {
 	Symbol = function Symbol(key) {

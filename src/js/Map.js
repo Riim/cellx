@@ -6,6 +6,7 @@ var keys = require('../keys');
 var KEY_UID = keys.UID;
 
 var hasOwn = Object.prototype.hasOwnProperty;
+var global = Function('return this;')();
 
 var Map = global.Map;
 

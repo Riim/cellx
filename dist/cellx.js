@@ -54,7 +54,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(global) {var Map = __webpack_require__(1);
+	var Map = __webpack_require__(1);
 	var Symbol = __webpack_require__(2);
 	var logError = __webpack_require__(7);
 	var nextUID = __webpack_require__(3);
@@ -73,6 +73,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var hasOwn = Object.prototype.hasOwnProperty;
 	var slice = Array.prototype.slice;
+	var global = Function('return this;')();
 
 	ErrorLogger.setHandler(logError);
 
@@ -276,13 +277,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	module.exports = cellx;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
 /* 1 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(global) {var Symbol = __webpack_require__(2);
+	var Symbol = __webpack_require__(2);
 	var nextUID = __webpack_require__(3);
 	var createClass = __webpack_require__(4);
 	var keys = __webpack_require__(6);
@@ -290,6 +290,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var KEY_UID = keys.UID;
 
 	var hasOwn = Object.prototype.hasOwnProperty;
+	var global = Function('return this;')();
 
 	var Map = global.Map;
 
@@ -526,15 +527,14 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	module.exports = Map;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
 /* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(global) {var nextUID = __webpack_require__(3);
+	var nextUID = __webpack_require__(3);
 
-	var Symbol = global.Symbol;
+	var Symbol = Function('return this;')().Symbol;
 
 	if (!Symbol) {
 		Symbol = function Symbol(key) {
@@ -546,7 +546,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	module.exports = Symbol;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
 /* 3 */
@@ -705,9 +704,10 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 7 */
 /***/ function(module, exports) {
 
-	/* WEBPACK VAR INJECTION */(function(global) {function noop() {}
+	function noop() {}
 
 	var map = Array.prototype.map;
+	var global = Function('return this;')();
 
 	/**
 	 * @typesign (...msg);
@@ -722,13 +722,14 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	module.exports = logError;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
 /* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(global) {var ErrorLogger = __webpack_require__(9);
+	var ErrorLogger = __webpack_require__(9);
+
+	var global = Function('return this;')();
 
 	/**
 	 * @typesign (cb: ());
@@ -780,7 +781,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	module.exports = nextTick;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
 /* 9 */
@@ -1088,7 +1088,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(global) {var Map = __webpack_require__(1);
+	var Map = __webpack_require__(1);
 	var Symbol = __webpack_require__(2);
 	var is = __webpack_require__(12);
 	var EventEmitter = __webpack_require__(10);
@@ -1096,6 +1096,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var hasOwn = Object.prototype.hasOwnProperty;
 	var isArray = Array.isArray;
+	var global = Function('return this;')();
 
 	/**
 	 * @class cellx.ObservableMap
@@ -1312,7 +1313,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	module.exports = ObservableMap;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
 /* 12 */
@@ -1397,13 +1397,14 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(global) {var Symbol = __webpack_require__(2);
+	var Symbol = __webpack_require__(2);
 	var is = __webpack_require__(12);
 	var EventEmitter = __webpack_require__(10);
 	var ObservableCollectionMixin = __webpack_require__(13);
 
 	var push = Array.prototype.push;
 	var splice = Array.prototype.splice;
+	var global = Function('return this;')();
 
 	/**
 	 * @typesign (a, b) -> -1|1|0;
@@ -2008,7 +2009,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	module.exports = ObservableList;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
 /* 15 */
