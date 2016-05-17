@@ -500,7 +500,7 @@ foo('subscribe', function() {
 console.log(foo());
 // => 0
 
-foo('unwrap', 0).then(function() {
+foo('then', function() {
     console.log(foo());
 });
 // => 'New foo value: 1'
