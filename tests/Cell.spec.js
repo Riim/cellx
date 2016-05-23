@@ -495,6 +495,26 @@ describe('Cell', function() {
 		}, 1);
 	});
 
+	it('не должна создавать бесконечный цикл (2)', function(done) {
+		let a = new cellx.Cell(1);
+		let b = new cellx.Cell(function() { return a.get() + 1; }, {
+			onChange() {
+				c.set(2);
+			}
+		});
+
+		let c = new cellx.Cell(1, { onChange: noop });
+
+		a.set(2);
+
+		setTimeout(function() {
+			expect(c.get())
+				.to.equal(2);
+
+			done();
+		}, 1);
+	});
+
 	it('должна уметь синхронизировать своё значение с внешним хранилищем', function() {
 		localStorage.clear();
 

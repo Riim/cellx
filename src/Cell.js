@@ -33,7 +33,11 @@ function release() {
 		var cell = (queue || []).shift();
 
 		if (!cell) {
-			queue = releasePlan[++releasePlanIndex];
+			if (++releasePlanIndex > releasePlanToIndex) {
+				break;
+			}
+
+			queue = releasePlan[releasePlanIndex];
 			continue;
 		}
 
