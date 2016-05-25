@@ -2207,6 +2207,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * }) -> cellx.Cell;
 	 */
 	var Cell = EventEmitter.extend({
+		Static: {
+			forceRelease: function() {
+				if (releasePlanned) {
+					release();
+				}
+			}
+		},
+
 		constructor: function Cell(value, opts) {
 			EventEmitter.call(this);
 
