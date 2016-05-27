@@ -211,20 +211,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * @typesign (obj: cellx.EventEmitter, name: string, value) -> cellx.EventEmitter;
 	 */
 	function defineObservableProperty(obj, name, value) {
-		var _name = '_' + name;
+		var privateName = '_' + name;
 
-		obj[_name] = typeof value == 'function' && value.constructor == cellx ? value : cellx(value);
+		obj[privateName] = value instanceof Cell ? value : new Cell(value, { owner: obj });
 
 		Object.defineProperty(obj, name, {
 			configurable: true,
 			enumerable: true,
 
 			get: function() {
-				return this[_name]();
+				return this[privateName].get();
 			},
 
 			set: function(value) {
-				this[_name](value);
+				this[privateName].set(value);
 			}
 		});
 
@@ -926,7 +926,7 @@ return /******/ (function(modules) { // webpackBootstrap
 			var index = type.indexOf(':');
 
 			if (index != -1) {
-				this['_' + type.slice(index + 1)]('on', type.slice(0, index), listener, context);
+				this['_' + type.slice(index + 1)].on(type.slice(0, index), listener, context);
 			} else {
 				var events = (this._events || (this._events = Object.create(null)))[type];
 
@@ -951,7 +951,7 @@ return /******/ (function(modules) { // webpackBootstrap
 			var index = type.indexOf(':');
 
 			if (index != -1) {
-				this['_' + type.slice(index + 1)]('off', type.slice(0, index), listener, context);
+				this['_' + type.slice(index + 1)].off(type.slice(0, index), listener, context);
 			} else {
 				var events = this._events && this._events[type];
 

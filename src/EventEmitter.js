@@ -113,7 +113,7 @@ var EventEmitter = createClass({
 		var index = type.indexOf(':');
 
 		if (index != -1) {
-			this['_' + type.slice(index + 1)]('on', type.slice(0, index), listener, context);
+			this['_' + type.slice(index + 1)].on(type.slice(0, index), listener, context);
 		} else {
 			var events = (this._events || (this._events = Object.create(null)))[type];
 
@@ -138,7 +138,7 @@ var EventEmitter = createClass({
 		var index = type.indexOf(':');
 
 		if (index != -1) {
-			this['_' + type.slice(index + 1)]('off', type.slice(0, index), listener, context);
+			this['_' + type.slice(index + 1)].off(type.slice(0, index), listener, context);
 		} else {
 			var events = this._events && this._events[type];
 
