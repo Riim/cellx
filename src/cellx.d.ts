@@ -161,6 +161,8 @@ interface ICellEvent extends IEvent {
 }
 
 export class Cell<T> extends EventEmitter {
+	static forceRelease(): void;
+
 	debugKey: string;
 	owner: Object;
 
@@ -197,6 +199,8 @@ export function define(obj: EventEmitter, name: string, value: any): EventEmitte
 export function define(obj: EventEmitter, props: { [key: string]: any }): EventEmitter;
 
 export namespace js {
+	let Symbol: (key: string) => symbol;
+	let Map: MapConstructor;
 }
 
 export namespace utils {
