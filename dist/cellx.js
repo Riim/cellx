@@ -54,17 +54,18 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Map = __webpack_require__(1);
+	var is = __webpack_require__(1);
 	var Symbol = __webpack_require__(2);
-	var logError = __webpack_require__(7);
+	var Map = __webpack_require__(4);
+	var logError = __webpack_require__(8);
 	var nextUID = __webpack_require__(3);
-	var mixin = __webpack_require__(5);
-	var createClass = __webpack_require__(4);
-	var nextTick = __webpack_require__(8);
-	var keys = __webpack_require__(6);
-	var ErrorLogger = __webpack_require__(9);
-	var EventEmitter = __webpack_require__(10);
-	var ObservableMap = __webpack_require__(11);
+	var mixin = __webpack_require__(6);
+	var createClass = __webpack_require__(5);
+	var nextTick = __webpack_require__(9);
+	var keys = __webpack_require__(7);
+	var ErrorLogger = __webpack_require__(10);
+	var EventEmitter = __webpack_require__(11);
+	var ObservableMap = __webpack_require__(12);
 	var ObservableList = __webpack_require__(14);
 	var Cell = __webpack_require__(15);
 
@@ -259,6 +260,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	cellx.define = define;
 
 	cellx.js = {
+		is: is,
 		Symbol: Symbol,
 		Map: Map
 	};
@@ -280,12 +282,64 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 1 */
+/***/ function(module, exports) {
+
+	/**
+	 * @typesign (a, b) -> boolean;
+	 */
+	var is = Object.is || function is(a, b) {
+		if (a === 0 && b === 0) {
+			return 1 / a == 1 / b;
+		}
+		return a === b || (a != a && b != b);
+	};
+
+	module.exports = is;
+
+
+/***/ },
+/* 2 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var nextUID = __webpack_require__(3);
+
+	var Symbol = Function('return this;')().Symbol;
+
+	if (!Symbol) {
+		Symbol = function Symbol(key) {
+			return '__' + key + '_' + Math.floor(Math.random() * 1e9) + '_' + nextUID() + '__';
+		};
+
+		Symbol.iterator = Symbol('iterator');
+	}
+
+	module.exports = Symbol;
+
+
+/***/ },
+/* 3 */
+/***/ function(module, exports) {
+
+	var uidCounter = 0;
+
+	/**
+	 * @typesign () -> string;
+	 */
+	function nextUID() {
+		return String(++uidCounter);
+	}
+
+	module.exports = nextUID;
+
+
+/***/ },
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var Symbol = __webpack_require__(2);
 	var nextUID = __webpack_require__(3);
-	var createClass = __webpack_require__(4);
-	var keys = __webpack_require__(6);
+	var createClass = __webpack_require__(5);
+	var keys = __webpack_require__(7);
 
 	var KEY_UID = keys.UID;
 
@@ -529,45 +583,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 2 */
+/* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var nextUID = __webpack_require__(3);
-
-	var Symbol = Function('return this;')().Symbol;
-
-	if (!Symbol) {
-		Symbol = function Symbol(key) {
-			return '__' + key + '_' + Math.floor(Math.random() * 1e9) + '_' + nextUID() + '__';
-		};
-
-		Symbol.iterator = Symbol('iterator');
-	}
-
-	module.exports = Symbol;
-
-
-/***/ },
-/* 3 */
-/***/ function(module, exports) {
-
-	var uidCounter = 0;
-
-	/**
-	 * @typesign () -> string;
-	 */
-	function nextUID() {
-		return String(++uidCounter);
-	}
-
-	module.exports = nextUID;
-
-
-/***/ },
-/* 4 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var mixin = __webpack_require__(5);
+	var mixin = __webpack_require__(6);
 
 	var hasOwn = Object.prototype.hasOwnProperty;
 
@@ -666,7 +685,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 5 */
+/* 6 */
 /***/ function(module, exports) {
 
 	/**
@@ -687,7 +706,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 6 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var Symbol = __webpack_require__(2);
@@ -701,7 +720,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 7 */
+/* 8 */
 /***/ function(module, exports) {
 
 	function noop() {}
@@ -724,10 +743,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 8 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var ErrorLogger = __webpack_require__(9);
+	var ErrorLogger = __webpack_require__(10);
 
 	var global = Function('return this;')();
 
@@ -783,7 +802,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports) {
 
 	var ErrorLogger = {
@@ -808,12 +827,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var Symbol = __webpack_require__(2);
-	var createClass = __webpack_require__(4);
-	var ErrorLogger = __webpack_require__(9);
+	var createClass = __webpack_require__(5);
+	var ErrorLogger = __webpack_require__(10);
 
 	var hasOwn = Object.prototype.hasOwnProperty;
 
@@ -1085,13 +1104,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Map = __webpack_require__(1);
+	var is = __webpack_require__(1);
 	var Symbol = __webpack_require__(2);
-	var is = __webpack_require__(12);
-	var EventEmitter = __webpack_require__(10);
+	var Map = __webpack_require__(4);
+	var EventEmitter = __webpack_require__(11);
 	var ObservableCollectionMixin = __webpack_require__(13);
 
 	var hasOwn = Object.prototype.hasOwnProperty;
@@ -1315,28 +1334,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 12 */
-/***/ function(module, exports) {
-
-	/**
-	 * @typesign (a, b) -> boolean;
-	 */
-	var is = Object.is || function is(a, b) {
-		if (a === 0 && b === 0) {
-			return 1 / a == 1 / b;
-		}
-		return a === b || (a != a && b != b);
-	};
-
-	module.exports = is;
-
-
-/***/ },
 /* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Map = __webpack_require__(1);
-	var EventEmitter = __webpack_require__(10);
+	var Map = __webpack_require__(4);
+	var EventEmitter = __webpack_require__(11);
 
 	var ObservableCollectionMixin = EventEmitter.extend({
 		constructor: function ObservableCollectionMixin() {
@@ -1397,9 +1399,9 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
+	var is = __webpack_require__(1);
 	var Symbol = __webpack_require__(2);
-	var is = __webpack_require__(12);
-	var EventEmitter = __webpack_require__(10);
+	var EventEmitter = __webpack_require__(11);
 	var ObservableCollectionMixin = __webpack_require__(13);
 
 	var push = Array.prototype.push;
@@ -2014,9 +2016,9 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var is = __webpack_require__(12);
-	var nextTick = __webpack_require__(8);
-	var EventEmitter = __webpack_require__(10);
+	var is = __webpack_require__(1);
+	var nextTick = __webpack_require__(9);
+	var EventEmitter = __webpack_require__(11);
 
 	var slice = Array.prototype.slice;
 

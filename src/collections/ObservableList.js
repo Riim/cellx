@@ -1,5 +1,5 @@
+var is = require('../js/is');
 var Symbol = require('../js/Symbol');
-var is = require('../utils/is');
 var EventEmitter = require('../EventEmitter');
 var ObservableCollectionMixin = require('./ObservableCollectionMixin');
 

@@ -1,4 +1,4 @@
-var is = require('./utils/is');
+var is = require('./js/is');
 var nextTick = require('./utils/nextTick');
 var EventEmitter = require('./EventEmitter');
 

@@ -1,5 +1,6 @@
-var Map = require('./js/Map');
+var is = require('./js/is');
 var Symbol = require('./js/Symbol');
+var Map = require('./js/Map');
 var logError = require('./utils/logError');
 var nextUID = require('./utils/nextUID');
 var mixin = require('./utils/mixin');
@@ -203,6 +204,7 @@ function define(obj, name, value) {
 cellx.define = define;
 
 cellx.js = {
+	is: is,
 	Symbol: Symbol,
 	Map: Map
 };

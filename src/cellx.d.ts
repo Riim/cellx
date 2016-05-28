@@ -199,7 +199,8 @@ export function define(obj: EventEmitter, name: string, value: any): EventEmitte
 export function define(obj: EventEmitter, props: { [key: string]: any }): EventEmitter;
 
 export namespace js {
-	let Symbol: (key: string) => symbol;
+	function is(a: any, b: any): boolean;
+	function Symbol(key: string): symbol;
 	let Map: MapConstructor;
 }
 
