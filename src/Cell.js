@@ -1,6 +1,6 @@
+var EventEmitter = require('./EventEmitter');
 var is = require('./js/is');
 var nextTick = require('./utils/nextTick');
-var EventEmitter = require('./EventEmitter');
 
 var slice = Array.prototype.slice;
 

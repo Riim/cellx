@@ -1,6 +1,6 @@
+var ErrorLogger = require('./ErrorLogger');
 var Symbol = require('./js/Symbol');
 var createClass = require('./utils/createClass');
-var ErrorLogger = require('./ErrorLogger');
 
 var hasOwn = Object.prototype.hasOwnProperty;
 

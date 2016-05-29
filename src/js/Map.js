@@ -1,7 +1,7 @@
+var keys = require('../keys');
 var Symbol = require('./Symbol');
 var nextUID = require('../utils/nextUID');
 var createClass = require('../utils/createClass');
-var keys = require('../keys');
 
 var KEY_UID = keys.UID;
 

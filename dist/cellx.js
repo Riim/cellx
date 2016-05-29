@@ -54,20 +54,20 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 0 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var is = __webpack_require__(1);
-	var Symbol = __webpack_require__(2);
-	var Map = __webpack_require__(4);
-	var logError = __webpack_require__(8);
-	var nextUID = __webpack_require__(3);
+	var ErrorLogger = __webpack_require__(1);
+	var EventEmitter = __webpack_require__(2);
+	var ObservableMap = __webpack_require__(7);
+	var ObservableList = __webpack_require__(12);
+	var Cell = __webpack_require__(13);
+	var keys = __webpack_require__(10);
+	var is = __webpack_require__(11);
+	var Symbol = __webpack_require__(3);
+	var Map = __webpack_require__(9);
+	var logError = __webpack_require__(15);
+	var nextUID = __webpack_require__(4);
 	var mixin = __webpack_require__(6);
 	var createClass = __webpack_require__(5);
-	var nextTick = __webpack_require__(9);
-	var keys = __webpack_require__(7);
-	var ErrorLogger = __webpack_require__(10);
-	var EventEmitter = __webpack_require__(11);
-	var ObservableMap = __webpack_require__(12);
-	var ObservableList = __webpack_require__(14);
-	var Cell = __webpack_require__(15);
+	var nextTick = __webpack_require__(14);
 
 	var KEY_UID = keys.UID;
 	var KEY_CELLS = keys.CELLS;
@@ -284,527 +284,6 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 1 */
 /***/ function(module, exports) {
 
-	/**
-	 * @typesign (a, b) -> boolean;
-	 */
-	var is = Object.is || function is(a, b) {
-		if (a === 0 && b === 0) {
-			return 1 / a == 1 / b;
-		}
-		return a === b || (a != a && b != b);
-	};
-
-	module.exports = is;
-
-
-/***/ },
-/* 2 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var nextUID = __webpack_require__(3);
-
-	var Symbol = Function('return this;')().Symbol;
-
-	if (!Symbol) {
-		Symbol = function Symbol(key) {
-			return '__' + key + '_' + Math.floor(Math.random() * 1e9) + '_' + nextUID() + '__';
-		};
-
-		Symbol.iterator = Symbol('iterator');
-	}
-
-	module.exports = Symbol;
-
-
-/***/ },
-/* 3 */
-/***/ function(module, exports) {
-
-	var uidCounter = 0;
-
-	/**
-	 * @typesign () -> string;
-	 */
-	function nextUID() {
-		return String(++uidCounter);
-	}
-
-	module.exports = nextUID;
-
-
-/***/ },
-/* 4 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var Symbol = __webpack_require__(2);
-	var nextUID = __webpack_require__(3);
-	var createClass = __webpack_require__(5);
-	var keys = __webpack_require__(7);
-
-	var KEY_UID = keys.UID;
-
-	var hasOwn = Object.prototype.hasOwnProperty;
-	var global = Function('return this;')();
-
-	var Map = global.Map;
-
-	if (!Map) {
-		var entryStub = {
-			value: void 0
-		};
-
-		Map = createClass({
-			constructor: function Map(entries) {
-				this._entries = Object.create(null);
-				this._objectStamps = {};
-
-				this._first = null;
-				this._last = null;
-
-				this.size = 0;
-
-				if (entries) {
-					for (var i = 0, l = entries.length; i < l; i++) {
-						this.set(entries[i][0], entries[i][1]);
-					}
-				}
-			},
-
-			has: function has(key) {
-				return !!this._entries[this._getValueStamp(key)];
-			},
-
-			get: function get(key) {
-				return (this._entries[this._getValueStamp(key)] || entryStub).value;
-			},
-
-			set: function set(key, value) {
-				var entries = this._entries;
-				var keyStamp = this._getValueStamp(key);
-
-				if (entries[keyStamp]) {
-					entries[keyStamp].value = value;
-				} else {
-					var entry = entries[keyStamp] = {
-						key: key,
-						keyStamp: keyStamp,
-						value: value,
-						prev: this._last,
-						next: null
-					};
-
-					if (this.size++) {
-						this._last.next = entry;
-					} else {
-						this._first = entry;
-					}
-
-					this._last = entry;
-				}
-
-				return this;
-			},
-
-			delete: function _delete(key) {
-				var keyStamp = this._getValueStamp(key);
-				var entry = this._entries[keyStamp];
-
-				if (!entry) {
-					return false;
-				}
-
-				if (--this.size) {
-					var prev = entry.prev;
-					var next = entry.next;
-
-					if (prev) {
-						prev.next = next;
-					} else {
-						this._first = next;
-					}
-
-					if (next) {
-						next.prev = prev;
-					} else {
-						this._last = prev;
-					}
-				} else {
-					this._first = null;
-					this._last = null;
-				}
-
-				delete this._entries[keyStamp];
-				delete this._objectStamps[keyStamp];
-
-				return true;
-			},
-
-			clear: function clear() {
-				var entries = this._entries;
-
-				for (var stamp in entries) {
-					delete entries[stamp];
-				}
-
-				this._objectStamps = {};
-
-				this._first = null;
-				this._last = null;
-
-				this.size = 0;
-			},
-
-			_getValueStamp: function _getValueStamp(value) {
-				switch (typeof value) {
-					case 'undefined': {
-						return 'undefined';
-					}
-					case 'object': {
-						if (value === null) {
-							return 'null';
-						}
-
-						break;
-					}
-					case 'boolean': {
-						return '?' + value;
-					}
-					case 'number': {
-						return '+' + value;
-					}
-					case 'string': {
-						return ',' + value;
-					}
-				}
-
-				return this._getObjectStamp(value);
-			},
-
-			_getObjectStamp: function _getObjectStamp(obj) {
-				if (!hasOwn.call(obj, KEY_UID)) {
-					if (!Object.isExtensible(obj)) {
-						var stamps = this._objectStamps;
-						var stamp;
-
-						for (stamp in stamps) {
-							if (hasOwn.call(stamps, stamp) && stamps[stamp] == obj) {
-								return stamp;
-							}
-						}
-
-						stamp = nextUID();
-						stamps[stamp] = obj;
-
-						return stamp;
-					}
-
-					Object.defineProperty(obj, KEY_UID, {
-						value: nextUID()
-					});
-				}
-
-				return obj[KEY_UID];
-			},
-
-			forEach: function forEach(cb, context) {
-				context = arguments.length >= 2 ? context : global;
-
-				var entry = this._first;
-
-				while (entry) {
-					cb.call(context, entry.value, entry.key, this);
-
-					do {
-						entry = entry.next;
-					} while (entry && !this._entries[entry.keyStamp]);
-				}
-			},
-
-			toString: function toString() {
-				return '[object Map]';
-			}
-		});
-
-		[
-			['keys', function keys(entry) {
-				return entry.key;
-			}],
-			['values', function values(entry) {
-				return entry.value;
-			}],
-			['entries', function entries(entry) {
-				return [entry.key, entry.value];
-			}]
-		].forEach(function(settings) {
-			var getStepValue = settings[1];
-
-			Map.prototype[settings[0]] = function() {
-				var entries = this._entries;
-				var entry;
-				var done = false;
-				var map = this;
-
-				return {
-					next: function() {
-						if (!done) {
-							if (entry) {
-								do {
-									entry = entry.next;
-								} while (entry && !entries[entry.keyStamp]);
-							} else {
-								entry = map._first;
-							}
-
-							if (entry) {
-								return {
-									value: getStepValue(entry),
-									done: false
-								};
-							}
-
-							done = true;
-						}
-
-						return {
-							value: void 0,
-							done: true
-						};
-					}
-				};
-			};
-		});
-	}
-
-	if (!Map.prototype[Symbol.iterator]) {
-		Map.prototype[Symbol.iterator] = Map.prototype.entries;
-	}
-
-	module.exports = Map;
-
-
-/***/ },
-/* 5 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var mixin = __webpack_require__(6);
-
-	var hasOwn = Object.prototype.hasOwnProperty;
-
-	var extend;
-
-	/**
-	 * @typesign (description: {
-	 *     Extends?: Function,
-	 *     Implements?: Array<Object|Function>,
-	 *     Static?: Object,
-	 *     constructor?: Function,
-	 *     [key: string]
-	 * }) -> Function;
-	 */
-	function createClass(description) {
-		var parent;
-
-		if (description.Extends) {
-			parent = description.Extends;
-			delete description.Extends;
-		} else {
-			parent = Object;
-		}
-
-		var constr;
-
-		if (hasOwn.call(description, 'constructor')) {
-			constr = description.constructor;
-			delete description.constructor;
-		} else {
-			constr = parent == Object ?
-				function() {} :
-				function() {
-					return parent.apply(this, arguments);
-				};
-		}
-
-		var proto = constr.prototype = Object.create(parent.prototype);
-
-		if (description.Implements) {
-			description.Implements.forEach(function(implementation) {
-				if (typeof implementation == 'function') {
-					Object.keys(implementation).forEach(function(name) {
-						Object.defineProperty(constr, name, Object.getOwnPropertyDescriptor(implementation, name));
-					});
-
-					mixin(proto, implementation.prototype);
-				} else {
-					mixin(proto, implementation);
-				}
-			});
-
-			delete description.Implements;
-		}
-
-		Object.keys(parent).forEach(function(name) {
-			Object.defineProperty(constr, name, Object.getOwnPropertyDescriptor(parent, name));
-		});
-
-		if (description.Static) {
-			mixin(constr, description.Static);
-			delete description.Static;
-		}
-
-		if (constr.extend === void 0) {
-			constr.extend = extend;
-		}
-
-		mixin(proto, description);
-
-		Object.defineProperty(proto, 'constructor', {
-			configurable: true,
-			writable: true,
-			value: constr
-		});
-
-		return constr;
-	}
-
-	/**
-	 * @this {Function}
-	 *
-	 * @typesign (description: {
-	 *     Implements?: Array<Object|Function>,
-	 *     Static?: Object,
-	 *     constructor?: Function,
-	 *     [key: string]
-	 * }) -> Function;
-	 */
-	extend = function extend(description) {
-		description.Extends = this;
-		return createClass(description);
-	};
-
-	module.exports = createClass;
-
-
-/***/ },
-/* 6 */
-/***/ function(module, exports) {
-
-	/**
-	 * @typesign (target: Object, source: Object) -> Object;
-	 */
-	function mixin(target, source) {
-		var names = Object.getOwnPropertyNames(source);
-
-		for (var i = 0, l = names.length; i < l; i++) {
-			var name = names[i];
-			Object.defineProperty(target, name, Object.getOwnPropertyDescriptor(source, name));
-		}
-
-		return target;
-	}
-
-	module.exports = mixin;
-
-
-/***/ },
-/* 7 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var Symbol = __webpack_require__(2);
-
-	var keys = {
-		UID: Symbol('uid'),
-		CELLS: Symbol('cells')
-	};
-
-	module.exports = keys;
-
-
-/***/ },
-/* 8 */
-/***/ function(module, exports) {
-
-	function noop() {}
-
-	var map = Array.prototype.map;
-	var global = Function('return this;')();
-
-	/**
-	 * @typesign (...msg);
-	 */
-	function logError() {
-		var console = global.console;
-
-		(console && console.error || noop).call(console || global, map.call(arguments, function(part) {
-			return part === Object(part) && part.stack || part;
-		}).join(' '));
-	}
-
-	module.exports = logError;
-
-
-/***/ },
-/* 9 */
-/***/ function(module, exports, __webpack_require__) {
-
-	var ErrorLogger = __webpack_require__(10);
-
-	var global = Function('return this;')();
-
-	/**
-	 * @typesign (cb: ());
-	 */
-	var nextTick;
-
-	if (global.process && process.toString() == '[object process]' && process.nextTick) {
-		nextTick = process.nextTick;
-	} else if (global.setImmediate) {
-		nextTick = function nextTick(cb) {
-			setImmediate(cb);
-		};
-	} else if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
-		var prm = Promise.resolve();
-
-		nextTick = function nextTick(cb) {
-			prm.then(function() {
-				cb();
-			});
-		};
-	} else {
-		var queue;
-
-		global.addEventListener('message', function() {
-			if (queue) {
-				var track = queue;
-
-				queue = null;
-
-				for (var i = 0, l = track.length; i < l; i++) {
-					try {
-						track[i]();
-					} catch (err) {
-						ErrorLogger.log(err);
-					}
-				}
-			}
-		});
-
-		nextTick = function nextTick(cb) {
-			if (queue) {
-				queue.push(cb);
-			} else {
-				queue = [cb];
-				postMessage('__tic__', '*');
-			}
-		};
-	}
-
-	module.exports = nextTick;
-
-
-/***/ },
-/* 10 */
-/***/ function(module, exports) {
-
 	var ErrorLogger = {
 		_handler: null,
 
@@ -827,12 +306,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 11 */
+/* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Symbol = __webpack_require__(2);
+	var ErrorLogger = __webpack_require__(1);
+	var Symbol = __webpack_require__(3);
 	var createClass = __webpack_require__(5);
-	var ErrorLogger = __webpack_require__(10);
 
 	var hasOwn = Object.prototype.hasOwnProperty;
 
@@ -1104,14 +583,172 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 12 */
+/* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var is = __webpack_require__(1);
-	var Symbol = __webpack_require__(2);
-	var Map = __webpack_require__(4);
-	var EventEmitter = __webpack_require__(11);
-	var ObservableCollectionMixin = __webpack_require__(13);
+	var nextUID = __webpack_require__(4);
+
+	var Symbol = Function('return this;')().Symbol;
+
+	if (!Symbol) {
+		Symbol = function Symbol(key) {
+			return '__' + key + '_' + Math.floor(Math.random() * 1e9) + '_' + nextUID() + '__';
+		};
+
+		Symbol.iterator = Symbol('iterator');
+	}
+
+	module.exports = Symbol;
+
+
+/***/ },
+/* 4 */
+/***/ function(module, exports) {
+
+	var uidCounter = 0;
+
+	/**
+	 * @typesign () -> string;
+	 */
+	function nextUID() {
+		return String(++uidCounter);
+	}
+
+	module.exports = nextUID;
+
+
+/***/ },
+/* 5 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var mixin = __webpack_require__(6);
+
+	var hasOwn = Object.prototype.hasOwnProperty;
+
+	var extend;
+
+	/**
+	 * @typesign (description: {
+	 *     Extends?: Function,
+	 *     Implements?: Array<Object|Function>,
+	 *     Static?: Object,
+	 *     constructor?: Function,
+	 *     [key: string]
+	 * }) -> Function;
+	 */
+	function createClass(description) {
+		var parent;
+
+		if (description.Extends) {
+			parent = description.Extends;
+			delete description.Extends;
+		} else {
+			parent = Object;
+		}
+
+		var constr;
+
+		if (hasOwn.call(description, 'constructor')) {
+			constr = description.constructor;
+			delete description.constructor;
+		} else {
+			constr = parent == Object ?
+				function() {} :
+				function() {
+					return parent.apply(this, arguments);
+				};
+		}
+
+		var proto = constr.prototype = Object.create(parent.prototype);
+
+		if (description.Implements) {
+			description.Implements.forEach(function(implementation) {
+				if (typeof implementation == 'function') {
+					Object.keys(implementation).forEach(function(name) {
+						Object.defineProperty(constr, name, Object.getOwnPropertyDescriptor(implementation, name));
+					});
+
+					mixin(proto, implementation.prototype);
+				} else {
+					mixin(proto, implementation);
+				}
+			});
+
+			delete description.Implements;
+		}
+
+		Object.keys(parent).forEach(function(name) {
+			Object.defineProperty(constr, name, Object.getOwnPropertyDescriptor(parent, name));
+		});
+
+		if (description.Static) {
+			mixin(constr, description.Static);
+			delete description.Static;
+		}
+
+		if (constr.extend === void 0) {
+			constr.extend = extend;
+		}
+
+		mixin(proto, description);
+
+		Object.defineProperty(proto, 'constructor', {
+			configurable: true,
+			writable: true,
+			value: constr
+		});
+
+		return constr;
+	}
+
+	/**
+	 * @this {Function}
+	 *
+	 * @typesign (description: {
+	 *     Implements?: Array<Object|Function>,
+	 *     Static?: Object,
+	 *     constructor?: Function,
+	 *     [key: string]
+	 * }) -> Function;
+	 */
+	extend = function extend(description) {
+		description.Extends = this;
+		return createClass(description);
+	};
+
+	module.exports = createClass;
+
+
+/***/ },
+/* 6 */
+/***/ function(module, exports) {
+
+	/**
+	 * @typesign (target: Object, source: Object) -> Object;
+	 */
+	function mixin(target, source) {
+		var names = Object.getOwnPropertyNames(source);
+
+		for (var i = 0, l = names.length; i < l; i++) {
+			var name = names[i];
+			Object.defineProperty(target, name, Object.getOwnPropertyDescriptor(source, name));
+		}
+
+		return target;
+	}
+
+	module.exports = mixin;
+
+
+/***/ },
+/* 7 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var EventEmitter = __webpack_require__(2);
+	var ObservableCollectionMixin = __webpack_require__(8);
+	var is = __webpack_require__(11);
+	var Symbol = __webpack_require__(3);
+	var Map = __webpack_require__(9);
 
 	var hasOwn = Object.prototype.hasOwnProperty;
 	var isArray = Array.isArray;
@@ -1334,11 +971,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 13 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var Map = __webpack_require__(4);
-	var EventEmitter = __webpack_require__(11);
+	var EventEmitter = __webpack_require__(2);
+	var Map = __webpack_require__(9);
 
 	var ObservableCollectionMixin = EventEmitter.extend({
 		constructor: function ObservableCollectionMixin() {
@@ -1396,13 +1033,292 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 14 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var is = __webpack_require__(1);
-	var Symbol = __webpack_require__(2);
-	var EventEmitter = __webpack_require__(11);
-	var ObservableCollectionMixin = __webpack_require__(13);
+	var keys = __webpack_require__(10);
+	var Symbol = __webpack_require__(3);
+	var nextUID = __webpack_require__(4);
+	var createClass = __webpack_require__(5);
+
+	var KEY_UID = keys.UID;
+
+	var hasOwn = Object.prototype.hasOwnProperty;
+	var global = Function('return this;')();
+
+	var Map = global.Map;
+
+	if (!Map) {
+		var entryStub = {
+			value: void 0
+		};
+
+		Map = createClass({
+			constructor: function Map(entries) {
+				this._entries = Object.create(null);
+				this._objectStamps = {};
+
+				this._first = null;
+				this._last = null;
+
+				this.size = 0;
+
+				if (entries) {
+					for (var i = 0, l = entries.length; i < l; i++) {
+						this.set(entries[i][0], entries[i][1]);
+					}
+				}
+			},
+
+			has: function has(key) {
+				return !!this._entries[this._getValueStamp(key)];
+			},
+
+			get: function get(key) {
+				return (this._entries[this._getValueStamp(key)] || entryStub).value;
+			},
+
+			set: function set(key, value) {
+				var entries = this._entries;
+				var keyStamp = this._getValueStamp(key);
+
+				if (entries[keyStamp]) {
+					entries[keyStamp].value = value;
+				} else {
+					var entry = entries[keyStamp] = {
+						key: key,
+						keyStamp: keyStamp,
+						value: value,
+						prev: this._last,
+						next: null
+					};
+
+					if (this.size++) {
+						this._last.next = entry;
+					} else {
+						this._first = entry;
+					}
+
+					this._last = entry;
+				}
+
+				return this;
+			},
+
+			delete: function _delete(key) {
+				var keyStamp = this._getValueStamp(key);
+				var entry = this._entries[keyStamp];
+
+				if (!entry) {
+					return false;
+				}
+
+				if (--this.size) {
+					var prev = entry.prev;
+					var next = entry.next;
+
+					if (prev) {
+						prev.next = next;
+					} else {
+						this._first = next;
+					}
+
+					if (next) {
+						next.prev = prev;
+					} else {
+						this._last = prev;
+					}
+				} else {
+					this._first = null;
+					this._last = null;
+				}
+
+				delete this._entries[keyStamp];
+				delete this._objectStamps[keyStamp];
+
+				return true;
+			},
+
+			clear: function clear() {
+				var entries = this._entries;
+
+				for (var stamp in entries) {
+					delete entries[stamp];
+				}
+
+				this._objectStamps = {};
+
+				this._first = null;
+				this._last = null;
+
+				this.size = 0;
+			},
+
+			_getValueStamp: function _getValueStamp(value) {
+				switch (typeof value) {
+					case 'undefined': {
+						return 'undefined';
+					}
+					case 'object': {
+						if (value === null) {
+							return 'null';
+						}
+
+						break;
+					}
+					case 'boolean': {
+						return '?' + value;
+					}
+					case 'number': {
+						return '+' + value;
+					}
+					case 'string': {
+						return ',' + value;
+					}
+				}
+
+				return this._getObjectStamp(value);
+			},
+
+			_getObjectStamp: function _getObjectStamp(obj) {
+				if (!hasOwn.call(obj, KEY_UID)) {
+					if (!Object.isExtensible(obj)) {
+						var stamps = this._objectStamps;
+						var stamp;
+
+						for (stamp in stamps) {
+							if (hasOwn.call(stamps, stamp) && stamps[stamp] == obj) {
+								return stamp;
+							}
+						}
+
+						stamp = nextUID();
+						stamps[stamp] = obj;
+
+						return stamp;
+					}
+
+					Object.defineProperty(obj, KEY_UID, {
+						value: nextUID()
+					});
+				}
+
+				return obj[KEY_UID];
+			},
+
+			forEach: function forEach(cb, context) {
+				context = arguments.length >= 2 ? context : global;
+
+				var entry = this._first;
+
+				while (entry) {
+					cb.call(context, entry.value, entry.key, this);
+
+					do {
+						entry = entry.next;
+					} while (entry && !this._entries[entry.keyStamp]);
+				}
+			},
+
+			toString: function toString() {
+				return '[object Map]';
+			}
+		});
+
+		[
+			['keys', function keys(entry) {
+				return entry.key;
+			}],
+			['values', function values(entry) {
+				return entry.value;
+			}],
+			['entries', function entries(entry) {
+				return [entry.key, entry.value];
+			}]
+		].forEach(function(settings) {
+			var getStepValue = settings[1];
+
+			Map.prototype[settings[0]] = function() {
+				var entries = this._entries;
+				var entry;
+				var done = false;
+				var map = this;
+
+				return {
+					next: function() {
+						if (!done) {
+							if (entry) {
+								do {
+									entry = entry.next;
+								} while (entry && !entries[entry.keyStamp]);
+							} else {
+								entry = map._first;
+							}
+
+							if (entry) {
+								return {
+									value: getStepValue(entry),
+									done: false
+								};
+							}
+
+							done = true;
+						}
+
+						return {
+							value: void 0,
+							done: true
+						};
+					}
+				};
+			};
+		});
+	}
+
+	if (!Map.prototype[Symbol.iterator]) {
+		Map.prototype[Symbol.iterator] = Map.prototype.entries;
+	}
+
+	module.exports = Map;
+
+
+/***/ },
+/* 10 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var Symbol = __webpack_require__(3);
+
+	module.exports = {
+		UID: Symbol('uid'),
+		CELLS: Symbol('cells')
+	};
+
+
+/***/ },
+/* 11 */
+/***/ function(module, exports) {
+
+	/**
+	 * @typesign (a, b) -> boolean;
+	 */
+	var is = Object.is || function is(a, b) {
+		if (a === 0 && b === 0) {
+			return 1 / a == 1 / b;
+		}
+		return a === b || (a != a && b != b);
+	};
+
+	module.exports = is;
+
+
+/***/ },
+/* 12 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var EventEmitter = __webpack_require__(2);
+	var ObservableCollectionMixin = __webpack_require__(8);
+	var is = __webpack_require__(11);
+	var Symbol = __webpack_require__(3);
 
 	var push = Array.prototype.push;
 	var splice = Array.prototype.splice;
@@ -1876,9 +1792,7 @@ return /******/ (function(modules) { // webpackBootstrap
 			var items = this._items;
 
 			for (var i = 0, l = items.length; i < l; i++) {
-				var item = items[i];
-
-				if (cb.call(context, item, i, this)) {
+				if (cb.call(context, items[i], i, this)) {
 					return i;
 				}
 			}
@@ -2013,12 +1927,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 15 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var is = __webpack_require__(1);
-	var nextTick = __webpack_require__(9);
-	var EventEmitter = __webpack_require__(11);
+	var EventEmitter = __webpack_require__(2);
+	var is = __webpack_require__(11);
+	var nextTick = __webpack_require__(14);
 
 	var slice = Array.prototype.slice;
 
@@ -2956,6 +2870,88 @@ return /******/ (function(modules) { // webpackBootstrap
 	});
 
 	module.exports = Cell;
+
+
+/***/ },
+/* 14 */
+/***/ function(module, exports, __webpack_require__) {
+
+	var ErrorLogger = __webpack_require__(1);
+
+	var global = Function('return this;')();
+
+	/**
+	 * @typesign (cb: ());
+	 */
+	var nextTick;
+
+	if (global.process && process.toString() == '[object process]' && process.nextTick) {
+		nextTick = process.nextTick;
+	} else if (global.setImmediate) {
+		nextTick = function nextTick(cb) {
+			setImmediate(cb);
+		};
+	} else if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
+		var prm = Promise.resolve();
+
+		nextTick = function nextTick(cb) {
+			prm.then(function() {
+				cb();
+			});
+		};
+	} else {
+		var queue;
+
+		global.addEventListener('message', function() {
+			if (queue) {
+				var track = queue;
+
+				queue = null;
+
+				for (var i = 0, l = track.length; i < l; i++) {
+					try {
+						track[i]();
+					} catch (err) {
+						ErrorLogger.log(err);
+					}
+				}
+			}
+		});
+
+		nextTick = function nextTick(cb) {
+			if (queue) {
+				queue.push(cb);
+			} else {
+				queue = [cb];
+				postMessage('__tic__', '*');
+			}
+		};
+	}
+
+	module.exports = nextTick;
+
+
+/***/ },
+/* 15 */
+/***/ function(module, exports) {
+
+	function noop() {}
+
+	var map = Array.prototype.map;
+	var global = Function('return this;')();
+
+	/**
+	 * @typesign (...msg);
+	 */
+	function logError() {
+		var console = global.console;
+
+		(console && console.error || noop).call(console || global, map.call(arguments, function(part) {
+			return part === Object(part) && part.stack || part;
+		}).join(' '));
+	}
+
+	module.exports = logError;
 
 
 /***/ }

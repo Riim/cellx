@@ -1,8 +1,6 @@
 var Symbol = require('./js/Symbol');
 
-var keys = {
+module.exports = {
 	UID: Symbol('uid'),
 	CELLS: Symbol('cells')
 };
-
-module.exports = keys;

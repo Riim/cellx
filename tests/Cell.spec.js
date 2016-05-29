@@ -421,18 +421,18 @@ describe('Cell', function() {
 		let d = new cellx.Cell(function() { return c.get() + 1; }, { debugKey: 'd' });
 		let e = new cellx.Cell(function() { return c.get() + 1; }, { debugKey: 'e' });
 
-		let fChangeSpy = sinon.spy(function() {
+		let fPullSpy = sinon.spy(function() {
 			return d.get() + e.get();
 		});
 
-		let f = new cellx.Cell(fChangeSpy, { debugKey: 'f', onChange: noop });
+		let f = new cellx.Cell(fPullSpy, { debugKey: 'f', onChange: noop });
 
-		fChangeSpy.reset();
+		fPullSpy.reset();
 
 		a.set(2);
 
 		setTimeout(function() {
-			expect(fChangeSpy.calledOnce)
+			expect(fPullSpy.calledOnce)
 				.to.be.ok;
 
 			done();
@@ -620,6 +620,29 @@ describe('Cell', function() {
 
 			done();
 		});
+	});
+
+	it('должна подписывать через EventEmitter', function(done) {
+		let emitter = new cellx.EventEmitter();
+		let changeSpy = sinon.spy();
+
+		cellx.define(emitter, {
+			foo: 1
+		});
+
+		emitter.on('change:foo', changeSpy);
+
+		emitter.foo = 2;
+
+		setTimeout(function() {
+			expect(changeSpy.calledOnce)
+				.to.be.ok;
+
+			expect(changeSpy.firstCall.calledOn(emitter))
+				.to.be.ok;
+
+			done();
+		}, 1);
 	});
 
 });

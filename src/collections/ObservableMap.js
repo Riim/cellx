@@ -1,8 +1,8 @@
+var EventEmitter = require('../EventEmitter');
+var ObservableCollectionMixin = require('./ObservableCollectionMixin');
 var is = require('../js/is');
 var Symbol = require('../js/Symbol');
 var Map = require('../js/Map');
-var EventEmitter = require('../EventEmitter');
-var ObservableCollectionMixin = require('./ObservableCollectionMixin');
 
 var hasOwn = Object.prototype.hasOwnProperty;
 var isArray = Array.isArray;

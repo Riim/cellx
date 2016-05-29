@@ -1,3 +1,9 @@
+var ErrorLogger = require('./ErrorLogger');
+var EventEmitter = require('./EventEmitter');
+var ObservableMap = require('./collections/ObservableMap');
+var ObservableList = require('./collections/ObservableList');
+var Cell = require('./Cell');
+var keys = require('./keys');
 var is = require('./js/is');
 var Symbol = require('./js/Symbol');
 var Map = require('./js/Map');
@@ -6,12 +12,6 @@ var nextUID = require('./utils/nextUID');
 var mixin = require('./utils/mixin');
 var createClass = require('./utils/createClass');
 var nextTick = require('./utils/nextTick');
-var keys = require('./keys');
-var ErrorLogger = require('./ErrorLogger');
-var EventEmitter = require('./EventEmitter');
-var ObservableMap = require('./collections/ObservableMap');
-var ObservableList = require('./collections/ObservableList');
-var Cell = require('./Cell');
 
 var KEY_UID = keys.UID;
 var KEY_CELLS = keys.CELLS;

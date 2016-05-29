@@ -1,26 +1,60 @@
 describe('cellx', function() {
 
-	it('должна подписывать через EventEmitter', function(done) {
-		let emitter = new cellx.EventEmitter();
-		let onChangeSpy = sinon.spy();
+	it('#get()', function() {
+		let a = cellx(1);
 
-		cellx.define(emitter, {
-			foo: 1
-		});
+		expect(a())
+			.to.equal(1);
+	});
 
-		emitter.on('change:foo', onChangeSpy);
+	it('#set()', function() {
+		let a = cellx(1);
 
-		emitter.foo = 2;
+		a(2);
 
-		setTimeout(function() {
-			expect(onChangeSpy.calledOnce)
-				.to.be.ok;
+		expect(a())
+			.to.equal(2);
+	});
 
-			expect(onChangeSpy.firstCall.calledOn(emitter))
-				.to.be.ok;
+	it('#bind()', function() {
+		let aPullSpy = sinon.spy();
+		let a = cellx(aPullSpy);
+		let context = {};
 
-			done();
-		}, 1);
+		a = a.call(context, 'bind', 0);
+		a();
+
+		expect(aPullSpy.calledOnce)
+			.to.be.ok;
+
+		expect(aPullSpy.firstCall.calledOn(context))
+			.to.be.ok;
+	});
+
+	it('#unwrap()', function() {
+		let a = cellx(1);
+		let aa = a('unwrap', 0);
+
+		expect(aa)
+			.to.be.instanceof(cellx.Cell);
+	});
+
+	it('должна позволять использование в прототипе', function() {
+		function A() {}
+		A.prototype.prop1 = cellx([1, 2, 3]);
+		A.prototype.prop2 = cellx(function() { return [1, 2, 3]; });
+
+		let a1 = new A();
+		let a2 = new A();
+
+		expect(a1.prop1())
+			.to.equal(a2.prop1());
+
+		expect(a1.prop2())
+			.to.not.equal(a2.prop2());
+
+		expect(a1.prop2())
+			.to.eql(a2.prop2());
 	});
 
 });

@@ -1,5 +1,5 @@
-var Map = require('../js/Map');
 var EventEmitter = require('../EventEmitter');
+var Map = require('../js/Map');
 
 var ObservableCollectionMixin = EventEmitter.extend({
 	constructor: function ObservableCollectionMixin() {

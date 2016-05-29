@@ -1,7 +1,7 @@
-var is = require('../js/is');
-var Symbol = require('../js/Symbol');
 var EventEmitter = require('../EventEmitter');
 var ObservableCollectionMixin = require('./ObservableCollectionMixin');
+var is = require('../js/is');
+var Symbol = require('../js/Symbol');
 
 var push = Array.prototype.push;
 var splice = Array.prototype.splice;
@@ -475,9 +475,7 @@ var ObservableList = EventEmitter.extend({
 		var items = this._items;
 
 		for (var i = 0, l = items.length; i < l; i++) {
-			var item = items[i];
-
-			if (cb.call(context, item, i, this)) {
+			if (cb.call(context, items[i], i, this)) {
 				return i;
 			}
 		}

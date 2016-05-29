@@ -540,7 +540,7 @@ var map = cellx.map({
 ```
 
 `cellx.ObservableMap` repeats
-[Map](https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Global_Objects/Map) from ecmascript 6,
+[Map](https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Global_Objects/Map) from ECMAScript 2015,
 except for the following differences:
 - inherits of `cellx.EventEmitter` and generates an event `change` when changing their records;
 - has a method `contains`, which let you know whether or not the value is contained in the map,
