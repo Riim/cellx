@@ -111,6 +111,7 @@ export class ObservableList<T> extends EventEmitter implements IObservableCollec
 	setRange(index: number, items: Array<T>): ObservableList<T>;
 	add(item: T): ObservableList<T>;
 	addRange(items: Array<T>): ObservableList<T>;
+	protected _addRange(items: Array<T>): void;
 	insert(index: number, item: T): ObservableList<T>;
 	insertRange(index: number, items: Array<T>): ObservableList<T>;
 	remove(item: T, fromIndex?: number): boolean;

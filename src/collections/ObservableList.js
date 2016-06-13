@@ -17,44 +17,6 @@ function defaultComparator(a, b) {
 }
 
 /**
- * @typesign (list: cellx.ObservableList, items: Array);
- */
-function addRange(list, items) {
-	var listItems = list._items;
-
-	if (list.sorted) {
-		var comparator = list.comparator;
-
-		for (var i = 0, l = items.length; i < l; i++) {
-			var item = items[i];
-			var low = 0;
-			var high = listItems.length;
-
-			while (low != high) {
-				var mid = (low + high) >> 1;
-
-				if (comparator(item, listItems[mid]) < 0) {
-					high = mid;
-				} else {
-					low = mid + 1;
-				}
-			}
-
-			listItems.splice(low, 0, item);
-			list._registerValue(item);
-		}
-	} else {
-		push.apply(listItems, items);
-
-		for (var j = items.length; j;) {
-			list._registerValue(items[--j]);
-		}
-	}
-
-	list.length = listItems.length;
-}
-
-/**
  * @class cellx.ObservableList
  * @extends {cellx.EventEmitter}
  * @implements {ObservableCollectionMixin}
@@ -98,7 +60,7 @@ var ObservableList = EventEmitter.extend({
 		}
 
 		if (items) {
-			addRange(this, items instanceof ObservableList ? items._items : items);
+			this._addRange(items instanceof ObservableList ? items._items : items);
 		}
 	},
 
@@ -250,15 +212,53 @@ var ObservableList = EventEmitter.extend({
 	/**
 	 * @typesign (items: Array) -> cellx.ObservableList;
 	 */
-	addRange: function _addRange(items) {
+	addRange: function addRange_(items) {
 		if (!items.length) {
 			return this;
 		}
 
-		addRange(this, items);
+		this._addRange(items);
 		this.emit('change');
 
 		return this;
+	},
+
+	/**
+	 * @typesign (items: Array);
+	 */
+	_addRange: function _addRange(items) {
+		var listItems = this._items;
+
+		if (this.sorted) {
+			var comparator = this.comparator;
+
+			for (var i = 0, l = items.length; i < l; i++) {
+				var item = items[i];
+				var low = 0;
+				var high = listItems.length;
+
+				while (low != high) {
+					var mid = (low + high) >> 1;
+
+					if (comparator(item, listItems[mid]) < 0) {
+						high = mid;
+					} else {
+						low = mid + 1;
+					}
+				}
+
+				listItems.splice(low, 0, item);
+				this._registerValue(item);
+			}
+		} else {
+			push.apply(listItems, items);
+
+			for (var j = items.length; j;) {
+				this._registerValue(items[--j]);
+			}
+		}
+
+		this.length = listItems.length;
 	},
 
 	/**
