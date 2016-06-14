@@ -84,6 +84,43 @@ describe('Cell', function() {
 		}, 1);
 	});
 
+	it('должна подписываться на внутренние изменения значения-EventEmitter-а и эмиттить их на себе', function(done) {
+		let emitter = new cellx.EventEmitter();
+
+		let changeSpy = sinon.spy();
+		let a = new cellx.Cell(emitter, { onChange: changeSpy });
+
+		emitter.emit('change');
+
+		setTimeout(function() {
+			expect(changeSpy.called)
+				.to.be.ok;
+
+			done();
+		}, 1);
+	});
+
+	it('должна подписываться на внутренние изменения значения-EventEmitter-а и эмиттить их на себе (2)', function(done) {
+		let emitter = new cellx.EventEmitter();
+
+		let changeSpy = sinon.spy();
+
+		let a = new cellx.Cell(emitter);
+		let b = new cellx.Cell(function() {
+			a.get();
+			return Math.random();
+		}, { onChange: changeSpy });
+
+		emitter.emit('change');
+
+		setTimeout(function() {
+			expect(changeSpy.called)
+				.to.be.ok;
+
+			done();
+		}, 1);
+	});
+
 	it('не должна создавать событие `change`, если установить новое значение, изменить его (внутреннее изменение) и вернуть исходное значение', function(done) {
 		let emitter1 = new cellx.EventEmitter();
 		let emitter2 = new cellx.EventEmitter();

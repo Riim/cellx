@@ -1639,8 +1639,8 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * @typesign (item, fromIndex?: int) -> boolean;
 		 */
 		removeAll: function removeAll(item, fromIndex) {
-			var items = this._items;
 			var index = this._validateIndex(fromIndex);
+			var items = this._items;
 			var changed = false;
 
 			while ((index = items.indexOf(item, index)) != -1) {
@@ -1870,8 +1870,8 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	['reduce', 'reduceRight'].forEach(function(name) {
 		ObservableList.prototype[name] = function(cb, initialValue) {
-			var list = this;
 			var items = this._items;
+			var list = this;
 
 			function wrapper(accumulator, item, index) {
 				return cb(accumulator, item, index, list);
@@ -2442,6 +2442,8 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * @typesign (evt: cellx~Event);
 		 */
 		_onValueChange: function _onValueChange(evt) {
+			this._pushingIndex = ++pushingIndexCounter;
+
 			if (this._changeEvent) {
 				evt.prev = this._changeEvent;
 				this._changeEvent = evt;
