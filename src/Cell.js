@@ -588,9 +588,9 @@ var Cell = EventEmitter.extend({
 		}
 
 		if (value === error) {
-			this._fail(error.original, true);
+			this._fail(error.original, currentlyRelease);
 		} else {
-			this._push(value, true);
+			this._push(value, currentlyRelease);
 		}
 
 		return this;
@@ -704,12 +704,12 @@ var Cell = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (value, afterPull: boolean = false);
+	 * @typesign (value, internal: boolean);
 	 */
-	_push: function _push(value, afterPull) {
+	_push: function _push(value, internal) {
 		this._setError(null);
 
-		if (!afterPull) {
+		if (!internal) {
 			this._pushingIndex = ++pushingIndexCounter;
 		}
 
@@ -755,14 +755,14 @@ var Cell = EventEmitter.extend({
 				this._addToRelease();
 			}
 		} else {
-			if (!currentlyRelease && !afterPull) {
+			if (!currentlyRelease && !internal) {
 				releaseVersion++;
 			}
 
 			this._fixedValue = value;
 		}
 
-		if (!afterPull && this._pending) {
+		if (!internal && this._pending) {
 			this._pending = false;
 			this._fulfilled = true;
 
@@ -781,16 +781,16 @@ var Cell = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (err, afterPull: boolean = false);
+	 * @typesign (err, internal: boolean);
 	 */
-	_fail: function _fail(err, afterPull) {
+	_fail: function _fail(err, internal) {
 		this._logError(err);
 
 		if (!(err instanceof Error)) {
 			err = new Error(String(err));
 		}
 
-		if (!afterPull && this._pending) {
+		if (!internal && this._pending) {
 			this._pending = false;
 			this._rejected = true;
 
@@ -863,7 +863,7 @@ var Cell = EventEmitter.extend({
 			release();
 		}
 
-		if (this._fulfilled) {
+		if (!this._pull || this._fulfilled) {
 			return Promise.resolve(this._get ? this._get(this._value) : this._value).then(onFulfilled);
 		}
 

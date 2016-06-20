@@ -2,6 +2,61 @@ describe('Cell', function() {
 
 	function noop() {}
 
+	it('#pull()', function(done) {
+		let counter = 0;
+		let a = new cellx.Cell(function() {
+			return ++counter;
+		});
+
+		let changeSpy = sinon.spy();
+		let b = new cellx.Cell(function() {
+			return a.get() + 1;
+		}, { onChange: changeSpy });
+
+		a.pull();
+
+		setTimeout(function() {
+			expect(changeSpy.calledOnce)
+				.to.be.ok;
+
+			expect(b.get())
+				.to.equal(3);
+
+			done();
+		}, 1);
+	});
+
+	// Если в get устанавливать _level раньше запуска _tryPull,
+	// то на уровнях 2+ _level всегда будет 1, что как-то не очень хорошо.
+	it('должна минимизировать число лишних вызовов pull', function(done) {
+		let a = new cellx.Cell(1, { debugKey: 'a' });
+		let b = new cellx.Cell(2, { debugKey: 'b' });
+
+		let c = new cellx.Cell(function() {
+			return b.get() + 1;
+		}, { debugKey: 'c' });
+
+		let dPullSpy = sinon.spy(function() {
+			return a.get() + c.get();
+		});
+
+		let d = new cellx.Cell(dPullSpy, { debugKey: 'd' });
+
+		d.on('change', noop);
+
+		dPullSpy.reset();
+
+		a.set(2);
+		b.set(3);
+
+		setTimeout(function() {
+			expect(dPullSpy.calledOnce)
+				.to.be.ok;
+
+			done();
+		}, 1);
+	});
+
 	it('не должна создавать событие `change` при установке значения равного текущему', function(done) {
 		let changeSpy = sinon.spy();
 		let a = new cellx.Cell(1, { onChange: changeSpy });
@@ -408,37 +463,6 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	// Если в get устанавливать _level раньше запуска _tryPull,
-	// то на уровнях 2+ _level всегда будет 1, что как-то не очень хорошо.
-	it('должна минимизировать число лишних вызовов pull', function(done) {
-		let a = new cellx.Cell(1, { debugKey: 'a' });
-		let b = new cellx.Cell(2, { debugKey: 'b' });
-
-		let c = new cellx.Cell(function() {
-			return b.get() + 1;
-		}, { debugKey: 'c' });
-
-		let dPullSpy = sinon.spy(function() {
-			return a.get() + c.get();
-		});
-
-		let d = new cellx.Cell(dPullSpy, { debugKey: 'd' });
-
-		d.on('change', noop);
-
-		dPullSpy.reset();
-
-		a.set(2);
-		b.set(3);
-
-		setTimeout(function() {
-			expect(dPullSpy.calledOnce)
-				.to.be.ok;
-
-			done();
-		}, 1);
-	});
-
 	it('должна минимизировать число лишних вызовов pull (2)', function(done) {
 		let a = new cellx.Cell(1, { debugKey: 'a' });
 		let b = new cellx.Cell(function() { return a.get() + 1; }, { debugKey: 'b', onChange: noop });
@@ -623,7 +647,7 @@ describe('Cell', function() {
 			}]);
 	});
 
-	it('#then', function(done) {
+	it('#then()', function(done) {
 		let a = new cellx.Cell(function(push) {
 			setTimeout(function() {
 				push(5);
@@ -641,7 +665,21 @@ describe('Cell', function() {
 		});
 	});
 
-	it('#catch', function(done) {
+	it('#then() 2', function(done) {
+		let a = new cellx.Cell(1);
+
+		a.then(function(value) {
+			expect(value)
+				.to.equal(1);
+
+			expect(a.get())
+				.to.equal(1);
+
+			done();
+		});
+	});
+
+	it('#catch()', function(done) {
 		let a = new cellx.Cell(function(push, fail) {
 			setTimeout(function() {
 				fail('5');
