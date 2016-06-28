@@ -93,7 +93,7 @@ var ObservableMap = EventEmitter.extend({
 		if (hasKey) {
 			oldValue = entries.get(key);
 
-			if (is(oldValue, value)) {
+			if (is(value, oldValue)) {
 				return this;
 			}
 

@@ -1,5 +1,6 @@
 var mixin = require('./mixin');
 
+var createObject = Object.create;
 var hasOwn = Object.prototype.hasOwnProperty;
 
 var extend;
@@ -36,7 +37,7 @@ function createClass(description) {
 			};
 	}
 
-	var proto = constr.prototype = Object.create(parent.prototype);
+	var proto = constr.prototype = createObject(parent.prototype);
 
 	if (description.Implements) {
 		description.Implements.forEach(function(implementation) {

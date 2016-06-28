@@ -5,6 +5,7 @@ var createClass = require('../utils/createClass');
 
 var KEY_UID = keys.UID;
 
+var createObject = Object.create;
 var hasOwn = Object.prototype.hasOwnProperty;
 var global = Function('return this;')();
 
@@ -17,7 +18,7 @@ if (!Map) {
 
 	Map = createClass({
 		constructor: function Map(entries) {
-			this._entries = Object.create(null);
+			this._entries = createObject(null);
 			this._objectStamps = {};
 
 			this._first = null;

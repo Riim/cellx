@@ -16,6 +16,7 @@ var nextTick = require('./utils/nextTick');
 var KEY_UID = keys.UID;
 var KEY_CELLS = keys.CELLS;
 
+var createObject = Object.create;
 var hasOwn = Object.prototype.hasOwnProperty;
 var slice = Array.prototype.slice;
 var global = Function('return this;')();
@@ -68,7 +69,7 @@ function cellx(value, opts) {
 				return;
 			}
 
-			opts = Object.create(opts);
+			opts = createObject(opts);
 			opts.owner = owner;
 
 			cell = new Cell(initialValue, opts);

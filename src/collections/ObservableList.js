@@ -144,7 +144,7 @@ var ObservableList = EventEmitter.extend({
 
 		var items = this._items;
 
-		if (is(items[index], value)) {
+		if (is(value, items[index])) {
 			return this;
 		}
 
@@ -184,7 +184,7 @@ var ObservableList = EventEmitter.extend({
 		for (var i = index + itemCount; i > index;) {
 			var item = items[--i - index];
 
-			if (!is(listItems[i], item)) {
+			if (!is(item, listItems[i])) {
 				this._unregisterValue(listItems[i]);
 
 				listItems[i] = item;
