@@ -155,6 +155,32 @@ describe('ObservableList', function() {
 			.to.eql([2, 3, 2]);
 	});
 
+	it('#removeEach()', function() {
+		let list = new cellx.ObservableList([1, 2, 3, 2, 1]);
+
+		expect(list.removeEach([2, 3, 1], 1))
+			.to.be.ok;
+
+		expect(list.removeEach([1], 1))
+			.to.be.not.ok;
+
+		expect(list.toArray())
+			.to.eql([1, 2]);
+	});
+
+	it('#removeAllEach()', function() {
+		let list = new cellx.ObservableList([1, 2, 3, 2, 1]);
+
+		expect(list.removeAllEach([2, 3, 1], 1))
+			.to.be.ok;
+
+		expect(list.removeAllEach([2]))
+			.to.be.not.ok;
+
+		expect(list.toArray())
+			.to.eql([1]);
+	});
+
 	it('#removeAt()', function() {
 		let list = new cellx.ObservableList([1, 2, 3, 2, 1]);
 

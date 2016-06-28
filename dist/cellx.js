@@ -1534,12 +1534,10 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * @typesign (items: Array) -> cellx.ObservableList;
 		 */
 		addRange: function addRange_(items) {
-			if (!items.length) {
-				return this;
+			if (items.length) {
+				this._addRange(items);
+				this.emit('change');
 			}
-
-			this._addRange(items);
-			this.emit('change');
 
 			return this;
 		},
@@ -1654,15 +1652,69 @@ return /******/ (function(modules) { // webpackBootstrap
 				changed = true;
 			}
 
-			if (!changed) {
-				return false;
+			if (changed) {
+				this.length = items.length;
+				this.emit('change');
 			}
 
-			this.length = items.length;
+			return changed;
+		},
 
-			this.emit('change');
+		/**
+		 * @typesign (items: Array, fromIndex?: int) -> boolean;
+		 */
+		removeEach: function removeEach(items, fromIndex) {
+			fromIndex = this._validateIndex(fromIndex);
 
-			return true;
+			var listItems = this._items;
+			var changed = false;
+
+			for (var i = 0, l = items.length; i < l; i++) {
+				var item = items[i];
+				var index = listItems.indexOf(item, fromIndex);
+
+				if (index != -1) {
+					listItems.splice(index, 1);
+					this._unregisterValue(item);
+
+					changed = true;
+				}
+			}
+
+			if (changed) {
+				this.length = listItems.length;
+				this.emit('change');
+			}
+
+			return changed;
+		},
+
+		/**
+		 * @typesign (items: Array, fromIndex?: int) -> boolean;
+		 */
+		removeAllEach: function removeAllEach(items, fromIndex) {
+			fromIndex = this._validateIndex(fromIndex);
+
+			var listItems = this._items;
+			var changed = false;
+
+			for (var i = 0, l = items.length; i < l; i++) {
+				var item = items[i];
+
+				for (var index = fromIndex; (index = listItems.indexOf(item, index)) != -1;) {
+					listItems.splice(index, 1);
+					this._unregisterValue(item);
+
+					changed = true;
+				}
+			}
+
+			if (changed) {
+				this.length = listItems.length;
+				this.emit('change');
+			}
+
+			return changed;
 		},
 
 		/**
@@ -1713,22 +1765,24 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * @typesign () -> cellx.ObservableList;
 		 */
 		clear: function clear() {
-			if (this.length) {
-				if (this.adoptsItemChanges) {
-					this._valueCounts.forEach(function(value) {
-						if (value instanceof EventEmitter) {
-							value.off('change', this._onItemChange, this);
-						}
-					}, this);
-				}
-
-				this._items.length = 0;
-				this._valueCounts.clear();
-
-				this.length = 0;
-
-				this.emit('change');
+			if (!this.length) {
+				return this;
 			}
+
+			if (this.adoptsItemChanges) {
+				this._valueCounts.forEach(function(value) {
+					if (value instanceof EventEmitter) {
+						value.off('change', this._onItemChange, this);
+					}
+				}, this);
+			}
+
+			this._items.length = 0;
+			this._valueCounts.clear();
+
+			this.length = 0;
+
+			this.emit('change');
 
 			return this;
 		},
