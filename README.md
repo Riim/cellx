@@ -314,9 +314,9 @@ user.name('dispose', 0);
 This will remove all the handlers, not only from the cell itself, but also from all cells calculated from it,
 and in the absence of links all branch of dependencies will "die".
 
-### Use with React
+### Use with ES.Next
 
-Use npm module [react-bind-observables](https://github.com/Riim/react-bind-observables).
+Use npm module [cellx-decorators](https://github.com/Riim/cellx-decorators).
 
 ## Collapse and discarding of events
 

@@ -513,7 +513,11 @@ return /******/ (function(modules) { // webpackBootstrap
 				throw new TypeError('Event cannot be emitted on this object');
 			}
 
-			this._handleEvent(evt);
+			try {
+				this._handleEvent(evt);
+			} catch (err) {
+				this._logError(err);
+			}
 
 			return evt;
 		},
@@ -562,12 +566,8 @@ return /******/ (function(modules) { // webpackBootstrap
 				events = events.slice();
 
 				for (var i = 0, l = events.length; i < l; i++) {
-					try {
-						if (events[i].listener.call(events[i].context, evt) === false) {
-							evt.isPropagationStopped = true;
-						}
-					} catch (err) {
-						this._logError(err);
+					if (events[i].listener.call(events[i].context, evt) === false) {
+						evt.isPropagationStopped = true;
 					}
 				}
 			}

@@ -299,9 +299,9 @@ user.name('dispose', 0);
 это снимет все обработчики не только с самой ячейки, но и со всех вычисляемых из неё ячеек,
 при отсутствии ссылок "умрёт" вся ветка зависимостей.
 
-### Использование с React
+### Использование с ES.Next
 
-Используйте npm модуль [react-bind-observables](https://github.com/Riim/react-bind-observables).
+Используйте npm модуль [cellx-decorators](https://github.com/Riim/cellx-decorators).
 
 ## Схлопывание и отбрасывание событий
 
