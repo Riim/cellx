@@ -38,21 +38,21 @@ var ObservableMap = EventEmitter.extend({
 
 			if (entries instanceof ObservableMap || entries instanceof Map) {
 				entries._entries.forEach(function(value, key) {
-					mapEntries.set(key, value);
 					this._registerValue(value);
+					mapEntries.set(key, value);
 				}, this);
 			} else if (isArray(entries)) {
 				for (var i = 0, l = entries.length; i < l; i++) {
 					var entry = entries[i];
 
-					mapEntries.set(entry[0], entry[1]);
 					this._registerValue(entry[1]);
+					mapEntries.set(entry[0], entry[1]);
 				}
 			} else {
 				for (var key in entries) {
 					if (hasOwn.call(entries, key)) {
-						mapEntries.set(key, entries[key]);
 						this._registerValue(entries[key]);
+						mapEntries.set(key, entries[key]);
 					}
 				}
 			}
@@ -100,8 +100,8 @@ var ObservableMap = EventEmitter.extend({
 			this._unregisterValue(oldValue);
 		}
 
-		entries.set(key, value);
 		this._registerValue(value);
+		entries.set(key, value);
 
 		if (!hasKey) {
 			this.size++;
@@ -130,9 +130,8 @@ var ObservableMap = EventEmitter.extend({
 
 		var value = entries.get(key);
 
-		entries.delete(key);
 		this._unregisterValue(value);
-
+		entries.delete(key);
 		this.size--;
 
 		this.emit({

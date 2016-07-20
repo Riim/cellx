@@ -787,21 +787,21 @@ return /******/ (function(modules) { // webpackBootstrap
 
 				if (entries instanceof ObservableMap || entries instanceof Map) {
 					entries._entries.forEach(function(value, key) {
-						mapEntries.set(key, value);
 						this._registerValue(value);
+						mapEntries.set(key, value);
 					}, this);
 				} else if (isArray(entries)) {
 					for (var i = 0, l = entries.length; i < l; i++) {
 						var entry = entries[i];
 
-						mapEntries.set(entry[0], entry[1]);
 						this._registerValue(entry[1]);
+						mapEntries.set(entry[0], entry[1]);
 					}
 				} else {
 					for (var key in entries) {
 						if (hasOwn.call(entries, key)) {
-							mapEntries.set(key, entries[key]);
 							this._registerValue(entries[key]);
+							mapEntries.set(key, entries[key]);
 						}
 					}
 				}
@@ -849,8 +849,8 @@ return /******/ (function(modules) { // webpackBootstrap
 				this._unregisterValue(oldValue);
 			}
 
-			entries.set(key, value);
 			this._registerValue(value);
+			entries.set(key, value);
 
 			if (!hasKey) {
 				this.size++;
@@ -879,9 +879,8 @@ return /******/ (function(modules) { // webpackBootstrap
 
 			var value = entries.get(key);
 
-			entries.delete(key);
 			this._unregisterValue(value);
-
+			entries.delete(key);
 			this.size--;
 
 			this.emit({
@@ -1470,9 +1469,8 @@ return /******/ (function(modules) { // webpackBootstrap
 			}
 
 			this._unregisterValue(items[index]);
-
-			items[index] = value;
 			this._registerValue(value);
+			items[index] = value;
 
 			this.emit('change');
 
@@ -1480,37 +1478,35 @@ return /******/ (function(modules) { // webpackBootstrap
 		},
 
 		/**
-		 * @typesign (index: int, items: Array) -> cellx.ObservableList;
+		 * @typesign (index: int, values: Array) -> cellx.ObservableList;
 		 */
-		setRange: function setRange(index, items) {
+		setRange: function setRange(index, values) {
 			if (this.sorted) {
 				throw new TypeError('Cannot set to sorted list');
 			}
 
 			index = this._validateIndex(index);
 
-			var itemCount = items.length;
+			var valueCount = values.length;
 
-			if (!itemCount) {
+			if (!valueCount) {
 				return this;
 			}
 
-			if (index + itemCount > this.length) {
-				throw new RangeError('Sum of "index" and "items.length" out of valid range');
+			if (index + valueCount > this.length) {
+				throw new RangeError('Sum of "index" and "values.length" out of valid range');
 			}
 
-			var listItems = this._items;
+			var items = this._items;
 			var changed = false;
 
-			for (var i = index + itemCount; i > index;) {
-				var item = items[--i - index];
+			for (var i = index + valueCount; i > index;) {
+				var value = values[--i - index];
 
-				if (!is(item, listItems[i])) {
-					this._unregisterValue(listItems[i]);
-
-					listItems[i] = item;
-					this._registerValue(item);
-
+				if (!is(value, items[i])) {
+					this._unregisterValue(items[i]);
+					this._registerValue(value);
+					items[i] = value;
 					changed = true;
 				}
 			}
@@ -1526,14 +1522,24 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * @typesign (item) -> cellx.ObservableList;
 		 */
 		add: function add(item) {
-			this.addRange([item]);
+			if (this.sorted) {
+				this._placeItem(item);
+			} else {
+				this._registerValue(item);
+				this._items.push(item);
+			}
+
+			this.length++;
+
+			this.emit('change');
+
 			return this;
 		},
 
 		/**
 		 * @typesign (items: Array) -> cellx.ObservableList;
 		 */
-		addRange: function addRange_(items) {
+		addRange: function addRange(items) {
 			if (items.length) {
 				this._addRange(items);
 				this.emit('change');
@@ -1546,45 +1552,61 @@ return /******/ (function(modules) { // webpackBootstrap
 		 * @typesign (items: Array);
 		 */
 		_addRange: function _addRange(items) {
-			var listItems = this._items;
-
 			if (this.sorted) {
-				var comparator = this.comparator;
-
 				for (var i = 0, l = items.length; i < l; i++) {
-					var item = items[i];
-					var low = 0;
-					var high = listItems.length;
-
-					while (low != high) {
-						var mid = (low + high) >> 1;
-
-						if (comparator(item, listItems[mid]) < 0) {
-							high = mid;
-						} else {
-							low = mid + 1;
-						}
-					}
-
-					listItems.splice(low, 0, item);
-					this._registerValue(item);
+					this._placeItem(items[i]);
 				}
-			} else {
-				push.apply(listItems, items);
 
+				this.length += items.length;
+			} else {
 				for (var j = items.length; j;) {
 					this._registerValue(items[--j]);
 				}
+
+				this.length = push.apply(this._items, items);
+			}
+		},
+
+		/**
+		 * @typesign (item);
+		 */
+		_placeItem: function _placeItem(item) {
+			this._registerValue(item);
+
+			var items = this._items;
+			var comparator = this.comparator;
+			var low = 0;
+			var high = items.length;
+
+			while (low != high) {
+				var mid = (low + high) >> 1;
+
+				if (comparator(item, items[mid]) < 0) {
+					high = mid;
+				} else {
+					low = mid + 1;
+				}
 			}
 
-			this.length = listItems.length;
+			items.splice(low, 0, item);
 		},
 
 		/**
 		 * @typesign (index: int, item) -> cellx.ObservableList;
 		 */
 		insert: function insert(index, item) {
-			this.insertRange(index, [item]);
+			if (this.sorted) {
+				throw new TypeError('Cannot insert to sorted list');
+			}
+
+			index = this._validateIndex(index, true);
+
+			this._registerValue(item);
+			this._items.splice(index, 0, item);
+			this.length++;
+
+			this.emit('change');
+
 			return this;
 		},
 
@@ -1604,12 +1626,11 @@ return /******/ (function(modules) { // webpackBootstrap
 				return this;
 			}
 
-			splice.apply(this._items, [index, 0].concat(items));
-
 			for (var i = itemCount; i;) {
 				this._registerValue(items[--i]);
 			}
 
+			splice.apply(this._items, [index, 0].concat(items));
 			this.length += itemCount;
 
 			this.emit('change');
@@ -1627,9 +1648,8 @@ return /******/ (function(modules) { // webpackBootstrap
 				return false;
 			}
 
-			this._items.splice(index, 1);
 			this._unregisterValue(item);
-
+			this._items.splice(index, 1);
 			this.length--;
 
 			this.emit('change');
@@ -1646,9 +1666,8 @@ return /******/ (function(modules) { // webpackBootstrap
 			var changed = false;
 
 			while ((index = items.indexOf(item, index)) != -1) {
-				items.splice(index, 1);
 				this._unregisterValue(item);
-
+				items.splice(index, 1);
 				changed = true;
 			}
 
@@ -1674,9 +1693,8 @@ return /******/ (function(modules) { // webpackBootstrap
 				var index = listItems.indexOf(item, fromIndex);
 
 				if (index != -1) {
-					listItems.splice(index, 1);
 					this._unregisterValue(item);
-
+					listItems.splice(index, 1);
 					changed = true;
 				}
 			}
@@ -1702,9 +1720,8 @@ return /******/ (function(modules) { // webpackBootstrap
 				var item = items[i];
 
 				for (var index = fromIndex; (index = listItems.indexOf(item, index)) != -1;) {
-					listItems.splice(index, 1);
 					this._unregisterValue(item);
-
+					listItems.splice(index, 1);
 					changed = true;
 				}
 			}
@@ -1722,7 +1739,6 @@ return /******/ (function(modules) { // webpackBootstrap
 		 */
 		removeAt: function removeAt(index) {
 			var removedItem = this._items.splice(this._validateIndex(index), 1)[0];
-
 			this._unregisterValue(removedItem);
 			this.length--;
 
@@ -1753,7 +1769,6 @@ return /******/ (function(modules) { // webpackBootstrap
 				this._unregisterValue(items[--i]);
 			}
 			var removedItems = items.splice(index, count);
-
 			this.length -= count;
 
 			this.emit('change');

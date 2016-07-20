@@ -657,7 +657,7 @@ Type signature: `(index: int, value) -> cellx.ObservableList;`.
 
 ##### setRange
 
-Type signature: `(index: int, items: Array) -> cellx.ObservableList;`.
+Type signature: `(index: int, values: Array) -> cellx.ObservableList;`.
 
 ##### add
 
@@ -686,6 +686,14 @@ Removes the first occurrence of `item` in the list.
 Type signature: `(item, fromIndex?: int) -> boolean;`.
 
 It removes all occurrences of `item` list.
+
+##### removeEach
+
+Type signature: `(items: Array, fromIndex?: int) -> boolean;`.
+
+##### removeAllEach
+
+Type signature: `(items: Array, fromIndex?: int) -> boolean;`.
 
 ##### removeAt
 

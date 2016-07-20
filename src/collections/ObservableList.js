@@ -149,9 +149,8 @@ var ObservableList = EventEmitter.extend({
 		}
 
 		this._unregisterValue(items[index]);
-
-		items[index] = value;
 		this._registerValue(value);
+		items[index] = value;
 
 		this.emit('change');
 
@@ -159,37 +158,35 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (index: int, items: Array) -> cellx.ObservableList;
+	 * @typesign (index: int, values: Array) -> cellx.ObservableList;
 	 */
-	setRange: function setRange(index, items) {
+	setRange: function setRange(index, values) {
 		if (this.sorted) {
 			throw new TypeError('Cannot set to sorted list');
 		}
 
 		index = this._validateIndex(index);
 
-		var itemCount = items.length;
+		var valueCount = values.length;
 
-		if (!itemCount) {
+		if (!valueCount) {
 			return this;
 		}
 
-		if (index + itemCount > this.length) {
-			throw new RangeError('Sum of "index" and "items.length" out of valid range');
+		if (index + valueCount > this.length) {
+			throw new RangeError('Sum of "index" and "values.length" out of valid range');
 		}
 
-		var listItems = this._items;
+		var items = this._items;
 		var changed = false;
 
-		for (var i = index + itemCount; i > index;) {
-			var item = items[--i - index];
+		for (var i = index + valueCount; i > index;) {
+			var value = values[--i - index];
 
-			if (!is(item, listItems[i])) {
-				this._unregisterValue(listItems[i]);
-
-				listItems[i] = item;
-				this._registerValue(item);
-
+			if (!is(value, items[i])) {
+				this._unregisterValue(items[i]);
+				this._registerValue(value);
+				items[i] = value;
 				changed = true;
 			}
 		}
@@ -205,14 +202,24 @@ var ObservableList = EventEmitter.extend({
 	 * @typesign (item) -> cellx.ObservableList;
 	 */
 	add: function add(item) {
-		this.addRange([item]);
+		if (this.sorted) {
+			this._placeItem(item);
+		} else {
+			this._registerValue(item);
+			this._items.push(item);
+		}
+
+		this.length++;
+
+		this.emit('change');
+
 		return this;
 	},
 
 	/**
 	 * @typesign (items: Array) -> cellx.ObservableList;
 	 */
-	addRange: function addRange_(items) {
+	addRange: function addRange(items) {
 		if (items.length) {
 			this._addRange(items);
 			this.emit('change');
@@ -225,45 +232,61 @@ var ObservableList = EventEmitter.extend({
 	 * @typesign (items: Array);
 	 */
 	_addRange: function _addRange(items) {
-		var listItems = this._items;
-
 		if (this.sorted) {
-			var comparator = this.comparator;
-
 			for (var i = 0, l = items.length; i < l; i++) {
-				var item = items[i];
-				var low = 0;
-				var high = listItems.length;
-
-				while (low != high) {
-					var mid = (low + high) >> 1;
-
-					if (comparator(item, listItems[mid]) < 0) {
-						high = mid;
-					} else {
-						low = mid + 1;
-					}
-				}
-
-				listItems.splice(low, 0, item);
-				this._registerValue(item);
+				this._placeItem(items[i]);
 			}
-		} else {
-			push.apply(listItems, items);
 
+			this.length += items.length;
+		} else {
 			for (var j = items.length; j;) {
 				this._registerValue(items[--j]);
 			}
+
+			this.length = push.apply(this._items, items);
+		}
+	},
+
+	/**
+	 * @typesign (item);
+	 */
+	_placeItem: function _placeItem(item) {
+		this._registerValue(item);
+
+		var items = this._items;
+		var comparator = this.comparator;
+		var low = 0;
+		var high = items.length;
+
+		while (low != high) {
+			var mid = (low + high) >> 1;
+
+			if (comparator(item, items[mid]) < 0) {
+				high = mid;
+			} else {
+				low = mid + 1;
+			}
 		}
 
-		this.length = listItems.length;
+		items.splice(low, 0, item);
 	},
 
 	/**
 	 * @typesign (index: int, item) -> cellx.ObservableList;
 	 */
 	insert: function insert(index, item) {
-		this.insertRange(index, [item]);
+		if (this.sorted) {
+			throw new TypeError('Cannot insert to sorted list');
+		}
+
+		index = this._validateIndex(index, true);
+
+		this._registerValue(item);
+		this._items.splice(index, 0, item);
+		this.length++;
+
+		this.emit('change');
+
 		return this;
 	},
 
@@ -283,12 +306,11 @@ var ObservableList = EventEmitter.extend({
 			return this;
 		}
 
-		splice.apply(this._items, [index, 0].concat(items));
-
 		for (var i = itemCount; i;) {
 			this._registerValue(items[--i]);
 		}
 
+		splice.apply(this._items, [index, 0].concat(items));
 		this.length += itemCount;
 
 		this.emit('change');
@@ -306,9 +328,8 @@ var ObservableList = EventEmitter.extend({
 			return false;
 		}
 
-		this._items.splice(index, 1);
 		this._unregisterValue(item);
-
+		this._items.splice(index, 1);
 		this.length--;
 
 		this.emit('change');
@@ -325,9 +346,8 @@ var ObservableList = EventEmitter.extend({
 		var changed = false;
 
 		while ((index = items.indexOf(item, index)) != -1) {
-			items.splice(index, 1);
 			this._unregisterValue(item);
-
+			items.splice(index, 1);
 			changed = true;
 		}
 
@@ -353,9 +373,8 @@ var ObservableList = EventEmitter.extend({
 			var index = listItems.indexOf(item, fromIndex);
 
 			if (index != -1) {
-				listItems.splice(index, 1);
 				this._unregisterValue(item);
-
+				listItems.splice(index, 1);
 				changed = true;
 			}
 		}
@@ -381,9 +400,8 @@ var ObservableList = EventEmitter.extend({
 			var item = items[i];
 
 			for (var index = fromIndex; (index = listItems.indexOf(item, index)) != -1;) {
-				listItems.splice(index, 1);
 				this._unregisterValue(item);
-
+				listItems.splice(index, 1);
 				changed = true;
 			}
 		}
@@ -401,7 +419,6 @@ var ObservableList = EventEmitter.extend({
 	 */
 	removeAt: function removeAt(index) {
 		var removedItem = this._items.splice(this._validateIndex(index), 1)[0];
-
 		this._unregisterValue(removedItem);
 		this.length--;
 
@@ -432,7 +449,6 @@ var ObservableList = EventEmitter.extend({
 			this._unregisterValue(items[--i]);
 		}
 		var removedItems = items.splice(index, count);
-
 		this.length -= count;
 
 		this.emit('change');

@@ -641,7 +641,7 @@ console.log(list.toArray());
 
 ##### setRange
 
-Сигнатура вызова: `(index: int, items: Array) -> cellx.ObservableList;`.
+Сигнатура вызова: `(index: int, values: Array) -> cellx.ObservableList;`.
 
 ##### add
 
@@ -670,6 +670,14 @@ console.log(list.toArray());
 Сигнатура вызова: `(item, fromIndex?: int) -> boolean;`.
 
 Удаляет все вхождениия `item` в списке.
+
+##### removeEach
+
+Сигнатура вызова: `(items: Array, fromIndex?: int) -> boolean;`.
+
+##### removeAllEach
+
+Сигнатура вызова: `(items: Array, fromIndex?: int) -> boolean;`.
 
 ##### removeAt
 
