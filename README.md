@@ -44,7 +44,7 @@ var user = {
     lastName: cellx('Cat'),
 
     fullName: cellx(function() {
-        return this.firstName() + ' ' + this.lastName();
+        return (this.firstName() + ' ' + this.lastName()).trim();
     })
 };
 
@@ -100,19 +100,55 @@ console.log(plusOne());
 // => 2
 ```
 
-or in the property:
+or in the callable properties:
 
 ```js
 function User(name) {
     this.name = cellx(name);
-    this.upperName = cellx(function() { return this.name().toUpperCase(); });
+    this.nameInitial = cellx(function() { return this.name().charAt(0).toUpperCase(); });
 }
 
 var user = new User('Matroskin');
 
-console.log(user.upperName());
-// => 'MATROSKIN'
+console.log(user.nameInitial());
+// => 'M'
 ```
+
+including in the prototype:
+
+```js
+function User(name) {
+    this.name(name);
+}
+User.prototype.name = cellx();
+User.prototype.friends = cellx(function() { return []; }); // each instance of the user will get its own instance of the array
+
+var user1 = new User('Matroskin');
+var user2 = new User('Sharik');
+
+console.log(user1.friends() == user2.friends());
+// => false
+```
+
+or in simple properties:
+
+```js
+function User(name) {
+    cellx.define(this, {
+        name: name,
+        nameInitial: function() { return this.name.charAt(0).toUpperCase(); }
+    });
+}
+
+var user = new User('Matroskin');
+
+console.log(user.nameInitial);
+// => 'M'
+```
+
+### Use with ES.Next
+
+Use npm module [cellx-decorators](https://www.npmjs.com/package/cellx-decorators).
 
 ### Options
 
@@ -294,6 +330,33 @@ user.fullName('subscribe', function(err, evt) {
 
 Unsubscribes from events `change` and `error`.
 
+#### Подписка на свойства созданные с помощью `cellx.define`
+
+Подписаться на изменение свойства созданного с помощью `cellx.define` можно через `EventEmitter`:
+
+```js
+class User extends cellx.EventEmitter {
+    constructor(name) {
+        cellx.define(this, {
+            name,
+            nameInitial: function() { return this.name.charAt(0).toUpperCase(); }
+        });
+    }
+}
+
+let user = new User('Матроскин');
+
+user.on('change:nameInitial', function(evt) {
+    console.log('nameInitial: ' + evt.value);
+});
+
+console.log(user.nameInitial);
+// => 'М'
+
+user.name = 'Шарик';
+// => 'nameInitial: Ш'
+```
+
 #### dispose or how to kill the cell
 
 In many reactivity engines calculated cell (atom, observable-property) should be seen
@@ -313,10 +376,6 @@ user.name('dispose', 0);
 
 This will remove all the handlers, not only from the cell itself, but also from all cells calculated from it,
 and in the absence of links all branch of dependencies will "die".
-
-### Use with ES.Next
-
-Use npm module [cellx-decorators](https://github.com/Riim/cellx-decorators).
 
 ## Collapse and discarding of events
 

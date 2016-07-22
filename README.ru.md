@@ -30,7 +30,7 @@ var user = {
     lastName: cellx('Кот'),
 
     fullName: cellx(function() {
-        return this.firstName() + ' ' + this.lastName();
+        return (this.firstName() + ' ' + this.lastName()).trim();
     })
 };
 
@@ -48,8 +48,7 @@ user.lastName('Пёс');
 
 Несмотря на то, что изменились две зависимости ячейки `fullName`, обработчик её изменения сработал только один раз.  
 Важной особенностью cellx-а является то, что он старается максимально избавиться как от лишних вызовов
-обработчиков изменений, так и от лишних вызовов расчётных формул зависимых ячеек. В сочетании с ещё некоторыми особыми
-оптимизациями это приводит к идеальной скорости расчёта сложнейших сеток зависимостей.  
+обработчиков изменений, так и от лишних вызовов расчётных формул зависимых ячеек. В сочетании с ещё некоторыми оптимизациями это приводит к идеальной скорости расчёта сложнейших сеток зависимостей.  
 В одном из тестов, который используется для замера производительности, генерируется сетка из множества "слоёв",
 каждый из которых состоит из 4-x ячеек. Ячейки вычисляются из ячеек предыдущего слоя (кроме самого первого, он содержит
 исходные значения) по формуле A2=B1, B2=A1-C1, C2=B1+D1, D2=C1. Далее запоминается начальное время, меняются значения
@@ -85,19 +84,55 @@ console.log(plusOne());
 // => 2
 ```
 
-или в свойствах:
+в вызываемых свойствах:
 
 ```js
 function User(name) {
     this.name = cellx(name);
-    this.upperName = cellx(function() { return this.name().toUpperCase(); });
+    this.nameInitial = cellx(function() { return this.name().charAt(0).toUpperCase(); });
 }
 
 var user = new User('Матроскин');
 
-console.log(user.upperName());
-// => 'МАТРОСКИН'
+console.log(user.nameInitial());
+// => 'М'
 ```
+
+в том числе в прототипе:
+
+```js
+function User(name) {
+    this.name(name);
+}
+User.prototype.name = cellx();
+User.prototype.friends = cellx(function() { return []; }); // каждый инстанс юзера получит свой инстанс массива
+
+var user1 = new User('Матроскин');
+var user2 = new User('Шарик');
+
+console.log(user1.friends() == user2.friends());
+// => false
+```
+
+или в обычных свойствах:
+
+```js
+function User(name) {
+    cellx.define(this, {
+        name: name,
+        nameInitial: function() { return this.name.charAt(0).toUpperCase(); }
+    });
+}
+
+var user = new User('Матроскин');
+
+console.log(user.nameInitial);
+// => 'М'
+```
+
+### Использование с ES.Next
+
+Используйте npm модуль [cellx-decorators](https://www.npmjs.com/package/cellx-decorators).
 
 ### Опции
 
@@ -279,6 +314,33 @@ user.fullName('subscribe', function(err, evt) {
 
 Отписывает от событий `change` и `error`.
 
+#### Подписка на свойства созданные с помощью `cellx.define`
+
+Подписаться на изменение свойства созданного с помощью `cellx.define` можно через `EventEmitter`:
+
+```js
+class User extends cellx.EventEmitter {
+    constructor(name) {
+        cellx.define(this, {
+            name,
+            nameInitial: function() { return this.name.charAt(0).toUpperCase(); }
+        });
+    }
+}
+
+let user = new User('Матроскин');
+
+user.on('change:nameInitial', function(evt) {
+    console.log('nameInitial: ' + evt.value);
+});
+
+console.log(user.nameInitial);
+// => 'М'
+
+user.name = 'Шарик';
+// => 'nameInitial: Ш'
+```
+
 #### dispose или как убить ячейку
 
 Во многих движках реактивного программирования вычисляемую ячейку (атом, observable-свойство) нужно воспринимать
@@ -298,10 +360,6 @@ user.name('dispose', 0);
 
 это снимет все обработчики не только с самой ячейки, но и со всех вычисляемых из неё ячеек,
 при отсутствии ссылок "умрёт" вся ветка зависимостей.
-
-### Использование с ES.Next
-
-Используйте npm модуль [cellx-decorators](https://github.com/Riim/cellx-decorators).
 
 ## Схлопывание и отбрасывание событий
 
