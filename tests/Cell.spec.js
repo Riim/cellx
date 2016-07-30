@@ -2,6 +2,24 @@ describe('Cell', function() {
 
 	function noop() {}
 
+	it('.afterRelease', function(done) {
+		let a = new cellx.Cell(1);
+		let b = new cellx.Cell(function() { return a.get() + 1; }, { onChange: noop });
+
+		a.set(2);
+
+		let afterReleaseSpy = sinon.spy();
+
+		cellx.Cell.afterRelease(afterReleaseSpy);
+
+		setTimeout(function() {
+			expect(afterReleaseSpy.calledOnce)
+				.to.be.ok;
+
+			done();
+		}, 1);
+	});
+
 	it('#pull()', function(done) {
 		let counter = 0;
 		let a = new cellx.Cell(function() {
@@ -643,6 +661,30 @@ describe('Cell', function() {
 				target: a,
 				oldValue: 2,
 				value: 3,
+				prev: null
+			}]);
+	});
+
+	it('#subscribe(), #unsubscribe() (2)', function() {
+		let a = new cellx.Cell(1);
+		let b = new cellx.Cell(function() { return a.get() + 1; });
+		let bChangeSpy = sinon.spy();
+
+		a.set(2);
+		b.subscribe(bChangeSpy);
+		a.set(3);
+		b.unsubscribe(bChangeSpy);
+		a.set(4);
+
+		expect(bChangeSpy.calledOnce)
+			.to.be.ok;
+
+		expect(bChangeSpy.firstCall.args)
+			.to.eql([null, {
+				type: 'change',
+				target: b,
+				oldValue: 3,
+				value: 4,
 				prev: null
 			}]);
 	});

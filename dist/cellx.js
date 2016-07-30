@@ -1,4 +1,4 @@
-(function webpackUniversalModuleDefinition(root, factory) {
+(function webpackUniversalModuleDefinition(root, factory) { /* istanbul ignore next */
 	if(typeof exports === 'object' && typeof module === 'object')
 		module.exports = factory();
 	else if(typeof define === 'function' && define.amd)
@@ -2024,6 +2024,8 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var releaseVersion = 1;
 
+	var afterReleaseCallbacks;
+
 	function release() {
 		if (!releasePlanned) {
 			return;
@@ -2137,6 +2139,16 @@ return /******/ (function(modules) { // webpackBootstrap
 		currentlyRelease = false;
 
 		releaseVersion++;
+
+		if (afterReleaseCallbacks) {
+			var callbacks = afterReleaseCallbacks;
+
+			afterReleaseCallbacks = null;
+
+			for (var j = 0, m = callbacks.length; j < m; j++) {
+				callbacks[j]();
+			}
+		}
 	}
 
 	var currentCell = null;
@@ -2197,10 +2209,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 	var Cell = EventEmitter.extend({
 		Static: {
-			forceRelease: function() {
-				if (releasePlanned) {
-					release();
-				}
+			/**
+			 * @typesign (cb: Function);
+			 */
+			afterRelease: function(cb) {
+				(afterReleaseCallbacks || (afterReleaseCallbacks = [])).push(cb);
 			}
 		},
 
@@ -2534,11 +2547,11 @@ return /******/ (function(modules) { // webpackBootstrap
 		},
 
 		/**
-		 * @typesign () -> cellx.Cell;
+		 * @typesign () -> boolean;
 		 */
 		pull: function pull() {
 			if (!this._pull) {
-				return this;
+				return false;
 			}
 
 			if (releasePlanned) {
@@ -2588,17 +2601,16 @@ return /******/ (function(modules) { // webpackBootstrap
 
 				if (currentlyRelease && this._level > oldLevel) {
 					this._addToRelease();
-					return this;
+					return false;
 				}
 			}
 
 			if (value === error) {
 				this._fail(error.original, currentlyRelease);
-			} else {
-				this._push(value, currentlyRelease);
+				return true;
 			}
 
-			return this;
+			return this._push(value, currentlyRelease);
 		},
 
 		/**
@@ -2709,7 +2721,7 @@ return /******/ (function(modules) { // webpackBootstrap
 		},
 
 		/**
-		 * @typesign (value, internal: boolean);
+		 * @typesign (value, internal: boolean) -> boolean;
 		 */
 		_push: function _push(value, internal) {
 			this._setError(null);
@@ -2721,7 +2733,7 @@ return /******/ (function(modules) { // webpackBootstrap
 			var oldValue = this._value;
 
 			if (is(value, oldValue)) {
-				return;
+				return false;
 			}
 
 			this._value = value;
@@ -2775,6 +2787,8 @@ return /******/ (function(modules) { // webpackBootstrap
 					this._onFulfilled(value);
 				}
 			}
+
+			return true;
 		},
 
 		/**
@@ -2960,6 +2974,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 */
 	var nextTick;
 
+	/* istanbul ignore next */
 	if (global.process && process.toString() == '[object process]' && process.nextTick) {
 		nextTick = process.nextTick;
 	} else if (global.setImmediate) {

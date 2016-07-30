@@ -19,6 +19,8 @@ var currentlyRelease = false;
 
 var releaseVersion = 1;
 
+var afterReleaseCallbacks;
+
 function release() {
 	if (!releasePlanned) {
 		return;
@@ -132,6 +134,16 @@ function release() {
 	currentlyRelease = false;
 
 	releaseVersion++;
+
+	if (afterReleaseCallbacks) {
+		var callbacks = afterReleaseCallbacks;
+
+		afterReleaseCallbacks = null;
+
+		for (var j = 0, m = callbacks.length; j < m; j++) {
+			callbacks[j]();
+		}
+	}
 }
 
 var currentCell = null;
@@ -192,10 +204,11 @@ function defaultPut(value, push) {
  */
 var Cell = EventEmitter.extend({
 	Static: {
-		forceRelease: function() {
-			if (releasePlanned) {
-				release();
-			}
+		/**
+		 * @typesign (cb: Function);
+		 */
+		afterRelease: function(cb) {
+			(afterReleaseCallbacks || (afterReleaseCallbacks = [])).push(cb);
 		}
 	},
 
@@ -529,11 +542,11 @@ var Cell = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign () -> cellx.Cell;
+	 * @typesign () -> boolean;
 	 */
 	pull: function pull() {
 		if (!this._pull) {
-			return this;
+			return false;
 		}
 
 		if (releasePlanned) {
@@ -583,17 +596,16 @@ var Cell = EventEmitter.extend({
 
 			if (currentlyRelease && this._level > oldLevel) {
 				this._addToRelease();
-				return this;
+				return false;
 			}
 		}
 
 		if (value === error) {
 			this._fail(error.original, currentlyRelease);
-		} else {
-			this._push(value, currentlyRelease);
+			return true;
 		}
 
-		return this;
+		return this._push(value, currentlyRelease);
 	},
 
 	/**
@@ -704,7 +716,7 @@ var Cell = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (value, internal: boolean);
+	 * @typesign (value, internal: boolean) -> boolean;
 	 */
 	_push: function _push(value, internal) {
 		this._setError(null);
@@ -716,7 +728,7 @@ var Cell = EventEmitter.extend({
 		var oldValue = this._value;
 
 		if (is(value, oldValue)) {
-			return;
+			return false;
 		}
 
 		this._value = value;
@@ -770,6 +782,8 @@ var Cell = EventEmitter.extend({
 				this._onFulfilled(value);
 			}
 		}
+
+		return true;
 	},
 
 	/**

@@ -162,7 +162,7 @@ interface ICellEvent extends IEvent {
 }
 
 export class Cell<T> extends EventEmitter {
-	static forceRelease(): void;
+	static afterRelease(cb: Function): void;
 
 	debugKey: string;
 	owner: Object;
@@ -177,7 +177,7 @@ export class Cell<T> extends EventEmitter {
 	subscribe(listener: (err: Error|void, evt: ICellEvent) => boolean|void, context?: any): Cell<T>;
 	unsubscribe(listener: (err: Error|void, evt: ICellEvent) => boolean|void, context?: any): Cell<T>;
 
-	pull(): Cell<T>;
+	pull(): boolean;
 	get(): T;
 	set(value: T): Cell<T>;
 	push(value: any): Cell<T>;

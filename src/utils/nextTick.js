@@ -7,6 +7,7 @@ var global = Function('return this;')();
  */
 var nextTick;
 
+/* istanbul ignore next */
 if (global.process && process.toString() == '[object process]' && process.nextTick) {
 	nextTick = process.nextTick;
 } else if (global.setImmediate) {
