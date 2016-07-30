@@ -150,6 +150,10 @@ console.log(user.nameInitial);
 
 Use npm module [cellx-decorators](https://www.npmjs.com/package/cellx-decorators).
 
+### Use with React
+
+Use npm module [cellx-react](https://www.npmjs.com/package/cellx-react).
+
 ### Options
 
 When you create a cell, you can pass some options:

@@ -134,6 +134,10 @@ console.log(user.nameInitial);
 
 Используйте npm модуль [cellx-decorators](https://www.npmjs.com/package/cellx-decorators).
 
+### Использование с React
+
+Используйте npm модуль [cellx-react](https://www.npmjs.com/package/cellx-react).
+
 ### Опции
 
 При создании ячейки можно передать некоторые опции:
