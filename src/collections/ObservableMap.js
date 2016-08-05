@@ -11,7 +11,7 @@ var global = Function('return this;')();
 /**
  * @class cellx.ObservableMap
  * @extends {cellx.EventEmitter}
- * @implements {ObservableCollectionMixin}
+ * @implements {cellx.ObservableCollectionMixin}
  *
  * @typesign new ObservableMap(entries?: Object|cellx.ObservableMap|Map|Array<{ 0, 1 }>, opts?: {
  *     adoptsItemChanges?: boolean

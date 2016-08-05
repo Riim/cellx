@@ -19,7 +19,7 @@ function defaultComparator(a, b) {
 /**
  * @class cellx.ObservableList
  * @extends {cellx.EventEmitter}
- * @implements {ObservableCollectionMixin}
+ * @implements {cellx.ObservableCollectionMixin}
  *
  * @typesign new ObservableList(items?: Array|cellx.ObservableList, opts?: {
  *     adoptsItemChanges?: boolean,

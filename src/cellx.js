@@ -1,5 +1,6 @@
 var ErrorLogger = require('./ErrorLogger');
 var EventEmitter = require('./EventEmitter');
+var ObservableCollectionMixin = require('./collections/ObservableCollectionMixin');
 var ObservableMap = require('./collections/ObservableMap');
 var ObservableList = require('./collections/ObservableList');
 var Cell = require('./Cell');
@@ -117,6 +118,7 @@ function cellx(value, opts) {
 cellx.KEY_UID = KEY_UID;
 cellx.ErrorLogger = ErrorLogger;
 cellx.EventEmitter = EventEmitter;
+cellx.ObservableCollectionMixin = ObservableCollectionMixin;
 cellx.ObservableMap = ObservableMap;
 cellx.ObservableList = ObservableList;
 cellx.Cell = Cell;
