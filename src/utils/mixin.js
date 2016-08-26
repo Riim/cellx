@@ -12,4 +12,4 @@ function mixin(target, source) {
 	return target;
 }
 
-module.exports = mixin;
+export default mixin;

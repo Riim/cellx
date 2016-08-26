@@ -1,9 +1,7 @@
-var ErrorLogger = require('./ErrorLogger');
-var Symbol = require('./js/Symbol');
-var createClass = require('./utils/createClass');
-
-var createObject = Object.create;
-var hasOwn = Object.prototype.hasOwnProperty;
+import ErrorLogger from './ErrorLogger';
+import { hasOwn } from './js/Object';
+import Symbol from './js/Symbol';
+import createClass from './utils/createClass';
 
 var KEY_INNER = Symbol('inner');
 
@@ -33,7 +31,7 @@ var EventEmitter = createClass({
 		 *     context
 		 * }>>}
 		 */
-		this._events = createObject(null);
+		this._events = Object.create(null);
 	},
 
 	/**
@@ -97,7 +95,7 @@ var EventEmitter = createClass({
 				this._off(type, listener, argCount >= 3 ? context : this);
 			}
 		} else if (this._events) {
-			this._events = createObject(null);
+			this._events = Object.create(null);
 		}
 
 		return this;
@@ -116,7 +114,7 @@ var EventEmitter = createClass({
 		if (index != -1) {
 			this['_' + type.slice(index + 1)].on(type.slice(0, index), listener, context);
 		} else {
-			var events = (this._events || (this._events = createObject(null)))[type];
+			var events = (this._events || (this._events = Object.create(null)))[type];
 
 			if (!events) {
 				events = this._events[type] = [];
@@ -269,4 +267,4 @@ var EventEmitter = createClass({
 	}
 });
 
-module.exports = EventEmitter;
+export default EventEmitter;

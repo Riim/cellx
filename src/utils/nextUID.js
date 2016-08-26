@@ -7,4 +7,4 @@ function nextUID() {
 	return String(++uidCounter);
 }
 
-module.exports = nextUID;
+export default nextUID;

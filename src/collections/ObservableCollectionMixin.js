@@ -1,5 +1,5 @@
-var EventEmitter = require('../EventEmitter');
-var Map = require('../js/Map');
+import EventEmitter from '../EventEmitter';
+import Map from '../js/Map';
 
 var ObservableCollectionMixin = EventEmitter.extend({
 	constructor: function ObservableCollectionMixin() {
@@ -53,4 +53,4 @@ var ObservableCollectionMixin = EventEmitter.extend({
 	}
 });
 
-module.exports = ObservableCollectionMixin;
+export default ObservableCollectionMixin;

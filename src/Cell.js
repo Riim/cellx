@@ -1,8 +1,7 @@
-var EventEmitter = require('./EventEmitter');
-var is = require('./js/is');
-var nextTick = require('./utils/nextTick');
-
-var slice = Array.prototype.slice;
+import EventEmitter from './EventEmitter';
+import { is } from './js/Object';
+import { slice } from './js/Array';
+import nextTick from './utils/nextTick';
 
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
 var KEY_INNER = EventEmitter.KEY_INNER;
@@ -953,4 +952,4 @@ var Cell = EventEmitter.extend({
 	}
 });
 
-module.exports = Cell;
+export default Cell;

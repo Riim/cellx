@@ -64,7 +64,10 @@ Despite the fact that the two dependencies of the cell `fullName` has been chang
 Important feature of cellx is that it tries to get rid of unnecessary calls
 of the event handlers as well as of unnecessary calls of the dependent cells calculation formulas.
 In combination with some special optimizations, this leads to an ideal speed of calculation of
-the complex dependencies networks.  
+the complex dependencies networks.
+
+## Benchmark
+
 One test, which is used for measuring the performance, generates grid with multiply "layers"
 each of which is composed of 4 cells. Cells are calculated from the previous layer of cells (except the first one,
 which contains initial values) by the formula A2=B1, B2=A1-C1, C2=B1+D1, D2=C1. After that start time is stored,
@@ -823,6 +826,13 @@ Type signature: `() -> Array;`.
 ##### toString
 
 Type signature: `() -> string;`.
+
+## Size
+
+| File         | Original | Gzipped  |
+|--------------|----------|----------|
+| cellx.js     | 55.76 kB | 11.14 kB |
+| cellx.min.js | 23.57 kB | 6.76 kB  |
 
 ## List of references
 

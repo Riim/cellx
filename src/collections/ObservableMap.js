@@ -1,12 +1,9 @@
-var EventEmitter = require('../EventEmitter');
-var ObservableCollectionMixin = require('./ObservableCollectionMixin');
-var is = require('../js/is');
-var Symbol = require('../js/Symbol');
-var Map = require('../js/Map');
-
-var hasOwn = Object.prototype.hasOwnProperty;
-var isArray = Array.isArray;
-var global = Function('return this;')();
+import EventEmitter from '../EventEmitter';
+import ObservableCollectionMixin from './ObservableCollectionMixin';
+import global from '../js/global';
+import { is, hasOwn } from '../js/Object';
+import Symbol from '../js/Symbol';
+import Map from '../js/Map';
 
 /**
  * @class cellx.ObservableMap
@@ -41,7 +38,7 @@ var ObservableMap = EventEmitter.extend({
 					this._registerValue(value);
 					mapEntries.set(key, value);
 				}, this);
-			} else if (isArray(entries)) {
+			} else if (Array.isArray(entries)) {
 				for (var i = 0, l = entries.length; i < l; i++) {
 					var entry = entries[i];
 
@@ -220,4 +217,4 @@ var ObservableMap = EventEmitter.extend({
 
 ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;
 
-module.exports = ObservableMap;
+export default ObservableMap;

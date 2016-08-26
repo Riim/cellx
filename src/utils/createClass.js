@@ -1,7 +1,5 @@
-var mixin = require('./mixin');
-
-var createObject = Object.create;
-var hasOwn = Object.prototype.hasOwnProperty;
+import { hasOwn } from '../js/Object';
+import mixin from './mixin';
 
 var extend;
 
@@ -37,7 +35,7 @@ function createClass(description) {
 			};
 	}
 
-	var proto = constr.prototype = createObject(parent.prototype);
+	var proto = constr.prototype = Object.create(parent.prototype);
 
 	if (description.Implements) {
 		description.Implements.forEach(function(implementation) {
@@ -94,4 +92,4 @@ extend = function extend(description) {
 	return createClass(description);
 };
 
-module.exports = createClass;
+export default createClass;

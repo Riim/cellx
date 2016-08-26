@@ -1,26 +1,20 @@
-var ErrorLogger = require('./ErrorLogger');
-var EventEmitter = require('./EventEmitter');
-var ObservableCollectionMixin = require('./collections/ObservableCollectionMixin');
-var ObservableMap = require('./collections/ObservableMap');
-var ObservableList = require('./collections/ObservableList');
-var Cell = require('./Cell');
-var keys = require('./keys');
-var is = require('./js/is');
-var Symbol = require('./js/Symbol');
-var Map = require('./js/Map');
-var logError = require('./utils/logError');
-var nextUID = require('./utils/nextUID');
-var mixin = require('./utils/mixin');
-var createClass = require('./utils/createClass');
-var nextTick = require('./utils/nextTick');
-
-var KEY_UID = keys.UID;
-var KEY_CELLS = keys.CELLS;
-
-var createObject = Object.create;
-var hasOwn = Object.prototype.hasOwnProperty;
-var slice = Array.prototype.slice;
-var global = Function('return this;')();
+import ErrorLogger from './ErrorLogger';
+import EventEmitter from './EventEmitter';
+import ObservableCollectionMixin from './collections/ObservableCollectionMixin';
+import ObservableMap from './collections/ObservableMap';
+import ObservableList from './collections/ObservableList';
+import Cell from './Cell';
+import { UID as KEY_UID, CELLS as KEY_CELLS } from './keys';
+import global from './js/global';
+import { is, hasOwn } from './js/Object';
+import { slice } from './js/Array';
+import Symbol from './js/Symbol';
+import Map from './js/Map';
+import logError from './utils/logError';
+import nextUID from './utils/nextUID';
+import mixin from './utils/mixin';
+import createClass from './utils/createClass';
+import nextTick from './utils/nextTick';
 
 ErrorLogger.setHandler(logError);
 
@@ -70,7 +64,7 @@ function cellx(value, opts) {
 				return;
 			}
 
-			opts = createObject(opts);
+			opts = Object.create(opts);
 			opts.owner = owner;
 
 			cell = new Cell(initialValue, opts);
@@ -224,4 +218,4 @@ cellx.utils = {
 
 cellx.cellx = cellx; // for destructuring
 
-module.exports = cellx;
+export default cellx;

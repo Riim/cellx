@@ -1,4 +1,4 @@
-var nextUID = require('../utils/nextUID');
+import nextUID from '../utils/nextUID';
 
 var Symbol = Function('return this;')().Symbol;
 
@@ -10,4 +10,4 @@ if (!Symbol) {
 	Symbol.iterator = Symbol('iterator');
 }
 
-module.exports = Symbol;
+export default Symbol;

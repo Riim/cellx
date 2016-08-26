@@ -1,14 +1,14 @@
 {
   "name": "cellx",
-  "version": "1.6.30",
+  "version": "1.6.31",
   "description": "",
-  "main": "src/cellx.js",
+  "main": "dist/cellx.js",
   "typings": "src/cellx.d.ts",
   "directories": {
     "test": "tests"
   },
   "scripts": {
-    "build": "node_modules/.bin/webpack src/cellx.js dist/cellx.js && node_modules/.bin/gulp",
+    "build": "node_modules/.bin/rollup -c && node_modules/.bin/gulp",
     "test": "rm -rf coverage && node_modules/karma/bin/karma start",
     "test-debug": "rm -rf coverage && node_modules/karma/bin/karma start --debug",
     "coveralls": "cat coverage/lcov.info | node_modules/.bin/coveralls"
@@ -24,18 +24,16 @@
   },
   "homepage": "https://github.com/Riim/cellx",
   "devDependencies": {
-    "babel-preset-es2015": "^6.13.2",
+    "babel-eslint": "^6.1.2",
+    "babel-preset-es2015": "^6.14.0",
     "chai": "^3.5.0",
-    "eslint": "^3.2.2",
+    "eslint": "^3.3.1",
     "eslint-loader": "^1.5.0",
     "gulp": "^3.9.1",
     "gulp-rename": "^1.2.2",
-    "gulp-replace": "^0.5.4",
-    "gulp-sizereport": "^1.1.3",
+    "gulp-sizereport": "^1.2.0",
     "gulp-uglify": "^2.0.0",
-    "jscs": "^3.0.7",
-    "jscs-loader": "^0.3.0",
-    "karma": "^1.1.2",
+    "karma": "^1.2.0",
     "karma-babel-preprocessor": "^6.0.1",
     "karma-chai": "^0.1.0",
     "karma-coverage": "^1.1.1",
@@ -43,12 +41,13 @@
     "karma-mocha-reporter": "^2.1.0",
     "karma-phantomjs-launcher": "^1.0.1",
     "karma-sinon": "^1.0.5",
-    "mocha": "^3.0.1",
-    "phantomjs-prebuilt": "^2.1.10",
+    "mocha": "^3.0.2",
+    "phantomjs-prebuilt": "^2.1.12",
     "pump": "^1.0.1",
     "require-dir": "^0.3.0",
+    "rollup": "^0.34.10",
+    "rollup-plugin-eslint": "^2.0.2",
     "sinon": "^1.17.5",
-    "webpack": "^1.13.1",
-    "yargs": "^4.8.1"
+    "yargs": "^5.0.0"
   }
 }

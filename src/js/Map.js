@@ -1,13 +1,9 @@
-var keys = require('../keys');
-var Symbol = require('./Symbol');
-var nextUID = require('../utils/nextUID');
-var createClass = require('../utils/createClass');
-
-var KEY_UID = keys.UID;
-
-var createObject = Object.create;
-var hasOwn = Object.prototype.hasOwnProperty;
-var global = Function('return this;')();
+import { UID as KEY_UID } from '../keys';
+import global from './global';
+import { hasOwn } from './Object';
+import Symbol from './Symbol';
+import nextUID from '../utils/nextUID';
+import createClass from '../utils/createClass';
 
 var Map = global.Map;
 
@@ -18,7 +14,7 @@ if (!Map) {
 
 	Map = createClass({
 		constructor: function Map(entries) {
-			this._entries = createObject(null);
+			this._entries = Object.create(null);
 			this._objectStamps = {};
 
 			this._first = null;
@@ -242,4 +238,4 @@ if (!Map.prototype[Symbol.iterator]) {
 	Map.prototype[Symbol.iterator] = Map.prototype.entries;
 }
 
-module.exports = Map;
+export default Map;

@@ -1,6 +1,5 @@
-var ErrorLogger = require('../ErrorLogger');
-
-var global = Function('return this;')();
+import ErrorLogger from '../ErrorLogger';
+import global from '../js/global';
 
 /**
  * @typesign (cb: ());
@@ -51,4 +50,4 @@ if (global.process && process.toString() == '[object process]' && process.nextTi
 	};
 }
 
-module.exports = nextTick;
+export default nextTick;

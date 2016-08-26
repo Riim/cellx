@@ -1,7 +1,7 @@
-function noop() {}
+import global from '../js/global';
+import { map } from '../js/Array';
 
-var map = Array.prototype.map;
-var global = Function('return this;')();
+function noop() {}
 
 /**
  * @typesign (...msg);
@@ -14,4 +14,4 @@ function logError() {
 	}).join(' '));
 }
 
-module.exports = logError;
+export default logError;

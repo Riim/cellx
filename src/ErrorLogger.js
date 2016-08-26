@@ -16,4 +16,4 @@ var ErrorLogger = {
 	}
 };
 
-module.exports = ErrorLogger;
+export default ErrorLogger;

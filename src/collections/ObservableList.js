@@ -1,11 +1,9 @@
-var EventEmitter = require('../EventEmitter');
-var ObservableCollectionMixin = require('./ObservableCollectionMixin');
-var is = require('../js/is');
-var Symbol = require('../js/Symbol');
-
-var push = Array.prototype.push;
-var splice = Array.prototype.splice;
-var global = Function('return this;')();
+import EventEmitter from '../EventEmitter';
+import ObservableCollectionMixin from './ObservableCollectionMixin';
+import global from '../js/global';
+import { is } from '../js/Object';
+import { push, splice } from '../js/Array';
+import Symbol from '../js/Symbol';
 
 /**
  * @typesign (a, b) -> -1|1|0;
@@ -676,4 +674,4 @@ var ObservableList = EventEmitter.extend({
 
 ObservableList.prototype[Symbol.iterator] = ObservableList.prototype.values;
 
-module.exports = ObservableList;
+export default ObservableList;

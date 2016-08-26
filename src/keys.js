@@ -1,6 +1,4 @@
-var Symbol = require('./js/Symbol');
+import Symbol from './js/Symbol';
 
-module.exports = {
-	UID: Symbol('uid'),
-	CELLS: Symbol('cells')
-};
+export var UID = Symbol('uid');
+export var CELLS = Symbol('cells');
