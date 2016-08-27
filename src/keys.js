@@ -1,4 +1,4 @@
-import Symbol from './js/Symbol';
+import Symbol from './JS/Symbol';
 
 export var UID = Symbol('uid');
 export var CELLS = Symbol('cells');

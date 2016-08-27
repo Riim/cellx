@@ -1,5 +1,5 @@
-import global from '../js/global';
-import { map } from '../js/Array';
+import global from '../JS/global';
+import { map } from '../JS/Array';
 
 function noop() {}
 

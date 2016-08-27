@@ -1,4 +1,4 @@
-import nextUID from '../utils/nextUID';
+import nextUID from '../Utils/nextUID';
 
 var Symbol = Function('return this;')().Symbol;
 

@@ -1,7 +1,7 @@
 import ErrorLogger from './ErrorLogger';
-import { hasOwn } from './js/Object';
-import Symbol from './js/Symbol';
-import createClass from './utils/createClass';
+import { hasOwn } from './JS/Object';
+import Symbol from './JS/Symbol';
+import createClass from './Utils/createClass';
 
 var KEY_INNER = Symbol('inner');
 

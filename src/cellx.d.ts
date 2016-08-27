@@ -199,13 +199,13 @@ export function list<T>(items?: ObservableListItems<T>, adoptsItemChanges?: bool
 export function define(obj: EventEmitter, name: string, value: any): EventEmitter;
 export function define(obj: EventEmitter, props: { [key: string]: any }): EventEmitter;
 
-export namespace js {
+export namespace JS {
 	function is(a: any, b: any): boolean;
 	function Symbol(key: string): symbol;
 	let Map: MapConstructor;
 }
 
-export namespace utils {
+export namespace Utils {
 	function logError(...msg: Array<any>): void;
 	function nextUID(): string;
 	function mixin(target: Object, source: Object): Object;

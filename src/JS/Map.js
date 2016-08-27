@@ -2,8 +2,8 @@ import { UID as KEY_UID } from '../keys';
 import global from './global';
 import { hasOwn } from './Object';
 import Symbol from './Symbol';
-import nextUID from '../utils/nextUID';
-import createClass from '../utils/createClass';
+import nextUID from '../Utils/nextUID';
+import createClass from '../Utils/createClass';
 
 var Map = global.Map;
 

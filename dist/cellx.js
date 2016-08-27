@@ -2799,13 +2799,13 @@ function define(obj, name, value) {
 
 cellx.define = define;
 
-cellx.js = {
+cellx.JS = cellx.js = {
 	is: is,
 	Symbol: Symbol$1,
 	Map: Map$1
 };
 
-cellx.utils = {
+cellx.Utils = cellx.utils = {
 	logError: logError,
 	nextUID: nextUID,
 	mixin: mixin,

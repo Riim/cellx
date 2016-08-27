@@ -1,4 +1,4 @@
-import { hasOwn } from '../js/Object';
+import { hasOwn } from '../JS/Object';
 import mixin from './mixin';
 
 var extend;

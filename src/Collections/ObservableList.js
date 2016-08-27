@@ -1,9 +1,9 @@
 import EventEmitter from '../EventEmitter';
 import ObservableCollectionMixin from './ObservableCollectionMixin';
-import global from '../js/global';
-import { is } from '../js/Object';
-import { push, splice } from '../js/Array';
-import Symbol from '../js/Symbol';
+import global from '../JS/global';
+import { is } from '../JS/Object';
+import { push, splice } from '../JS/Array';
+import Symbol from '../JS/Symbol';
 
 /**
  * @typesign (a, b) -> -1|1|0;

@@ -1,5 +1,5 @@
 import EventEmitter from '../EventEmitter';
-import Map from '../js/Map';
+import Map from '../JS/Map';
 
 var ObservableCollectionMixin = EventEmitter.extend({
 	constructor: function ObservableCollectionMixin() {

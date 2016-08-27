@@ -1,7 +1,7 @@
 import EventEmitter from './EventEmitter';
-import { is } from './js/Object';
-import { slice } from './js/Array';
-import nextTick from './utils/nextTick';
+import { is } from './JS/Object';
+import { slice } from './JS/Array';
+import nextTick from './Utils/nextTick';
 
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
 var KEY_INNER = EventEmitter.KEY_INNER;

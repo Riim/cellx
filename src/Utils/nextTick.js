@@ -1,5 +1,5 @@
 import ErrorLogger from '../ErrorLogger';
-import global from '../js/global';
+import global from '../JS/global';
 
 /**
  * @typesign (cb: ());

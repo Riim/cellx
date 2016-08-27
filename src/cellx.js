@@ -1,20 +1,20 @@
 import ErrorLogger from './ErrorLogger';
 import EventEmitter from './EventEmitter';
-import ObservableCollectionMixin from './collections/ObservableCollectionMixin';
-import ObservableMap from './collections/ObservableMap';
-import ObservableList from './collections/ObservableList';
+import ObservableCollectionMixin from './Collections/ObservableCollectionMixin';
+import ObservableMap from './Collections/ObservableMap';
+import ObservableList from './Collections/ObservableList';
 import Cell from './Cell';
 import { UID as KEY_UID, CELLS as KEY_CELLS } from './keys';
-import global from './js/global';
-import { is, hasOwn } from './js/Object';
-import { slice } from './js/Array';
-import Symbol from './js/Symbol';
-import Map from './js/Map';
-import logError from './utils/logError';
-import nextUID from './utils/nextUID';
-import mixin from './utils/mixin';
-import createClass from './utils/createClass';
-import nextTick from './utils/nextTick';
+import global from './JS/global';
+import { is, hasOwn } from './JS/Object';
+import { slice } from './JS/Array';
+import Symbol from './JS/Symbol';
+import Map from './JS/Map';
+import logError from './Utils/logError';
+import nextUID from './Utils/nextUID';
+import mixin from './Utils/mixin';
+import createClass from './Utils/createClass';
+import nextTick from './Utils/nextTick';
 
 ErrorLogger.setHandler(logError);
 
@@ -200,13 +200,13 @@ function define(obj, name, value) {
 
 cellx.define = define;
 
-cellx.js = {
+cellx.JS = cellx.js = {
 	is: is,
 	Symbol: Symbol,
 	Map: Map
 };
 
-cellx.utils = {
+cellx.Utils = cellx.utils = {
 	logError: logError,
 	nextUID: nextUID,
 	mixin: mixin,
