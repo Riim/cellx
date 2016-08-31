@@ -25,6 +25,9 @@ exports._ = {
     getAdministration: getAdministration,
     resetGlobalState: resetGlobalState
 };
+if (typeof __MOBX_DEVTOOLS_GLOBAL_HOOK__ === 'object') {
+    __MOBX_DEVTOOLS_GLOBAL_HOOK__.injectMobx(module.exports);
+}
 var actionFieldDecorator = createClassPropertyDecorator(function (target, key, value, args, originalDescriptor) {
     var actionName = (args && args.length === 1) ? args[0] : (value.name || key || "<unnamed action>");
     var wrappedAction = action(actionName, value);
@@ -225,28 +228,34 @@ exports.reaction = reaction;
 var computedDecorator = createClassPropertyDecorator(function (target, name, _, decoratorArgs, originalDescriptor) {
     invariant(typeof originalDescriptor !== "undefined", "@computed can only be used on getter functions, like: '@computed get myProps() { return ...; }'. It looks like it was used on a property.");
     var baseValue = originalDescriptor.get;
+    var setter = originalDescriptor.set;
     invariant(typeof baseValue === "function", "@computed can only be used on getter functions, like: '@computed get myProps() { return ...; }'");
     var compareStructural = false;
     if (decoratorArgs && decoratorArgs.length === 1 && decoratorArgs[0].asStructure === true)
         compareStructural = true;
     var adm = asObservableObject(target, undefined, ValueMode.Recursive);
-    defineObservableProperty(adm, name, compareStructural ? asStructure(baseValue) : baseValue, false);
+    defineObservableProperty(adm, name, compareStructural ? asStructure(baseValue) : baseValue, false, setter);
 }, function (name) {
-    return this.$mobx.values[name].get();
-}, throwingComputedValueSetter, false, true);
-function computed(targetOrExpr, keyOrScope, baseDescriptor, options) {
-    if (arguments.length < 3 && typeof targetOrExpr === "function")
-        return computedExpr(targetOrExpr, keyOrScope);
-    invariant(!baseDescriptor || !baseDescriptor.set, "@observable properties cannot have a setter: " + keyOrScope);
+    var observable = this.$mobx.values[name];
+    if (observable === undefined)
+        return undefined;
+    return observable.get();
+}, function (name, value) {
+    this.$mobx.values[name].set(value);
+}, false, true);
+function computed(targetOrExpr, keyOrScopeOrSetter, baseDescriptor, options) {
+    if (typeof targetOrExpr === "function" && arguments.length < 3) {
+        if (typeof keyOrScopeOrSetter === "function")
+            return computedExpr(targetOrExpr, keyOrScopeOrSetter, undefined);
+        else
+            return computedExpr(targetOrExpr, undefined, keyOrScopeOrSetter);
+    }
     return computedDecorator.apply(null, arguments);
 }
 exports.computed = computed;
-function computedExpr(expr, scope) {
+function computedExpr(expr, setter, scope) {
     var _a = getValueModeFromValue(expr, ValueMode.Recursive), mode = _a[0], value = _a[1];
-    return new ComputedValue(value, scope, mode === ValueMode.Structure, value.name);
-}
-function throwingComputedValueSetter() {
-    throw new Error("[ComputedValue] It is not allowed to assign new values to computed properties.");
+    return new ComputedValue(value, scope, mode === ValueMode.Structure, value.name, setter);
 }
 function createTransformer(transformer, onCleanup) {
     invariant(typeof transformer === "function" && transformer.length === 1, "createTransformer expects a function that accepts one argument");
@@ -255,7 +264,7 @@ function createTransformer(transformer, onCleanup) {
     var Transformer = (function (_super) {
         __extends(Transformer, _super);
         function Transformer(sourceIdentifier, sourceObject) {
-            _super.call(this, function () { return transformer(sourceObject); }, null, false, "Transformer-" + transformer.name + "-" + sourceIdentifier);
+            _super.call(this, function () { return transformer(sourceObject); }, null, false, "Transformer-" + transformer.name + "-" + sourceIdentifier, undefined);
             this.sourceIdentifier = sourceIdentifier;
             this.sourceObject = sourceObject;
         }
@@ -316,7 +325,7 @@ exports.extendObservable = extendObservable;
 function extendObservableHelper(target, properties, mode, name) {
     var adm = asObservableObject(target, name, mode);
     for (var key in properties)
-        if (properties.hasOwnProperty(key)) {
+        if (hasOwnProperty(properties, key)) {
             if (target === properties && !isPropertyConfigurable(target, key))
                 continue;
             setObservableObjectInstanceProperty(adm, key, properties[key]);
@@ -341,8 +350,8 @@ function nodeToObserverTree(node) {
     var result = {
         name: node.name
     };
-    if (node.observers && node.observers.length > 0)
-        result.observers = node.observers.asArray().map(nodeToObserverTree);
+    if (hasObservers(node))
+        result.observers = getObservers(node).map(nodeToObserverTree);
     return result;
 }
 function intercept(thing, propOrHandler, handler) {
@@ -389,10 +398,13 @@ var decoratorImpl = createClassPropertyDecorator(function (target, name, baseVal
     if (typeof baseValue === "function")
         baseValue = asReference(baseValue);
     var adm = asObservableObject(target, undefined, ValueMode.Recursive);
-    defineObservableProperty(adm, name, baseValue, true);
+    defineObservableProperty(adm, name, baseValue, true, undefined);
     allowStateChangesEnd(prevA);
 }, function (name) {
-    return this.$mobx.values[name].get();
+    var observable = this.$mobx.values[name];
+    if (observable === undefined)
+        return undefined;
+    return observable.get();
 }, function (name, value) {
     setPropertyValue(this, name, value);
 }, true, false);
@@ -530,7 +542,7 @@ function log(msg) {
 function whyRun(thing, prop) {
     switch (arguments.length) {
         case 0:
-            thing = globalState.derivationStack[globalState.derivationStack.length - 1];
+            thing = globalState.trackingDerivation;
             if (!thing)
                 return log("whyRun() can only be used if a derivation is active, or by passing an computed value / reaction explicitly. If you invoked whyRun from inside a computation; the computation is currently suspended but re-evaluating because somebody requested it's value.");
             break;
@@ -557,8 +569,7 @@ function createAction(actionName, fn) {
     return res;
 }
 function executeAction(actionName, fn, scope, args) {
-    var ds = globalState.derivationStack;
-    invariant(!(ds[ds.length - 1] instanceof ComputedValue), "Computed values or transformers should not invoke actions or trigger other side effects");
+    invariant(!(globalState.trackingDerivation instanceof ComputedValue), "Computed values or transformers should not invoke actions or trigger other side effects");
     var notifySpy = isSpyEnabled();
     var startTime;
     if (notifySpy) {
@@ -591,15 +602,21 @@ function executeAction(actionName, fn, scope, args) {
     }
 }
 function useStrict(strict) {
-    if (arguments.length === 0)
+    if (arguments.length === 0) {
+        deprecated("`useStrict` without arguments is deprecated, use `isStrictModeEnabled()` instead");
         return globalState.strictMode;
+    }
     else {
-        invariant(globalState.derivationStack.length === 0, "It is not allowed to set `useStrict` when a derivation is running");
+        invariant(globalState.trackingDerivation === null, "It is not allowed to set `useStrict` when a derivation is running");
         globalState.strictMode = strict;
         globalState.allowStateChanges = !strict;
     }
 }
 exports.useStrict = useStrict;
+function isStrictModeEnabled() {
+    return globalState.strictMode;
+}
+exports.isStrictModeEnabled = isStrictModeEnabled;
 function allowStateChanges(allowStateChanges, func) {
     var prev = allowStateChangesStart(allowStateChanges);
     var res = func();
@@ -614,20 +631,16 @@ function allowStateChangesStart(allowStateChanges) {
 function allowStateChangesEnd(prev) {
     globalState.allowStateChanges = prev;
 }
-function propagateAtomReady(atom) {
-    invariant(atom.isDirty, "atom not dirty");
-    atom.isDirty = false;
-    propagateReadiness(atom, true);
-}
 var BaseAtom = (function () {
     function BaseAtom(name) {
         if (name === void 0) { name = "Atom@" + getNextId(); }
         this.name = name;
-        this.isDirty = false;
-        this.staleObservers = [];
-        this.observers = new SimpleSet();
+        this.isPendingUnobservation = true;
+        this.observers = [];
+        this.observersIndexes = {};
         this.diffValue = 0;
         this.lastAccessedBy = 0;
+        this.lowestObserverState = IDerivationState.NOT_TRACKING;
     }
     BaseAtom.prototype.onBecomeUnobserved = function () {
     };
@@ -635,25 +648,9 @@ var BaseAtom = (function () {
         reportObserved(this);
     };
     BaseAtom.prototype.reportChanged = function () {
-        if (!this.isDirty) {
-            this.reportStale();
-            this.reportReady();
-        }
-    };
-    BaseAtom.prototype.reportStale = function () {
-        if (!this.isDirty) {
-            this.isDirty = true;
-            propagateStaleness(this);
-        }
-    };
-    BaseAtom.prototype.reportReady = function () {
-        invariant(this.isDirty, "atom not dirty");
-        if (globalState.inTransaction > 0)
-            globalState.changedAtoms.push(this);
-        else {
-            propagateAtomReady(this);
-            runReactions();
-        }
+        transactionStart("propagatingAtomChange", null, false);
+        propagateChanged(this);
+        transactionEnd(false);
     };
     BaseAtom.prototype.toString = function () {
         return this.name;
@@ -671,16 +668,18 @@ var Atom = (function (_super) {
         this.name = name;
         this.onBecomeObservedHandler = onBecomeObservedHandler;
         this.onBecomeUnobservedHandler = onBecomeUnobservedHandler;
+        this.isPendingUnobservation = false;
         this.isBeingTracked = false;
     }
     Atom.prototype.reportObserved = function () {
+        startBatch();
         _super.prototype.reportObserved.call(this);
-        var tracking = globalState.isTracking;
-        if (tracking && !this.isBeingTracked) {
+        if (!this.isBeingTracked) {
             this.isBeingTracked = true;
             this.onBecomeObservedHandler();
         }
-        return tracking;
+        endBatch();
+        return !!globalState.trackingDerivation;
     };
     Atom.prototype.onBecomeUnobserved = function () {
         this.isBeingTracked = false;
@@ -690,24 +689,27 @@ var Atom = (function (_super) {
 }(BaseAtom));
 exports.Atom = Atom;
 var ComputedValue = (function () {
-    function ComputedValue(derivation, scope, compareStructural, name) {
+    function ComputedValue(derivation, scope, compareStructural, name, setter) {
         this.derivation = derivation;
         this.scope = scope;
         this.compareStructural = compareStructural;
-        this.isLazy = true;
-        this.isComputing = false;
-        this.staleObservers = [];
-        this.observers = new SimpleSet();
+        this.dependenciesState = IDerivationState.NOT_TRACKING;
         this.observing = [];
+        this.newObserving = null;
+        this.isPendingUnobservation = false;
+        this.observers = [];
+        this.observersIndexes = {};
         this.diffValue = 0;
         this.runId = 0;
         this.lastAccessedBy = 0;
+        this.lowestObserverState = IDerivationState.UP_TO_DATE;
         this.unboundDepsCount = 0;
         this.__mapid = "#" + getNextId();
-        this.dependencyChangeCount = 0;
-        this.dependencyStaleCount = 0;
         this.value = undefined;
+        this.isComputing = false;
         this.name = name || "ComputedValue@" + getNextId();
+        if (setter)
+            this.setter = createAction(name + "-setter", setter);
     }
     ComputedValue.prototype.peek = function () {
         this.isComputing = true;
@@ -718,34 +720,51 @@ var ComputedValue = (function () {
         return res;
     };
     ;
-    ComputedValue.prototype.onBecomeUnobserved = function () {
-        clearObserving(this);
-        this.isLazy = true;
-        this.value = undefined;
+    ComputedValue.prototype.peekUntracked = function () {
+        var hasError = true;
+        try {
+            var res = this.peek();
+            hasError = false;
+            return res;
+        }
+        finally {
+            if (hasError)
+                handleExceptionInDerivation(this);
+        }
     };
-    ComputedValue.prototype.onDependenciesReady = function () {
-        var changed = this.trackAndCompute();
-        return changed;
+    ComputedValue.prototype.onBecomeStale = function () {
+        propagateMaybeChanged(this);
+    };
+    ComputedValue.prototype.onBecomeUnobserved = function () {
+        invariant(this.dependenciesState !== IDerivationState.NOT_TRACKING, "INTERNAL ERROR only onBecomeUnobserved shouldn't be called twice in a row");
+        clearObserving(this);
+        this.value = undefined;
     };
     ComputedValue.prototype.get = function () {
         invariant(!this.isComputing, "Cycle detected in computation " + this.name, this.derivation);
-        reportObserved(this);
-        if (this.dependencyStaleCount > 0) {
-            return this.peek();
+        startBatch();
+        if (globalState.inBatch === 1) {
+            if (shouldCompute(this))
+                this.value = this.peekUntracked();
         }
-        if (this.isLazy) {
-            if (isComputingDerivation()) {
-                this.isLazy = false;
-                this.trackAndCompute();
-            }
-            else {
-                return this.peek();
-            }
+        else {
+            reportObserved(this);
+            if (shouldCompute(this))
+                if (this.trackAndCompute())
+                    propagateChangeConfirmed(this);
         }
-        return this.value;
+        var result = this.value;
+        endBatch();
+        return result;
     };
-    ComputedValue.prototype.set = function (_) {
-        throw new Error("[ComputedValue '" + name + "'] It is not possible to assign a new value to a computed value.");
+    ComputedValue.prototype.recoverFromError = function () {
+        this.isComputing = false;
+    };
+    ComputedValue.prototype.set = function (value) {
+        if (this.setter)
+            this.setter.call(this.scope, value);
+        else
+            throw new Error("[ComputedValue '" + this.name + "'] It is not possible to assign a new value to a computed value.");
     };
     ComputedValue.prototype.trackAndCompute = function () {
         if (isSpyEnabled()) {
@@ -782,23 +801,11 @@ var ComputedValue = (function () {
         return this.name + "[" + this.derivation.toString() + "]";
     };
     ComputedValue.prototype.whyRun = function () {
-        var isTracking = globalState.derivationStack.length > 0;
-        var observing = unique(this.observing).map(function (dep) { return dep.name; });
-        var observers = unique(this.observers.asArray()).map(function (dep) { return dep.name; });
-        var runReason = (this.isComputing
-            ? isTracking
-                ? this.observers.length > 0
-                    ? RunReason.INVALIDATED
-                    : RunReason.REQUIRED
-                : RunReason.PEEK
-            : RunReason.NOT_RUNNING);
-        if (runReason === RunReason.REQUIRED) {
-            var requiredBy = globalState.derivationStack[globalState.derivationStack.length - 2];
-            if (requiredBy)
-                observers.push(requiredBy.name);
-        }
-        return (("\nWhyRun? computation '" + this.name + "':\n * Running because: " + runReasonTexts[runReason] + " " + ((runReason === RunReason.NOT_RUNNING) && this.dependencyStaleCount > 0 ? "(a next run is scheduled)" : "") + "\n") +
-            (this.isLazy
+        var isTracking = Boolean(globalState.trackingDerivation);
+        var observing = unique(this.isComputing ? this.newObserving : this.observing).map(function (dep) { return dep.name; });
+        var observers = unique(getObservers(this).map(function (dep) { return dep.name; }));
+        return (("\nWhyRun? computation '" + this.name + "':\n * Running because: " + (isTracking ? "[active] the value of this computation is needed by a reaction" : this.isComputing ? "[get] The value of this computed was requested outside a reaction" : "[idle] not running at the moment") + "\n") +
+            (this.dependenciesState === IDerivationState.NOT_TRACKING
                 ?
                     " * This computation is suspended (not in use by any reaction) and won't run automatically.\n\tDidn't expect this computation to be suspended at this point?\n\t  1. Make sure this computation is used by a reaction (reaction, autorun, observer).\n\t  2. Check whether you are using this computation synchronously (in the same stack as they reaction that needs it).\n"
                 :
@@ -806,23 +813,50 @@ var ComputedValue = (function () {
     };
     return ComputedValue;
 }());
-var RunReason;
-(function (RunReason) {
-    RunReason[RunReason["PEEK"] = 0] = "PEEK";
-    RunReason[RunReason["INVALIDATED"] = 1] = "INVALIDATED";
-    RunReason[RunReason["REQUIRED"] = 2] = "REQUIRED";
-    RunReason[RunReason["NOT_RUNNING"] = 3] = "NOT_RUNNING";
-})(RunReason || (RunReason = {}));
-var runReasonTexts = (_a = {},
-    _a[RunReason.PEEK] = "[peek] The value of this computed value was requested outside an reaction",
-    _a[RunReason.INVALIDATED] = "[invalidated] Some observables used by this computation did change",
-    _a[RunReason.REQUIRED] = "[started] This computation is required by another computed value / reaction",
-    _a[RunReason.NOT_RUNNING] = "[idle] This compution is currently not running",
-    _a
-);
+var IDerivationState;
+(function (IDerivationState) {
+    IDerivationState[IDerivationState["NOT_TRACKING"] = -1] = "NOT_TRACKING";
+    IDerivationState[IDerivationState["UP_TO_DATE"] = 0] = "UP_TO_DATE";
+    IDerivationState[IDerivationState["POSSIBLY_STALE"] = 1] = "POSSIBLY_STALE";
+    IDerivationState[IDerivationState["STALE"] = 2] = "STALE";
+})(IDerivationState || (IDerivationState = {}));
+exports.IDerivationState = IDerivationState;
+function shouldCompute(derivation) {
+    switch (derivation.dependenciesState) {
+        case IDerivationState.UP_TO_DATE: return false;
+        case IDerivationState.NOT_TRACKING:
+        case IDerivationState.STALE: return true;
+        case IDerivationState.POSSIBLY_STALE: {
+            var hasError = true;
+            var prevUntracked = untrackedStart();
+            try {
+                var obs = derivation.observing, l = obs.length;
+                for (var i = 0; i < l; i++) {
+                    var obj = obs[i];
+                    if (obj instanceof ComputedValue) {
+                        obj.get();
+                        if (derivation.dependenciesState === IDerivationState.STALE) {
+                            hasError = false;
+                            untrackedEnd(prevUntracked);
+                            return true;
+                        }
+                    }
+                }
+                hasError = false;
+                changeDependenciesStateTo0(derivation);
+                untrackedEnd(prevUntracked);
+                return false;
+            }
+            finally {
+                if (hasError) {
+                    changeDependenciesStateTo0(derivation);
+                }
+            }
+        }
+    }
+}
 function isComputingDerivation() {
-    return globalState.derivationStack.length > 0
-        && globalState.isTracking;
+    return globalState.trackingDerivation !== null;
 }
 function checkIfStateModificationsAreAllowed() {
     if (!globalState.allowStateChanges) {
@@ -831,34 +865,13 @@ function checkIfStateModificationsAreAllowed() {
             : "It is not allowed to change the state when a computed value or transformer is being evaluated. Use 'autorun' to create reactive functions with side-effects.");
     }
 }
-function notifyDependencyStale(derivation) {
-    if (++derivation.dependencyStaleCount === 1) {
-        propagateStaleness(derivation);
-    }
-}
-function notifyDependencyReady(derivation, dependencyDidChange) {
-    invariant(derivation.dependencyStaleCount > 0, "unexpected ready notification");
-    if (dependencyDidChange)
-        derivation.dependencyChangeCount += 1;
-    if (--derivation.dependencyStaleCount === 0) {
-        if (derivation.dependencyChangeCount > 0) {
-            derivation.dependencyChangeCount = 0;
-            var changed = derivation.onDependenciesReady();
-            propagateReadiness(derivation, changed);
-        }
-        else {
-            propagateReadiness(derivation, false);
-        }
-    }
-}
 function trackDerivedFunction(derivation, f) {
-    var prevObserving = derivation.observing;
-    derivation.observing = new Array(prevObserving.length + 100);
+    changeDependenciesStateTo0(derivation);
+    derivation.newObserving = new Array(derivation.observing.length + 100);
     derivation.unboundDepsCount = 0;
     derivation.runId = ++globalState.runId;
-    globalState.derivationStack.push(derivation);
-    var prevTracking = globalState.isTracking;
-    globalState.isTracking = true;
+    var prevTracking = globalState.trackingDerivation;
+    globalState.trackingDerivation = derivation;
     var hasException = true;
     var result;
     try {
@@ -867,56 +880,71 @@ function trackDerivedFunction(derivation, f) {
     }
     finally {
         if (hasException) {
-            var message = ("[mobx] An uncaught exception occurred while calculating your computed value, autorun or transformer. Or inside the render() method of an observer based React component. " +
-                "These functions should never throw exceptions as MobX will not always be able to recover from them. " +
-                ("Please fix the error reported after this message or enable 'Pause on (caught) exceptions' in your debugger to find the root cause. In: '" + derivation.name + "'. ") +
-                "For more details see https://github.com/mobxjs/mobx/issues/462");
-            if (isSpyEnabled()) {
-                spyReport({
-                    type: "error",
-                    object: this,
-                    message: message
-                });
-            }
-            console.warn(message);
-            derivation.unboundDepsCount = 0;
-            derivation.observing = prevObserving;
-            resetGlobalState();
+            handleExceptionInDerivation(derivation);
         }
         else {
-            globalState.isTracking = prevTracking;
-            globalState.derivationStack.length -= 1;
-            bindDependencies(derivation, prevObserving);
+            globalState.trackingDerivation = prevTracking;
+            bindDependencies(derivation);
         }
     }
     return result;
 }
-function bindDependencies(derivation, prevObserving) {
-    var prevLength = prevObserving.length;
-    var observing = derivation.observing;
-    var newLength = observing.length = derivation.unboundDepsCount;
-    for (var i = 0; i < prevLength; i++)
-        prevObserving[i].diffValue = -1;
-    for (var i = 0; i < newLength; i++) {
+function handleExceptionInDerivation(derivation) {
+    var message = ("[mobx] An uncaught exception occurred while calculating your computed value, autorun or transformer. Or inside the render() method of an observer based React component. " +
+        "These functions should never throw exceptions as MobX will not always be able to recover from them. " +
+        ("Please fix the error reported after this message or enable 'Pause on (caught) exceptions' in your debugger to find the root cause. In: '" + derivation.name + "'. ") +
+        "For more details see https://github.com/mobxjs/mobx/issues/462");
+    if (isSpyEnabled()) {
+        spyReport({
+            type: "error",
+            message: message
+        });
+    }
+    console.warn(message);
+    changeDependenciesStateTo0(derivation);
+    derivation.newObserving = null;
+    derivation.unboundDepsCount = 0;
+    derivation.recoverFromError();
+    endBatch();
+    resetGlobalState();
+}
+function bindDependencies(derivation) {
+    var prevObserving = derivation.observing;
+    var observing = derivation.observing = derivation.newObserving;
+    derivation.newObserving = null;
+    var i0 = 0, l = derivation.unboundDepsCount;
+    for (var i = 0; i < l; i++) {
         var dep = observing[i];
-        if ((++dep.diffValue) > 0) {
-            dep.diffValue = 0;
-            addObserver(dep, derivation);
+        if (dep.diffValue === 0) {
+            dep.diffValue = 1;
+            if (i0 !== i)
+                observing[i0] = dep;
+            i0++;
         }
     }
-    for (var i = 0; i < prevLength; i++) {
-        var dep = prevObserving[i];
-        if (dep.diffValue < 0) {
-            dep.diffValue = 0;
+    observing.length = i0;
+    l = prevObserving.length;
+    while (l--) {
+        var dep = prevObserving[l];
+        if (dep.diffValue === 0) {
             removeObserver(dep, derivation);
+        }
+        dep.diffValue = 0;
+    }
+    while (i0--) {
+        var dep = observing[i0];
+        if (dep.diffValue === 1) {
+            dep.diffValue = 0;
+            addObserver(dep, derivation);
         }
     }
 }
 function clearObserving(derivation) {
     var obs = derivation.observing;
-    var l = obs.length;
-    for (var i = 0; i < l; i++)
+    var i = obs.length;
+    while (i--)
         removeObserver(obs[i], derivation);
+    derivation.dependenciesState = IDerivationState.NOT_TRACKING;
     obs.length = 0;
 }
 function untracked(action) {
@@ -927,24 +955,33 @@ function untracked(action) {
 }
 exports.untracked = untracked;
 function untrackedStart() {
-    var prev = globalState.isTracking;
-    globalState.isTracking = false;
+    var prev = globalState.trackingDerivation;
+    globalState.trackingDerivation = null;
     return prev;
 }
 function untrackedEnd(prev) {
-    globalState.isTracking = prev;
+    globalState.trackingDerivation = prev;
+}
+function changeDependenciesStateTo0(derivation) {
+    if (derivation.dependenciesState === IDerivationState.UP_TO_DATE)
+        return;
+    derivation.dependenciesState = IDerivationState.UP_TO_DATE;
+    var obs = derivation.observing;
+    var i = obs.length;
+    while (i--)
+        obs[i].lowestObserverState = IDerivationState.UP_TO_DATE;
 }
 var persistentKeys = ["mobxGuid", "resetId", "spyListeners", "strictMode", "runId"];
 var MobXGlobals = (function () {
     function MobXGlobals() {
-        this.version = 3;
-        this.derivationStack = [];
+        this.version = 4;
+        this.trackingDerivation = null;
         this.runId = 0;
         this.mobxGuid = 0;
         this.inTransaction = 0;
-        this.isTracking = false;
         this.isRunningReactions = false;
-        this.changedAtoms = [];
+        this.inBatch = 0;
+        this.pendingUnobservations = [];
         this.pendingReactions = [];
         this.allowStateChanges = true;
         this.strictMode = false;
@@ -973,84 +1010,189 @@ function resetGlobalState() {
             globalState[key] = defaultGlobals[key];
     globalState.allowStateChanges = !globalState.strictMode;
 }
+function hasObservers(observable) {
+    return observable.observers && observable.observers.length > 0;
+}
+function getObservers(observable) {
+    return observable.observers;
+}
+function invariantObservers(observable) {
+    var list = observable.observers;
+    var map = observable.observersIndexes;
+    var l = list.length;
+    for (var i = 0; i < l; i++) {
+        var id = list[i].__mapid;
+        if (i) {
+            invariant(map[id] === i, "INTERNAL ERROR maps derivation.__mapid to index in list");
+        }
+        else {
+            invariant(!(id in map), "INTERNAL ERROR observer on index 0 shouldnt be held in map.");
+        }
+    }
+    invariant(list.length === 0 || Object.keys(map).length === list.length - 1, "INTERNAL ERROR there is no junk in map");
+}
 function addObserver(observable, node) {
-    observable.observers.add(node);
+    var l = observable.observers.length;
+    if (l) {
+        observable.observersIndexes[node.__mapid] = l;
+    }
+    observable.observers[l] = node;
+    if (observable.lowestObserverState > node.dependenciesState)
+        observable.lowestObserverState = node.dependenciesState;
 }
 function removeObserver(observable, node) {
-    observable.observers.remove(node);
-    if (observable.observers.length === 0)
-        observable.onBecomeUnobserved();
-}
-function reportObserved(observable) {
-    if (globalState.isTracking === false)
-        return;
-    var derivation = globalState.derivationStack[globalState.derivationStack.length - 1];
-    if (derivation.runId !== observable.lastAccessedBy) {
-        observable.lastAccessedBy = derivation.runId;
-        derivation.observing[derivation.unboundDepsCount++] = observable;
+    if (observable.observers.length === 1) {
+        observable.observers.length = 0;
+        queueForUnobservation(observable);
+    }
+    else {
+        var list = observable.observers;
+        var map_1 = observable.observersIndexes;
+        var filler = list.pop();
+        if (filler !== node) {
+            var index = map_1[node.__mapid] || 0;
+            if (index) {
+                map_1[filler.__mapid] = index;
+            }
+            else {
+                delete map_1[filler.__mapid];
+            }
+            list[index] = filler;
+        }
+        delete map_1[node.__mapid];
     }
 }
-function propagateStaleness(observable) {
-    var os = observable.observers.asArray();
-    var l = os.length;
-    for (var i = 0; i < l; i++)
-        notifyDependencyStale(os[i]);
-    observable.staleObservers = observable.staleObservers.concat(os);
+function queueForUnobservation(observable) {
+    if (!observable.isPendingUnobservation) {
+        observable.isPendingUnobservation = true;
+        globalState.pendingUnobservations.push(observable);
+    }
 }
-function propagateReadiness(observable, valueDidActuallyChange) {
-    observable.staleObservers.splice(0).forEach(function (o) { return notifyDependencyReady(o, valueDidActuallyChange); });
+function startBatch() {
+    globalState.inBatch++;
 }
-var EMPTY_DERIVATION_SET;
+function endBatch() {
+    if (globalState.inBatch === 1) {
+        var list = globalState.pendingUnobservations;
+        for (var i = 0; i < list.length; i++) {
+            var observable_1 = list[i];
+            observable_1.isPendingUnobservation = false;
+            if (observable_1.observers.length === 0) {
+                observable_1.onBecomeUnobserved();
+            }
+        }
+        globalState.pendingUnobservations = [];
+    }
+    globalState.inBatch--;
+}
+function reportObserved(observable) {
+    var derivation = globalState.trackingDerivation;
+    if (derivation !== null) {
+        if (derivation.runId !== observable.lastAccessedBy) {
+            observable.lastAccessedBy = derivation.runId;
+            derivation.newObserving[derivation.unboundDepsCount++] = observable;
+        }
+    }
+    else if (observable.observers.length === 0) {
+        queueForUnobservation(observable);
+    }
+}
+function invariantLOS(observable, msg) {
+    var min = getObservers(observable).reduce(function (a, b) { return Math.min(a, b.dependenciesState); }, 2);
+    if (min >= observable.lowestObserverState)
+        return;
+    throw new Error("lowestObserverState is wrong for " + msg + " because " + min + " < " + observable.lowestObserverState);
+}
+function propagateChanged(observable) {
+    if (observable.lowestObserverState === IDerivationState.STALE)
+        return;
+    observable.lowestObserverState = IDerivationState.STALE;
+    var observers = observable.observers;
+    var i = observers.length;
+    while (i--) {
+        var d = observers[i];
+        if (d.dependenciesState === IDerivationState.UP_TO_DATE)
+            d.onBecomeStale();
+        d.dependenciesState = IDerivationState.STALE;
+    }
+}
+function propagateChangeConfirmed(observable) {
+    if (observable.lowestObserverState === IDerivationState.STALE)
+        return;
+    observable.lowestObserverState = IDerivationState.STALE;
+    var observers = observable.observers;
+    var i = observers.length;
+    while (i--) {
+        var d = observers[i];
+        if (d.dependenciesState === IDerivationState.POSSIBLY_STALE)
+            d.dependenciesState = IDerivationState.STALE;
+        else if (d.dependenciesState === IDerivationState.UP_TO_DATE)
+            observable.lowestObserverState = IDerivationState.UP_TO_DATE;
+    }
+}
+function propagateMaybeChanged(observable) {
+    if (observable.lowestObserverState !== IDerivationState.UP_TO_DATE)
+        return;
+    observable.lowestObserverState = IDerivationState.POSSIBLY_STALE;
+    var observers = observable.observers;
+    var i = observers.length;
+    while (i--) {
+        var d = observers[i];
+        if (d.dependenciesState === IDerivationState.UP_TO_DATE) {
+            d.dependenciesState = IDerivationState.POSSIBLY_STALE;
+            d.onBecomeStale();
+        }
+    }
+}
 var Reaction = (function () {
     function Reaction(name, onInvalidate) {
         if (name === void 0) { name = "Reaction@" + getNextId(); }
         this.name = name;
         this.onInvalidate = onInvalidate;
-        this.staleObservers = EMPTY_ARRAY;
-        this.observers = EMPTY_DERIVATION_SET || (EMPTY_DERIVATION_SET = new SimpleSet());
         this.observing = [];
+        this.newObserving = [];
+        this.dependenciesState = IDerivationState.NOT_TRACKING;
         this.diffValue = 0;
         this.runId = 0;
-        this.lastAccessedBy = 0;
         this.unboundDepsCount = 0;
         this.__mapid = "#" + getNextId();
-        this.dependencyChangeCount = 0;
-        this.dependencyStaleCount = 0;
         this.isDisposed = false;
         this._isScheduled = false;
         this._isTrackPending = false;
         this._isRunning = false;
     }
-    Reaction.prototype.onBecomeUnobserved = function () {
-    };
-    Reaction.prototype.onDependenciesReady = function () {
+    Reaction.prototype.onBecomeStale = function () {
         this.schedule();
-        return false;
     };
     Reaction.prototype.schedule = function () {
         if (!this._isScheduled) {
             this._isScheduled = true;
             globalState.pendingReactions.push(this);
+            startBatch();
             runReactions();
+            endBatch();
         }
     };
     Reaction.prototype.isScheduled = function () {
-        return this.dependencyStaleCount > 0 || this._isScheduled;
+        return this._isScheduled;
     };
     Reaction.prototype.runReaction = function () {
         if (!this.isDisposed) {
             this._isScheduled = false;
-            this._isTrackPending = true;
-            this.onInvalidate();
-            if (this._isTrackPending && isSpyEnabled()) {
-                spyReport({
-                    object: this,
-                    type: "scheduled-reaction"
-                });
+            if (shouldCompute(this)) {
+                this._isTrackPending = true;
+                this.onInvalidate();
+                if (this._isTrackPending && isSpyEnabled()) {
+                    spyReport({
+                        object: this,
+                        type: "scheduled-reaction"
+                    });
+                }
             }
         }
     };
     Reaction.prototype.track = function (fn) {
+        startBatch();
         var notify = isSpyEnabled();
         var startTime;
         if (notify) {
@@ -1073,12 +1215,20 @@ var Reaction = (function () {
                 time: Date.now() - startTime
             });
         }
+        endBatch();
+    };
+    Reaction.prototype.recoverFromError = function () {
+        this._isRunning = false;
+        this._isTrackPending = false;
     };
     Reaction.prototype.dispose = function () {
         if (!this.isDisposed) {
             this.isDisposed = true;
-            if (!this._isRunning)
+            if (!this._isRunning) {
+                startBatch();
                 clearObserving(this);
+                endBatch();
+            }
         }
     };
     Reaction.prototype.getDisposer = function () {
@@ -1090,7 +1240,7 @@ var Reaction = (function () {
         return "Reaction[" + this.name + "]";
     };
     Reaction.prototype.whyRun = function () {
-        var observing = unique(this.observing).map(function (dep) { return dep.name; });
+        var observing = unique(this._isRunning ? this.newObserving : this.observing).map(function (dep) { return dep.name; });
         return ("\nWhyRun? reaction '" + this.name + "':\n * Status: [" + (this.isDisposed ? "stopped" : this._isRunning ? "running" : this.isScheduled() ? "scheduled" : "idle") + "]\n * This reaction will re-run if any of the following observables changes:\n    " + joinStrings(observing) + "\n    " + ((this._isRunning) ? " (... or any observable accessed during the remainder of the current run)" : "") + "\n\tMissing items in this list?\n\t  1. Check whether all used values are properly marked as observable (use isObservable to verify)\n\t  2. Make sure you didn't dereference values too early. MobX observes props, not primitives. E.g: use 'person.name' instead of 'name' in your computation.\n");
     };
     return Reaction;
@@ -1104,8 +1254,11 @@ function runReactions() {
     var allReactions = globalState.pendingReactions;
     var iterations = 0;
     while (allReactions.length > 0) {
-        if (++iterations === MAX_REACTION_ITERATIONS)
-            throw new Error("Reaction doesn't converge to a stable state. Probably there is a cycle in the reactive function: " + allReactions[0].toString());
+        if (++iterations === MAX_REACTION_ITERATIONS) {
+            resetGlobalState();
+            throw new Error(("Reaction doesn't converge to a stable state after " + MAX_REACTION_ITERATIONS + " iterations.")
+                + (" Probably there is a cycle in the reactive function: " + allReactions[0]));
+        }
         var remainingReactions = allReactions.splice(0);
         for (var i = 0, l = remainingReactions.length; i < l; i++)
             remainingReactions[i].runReaction();
@@ -1169,6 +1322,7 @@ exports.transaction = transaction;
 function transactionStart(name, thisArg, report) {
     if (thisArg === void 0) { thisArg = undefined; }
     if (report === void 0) { report = true; }
+    startBatch();
     globalState.inTransaction += 1;
     if (report && isSpyEnabled()) {
         spyReportStart({
@@ -1181,13 +1335,11 @@ function transactionStart(name, thisArg, report) {
 function transactionEnd(report) {
     if (report === void 0) { report = true; }
     if (--globalState.inTransaction === 0) {
-        var values = globalState.changedAtoms.splice(0);
-        for (var i = 0, l = values.length; i < l; i++)
-            propagateAtomReady(values[i]);
         runReactions();
     }
     if (report && isSpyEnabled())
         spyReportEnd();
+    endBatch();
 }
 function hasInterceptors(interceptable) {
     return (interceptable.interceptors && interceptable.interceptors.length > 0);
@@ -1609,10 +1761,12 @@ declareIterator(ObservableArray.prototype, function () {
 });
 makeNonEnumerable(ObservableArray.prototype, [
     "constructor",
+    "intercept",
     "observe",
     "clear",
     "concat",
     "replace",
+    "toJS",
     "toJSON",
     "peek",
     "find",
@@ -1801,7 +1955,7 @@ var ObservableMap = (function () {
                 name: key
             });
             if (!change)
-                return;
+                return false;
         }
         if (this._has(key)) {
             var notifySpy = isSpyEnabled();
@@ -1825,7 +1979,9 @@ var ObservableMap = (function () {
                 notifyListeners(this, change);
             if (notifySpy)
                 spyReportEnd();
+            return true;
         }
+        return false;
     };
     ObservableMap.prototype._updateHasMapEntry = function (key, value) {
         var entry = this._hasMap[key];
@@ -2008,18 +2164,29 @@ function setObservableObjectInstanceProperty(adm, propName, value) {
     if (adm.values[propName])
         adm.target[propName] = value;
     else
-        defineObservableProperty(adm, propName, value, true);
+        defineObservableProperty(adm, propName, value, true, undefined);
 }
-function defineObservableProperty(adm, propName, newValue, asInstanceProperty) {
+function defineObservableProperty(adm, propName, newValue, asInstanceProperty, setter) {
     if (asInstanceProperty)
         assertPropertyConfigurable(adm.target, propName);
     var observable;
     var name = adm.name + "." + propName;
     var isComputed = true;
-    if (typeof newValue === "function" && newValue.length === 0 && !isAction(newValue))
-        observable = new ComputedValue(newValue, adm.target, false, name);
-    else if (newValue instanceof AsStructure && typeof newValue.value === "function" && newValue.value.length === 0)
-        observable = new ComputedValue(newValue.value, adm.target, true, name);
+    if (newValue instanceof ObservableValue) {
+        observable = newValue;
+        isComputed = false;
+    }
+    else if (newValue instanceof ComputedValue) {
+        observable = newValue;
+        if (!newValue.scope)
+            newValue.scope = adm.target;
+    }
+    else if (typeof newValue === "function" && newValue.length === 0 && !isAction(newValue)) {
+        observable = new ComputedValue(newValue, adm.target, false, name, setter);
+    }
+    else if (newValue instanceof AsStructure && typeof newValue.value === "function" && newValue.value.length === 0) {
+        observable = new ComputedValue(newValue.value, adm.target, true, name, setter);
+    }
     else {
         isComputed = false;
         if (hasInterceptors(adm)) {
@@ -2070,7 +2237,9 @@ function generateComputedPropConfig(propName) {
         get: function () {
             return this.$mobx.values[propName].get();
         },
-        set: throwingComputedValueSetter
+        set: function (v) {
+            return this.$mobx.values[propName].set(v);
+        }
     };
 }
 function setPropertyValue(instance, name, newValue) {
@@ -2212,16 +2381,16 @@ function getAtom(thing, property) {
         if (isObservableMap(thing)) {
             if (property === undefined)
                 return getAtom(thing._keys);
-            var observable_1 = thing._data[property] || thing._hasMap[property];
-            invariant(!!observable_1, "the entry '" + property + "' does not exist in the observable map '" + getDebugName(thing) + "'");
-            return observable_1;
+            var observable_2 = thing._data[property] || thing._hasMap[property];
+            invariant(!!observable_2, "the entry '" + property + "' does not exist in the observable map '" + getDebugName(thing) + "'");
+            return observable_2;
         }
         runLazyInitializers(thing);
         if (isObservableObject(thing)) {
             invariant(!!property, "please specify a property");
-            var observable_2 = thing.$mobx.values[property];
-            invariant(!!observable_2, "no observable property '" + property + "' found on the observable object '" + getDebugName(thing) + "'");
-            return observable_2;
+            var observable_3 = thing.$mobx.values[property];
+            invariant(!!observable_3, "no observable property '" + property + "' found on the observable object '" + getDebugName(thing) + "'");
+            return observable_3;
         }
         if (thing instanceof BaseAtom || thing instanceof ComputedValue || thing instanceof Reaction) {
             return thing;
@@ -2284,7 +2453,7 @@ function createClassPropertyDecorator(onInitialize, get, set, enumerable, allowC
             return newDescriptor;
         }
         else {
-            if (!target.hasOwnProperty("__mobxLazyInitializers")) {
+            if (!hasOwnProperty(target, "__mobxLazyInitializers")) {
                 addHiddenProp(target, "__mobxLazyInitializers", (target.__mobxLazyInitializers && target.__mobxLazyInitializers.slice()) || []);
             }
             var value_1 = descriptor.value, initializer_1 = descriptor.initializer;
@@ -2317,7 +2486,7 @@ function createClassPropertyDecorator(onInitialize, get, set, enumerable, allowC
     return classPropertyDecorator;
 }
 function typescriptInitializeProperty(instance, key, v, onInitialize, customArgs, baseDescriptor) {
-    if (!instance.hasOwnProperty("__mobxInitializedProps"))
+    if (!hasOwnProperty(instance, "__mobxInitializedProps"))
         addHiddenProp(instance, "__mobxInitializedProps", {});
     instance.__mobxInitializedProps[key] = true;
     onInitialize(instance, key, v, customArgs, baseDescriptor);
@@ -2353,43 +2522,6 @@ function arrayAsIterator(array) {
 function declareIterator(prototType, iteratorFactory) {
     addHiddenFinalProp(prototType, iteratorSymbol(), iteratorFactory);
 }
-var SimpleSet = (function () {
-    function SimpleSet() {
-        this.size = 0;
-        this.data = {};
-    }
-    Object.defineProperty(SimpleSet.prototype, "length", {
-        get: function () {
-            return this.size;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    SimpleSet.prototype.asArray = function () {
-        var res = new Array(this.size);
-        var i = 0;
-        for (var key in this.data) {
-            res[i] = this.data[key];
-            i++;
-        }
-        return res;
-    };
-    SimpleSet.prototype.add = function (value) {
-        var m = value.__mapid;
-        if (!(m in this.data)) {
-            this.data[m] = value;
-            this.size++;
-        }
-    };
-    SimpleSet.prototype.remove = function (value) {
-        if (value.__mapid in this.data) {
-            delete this.data[value.__mapid];
-            this.size--;
-        }
-    };
-    return SimpleSet;
-}());
-exports.SimpleSet = SimpleSet;
 var SimpleEventEmitter = (function () {
     function SimpleEventEmitter() {
         this.listeners = [];
@@ -2462,14 +2594,17 @@ function joinStrings(things, limit, separator) {
     return "" + sliced.join(separator) + (things.length > limit ? " (... and " + (things.length - limit) + "more)" : "");
 }
 function isPlainObject(value) {
-    return value !== null && typeof value === "object" && Object.getPrototypeOf(value) === Object.prototype;
+    if (value === null || typeof value !== "object")
+        return false;
+    var proto = Object.getPrototypeOf(value);
+    return proto === Object.prototype || proto === null;
 }
 function objectAssign() {
     var res = arguments[0];
     for (var i = 1, l = arguments.length; i < l; i++) {
         var source = arguments[i];
         for (var key in source)
-            if (source.hasOwnProperty(key)) {
+            if (hasOwnProperty(source, key)) {
                 res[key] = source[key];
             }
     }
@@ -2479,6 +2614,10 @@ function valueDidChange(compareStructural, oldValue, newValue) {
     return compareStructural
         ? !deepEquals(oldValue, newValue)
         : oldValue !== newValue;
+}
+var prototypeHasOwnProperty = Object.prototype.hasOwnProperty;
+function hasOwnProperty(object, propName) {
+    return prototypeHasOwnProperty.call(object, propName);
 }
 function makeNonEnumerable(object, propNames) {
     for (var i = 0; i < propNames.length; i++) {
@@ -2497,7 +2636,7 @@ function addHiddenFinalProp(object, propName, value) {
     Object.defineProperty(object, propName, {
         enumerable: false,
         writable: false,
-        configurable: false,
+        configurable: true,
         value: value
     });
 }
@@ -2546,7 +2685,6 @@ function deepEquals(a, b) {
     }
     return a === b;
 }
-var _a;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
 },{}]},{},[1])(1)
