@@ -1036,7 +1036,7 @@ var ObservableList = EventEmitter.extend({
 	 * @typesign (index: int) -> *;
 	 */
 	get: function get(index) {
-		return this._items[this._validateIndex(index)];
+		return this._items[this._validateIndex(index, true)];
 	},
 
 	/**
