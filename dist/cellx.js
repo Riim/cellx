@@ -1665,7 +1665,7 @@ var releasePlanToIndex = -1;
 
 var releasePlanned = false;
 var currentlyRelease = false;
-
+var currentlyPulling = false;
 var releaseVersion = 1;
 
 var afterReleaseCallbacks;
@@ -1681,9 +1681,9 @@ function release() {
 	var queue = releasePlan[releasePlanIndex];
 
 	for (;;) {
-		var cell = (queue || []).shift();
+		var cell;
 
-		if (!cell) {
+		if (!queue || !(cell = queue.shift())) {
 			if (++releasePlanIndex > releasePlanToIndex) {
 				break;
 			}
@@ -1691,8 +1691,6 @@ function release() {
 			queue = releasePlan[releasePlanIndex];
 			continue;
 		}
-
-		var oldReleasePlanIndex = releasePlanIndex;
 
 		var level = cell._level;
 		var changeEvent = cell._changeEvent;
@@ -1715,22 +1713,11 @@ function release() {
 			level = cell._level;
 			changeEvent = cell._changeEvent;
 
-			if (releasePlanIndex == oldReleasePlanIndex) {
-				if (level > releasePlanIndex) {
-					if (!queue.length) {
-						queue = releasePlan[++releasePlanIndex];
-					}
-
-					continue;
-				}
-			} else {
-				if (changeEvent) {
-					queue.unshift(cell);
-				} else if (level <= oldReleasePlanIndex) {
-					cell._levelInRelease = -1;
+			if (level > releasePlanIndex) {
+				if (!queue.length) {
+					queue = releasePlan[++releasePlanIndex];
 				}
 
-				queue = releasePlan[releasePlanIndex];
 				continue;
 			}
 		}
@@ -1741,9 +1728,7 @@ function release() {
 			cell._fixedValue = cell._value;
 			cell._changeEvent = null;
 
-			if (cell._events.change) {
-				cell._handleEvent(changeEvent);
-			}
+			cell._handleEvent(changeEvent);
 
 			var pushingIndex = cell._pushingIndex;
 			var slaves = cell._slaves;
@@ -1764,17 +1749,13 @@ function release() {
 			}
 		}
 
-		if (releasePlanIndex == oldReleasePlanIndex) {
-			if (queue.length) {
-				continue;
-			}
-
+		if (!queue.length) {
 			if (++releasePlanIndex > releasePlanToIndex) {
 				break;
 			}
-		}
 
-		queue = releasePlan[releasePlanIndex];
+			queue = releasePlan[releasePlanIndex];
+		}
 	}
 
 	releasePlanIndex = MAX_SAFE_INTEGER;
@@ -1916,7 +1897,7 @@ var Cell = EventEmitter.extend({
 		this._version = 0;
 
 		this._inited = false;
-		this._currentlyPulls = false;
+		this._currentlyPulling = false;
 		this._active = false;
 		this._hasFollowers = false;
 
@@ -2261,14 +2242,14 @@ var Cell = EventEmitter.extend({
 	 * @typesign () -> *;
 	 */
 	_tryPull: function _tryPull() {
-		if (this._currentlyPulls) {
+		if (this._currentlyPulling) {
 			throw new TypeError('Circular pulling detected');
 		}
 
 		var prevCell = currentCell;
 		currentCell = this;
 
-		this._currentlyPulls = true;
+		currentlyPulling = this._currentlyPulling = true;
 		this._masters = null;
 		this._level = 0;
 
@@ -2283,7 +2264,7 @@ var Cell = EventEmitter.extend({
 			this._version = releaseVersion + currentlyRelease;
 
 			this._inited = true;
-			this._currentlyPulls = false;
+			currentlyPulling = this._currentlyPulling = false;
 		}
 	},
 
@@ -2371,6 +2352,10 @@ var Cell = EventEmitter.extend({
 		this._setError(null);
 
 		if (!internal) {
+			if (currentlyPulling) {
+				throw new TypeError('Cannot push while pulling');
+			}
+
 			this._pushingIndex = ++pushingIndexCounter;
 		}
 
