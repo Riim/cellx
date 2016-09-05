@@ -66,8 +66,8 @@ user.lastName('Пёс');
 | 50                                      | 1     | >300000           | >300000                                       | 2 (5)                                                                                                                            | 6                                           | 3                                                  | 4                                                       | >300000                                       | 6 (3)                                         | >300000                               |
 | 100                                     | 2     | >300000           | >300000                                       | 3 (7)                                                                                                                            | 11                                          | 6                                                  | 7                                                       | >300000                                       | 12 (5)                                        | >300000                               |
 | 1000                                    | 15    | >300000           | >300000                                       | 35 (45)                                                                                                                          | 160                                         | 60                                                 | 150                                                     | >300000                                       | 140 (45)                                      | >300000                               |
-| 5000                                    | 70    | >300000           | >300000                                       | 550 (350)                                                                                                                        | first call — 900, subsequent calls — >900   | 300                                                | RangeError: Maximum call stack size exceeded            | >300000                                       | RangeError: Maximum call stack size exceeded  | >300000                               |
-| 25000                                   | 350   | >300000           | >300000                                       | 11000 (1300)                                                                                                                     | first call — 4200, subsequent calls — >4200 | 1750                                               | RangeError: Maximum call stack size exceeded            | >300000                                       | RangeError: Maximum call stack size exceeded  | >300000                               |
+| 5000                                    | 75    | >300000           | >300000                                       | 550 (350)                                                                                                                        | first call — 900, subsequent calls — >900   | 300                                                | RangeError: Maximum call stack size exceeded            | >300000                                       | RangeError: Maximum call stack size exceeded  | >300000                               |
+| 25000                                   | 380   | >300000           | >300000                                       | 11000 (1300)                                                                                                                     | first call — 4200, subsequent calls — >4200 | 1750                                               | RangeError: Maximum call stack size exceeded            | >300000                                       | RangeError: Maximum call stack size exceeded  | >300000                               |
 
 Исходники теста можно найти в папке [perf](https://github.com/Riim/cellx/tree/master/perf).  
 Плотность связей в реальных приложениях обычно ниже чем в данном тесте, то есть если в тесте определённая задержка
@@ -812,10 +812,10 @@ console.log(list.toArray());
 
 ## Размер
 
-| File         | Original | Gzipped  |
-|--------------|----------|----------|
-| cellx.js     | 55.55 kB | 11.09 kB |
-| cellx.min.js | 23.55 kB | 6.76 kB  |
+| File         | Original | Gzipped |
+|--------------|----------|---------|
+| cellx.js     | 55.8 kB  | 11.1 kB |
+| cellx.min.js | 23.67 kB | 6.8 kB  |
 
 ## Использованные материалы
 

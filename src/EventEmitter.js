@@ -1,6 +1,7 @@
 import ErrorLogger from './ErrorLogger';
 import { hasOwn } from './JS/Object';
 import Symbol from './JS/Symbol';
+import Map from './JS/Map';
 import createClass from './Utils/createClass';
 
 var KEY_INNER = Symbol('inner');
@@ -31,7 +32,7 @@ var EventEmitter = createClass({
 		 *     context
 		 * }>>}
 		 */
-		this._events = Object.create(null);
+		this._events = new Map();
 	},
 
 	/**
@@ -95,7 +96,7 @@ var EventEmitter = createClass({
 				this._off(type, listener, argCount >= 3 ? context : this);
 			}
 		} else if (this._events) {
-			this._events = Object.create(null);
+			this._events.clear();
 		}
 
 		return this;
@@ -114,10 +115,11 @@ var EventEmitter = createClass({
 		if (index != -1) {
 			this['_' + type.slice(index + 1)].on(type.slice(0, index), listener, context);
 		} else {
-			var events = (this._events || (this._events = Object.create(null)))[type];
+			var events = (this._events || (this._events = new Map())).get(type);
 
 			if (!events) {
-				events = this._events[type] = [];
+				events = [];
+				this._events.set(type, events);
 			}
 
 			events.push({
@@ -139,23 +141,26 @@ var EventEmitter = createClass({
 		if (index != -1) {
 			this['_' + type.slice(index + 1)].off(type.slice(0, index), listener, context);
 		} else {
-			var events = this._events && this._events[type];
+			var events = this._events && this._events.get(type);
 
 			if (!events) {
 				return;
 			}
 
 			for (var i = events.length; i;) {
-				var evt = events[--i];
+				var evtConfig = events[--i];
 
-				if ((evt.listener == listener || evt.listener[KEY_INNER] === listener) && evt.context === context) {
+				if (
+					(evtConfig.listener == listener || evtConfig.listener[KEY_INNER] === listener) &&
+						evtConfig.context === context
+				) {
 					events.splice(i, 1);
 					break;
 				}
 			}
 
 			if (!events.length) {
-				delete this._events[type];
+				this._events.delete(type);
 			}
 		}
 	},
@@ -199,11 +204,7 @@ var EventEmitter = createClass({
 			throw new TypeError('Event cannot be emitted on this object');
 		}
 
-		try {
-			this._handleEvent(evt);
-		} catch (err) {
-			this._logError(err);
-		}
+		this._handleEvent(evt);
 
 		return evt;
 	},
@@ -246,16 +247,24 @@ var EventEmitter = createClass({
 	 * };
 	 */
 	_handleEvent: function _handleEvent(evt) {
-		var events = this._events && this._events[evt.type];
+		var events = this._events && this._events.get(evt.type);
 
 		if (events) {
 			events = events.slice();
 
 			for (var i = 0, l = events.length; i < l; i++) {
-				if (events[i].listener.call(events[i].context, evt) === false) {
+				if (this._tryEventHandler(events[i], evt) === false) {
 					evt.isPropagationStopped = true;
 				}
 			}
+		}
+	},
+
+	_tryEventHandler: function _tryEventHandler(evtConfig, evt) {
+		try {
+			return evtConfig.listener.call(evtConfig.context, evt);
+		} catch (err) {
+			this._logError(err);
 		}
 	},
 

@@ -1,6 +1,7 @@
 import EventEmitter from './EventEmitter';
 import { is } from './JS/Object';
 import { slice } from './JS/Array';
+import Map from './JS/Map';
 import nextTick from './Utils/nextTick';
 
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
@@ -8,14 +9,16 @@ var KEY_INNER = EventEmitter.KEY_INNER;
 
 var pushingIndexCounter = 0;
 
-var releasePlan = [];
+var releasePlan = new Map();
 
 var releasePlanIndex = MAX_SAFE_INTEGER;
 var releasePlanToIndex = -1;
 
 var releasePlanned = false;
 var currentlyRelease = false;
-var currentlyPulling = false;
+var currentlyPulling = 0;
+var currentCell = null;
+var error = { original: null };
 var releaseVersion = 1;
 
 var afterReleaseCallbacks;
@@ -28,17 +31,17 @@ function release() {
 	releasePlanned = false;
 	currentlyRelease = true;
 
-	var queue = releasePlan[releasePlanIndex];
+	var queue = releasePlan.get(releasePlanIndex);
 
 	for (;;) {
-		var cell;
+		var cell = queue && queue.shift();
 
-		if (!queue || !(cell = queue.shift())) {
-			if (++releasePlanIndex > releasePlanToIndex) {
+		if (!cell) {
+			if (releasePlanIndex == releasePlanToIndex) {
 				break;
 			}
 
-			queue = releasePlan[releasePlanIndex];
+			queue = releasePlan.get(++releasePlanIndex);
 			continue;
 		}
 
@@ -48,11 +51,11 @@ function release() {
 		if (!changeEvent) {
 			if (level > releasePlanIndex || cell._levelInRelease == -1) {
 				if (!queue.length) {
-					if (++releasePlanIndex > releasePlanToIndex) {
+					if (releasePlanIndex == releasePlanToIndex) {
 						break;
 					}
 
-					queue = releasePlan[releasePlanIndex];
+					queue = releasePlan.get(++releasePlanIndex);
 				}
 
 				continue;
@@ -65,7 +68,7 @@ function release() {
 
 			if (level > releasePlanIndex) {
 				if (!queue.length) {
-					queue = releasePlan[++releasePlanIndex];
+					queue = releasePlan.get(++releasePlanIndex);
 				}
 
 				continue;
@@ -100,11 +103,11 @@ function release() {
 		}
 
 		if (!queue.length) {
-			if (++releasePlanIndex > releasePlanToIndex) {
+			if (releasePlanIndex == releasePlanToIndex) {
 				break;
 			}
 
-			queue = releasePlan[releasePlanIndex];
+			queue = releasePlan.get(++releasePlanIndex);
 		}
 	}
 
@@ -125,11 +128,6 @@ function release() {
 		}
 	}
 }
-
-var currentCell = null;
-var error = {
-	original: null
-};
 
 /**
  * @typesign (value);
@@ -320,7 +318,7 @@ var Cell = EventEmitter.extend({
 			EventEmitter.prototype.off.call(this);
 		}
 
-		if (!this._slaves.length && !this._events.change && !this._events.error) {
+		if (!this._slaves.length && !this._events.has('change') && !this._events.has('error')) {
 			this._hasFollowers = false;
 			this._deactivate();
 		}
@@ -417,7 +415,7 @@ var Cell = EventEmitter.extend({
 	_unregisterSlave: function _unregisterSlave(slave) {
 		this._slaves.splice(this._slaves.indexOf(slave), 1);
 
-		if (!this._slaves.length && !this._events.change && !this._events.error) {
+		if (!this._slaves.length && !this._events.has('change') && !this._events.has('error')) {
 			this._hasFollowers = false;
 			this._deactivate();
 		}
@@ -482,7 +480,9 @@ var Cell = EventEmitter.extend({
 			return;
 		}
 
-		(releasePlan[level] || (releasePlan[level] = [])).push(this);
+		var queue;
+
+		(releasePlan.get(level) || (releasePlan.set(level, (queue = [])), queue)).push(this);
 
 		if (releasePlanIndex > level) {
 			releasePlanIndex = level;
@@ -596,10 +596,12 @@ var Cell = EventEmitter.extend({
 			throw new TypeError('Circular pulling detected');
 		}
 
+		currentlyPulling++;
+
 		var prevCell = currentCell;
 		currentCell = this;
 
-		currentlyPulling = this._currentlyPulling = true;
+		this._currentlyPulling = true;
 		this._masters = null;
 		this._level = 0;
 
@@ -609,12 +611,13 @@ var Cell = EventEmitter.extend({
 			error.original = err;
 			return error;
 		} finally {
+			currentlyPulling--;
 			currentCell = prevCell;
 
 			this._version = releaseVersion + currentlyRelease;
 
 			this._inited = true;
-			currentlyPulling = this._currentlyPulling = false;
+			this._currentlyPulling = false;
 		}
 	},
 

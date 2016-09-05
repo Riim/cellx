@@ -33,7 +33,7 @@ interface IEventEmitterListener {
 export class EventEmitter {
 	static KEY_INNER: symbol;
 
-	protected _events: { [key: string]: Array<{ listener: IEventEmitterListener, context: any }> };
+	protected _events: Map<string, Array<{ listener: IEventEmitterListener, context: any }>>;
 
 	on(type: string, listener: IEventEmitterListener, context?: any): EventEmitter;
 	on(listeners: { [key: string]: IEventEmitterListener }, context?: any): EventEmitter;
