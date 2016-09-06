@@ -78,6 +78,8 @@ function release() {
 		cell._levelInRelease = -1;
 
 		if (changeEvent) {
+			var oldReleasePlanIndex = releasePlanIndex;
+
 			cell._fixedValue = cell._value;
 			cell._changeEvent = null;
 
@@ -99,6 +101,11 @@ function release() {
 
 					slave._addToRelease();
 				}
+			}
+
+			if (releasePlanIndex != oldReleasePlanIndex) {
+				queue = releasePlan.get(releasePlanIndex);
+				continue;
 			}
 		}
 
