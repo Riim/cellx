@@ -141,6 +141,11 @@ console.log(user.nameInitial);
 
 Используйте npm модуль [cellx-react](https://www.npmjs.com/package/cellx-react).
 
+### Другие модули для cellx
+
+* [cellx-indexed-collections](https://www.npmjs.com/package/cellx-indexed-collections)
+* [Rionite](https://www.npmjs.com/package/rionite)
+
 ### Опции
 
 При создании ячейки можно передать некоторые опции:

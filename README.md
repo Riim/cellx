@@ -149,13 +149,18 @@ console.log(user.nameInitial);
 // => 'M'
 ```
 
-### Use with ES.Next
+### Usage with ES.Next
 
 Use npm module [cellx-decorators](https://www.npmjs.com/package/cellx-decorators).
 
-### Use with React
+### Usage with React
 
 Use npm module [cellx-react](https://www.npmjs.com/package/cellx-react).
+
+### More modules for cellx
+
+* [cellx-indexed-collections](https://www.npmjs.com/package/cellx-indexed-collections)
+* [Rionite](https://www.npmjs.com/package/rionite)
 
 ### Options
 
