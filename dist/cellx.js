@@ -58,7 +58,7 @@ var Symbol$1 = Symbol;
 var UID = Symbol$1('uid');
 var CELLS = Symbol$1('cells');
 
-var global = Function('return this;')();
+var global$1 = Function('return this;')();
 
 /**
  * @typesign (target: Object, source: Object) -> Object;
@@ -83,9 +83,9 @@ var extend;
  *     Static?: Object,
  *     constructor?: Function,
  *     [key: string]
- * }) -> Function;
+ * }, inheritStatic: boolean) -> Function;
  */
-function createClass(description) {
+function createClass(description, inheritStatic) {
 	var parent;
 
 	if (description.Extends) {
@@ -126,9 +126,11 @@ function createClass(description) {
 		delete description.Implements;
 	}
 
-	Object.keys(parent).forEach(function(name) {
-		Object.defineProperty(constr, name, Object.getOwnPropertyDescriptor(parent, name));
-	});
+	if (inheritStatic !== false) {
+		Object.keys(parent).forEach(function(name) {
+			Object.defineProperty(constr, name, Object.getOwnPropertyDescriptor(parent, name));
+		});
+	}
 
 	if (description.Static) {
 		mixin(constr, description.Static);
@@ -165,7 +167,7 @@ extend = function extend(description) {
 	return createClass(description);
 };
 
-var Map = global.Map;
+var Map = global$1.Map;
 
 if (!Map) {
 	var entryStub = {
@@ -326,7 +328,7 @@ if (!Map) {
 		},
 
 		forEach: function forEach(cb, context) {
-			context = arguments.length >= 2 ? context : global;
+			context = arguments.length >= 2 ? context : global$1;
 
 			var entry = this._first;
 
@@ -896,7 +898,7 @@ var ObservableMap = EventEmitter.extend({
 	 * );
 	 */
 	forEach: function forEach(cb, context) {
-		context = arguments.length >= 2 ? context : global;
+		context = arguments.length >= 2 ? context : global$1;
 
 		this._entries.forEach(function(value, key) {
 			cb.call(context, value, key, this);
@@ -937,7 +939,7 @@ var ObservableMap = EventEmitter.extend({
 ObservableMap.prototype[Symbol$1.iterator] = ObservableMap.prototype.entries;
 
 var slice = Array.prototype.slice;
-var push = Array.prototype.push;
+var push$1 = Array.prototype.push;
 var splice = Array.prototype.splice;
 var map$1 = Array.prototype.map;
 
@@ -1177,7 +1179,7 @@ var ObservableList = EventEmitter.extend({
 				this._registerValue(items[--j]);
 			}
 
-			this.length = push.apply(this._items, items);
+			this.length = push$1.apply(this._items, items);
 		}
 	},
 
@@ -1454,7 +1456,7 @@ var ObservableList = EventEmitter.extend({
 	 * ) -> *;
 	 */
 	find: function(cb, context) {
-		context = arguments.length >= 2 ? context : global;
+		context = arguments.length >= 2 ? context : global$1;
 
 		var items = this._items;
 
@@ -1474,7 +1476,7 @@ var ObservableList = EventEmitter.extend({
 	 * ) -> int;
 	 */
 	findIndex: function(cb, context) {
-		context = arguments.length >= 2 ? context : global;
+		context = arguments.length >= 2 ? context : global$1;
 
 		var items = this._items;
 
@@ -1547,7 +1549,7 @@ var ObservableList = EventEmitter.extend({
 
 ['forEach', 'map', 'filter', 'every', 'some'].forEach(function(name) {
 	ObservableList.prototype[name] = function(cb, context) {
-		context = arguments.length >= 2 ? context : global;
+		context = arguments.length >= 2 ? context : global$1;
 
 		return this._items[name](function(item, index) {
 			return cb.call(context, item, index, this);
@@ -1616,13 +1618,13 @@ ObservableList.prototype[Symbol$1.iterator] = ObservableList.prototype.values;
 var nextTick;
 
 /* istanbul ignore next */
-if (global.process && process.toString() == '[object process]' && process.nextTick) {
+if (global$1.process && process.toString() == '[object process]' && process.nextTick) {
 	nextTick = process.nextTick;
-} else if (global.setImmediate) {
+} else if (global$1.setImmediate) {
 	nextTick = function nextTick(cb) {
 		setImmediate(cb);
 	};
-} else if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
+} else if (global$1.Promise && Promise.toString().indexOf('[native code]') != -1) {
 	var prm = Promise.resolve();
 
 	nextTick = function nextTick(cb) {
@@ -1633,7 +1635,7 @@ if (global.process && process.toString() == '[object process]' && process.nextTi
 } else {
 	var queue;
 
-	global.addEventListener('message', function() {
+	global$1.addEventListener('message', function() {
 		if (queue) {
 			var track = queue;
 
@@ -1796,8 +1798,8 @@ function release() {
 /**
  * @typesign (value);
  */
-function defaultPut(value, push) {
-	push(value);
+function defaultPut(value, push$$1) {
+	push$$1(value);
 }
 
 /**
@@ -1875,10 +1877,10 @@ var Cell = EventEmitter.extend({
 
 		this._put = opts.put || defaultPut;
 
-		var push = this.push;
+		var push$$1 = this.push;
 		var fail = this.fail;
 
-		this.push = function(value) { push.call(cell, value); };
+		this.push = function(value) { push$$1.call(cell, value); };
 		this.fail = function(err) { fail.call(cell, err); };
 
 		this._onFulfilled = this._onRejected = null;
@@ -2610,9 +2612,9 @@ function noop() {}
  * @typesign (...msg);
  */
 function logError() {
-	var console = global.console;
+	var console = global$1.console;
 
-	(console && console.error || noop).call(console || global, map$1.call(arguments, function(part) {
+	(console && console.error || noop).call(console || global$1, map$1.call(arguments, function(part) {
 		return part === Object(part) && part.stack || part;
 	}).join(' '));
 }
@@ -2648,7 +2650,7 @@ function cellx(value, opts) {
 	function cx(value) {
 		var owner = this;
 
-		if (!owner || owner == global) {
+		if (!owner || owner == global$1) {
 			owner = cx;
 		}
 
@@ -2704,7 +2706,7 @@ function cellx(value, opts) {
 	cx.constructor = cellx;
 
 	if (opts.onChange || opts.onError) {
-		cx.call(opts.owner || global);
+		cx.call(opts.owner || global$1);
 	}
 
 	return cx;
@@ -2729,11 +2731,11 @@ cellx.Cell = Cell;
  *     adoptsItemChanges?: boolean
  * ) -> cellx.ObservableMap;
  */
-function map(entries, opts) {
+function map$$1(entries, opts) {
 	return new ObservableMap(entries, typeof opts == 'boolean' ? { adoptsItemChanges: opts } : opts);
 }
 
-cellx.map = map;
+cellx.map = map$$1;
 
 /**
  * @typesign (items?: Array|cellx.ObservableList, opts?: {
@@ -2817,7 +2819,7 @@ cellx.Utils = cellx.utils = {
 	defineObservableProperties: defineObservableProperties
 };
 
-cellx.cellx = cellx;
+cellx.cellx = cellx; // for destructuring
 
 return cellx;
 
