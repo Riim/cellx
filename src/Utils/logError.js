@@ -9,8 +9,8 @@ function noop() {}
 function logError() {
 	var console = global.console;
 
-	(console && console.error || noop).call(console || global, map.call(arguments, function(part) {
-		return part === Object(part) && part.stack || part;
+	(console && console.error || noop).call(console || global, map.call(arguments, function(arg) {
+		return arg === Object(arg) && arg.stack || arg;
 	}).join(' '));
 }
 

@@ -50,7 +50,7 @@ if (!Symbol) {
 		return '__' + key + '_' + Math.floor(Math.random() * 1e9) + '_' + nextUID() + '__';
 	};
 
-	Symbol.iterator = Symbol('iterator');
+	Symbol.iterator = Symbol('Symbol.iterator');
 }
 
 var Symbol$1 = Symbol;
@@ -2606,6 +2606,10 @@ var Cell = EventEmitter.extend({
 	}
 });
 
+Cell.prototype[Symbol$1.iterator] = function() {
+	return this._value[Symbol$1.iterator]();
+};
+
 function noop() {}
 
 /**
@@ -2614,8 +2618,8 @@ function noop() {}
 function logError() {
 	var console = global$1.console;
 
-	(console && console.error || noop).call(console || global$1, map$1.call(arguments, function(part) {
-		return part === Object(part) && part.stack || part;
+	(console && console.error || noop).call(console || global$1, map$1.call(arguments, function(arg) {
+		return arg === Object(arg) && arg.stack || arg;
 	}).join(' '));
 }
 

@@ -3,6 +3,7 @@
 
 import { Map } from 'es6-collections';
 import { Promise } from 'es6-promise';
+
 declare namespace Cellx {
 	interface IIterator<T> {
 		next: () => { value: T, done: boolean }
@@ -222,6 +223,8 @@ declare namespace Cellx {
 	export function cellx<T>(value?: T, opts?: ICellOptions<T>): ICellx<T>;
 	export function cellx<T>(pull: ICellPull, opts?: ICellOptions<T>): ICellx<T>;
 }
+
 declare function Cellx<T>(value?: T, opts?: Cellx.ICellOptions<T>): Cellx.ICellx<T>;
 declare function Cellx<T>(pull: Cellx.ICellPull, opts?: Cellx.ICellOptions<T>): Cellx.ICellx<T>;
+
 export = Cellx;

@@ -2,6 +2,7 @@ import EventEmitter from './EventEmitter';
 import { is } from './JS/Object';
 import { slice } from './JS/Array';
 import Map from './JS/Map';
+import Symbol from './JS/Symbol';
 import nextTick from './Utils/nextTick';
 
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
@@ -946,5 +947,9 @@ var Cell = EventEmitter.extend({
 		this.off();
 	}
 });
+
+Cell.prototype[Symbol.iterator] = function() {
+	return this._value[Symbol.iterator]();
+};
 
 export default Cell;

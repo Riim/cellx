@@ -7,7 +7,7 @@ if (!Symbol) {
 		return '__' + key + '_' + Math.floor(Math.random() * 1e9) + '_' + nextUID() + '__';
 	};
 
-	Symbol.iterator = Symbol('iterator');
+	Symbol.iterator = Symbol('Symbol.iterator');
 }
 
 export default Symbol;

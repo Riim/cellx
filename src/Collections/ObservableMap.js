@@ -2,8 +2,8 @@ import EventEmitter from '../EventEmitter';
 import ObservableCollectionMixin from './ObservableCollectionMixin';
 import global from '../JS/global';
 import { is, hasOwn } from '../JS/Object';
-import Symbol from '../JS/Symbol';
 import Map from '../JS/Map';
+import Symbol from '../JS/Symbol';
 
 /**
  * @class cellx.ObservableMap

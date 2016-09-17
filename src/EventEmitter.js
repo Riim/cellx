@@ -1,7 +1,7 @@
 import ErrorLogger from './ErrorLogger';
 import { hasOwn } from './JS/Object';
-import Symbol from './JS/Symbol';
 import Map from './JS/Map';
+import Symbol from './JS/Symbol';
 import createClass from './Utils/createClass';
 
 var KEY_INNER = Symbol('inner');
