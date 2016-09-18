@@ -1848,6 +1848,8 @@ function defaultPut(value, push$$1) {
  */
 var Cell = EventEmitter.extend({
 	Static: {
+		_nextTick: nextTick$1,
+
 		/**
 		 * @typesign ();
 		 */
@@ -2170,7 +2172,7 @@ var Cell = EventEmitter.extend({
 
 		if (!releasePlanned && !currentlyRelease) {
 			releasePlanned = true;
-			nextTick$1(release);
+			Cell._nextTick(release);
 		}
 	},
 
@@ -2789,6 +2791,8 @@ function defineObservableProperty(obj, name, value) {
 	return obj;
 }
 
+cellx.defineObservableProperty = defineObservableProperty;
+
 /**
  * @typesign (obj: cellx.EventEmitter, props: Object) -> cellx.EventEmitter;
  */
@@ -2799,6 +2803,8 @@ function defineObservableProperties(obj, props) {
 
 	return obj;
 }
+
+cellx.defineObservableProperties = defineObservableProperties;
 
 /**
  * @typesign (obj: cellx.EventEmitter, name: string, value) -> cellx.EventEmitter;
@@ -2827,9 +2833,7 @@ cellx.Utils = cellx.utils = {
 	nextUID: nextUID,
 	mixin: mixin,
 	createClass: createClass,
-	nextTick: nextTick$1,
-	defineObservableProperty: defineObservableProperty,
-	defineObservableProperties: defineObservableProperties
+	nextTick: nextTick$1
 };
 
 cellx.cellx = cellx; // for destructuring

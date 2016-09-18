@@ -173,6 +173,8 @@ function defineObservableProperty(obj, name, value) {
 	return obj;
 }
 
+cellx.defineObservableProperty = defineObservableProperty;
+
 /**
  * @typesign (obj: cellx.EventEmitter, props: Object) -> cellx.EventEmitter;
  */
@@ -183,6 +185,8 @@ function defineObservableProperties(obj, props) {
 
 	return obj;
 }
+
+cellx.defineObservableProperties = defineObservableProperties;
 
 /**
  * @typesign (obj: cellx.EventEmitter, name: string, value) -> cellx.EventEmitter;
@@ -211,9 +215,7 @@ cellx.Utils = cellx.utils = {
 	nextUID: nextUID,
 	mixin: mixin,
 	createClass: createClass,
-	nextTick: nextTick,
-	defineObservableProperty: defineObservableProperty,
-	defineObservableProperties: defineObservableProperties
+	nextTick: nextTick
 };
 
 cellx.cellx = cellx; // for destructuring

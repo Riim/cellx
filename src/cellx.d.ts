@@ -197,6 +197,8 @@ declare namespace Cellx {
 	export function list<T>(items?: ObservableListItems<T>, opts?: IObservableListOptions<T>): ObservableList<T>;
 	export function list<T>(items?: ObservableListItems<T>, adoptsItemChanges?: boolean): ObservableList<T>;
 
+	export function defineObservableProperty(obj: EventEmitter, name: string, value: any): EventEmitter;
+	export function defineObservableProperties(obj: EventEmitter, props: { [key: string]: any }): EventEmitter;
 	export function define(obj: EventEmitter, name: string, value: any): EventEmitter;
 	export function define(obj: EventEmitter, props: { [key: string]: any }): EventEmitter;
 
@@ -211,8 +213,6 @@ declare namespace Cellx {
 		function nextUID(): string;
 		function mixin(target: Object, source: Object): Object;
 		function nextTick(cb: () => void): void;
-		function defineObservableProperty(obj: EventEmitter, name: string, value: any): EventEmitter;
-		function defineObservableProperties(obj: EventEmitter, props: { [key: string]: any }): EventEmitter;
 	}
 
 	interface ICellx<T> {

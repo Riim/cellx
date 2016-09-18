@@ -190,6 +190,8 @@ function defaultPut(value, push) {
  */
 var Cell = EventEmitter.extend({
 	Static: {
+		_nextTick: nextTick,
+
 		/**
 		 * @typesign ();
 		 */
@@ -512,7 +514,7 @@ var Cell = EventEmitter.extend({
 
 		if (!releasePlanned && !currentlyRelease) {
 			releasePlanned = true;
-			nextTick(release);
+			Cell._nextTick(release);
 		}
 	},
 
