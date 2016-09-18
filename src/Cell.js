@@ -191,6 +191,15 @@ function defaultPut(value, push) {
 var Cell = EventEmitter.extend({
 	Static: {
 		/**
+		 * @typesign ();
+		 */
+		forceRelease: function() {
+			if (releasePlanned) {
+				release();
+			}
+		},
+
+		/**
 		 * @typesign (cb: Function);
 		 */
 		afterRelease: function(cb) {

@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.6.42",
+  "version": "1.6.43",
   "description": "",
   "main": "dist/cellx.js",
   "typings": "src/cellx.d.ts",
@@ -45,7 +45,7 @@
     "phantomjs-prebuilt": "^2.1.12",
     "pump": "^1.0.1",
     "require-dir": "^0.3.0",
-    "rollup": "^0.35.11",
+    "rollup": "^0.35.12",
     "rollup-plugin-eslint": "^3.0.0",
     "sinon": "^1.17.5",
     "yargs": "^5.0.0"
