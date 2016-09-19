@@ -739,6 +739,81 @@ describe('Cell', function() {
 		});
 	});
 
+	it('#isPending()', function(done) {
+		let cChangeSpy = sinon.spy();
+		let loadingChangeSpy = sinon.spy();
+
+		let a = new cellx.Cell(function(push, fail, oldValue) {
+			setTimeout(function() {
+				push(Math.random())
+			}, 10);
+
+			return oldValue || 0;
+		});
+		let b = new cellx.Cell(function(push, fail, oldValue) {
+			setTimeout(function() {
+				push(Math.random())
+			}, 50);
+
+			return oldValue || 0;
+		});
+
+		let c = new cellx.Cell(function() {
+			return a.get() + b.get();
+		}, { onChange: cChangeSpy });
+
+		let loading = new cellx.Cell(function() {
+			return a.isPending() || b.isPending();
+		}, { onChange: loadingChangeSpy });
+
+		setTimeout(function() {
+			expect(c.get())
+				.to.equal(0);
+
+			expect(loading.get())
+				.to.equal(true);
+
+			expect(cChangeSpy.called)
+				.to.not.be.ok;
+
+			expect(loadingChangeSpy.called)
+				.to.not.be.ok;
+
+			setTimeout(function() {
+				expect(c.get())
+					.to.not.equal(0);
+
+				expect(loading.get())
+					.to.equal(true);
+
+				expect(cChangeSpy.called)
+					.to.be.ok;
+
+				expect(loadingChangeSpy.called)
+					.to.not.be.ok;
+
+				setTimeout(function() {
+					expect(loading.get())
+						.to.equal(false);
+
+					a.pull();
+
+					setTimeout(function() {
+						expect(loading.get())
+							.to.equal(true);
+
+						setTimeout(function() {
+							expect(loading.get())
+								.to.equal(false);
+
+							done();
+						}, 20);
+					}, 1);
+				}, 100);
+			}, 20);
+		}, 1);
+	});
+
 	it('должна подписывать через EventEmitter', function(done) {
 		let emitter = new cellx.EventEmitter();
 		let changeSpy = sinon.spy();

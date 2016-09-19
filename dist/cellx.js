@@ -1675,7 +1675,6 @@ var releasePlanToIndex = -1;
 
 var releasePlanned = false;
 var currentlyRelease = false;
-var currentlyPulling = 0;
 var currentCell = null;
 var error = { original: null };
 var releaseVersion = 1;
@@ -1940,7 +1939,10 @@ var Cell = EventEmitter.extend({
 		this._level = 0;
 		this._levelInRelease = -1;
 
-		this._pending = this._fulfilled = this._rejected = false;
+		this._pending = false;
+		this._pendingCell = null;
+		this._fulfilled = false;
+		this._rejected = false;
 
 		this._changeEvent = null;
 		this._canCancelChange = true;
@@ -2220,9 +2222,6 @@ var Cell = EventEmitter.extend({
 			oldLevel = this._level;
 		}
 
-		this._pending = true;
-		this._fulfilled = this._rejected = false;
-
 		var value = this._tryPull();
 
 		if (hasFollowers) {
@@ -2273,7 +2272,12 @@ var Cell = EventEmitter.extend({
 			throw new TypeError('Circular pulling detected');
 		}
 
-		currentlyPulling++;
+		this._pending = true;
+		this._fulfilled = this._rejected = false;
+
+		if (this._pendingCell) {
+			this._pendingCell.set(true);
+		}
 
 		var prevCell = currentCell;
 		currentCell = this;
@@ -2288,7 +2292,6 @@ var Cell = EventEmitter.extend({
 			error.original = err;
 			return error;
 		} finally {
-			currentlyPulling--;
 			currentCell = prevCell;
 
 			this._version = releaseVersion + currentlyRelease;
@@ -2382,7 +2385,7 @@ var Cell = EventEmitter.extend({
 		this._setError(null);
 
 		if (!internal) {
-			if (currentlyPulling) {
+			if (currentCell) {
 				throw new TypeError('Cannot push while pulling');
 			}
 
@@ -2442,6 +2445,10 @@ var Cell = EventEmitter.extend({
 			this._pending = false;
 			this._fulfilled = true;
 
+			if (this._pendingCell) {
+				this._pendingCell.set(false);
+			}
+
 			if (this._onFulfilled) {
 				this._onFulfilled(value);
 			}
@@ -2471,6 +2478,10 @@ var Cell = EventEmitter.extend({
 		if (!internal && this._pending) {
 			this._pending = false;
 			this._rejected = true;
+
+			if (this._pendingCell) {
+				this._pendingCell.set(false);
+			}
 
 			if (this._onRejected) {
 				this._onRejected(err);
@@ -2507,7 +2518,7 @@ var Cell = EventEmitter.extend({
 	 * @typesign () -> ?Error;
 	 */
 	getError: function getError() {
-		return (this._errorCell || (this._errorCell = new Cell(this._error))).get();
+		return currentCell ? (this._errorCell || (this._errorCell = new Cell(this._error))).get() : this._error;
 	},
 
 	/**
@@ -2575,6 +2586,13 @@ var Cell = EventEmitter.extend({
 	 */
 	catch: function _catch(onRejected) {
 		return this.then(null, onRejected);
+	},
+
+	/**
+	 * @typesign () -> boolean;
+	 */
+	isPending: function isPending() {
+		return currentCell ? (this._pendingCell || (this._pendingCell = new Cell(this._pending))).get() : this._pending;
 	},
 
 	/**

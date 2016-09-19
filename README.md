@@ -83,7 +83,7 @@ Test results (in milliseconds) for different number of layers (for Google Chrome
 | 100                                     | 2     | >300000           | >300000                                       | 3 (7)                                                                                                                            | 11                                          | 6                                                  | 7                                                       | >300000                                       | 12 (5)                                        | >300000                               |
 | 1000                                    | 15    | >300000           | >300000                                       | 35 (45)                                                                                                                          | 160                                         | 60                                                 | 150                                                     | >300000                                       | 140 (45)                                      | >300000                               |
 | 5000                                    | 75    | >300000           | >300000                                       | 550 (350)                                                                                                                        | first call — 900, subsequent calls — >900   | 300                                                | RangeError: Maximum call stack size exceeded            | >300000                                       | RangeError: Maximum call stack size exceeded  | >300000                               |
-| 25000                                   | 380   | >300000           | >300000                                       | 11000 (1300)                                                                                                                     | first call — 4200, subsequent calls — >4200 | 1750                                               | RangeError: Maximum call stack size exceeded            | >300000                                       | RangeError: Maximum call stack size exceeded  | >300000                               |
+| 25000                                   | 360   | >300000           | >300000                                       | 11000 (1300)                                                                                                                     | first call — 4200, subsequent calls — >4200 | 1750                                               | RangeError: Maximum call stack size exceeded            | >300000                                       | RangeError: Maximum call stack size exceeded  | >300000                               |
 
 Test sources can be found in the folder [perf](https://github.com/Riim/cellx/tree/master/perf).  
 Density of connections in real applications is usually lower than in the present test, that is,
@@ -836,8 +836,8 @@ Type signature: `() -> string;`.
 
 | File         | Original | Gzipped  |
 |--------------|----------|----------|
-| cellx.js     | 56.36 kB | 11.21 kB |
-| cellx.min.js | 23.85 kB | 6.84 kB  |
+| cellx.js     | 56.76 kB | 11.27 kB |
+| cellx.min.js | 24.13 kB | 6.88 kB  |
 
 ## List of references
 
