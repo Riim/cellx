@@ -111,25 +111,25 @@ function createClass(description, inheritStatic) {
 	var proto = constr.prototype = Object.create(parent.prototype);
 
 	if (description.Implements) {
-		description.Implements.forEach(function(implementation) {
+		description.Implements.forEach((function(implementation) {
 			if (typeof implementation == 'function') {
-				Object.keys(implementation).forEach(function(name) {
+				Object.keys(implementation).forEach((function(name) {
 					Object.defineProperty(constr, name, Object.getOwnPropertyDescriptor(implementation, name));
-				});
+				}));
 
 				mixin(proto, implementation.prototype);
 			} else {
 				mixin(proto, implementation);
 			}
-		});
+		}));
 
 		delete description.Implements;
 	}
 
 	if (inheritStatic !== false) {
-		Object.keys(parent).forEach(function(name) {
+		Object.keys(parent).forEach((function(name) {
 			Object.defineProperty(constr, name, Object.getOwnPropertyDescriptor(parent, name));
-		});
+		}));
 	}
 
 	if (description.Static) {
@@ -356,7 +356,7 @@ if (!Map) {
 		['entries', function entries(entry) {
 			return [entry.key, entry.value];
 		}]
-	].forEach(function(settings) {
+	].forEach((function(settings) {
 		var getStepValue = settings[1];
 
 		Map.prototype[settings[0]] = function() {
@@ -393,7 +393,7 @@ if (!Map) {
 				}
 			};
 		};
-	});
+	}));
 }
 
 if (!Map.prototype[Symbol$1.iterator]) {
@@ -755,10 +755,10 @@ var ObservableMap = EventEmitter.extend({
 			var mapEntries = this._entries;
 
 			if (entries instanceof ObservableMap || entries instanceof Map$1) {
-				entries._entries.forEach(function(value, key) {
+				entries._entries.forEach((function(value, key) {
 					this._registerValue(value);
 					mapEntries.set(key, value);
-				}, this);
+				}), this);
 			} else if (Array.isArray(entries)) {
 				for (var i = 0, l = entries.length; i < l; i++) {
 					var entry = entries[i];
@@ -872,11 +872,11 @@ var ObservableMap = EventEmitter.extend({
 		}
 
 		if (this.adoptsItemChanges) {
-			this._valueCounts.forEach(function(value) {
+			this._valueCounts.forEach((function(value) {
 				if (value instanceof EventEmitter) {
 					value.off('change', this._onItemChange, this);
 				}
-			}, this);
+			}), this);
 		}
 
 		this._entries.clear();
@@ -900,9 +900,9 @@ var ObservableMap = EventEmitter.extend({
 	forEach: function forEach(cb, context) {
 		context = arguments.length >= 2 ? context : global$1;
 
-		this._entries.forEach(function(value, key) {
+		this._entries.forEach((function(value, key) {
 			cb.call(context, value, key, this);
-		}, this);
+		}), this);
 	},
 
 	/**
@@ -1401,11 +1401,11 @@ var ObservableList = EventEmitter.extend({
 		}
 
 		if (this.adoptsItemChanges) {
-			this._valueCounts.forEach(function(value) {
+			this._valueCounts.forEach((function(value) {
 				if (value instanceof EventEmitter) {
 					value.off('change', this._onItemChange, this);
 				}
-			}, this);
+			}), this);
 		}
 
 		this._items.length = 0;
@@ -1547,17 +1547,17 @@ var ObservableList = EventEmitter.extend({
 	}
 });
 
-['forEach', 'map', 'filter', 'every', 'some'].forEach(function(name) {
+['forEach', 'map', 'filter', 'every', 'some'].forEach((function(name) {
 	ObservableList.prototype[name] = function(cb, context) {
 		context = arguments.length >= 2 ? context : global$1;
 
-		return this._items[name](function(item, index) {
+		return this._items[name]((function(item, index) {
 			return cb.call(context, item, index, this);
-		}, this);
+		}), this);
 	};
-});
+}));
 
-['reduce', 'reduceRight'].forEach(function(name) {
+['reduce', 'reduceRight'].forEach((function(name) {
 	ObservableList.prototype[name] = function(cb, initialValue) {
 		var items = this._items;
 		var list = this;
@@ -1568,7 +1568,7 @@ var ObservableList = EventEmitter.extend({
 
 		return arguments.length >= 2 ? items[name](wrapper, initialValue) : items[name](wrapper);
 	};
-});
+}));
 
 [
 	['keys', function keys(index) {
@@ -1580,7 +1580,7 @@ var ObservableList = EventEmitter.extend({
 	['entries', function entries(index, item) {
 		return [index, item];
 	}]
-].forEach(function(settings) {
+].forEach((function(settings) {
 	var getStepValue = settings[1];
 
 	ObservableList.prototype[settings[0]] = function() {
@@ -1608,7 +1608,7 @@ var ObservableList = EventEmitter.extend({
 			}
 		};
 	};
-});
+}));
 
 ObservableList.prototype[Symbol$1.iterator] = ObservableList.prototype.values;
 
@@ -1628,14 +1628,14 @@ if (global$1.process && process.toString() == '[object process]' && process.next
 	var prm = Promise.resolve();
 
 	nextTick = function nextTick(cb) {
-		prm.then(function() {
+		prm.then((function() {
 			cb();
-		});
+		}));
 	};
 } else {
 	var queue;
 
-	global$1.addEventListener('message', function() {
+	global$1.addEventListener('message', (function() {
 		if (queue) {
 			var track = queue;
 
@@ -1649,7 +1649,7 @@ if (global$1.process && process.toString() == '[object process]' && process.next
 				}
 			}
 		}
-	});
+	}));
 
 	nextTick = function nextTick(cb) {
 		if (queue) {
@@ -2647,9 +2647,9 @@ function noop() {}
 function logError() {
 	var console = global$1.console;
 
-	(console && console.error || noop).call(console || global$1, map$1.call(arguments, function(arg) {
+	(console && console.error || noop).call(console || global$1, map$1.call(arguments, (function(arg) {
 		return arg === Object(arg) && arg.stack || arg;
-	}).join(' '));
+	})).join(' '));
 }
 
 ErrorLogger.setHandler(logError);
@@ -2815,9 +2815,9 @@ cellx.defineObservableProperty = defineObservableProperty;
  * @typesign (obj: cellx.EventEmitter, props: Object) -> cellx.EventEmitter;
  */
 function defineObservableProperties(obj, props) {
-	Object.keys(props).forEach(function(name) {
+	Object.keys(props).forEach((function(name) {
 		defineObservableProperty(obj, name, props[name]);
-	});
+	}));
 
 	return obj;
 }

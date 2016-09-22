@@ -1,10 +1,6 @@
 var gulp = require('gulp');
-var sizereport = require('gulp-sizereport');
+var runSequence = require('run-sequence');
 
-gulp.task('default', ['minify'], function() {
-	return gulp.src('dist/**/*')
-		.pipe(sizereport({
-			total: false,
-			gzip: true
-		}));
+gulp.task('default', function(done) {
+	runSequence('minify', 'optimize-js', 'sizereport', done);
 });

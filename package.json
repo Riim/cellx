@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.6.46",
+  "version": "1.6.47",
   "description": "",
   "main": "dist/cellx.js",
   "typings": "src/cellx.d.ts",
@@ -30,6 +30,7 @@
     "eslint": "^3.5.0",
     "eslint-loader": "^1.5.0",
     "gulp": "^3.9.1",
+    "gulp-optimize-js": "^1.0.2",
     "gulp-rename": "^1.2.2",
     "gulp-sizereport": "^1.2.0",
     "gulp-uglify": "^2.0.0",
@@ -47,6 +48,7 @@
     "require-dir": "^0.3.0",
     "rollup": "^0.36.0",
     "rollup-plugin-eslint": "^3.0.0",
+    "run-sequence": "^1.2.2",
     "sinon": "^1.17.5",
     "yargs": "^5.0.0"
   }
