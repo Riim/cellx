@@ -50,7 +50,7 @@ var EventEmitter = createClass({
 			return events._isEmitterEvent === KEY_IS_EMITTER_EVENT ? [events] : events;
 		}
 
-		var resultEvents = {};
+		var resultEvents = Object.create(null);
 
 		this._events.forEach(function(events, type) {
 			resultEvents[type] = events._isEmitterEvent === KEY_IS_EMITTER_EVENT ? [events] : events;
@@ -178,20 +178,25 @@ var EventEmitter = createClass({
 					this._events.delete(type);
 				}
 			} else {
-				for (var i = events.length; i;) {
-					var evt = events[--i];
+				var eventCount = events.length;
 
-					if (
-						(evt.listener == listener || evt.listener[KEY_INNER] === listener) &&
-							evt.context === context
-					) {
-						if (events.length == 1) {
-							this._events.delete(type);
-						} else {
+				if (eventCount == 1) {
+					var evt = events[0];
+
+					if ((evt.listener == listener || evt.listener[KEY_INNER] === listener) && evt.context === context) {
+						this._events.delete(type);
+					}
+				} else {
+					for (var i = eventCount; i;) {
+						var evt2 = events[--i];
+
+						if (
+							(evt2.listener == listener || evt2.listener[KEY_INNER] === listener) &&
+								evt2.context === context
+						) {
 							events.splice(i, 1);
+							break;
 						}
-
-						break;
 					}
 				}
 			}

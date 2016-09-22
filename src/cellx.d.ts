@@ -178,13 +178,14 @@ declare namespace Cellx {
 		subscribe(listener: (err: Error | void, evt: ICellEvent) => boolean | void, context?: any): Cell<T>;
 		unsubscribe(listener: (err: Error | void, evt: ICellEvent) => boolean | void, context?: any): Cell<T>;
 
-		pull(): boolean;
 		get(): T;
+		pull(): boolean;
+		getError(): Error;
 		set(value: T): Cell<T>;
 		push(value: any): Cell<T>;
 		fail(err: any): Cell<T>;
-		getError(): Error;
 
+		isPending(): boolean;
 		then(onFulfilled?: (value: T) => any, onRejected?: (err: any) => any): Promise<any>;
 		catch(onRejected: (err: any) => any): Promise<any>;
 

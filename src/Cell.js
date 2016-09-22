@@ -286,6 +286,8 @@ var Cell = EventEmitter.extend({
 		this._fulfilled = false;
 		this._rejected = false;
 
+		this._ice = null;
+
 		this._changeEvent = null;
 		this._canCancelChange = true;
 
@@ -446,6 +448,10 @@ var Cell = EventEmitter.extend({
 	 * @typesign ();
 	 */
 	_activate: function _activate() {
+		if (this._ice) {
+			throw new TypeError('Cannot activate a frozen cell');
+		}
+
 		if (!this._pull || this._active || this._inited && !this._masters) {
 			return;
 		}
@@ -543,6 +549,57 @@ var Cell = EventEmitter.extend({
 	},
 
 	/**
+	 * @typesign () -> *;
+	 */
+	get: function get() {
+		if (releasePlanned && this._pull) {
+			release();
+		}
+
+		if (this._pull && !this._active && this._version < releaseVersion && (!this._inited || this._masters)) {
+			var value = this._tryPull();
+
+			if (this._hasFollowers) {
+				var masters = this._masters;
+
+				if (masters) {
+					for (var i = masters.length; i;) {
+						masters[--i]._registerSlave(this);
+					}
+
+					this._active = true;
+				}
+			}
+
+			if (value === error) {
+				this._fail(error.original, true);
+			} else {
+				this._push(value, true);
+			}
+		}
+
+		if (currentCell) {
+			var currentCellMasters = currentCell._masters;
+			var level = this._level;
+
+			if (currentCellMasters) {
+				if (currentCellMasters.indexOf(this) == -1) {
+					currentCellMasters.push(this);
+
+					if (currentCell._level <= level) {
+						currentCell._level = level + 1;
+					}
+				}
+			} else {
+				currentCell._masters = [this];
+				currentCell._level = level + 1;
+			}
+		}
+
+		return this._get ? this._get(this._value) : this._value;
+	},
+
+	/**
 	 * @typesign () -> boolean;
 	 */
 	pull: function pull() {
@@ -610,6 +667,10 @@ var Cell = EventEmitter.extend({
 	 * @typesign () -> *;
 	 */
 	_tryPull: function _tryPull() {
+		if (this._ice) {
+			throw new TypeError('Cannot pull a frozen cell');
+		}
+
 		if (this._currentlyPulling) {
 			throw new TypeError('Circular pulling detected');
 		}
@@ -644,54 +705,10 @@ var Cell = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign () -> *;
+	 * @typesign () -> ?Error;
 	 */
-	get: function get() {
-		if (releasePlanned && this._pull) {
-			release();
-		}
-
-		if (this._pull && !this._active && this._version < releaseVersion && (!this._inited || this._masters)) {
-			var value = this._tryPull();
-
-			if (this._hasFollowers) {
-				var masters = this._masters;
-
-				if (masters) {
-					for (var i = masters.length; i;) {
-						masters[--i]._registerSlave(this);
-					}
-
-					this._active = true;
-				}
-			}
-
-			if (value === error) {
-				this._fail(error.original, true);
-			} else {
-				this._push(value, true);
-			}
-		}
-
-		if (currentCell) {
-			var currentCellMasters = currentCell._masters;
-			var level = this._level;
-
-			if (currentCellMasters) {
-				if (currentCellMasters.indexOf(this) == -1) {
-					currentCellMasters.push(this);
-
-					if (currentCell._level <= level) {
-						currentCell._level = level + 1;
-					}
-				}
-			} else {
-				currentCell._masters = [this];
-				currentCell._level = level + 1;
-			}
-		}
-
-		return this._get ? this._get(this._value) : this._value;
+	getError: function getError() {
+		return currentCell ? (this._errorCell || (this._errorCell = new Cell(this._error))).get() : this._error;
 	},
 
 	/**
@@ -857,13 +874,6 @@ var Cell = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign () -> ?Error;
-	 */
-	getError: function getError() {
-		return currentCell ? (this._errorCell || (this._errorCell = new Cell(this._error))).get() : this._error;
-	},
-
-	/**
 	 * @typesign (err: ?Error);
 	 */
 	_setError: function _setError(err) {
@@ -884,6 +894,13 @@ var Cell = EventEmitter.extend({
 				slaves[i]._setError(err);
 			}
 		}
+	},
+
+	/**
+	 * @typesign () -> boolean;
+	 */
+	isPending: function isPending() {
+		return currentCell ? (this._pendingCell || (this._pendingCell = new Cell(this._pending))).get() : this._pending;
 	},
 
 	/**
@@ -931,13 +948,6 @@ var Cell = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign () -> boolean;
-	 */
-	isPending: function isPending() {
-		return currentCell ? (this._pendingCell || (this._pendingCell = new Cell(this._pending))).get() : this._pending;
-	},
-
-	/**
 	 * @override
 	 */
 	_logError: function _logError() {
@@ -948,6 +958,110 @@ var Cell = EventEmitter.extend({
 		}
 
 		EventEmitter.prototype._logError.apply(this, msg);
+	},
+
+	/**
+	 * @typesign () -> boolean;
+	 */
+	isFrozen: function isFrozen() {
+		return !!this._ice;
+	},
+
+	/**
+	 * @typesign () -> cellx.Cell;
+	 */
+	freeze: function freeze() {
+		if (releasePlanned) {
+			release();
+		}
+
+		this._freeze();
+
+		return this;
+	},
+
+	/**
+	 * @typesign ();
+	 */
+	_freeze: function _freeze() {
+		this._ice = {
+			events: this.getEvents(),
+			value: this._value,
+			error: this._error,
+			slaves: this._slaves.slice()
+		};
+
+		var slaves = this._slaves;
+
+		for (var i = 0, l = slaves.length; i < l; i++) {
+			slaves[i]._freeze();
+		}
+
+		this.off();
+	},
+
+	/**
+	 * @typesign () -> cellx.Cell;
+	 */
+	unfreeze: function unfreeze() {
+		if (releasePlanned) {
+			release();
+		}
+
+		if (!this._ice) {
+			throw new TypeError('Cell was not frozen');
+		}
+
+		this._unfreeze();
+
+		return this;
+	},
+
+	/**
+	 * @typesign ();
+	 */
+	_unfreeze: function _unfreeze() {
+		var freezing = this._ice;
+		var events = freezing.events;
+
+		this._ice = null;
+
+		for (var type in events) {
+			var typedEvents = events[type];
+
+			for (var i = 0, l = typedEvents.length; i < l; i++) {
+				var evt = typedEvents[i];
+				this.on(type, evt.listener, evt.context);
+			}
+		}
+
+		if (freezing.value !== this._value) {
+			if (events.change) {
+				this._changeEvent = {
+					target: this,
+					type: 'change',
+					oldValue: freezing.value,
+					value: this._value,
+					prev: null
+				};
+				this._canCancelChange = true;
+
+				this._addToRelease();
+			}
+		} else if (freezing.error !== this._error) {
+			if (events.error) {
+				this._handleErrorEvent({
+					type: 'error',
+					error: this._error
+				});
+			}
+		}
+
+		var slaves = freezing.slaves;
+
+		for (var j = 0, m = slaves.length; j < m; j++) {
+			slaves[j]._unfreeze();
+		}
 	},
 
 	/**
