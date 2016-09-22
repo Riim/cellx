@@ -1,10 +1,10 @@
 import ErrorLogger from './ErrorLogger';
-import { hasOwn } from './JS/Object';
 import Map from './JS/Map';
 import Symbol from './JS/Symbol';
 import createClass from './Utils/createClass';
 
-var KEY_INNER = Symbol('inner');
+var KEY_IS_EMITTER_EVENT = Symbol('cellx.EventEmitter~isEmitterEvent');
+var KEY_INNER = Symbol('cellx.EventEmitter.inner');
 
 /**
  * @typedef {{
@@ -36,6 +36,30 @@ var EventEmitter = createClass({
 	},
 
 	/**
+	 * @typesign (type?: string) -> Array<{ listener: (evt: cellx~Event) -> ?boolean, context }> |
+	 *     Object<Array<{ listener: (evt: cellx~Event) -> ?boolean, context }>>;
+	 */
+	getEvents: function getEvents(type) {
+		if (type) {
+			var events = this._events && this._events.get(type);
+
+			if (!events) {
+				return [];
+			}
+
+			return events._isEmitterEvent === KEY_IS_EMITTER_EVENT ? [events] : events;
+		}
+
+		var resultEvents = {};
+
+		this._events.forEach(function(events, type) {
+			resultEvents[type] = events._isEmitterEvent === KEY_IS_EMITTER_EVENT ? [events] : events;
+		});
+
+		return resultEvents;
+	},
+
+	/**
 	 * @typesign (
 	 *     type: string,
 	 *     listener: (evt: cellx~Event) -> ?boolean,
@@ -54,9 +78,7 @@ var EventEmitter = createClass({
 			var listeners = type;
 
 			for (type in listeners) {
-				if (hasOwn.call(listeners, type)) {
-					this._on(type, listeners[type], context);
-				}
+				this._on(type, listeners[type], context);
 			}
 		} else {
 			this._on(type, listener, arguments.length >= 3 ? context : this);
@@ -88,9 +110,7 @@ var EventEmitter = createClass({
 				var listeners = type;
 
 				for (type in listeners) {
-					if (hasOwn.call(listeners, type)) {
-						this._off(type, listeners[type], context);
-					}
+					this._off(type, listeners[type], context);
 				}
 			} else {
 				this._off(type, listener, argCount >= 3 ? context : this);
@@ -116,16 +136,19 @@ var EventEmitter = createClass({
 			this['_' + type.slice(index + 1)].on(type.slice(0, index), listener, context);
 		} else {
 			var events = (this._events || (this._events = new Map())).get(type);
-
-			if (!events) {
-				events = [];
-				this._events.set(type, events);
-			}
-
-			events.push({
+			var evt = {
+				_isEmitterEvent: KEY_IS_EMITTER_EVENT,
 				listener: listener,
 				context: context
-			});
+			};
+
+			if (!events) {
+				this._events.set(type, evt);
+			} else if (events._isEmitterEvent === KEY_IS_EMITTER_EVENT) {
+				this._events.set(type, [events, evt]);
+			} else {
+				events.push(evt);
+			}
 		}
 	},
 	/**
@@ -147,20 +170,30 @@ var EventEmitter = createClass({
 				return;
 			}
 
-			for (var i = events.length; i;) {
-				var evtConfig = events[--i];
-
+			if (events._isEmitterEvent === KEY_IS_EMITTER_EVENT) {
 				if (
-					(evtConfig.listener == listener || evtConfig.listener[KEY_INNER] === listener) &&
-						evtConfig.context === context
+					(events.listener == listener || events.listener[KEY_INNER] === listener) &&
+						events.context === context
 				) {
-					events.splice(i, 1);
-					break;
+					this._events.delete(type);
 				}
-			}
+			} else {
+				for (var i = events.length; i;) {
+					var evt = events[--i];
 
-			if (!events.length) {
-				this._events.delete(type);
+					if (
+						(evt.listener == listener || evt.listener[KEY_INNER] === listener) &&
+							evt.context === context
+					) {
+						if (events.length == 1) {
+							this._events.delete(type);
+						} else {
+							events.splice(i, 1);
+						}
+
+						break;
+					}
+				}
 			}
 		}
 	},
@@ -249,20 +282,36 @@ var EventEmitter = createClass({
 	_handleEvent: function _handleEvent(evt) {
 		var events = this._events && this._events.get(evt.type);
 
-		if (events) {
-			events = events.slice();
+		if (!events) {
+			return;
+		}
 
-			for (var i = 0, l = events.length; i < l; i++) {
-				if (this._tryEventHandler(events[i], evt) === false) {
+		if (events._isEmitterEvent === KEY_IS_EMITTER_EVENT) {
+			if (this._tryEventListener(events, evt) === false) {
+				evt.isPropagationStopped = true;
+			}
+		} else {
+			var eventCount = events.length;
+
+			if (eventCount > 1) {
+				if (this._tryEventListener(events[0], evt) === false) {
 					evt.isPropagationStopped = true;
+				}
+			} else {
+				events = events.slice();
+
+				for (var i = 0; i < eventCount; i++) {
+					if (this._tryEventListener(events[i], evt) === false) {
+						evt.isPropagationStopped = true;
+					}
 				}
 			}
 		}
 	},
 
-	_tryEventHandler: function _tryEventHandler(evtConfig, evt) {
+	_tryEventListener: function _tryEventListener(emEvt, evt) {
 		try {
-			return evtConfig.listener.call(evtConfig.context, evt);
+			return emEvt.listener.call(emEvt.context, evt);
 		} catch (err) {
 			this._logError(err);
 		}

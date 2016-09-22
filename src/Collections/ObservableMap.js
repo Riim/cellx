@@ -1,7 +1,7 @@
 import EventEmitter from '../EventEmitter';
 import ObservableCollectionMixin from './ObservableCollectionMixin';
 import global from '../JS/global';
-import { is, hasOwn } from '../JS/Object';
+import { is } from '../JS/Object';
 import Map from '../JS/Map';
 import Symbol from '../JS/Symbol';
 
@@ -47,10 +47,8 @@ var ObservableMap = EventEmitter.extend({
 				}
 			} else {
 				for (var key in entries) {
-					if (hasOwn.call(entries, key)) {
-						this._registerValue(entries[key]);
-						mapEntries.set(key, entries[key]);
-					}
+					this._registerValue(entries[key]);
+					mapEntries.set(key, entries[key]);
 				}
 			}
 

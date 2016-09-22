@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.6.47",
+  "version": "1.6.48",
   "description": "",
   "main": "dist/cellx.js",
   "typings": "src/cellx.d.ts",
@@ -39,7 +39,7 @@
     "karma-chai": "^0.1.0",
     "karma-coverage": "^1.1.1",
     "karma-mocha": "^1.1.1",
-    "karma-mocha-reporter": "^2.1.0",
+    "karma-mocha-reporter": "^2.2.0",
     "karma-phantomjs-launcher": "^1.0.2",
     "karma-sinon": "^1.0.5",
     "mocha": "^3.0.2",
@@ -49,7 +49,7 @@
     "rollup": "^0.36.0",
     "rollup-plugin-eslint": "^3.0.0",
     "run-sequence": "^1.2.2",
-    "sinon": "^1.17.5",
+    "sinon": "^1.17.6",
     "yargs": "^5.0.0"
   }
 }
