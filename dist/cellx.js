@@ -697,7 +697,7 @@ var EventEmitter = createClass({
 		} else {
 			var eventCount = events.length;
 
-			if (eventCount > 1) {
+			if (eventCount == 1) {
 				if (this._tryEventListener(events[0], evt) === false) {
 					evt.isPropagationStopped = true;
 				}
