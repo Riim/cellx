@@ -1,6 +1,5 @@
 import EventEmitter from '../EventEmitter';
 import ObservableCollectionMixin from './ObservableCollectionMixin';
-import global from '../JS/global';
 import { is } from '../JS/Object';
 import Map from '../JS/Map';
 import Symbol from '../JS/Symbol';
@@ -175,8 +174,6 @@ var ObservableMap = EventEmitter.extend({
 	 * );
 	 */
 	forEach: function forEach(cb, context) {
-		context = arguments.length >= 2 ? context : global;
-
 		this._entries.forEach(function(value, key) {
 			cb.call(context, value, key, this);
 		}, this);

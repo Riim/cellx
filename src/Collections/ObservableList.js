@@ -1,6 +1,5 @@
 import EventEmitter from '../EventEmitter';
 import ObservableCollectionMixin from './ObservableCollectionMixin';
-import global from '../JS/global';
 import { is } from '../JS/Object';
 import { push, splice } from '../JS/Array';
 import Symbol from '../JS/Symbol';
@@ -518,8 +517,6 @@ var ObservableList = EventEmitter.extend({
 	 * ) -> *;
 	 */
 	find: function(cb, context) {
-		context = arguments.length >= 2 ? context : global;
-
 		var items = this._items;
 
 		for (var i = 0, l = items.length; i < l; i++) {
@@ -538,8 +535,6 @@ var ObservableList = EventEmitter.extend({
 	 * ) -> int;
 	 */
 	findIndex: function(cb, context) {
-		context = arguments.length >= 2 ? context : global;
-
 		var items = this._items;
 
 		for (var i = 0, l = items.length; i < l; i++) {
@@ -611,8 +606,6 @@ var ObservableList = EventEmitter.extend({
 
 ['forEach', 'map', 'filter', 'every', 'some'].forEach(function(name) {
 	ObservableList.prototype[name] = function(cb, context) {
-		context = arguments.length >= 2 ? context : global;
-
 		return this._items[name](function(item, index) {
 			return cb.call(context, item, index, this);
 		}, this);

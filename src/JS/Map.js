@@ -166,8 +166,6 @@ if (!Map) {
 		},
 
 		forEach: function forEach(cb, context) {
-			context = arguments.length >= 2 ? context : global;
-
 			var entry = this._first;
 
 			while (entry) {

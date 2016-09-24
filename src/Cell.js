@@ -286,8 +286,6 @@ var Cell = EventEmitter.extend({
 		this._fulfilled = false;
 		this._rejected = false;
 
-		this._ice = null;
-
 		this._changeEvent = null;
 		this._canCancelChange = true;
 
@@ -448,10 +446,6 @@ var Cell = EventEmitter.extend({
 	 * @typesign ();
 	 */
 	_activate: function _activate() {
-		if (this._ice) {
-			throw new TypeError('Cannot activate a frozen cell');
-		}
-
 		if (!this._pull || this._active || this._inited && !this._masters) {
 			return;
 		}
@@ -667,10 +661,6 @@ var Cell = EventEmitter.extend({
 	 * @typesign () -> *;
 	 */
 	_tryPull: function _tryPull() {
-		if (this._ice) {
-			throw new TypeError('Cannot pull a frozen cell');
-		}
-
 		if (this._currentlyPulling) {
 			throw new TypeError('Circular pulling detected');
 		}
@@ -745,7 +735,7 @@ var Cell = EventEmitter.extend({
 
 		if (!internal) {
 			if (currentCell) {
-				throw new TypeError('Cannot push while pulling');
+				throw new TypeError('Cannot push when pulling');
 			}
 
 			this._pushingIndex = ++pushingIndexCounter;
@@ -958,110 +948,6 @@ var Cell = EventEmitter.extend({
 		}
 
 		EventEmitter.prototype._logError.apply(this, msg);
-	},
-
-	/**
-	 * @typesign () -> boolean;
-	 */
-	isFrozen: function isFrozen() {
-		return !!this._ice;
-	},
-
-	/**
-	 * @typesign () -> cellx.Cell;
-	 */
-	freeze: function freeze() {
-		if (releasePlanned) {
-			release();
-		}
-
-		this._freeze();
-
-		return this;
-	},
-
-	/**
-	 * @typesign ();
-	 */
-	_freeze: function _freeze() {
-		this._ice = {
-			events: this.getEvents(),
-			value: this._value,
-			error: this._error,
-			slaves: this._slaves.slice()
-		};
-
-		var slaves = this._slaves;
-
-		for (var i = 0, l = slaves.length; i < l; i++) {
-			slaves[i]._freeze();
-		}
-
-		this.off();
-	},
-
-	/**
-	 * @typesign () -> cellx.Cell;
-	 */
-	unfreeze: function unfreeze() {
-		if (releasePlanned) {
-			release();
-		}
-
-		if (!this._ice) {
-			throw new TypeError('Cell was not frozen');
-		}
-
-		this._unfreeze();
-
-		return this;
-	},
-
-	/**
-	 * @typesign ();
-	 */
-	_unfreeze: function _unfreeze() {
-		var freezing = this._ice;
-		var events = freezing.events;
-
-		this._ice = null;
-
-		for (var type in events) {
-			var typedEvents = events[type];
-
-			for (var i = 0, l = typedEvents.length; i < l; i++) {
-				var evt = typedEvents[i];
-				this.on(type, evt.listener, evt.context);
-			}
-		}
-
-		if (freezing.value !== this._value) {
-			if (events.change) {
-				this._changeEvent = {
-					target: this,
-					type: 'change',
-					oldValue: freezing.value,
-					value: this._value,
-					prev: null
-				};
-				this._canCancelChange = true;
-
-				this._addToRelease();
-			}
-		} else if (freezing.error !== this._error) {
-			if (events.error) {
-				this._handleErrorEvent({
-					type: 'error',
-					error: this._error
-				});
-			}
-		}
-
-		var slaves = freezing.slaves;
-
-		for (var j = 0, m = slaves.length; j < m; j++) {
-			slaves[j]._unfreeze();
-		}
 	},
 
 	/**

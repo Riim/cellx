@@ -4,6 +4,7 @@ import ObservableCollectionMixin from './Collections/ObservableCollectionMixin';
 import ObservableMap from './Collections/ObservableMap';
 import ObservableList from './Collections/ObservableList';
 import Cell from './Cell';
+import autorun from './autorun';
 import { UID as KEY_UID, CELLS as KEY_CELLS } from './keys';
 import global from './JS/global';
 import { is, hasOwn } from './JS/Object';
@@ -15,6 +16,7 @@ import nextUID from './Utils/nextUID';
 import mixin from './Utils/mixin';
 import createClass from './Utils/createClass';
 import nextTick from './Utils/nextTick';
+import noop from './Utils/noop';
 
 ErrorLogger.setHandler(logError);
 
@@ -109,13 +111,15 @@ function cellx(value, opts) {
 	return cx;
 }
 
-cellx.KEY_UID = KEY_UID;
 cellx.ErrorLogger = ErrorLogger;
 cellx.EventEmitter = EventEmitter;
 cellx.ObservableCollectionMixin = ObservableCollectionMixin;
 cellx.ObservableMap = ObservableMap;
 cellx.ObservableList = ObservableList;
 cellx.Cell = Cell;
+cellx.autorun = autorun;
+cellx.KEY_UID = KEY_UID;
+cellx.KEY_CELLS = KEY_CELLS;
 
 /**
  * @typesign (
@@ -215,7 +219,8 @@ cellx.Utils = cellx.utils = {
 	nextUID: nextUID,
 	mixin: mixin,
 	createClass: createClass,
-	nextTick: nextTick
+	nextTick: nextTick,
+	noop: noop
 };
 
 cellx.cellx = cellx; // for destructuring

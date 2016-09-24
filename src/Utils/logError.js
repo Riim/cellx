@@ -1,7 +1,6 @@
 import global from '../JS/global';
 import { map } from '../JS/Array';
-
-function noop() {}
+import noop from './noop';
 
 /**
  * @typesign (...msg);

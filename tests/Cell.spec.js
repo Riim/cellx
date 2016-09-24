@@ -814,7 +814,7 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('#freeze(), #unfreeze()', function(done) {
+	it.skip('#freeze(), #unfreeze()', function(done) {
 		let a = new cellx.Cell(1, { debugKey: 'a' });
 		let b = new cellx.Cell(function() { return a.get() + 1; }, { debugKey: 'b', onChange: noop });
 		
@@ -848,7 +848,7 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('#freeze(), #unfreeze() (2)', function(done) {
+	it.skip('#freeze(), #unfreeze() (2)', function(done) {
 		let a = new cellx.Cell(1, { debugKey: 'a' });
 		let b = new cellx.Cell(function() { return a.get() + 1; }, { debugKey: 'b', onChange: noop });
 		
