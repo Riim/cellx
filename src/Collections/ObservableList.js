@@ -57,7 +57,7 @@ var ObservableList = EventEmitter.extend({
 		}
 
 		if (items) {
-			this._addRange(items instanceof ObservableList ? items._items : items);
+			this._addRange(items);
 		}
 	},
 
@@ -155,7 +155,7 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (index: int, values: Array) -> cellx.ObservableList;
+	 * @typesign (index: int, values: Array|cellx.ObservableList) -> cellx.ObservableList;
 	 */
 	setRange: function setRange(index, values) {
 		if (this.sorted) {
@@ -163,6 +163,10 @@ var ObservableList = EventEmitter.extend({
 		}
 
 		index = this._validateIndex(index);
+
+		if (values instanceof ObservableList) {
+			values = values._items;
+		}
 
 		var valueCount = values.length;
 
@@ -196,14 +200,14 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (item) -> cellx.ObservableList;
+	 * @typesign (value) -> cellx.ObservableList;
 	 */
-	add: function add(item) {
+	add: function add(value) {
 		if (this.sorted) {
-			this._placeItem(item);
+			this._insertValue(value);
 		} else {
-			this._registerValue(item);
-			this._items.push(item);
+			this._registerValue(value);
+			this._items.push(value);
 		}
 
 		this.length++;
@@ -214,11 +218,11 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (items: Array) -> cellx.ObservableList;
+	 * @typesign (values: Array|cellx.ObservableList) -> cellx.ObservableList;
 	 */
-	addRange: function addRange(items) {
-		if (items.length) {
-			this._addRange(items);
+	addRange: function addRange(values) {
+		if (values.length) {
+			this._addRange(values);
 			this.emit('change');
 		}
 
@@ -226,29 +230,33 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (items: Array);
+	 * @typesign (values: Array|cellx.ObservableList);
 	 */
-	_addRange: function _addRange(items) {
+	_addRange: function _addRange(values) {
+		if (values instanceof ObservableList) {
+			values = values._items;
+		}
+
 		if (this.sorted) {
-			for (var i = 0, l = items.length; i < l; i++) {
-				this._placeItem(items[i]);
+			for (var i = 0, l = values.length; i < l; i++) {
+				this._insertValue(values[i]);
 			}
 
-			this.length += items.length;
+			this.length += values.length;
 		} else {
-			for (var j = items.length; j;) {
-				this._registerValue(items[--j]);
+			for (var j = values.length; j;) {
+				this._registerValue(values[--j]);
 			}
 
-			this.length = push.apply(this._items, items);
+			this.length = push.apply(this._items, values);
 		}
 	},
 
 	/**
-	 * @typesign (item);
+	 * @typesign (value);
 	 */
-	_placeItem: function _placeItem(item) {
-		this._registerValue(item);
+	_insertValue: function _insertValue(value) {
+		this._registerValue(value);
 
 		var items = this._items;
 		var comparator = this.comparator;
@@ -258,28 +266,28 @@ var ObservableList = EventEmitter.extend({
 		while (low != high) {
 			var mid = (low + high) >> 1;
 
-			if (comparator(item, items[mid]) < 0) {
+			if (comparator(value, items[mid]) < 0) {
 				high = mid;
 			} else {
 				low = mid + 1;
 			}
 		}
 
-		items.splice(low, 0, item);
+		items.splice(low, 0, value);
 	},
 
 	/**
-	 * @typesign (index: int, item) -> cellx.ObservableList;
+	 * @typesign (index: int, value) -> cellx.ObservableList;
 	 */
-	insert: function insert(index, item) {
+	insert: function insert(index, value) {
 		if (this.sorted) {
 			throw new TypeError('Cannot insert to sorted list');
 		}
 
 		index = this._validateIndex(index, true);
 
-		this._registerValue(item);
-		this._items.splice(index, 0, item);
+		this._registerValue(value);
+		this._items.splice(index, 0, value);
 		this.length++;
 
 		this.emit('change');
@@ -288,27 +296,31 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (index: int, items: Array) -> cellx.ObservableList;
+	 * @typesign (index: int, values: Array|cellx.ObservableList) -> cellx.ObservableList;
 	 */
-	insertRange: function insertRange(index, items) {
+	insertRange: function insertRange(index, values) {
 		if (this.sorted) {
 			throw new TypeError('Cannot insert to sorted list');
 		}
 
 		index = this._validateIndex(index, true);
 
-		var itemCount = items.length;
+		if (values instanceof ObservableList) {
+			values = values._items;
+		}
 
-		if (!itemCount) {
+		var valueCount = values.length;
+
+		if (!valueCount) {
 			return this;
 		}
 
-		for (var i = itemCount; i;) {
-			this._registerValue(items[--i]);
+		for (var i = valueCount; i;) {
+			this._registerValue(values[--i]);
 		}
 
-		splice.apply(this._items, [index, 0].concat(items));
-		this.length += itemCount;
+		splice.apply(this._items, [index, 0].concat(values));
+		this.length += valueCount;
 
 		this.emit('change');
 
@@ -316,16 +328,16 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (item, fromIndex?: int) -> boolean;
+	 * @typesign (value, fromIndex?: int) -> boolean;
 	 */
-	remove: function remove(item, fromIndex) {
-		var index = this._items.indexOf(item, this._validateIndex(fromIndex));
+	remove: function remove(value, fromIndex) {
+		var index = this._items.indexOf(value, this._validateIndex(fromIndex));
 
 		if (index == -1) {
 			return false;
 		}
 
-		this._unregisterValue(item);
+		this._unregisterValue(value);
 		this._items.splice(index, 1);
 		this.length--;
 
@@ -335,15 +347,15 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (item, fromIndex?: int) -> boolean;
+	 * @typesign (value, fromIndex?: int) -> boolean;
 	 */
-	removeAll: function removeAll(item, fromIndex) {
+	removeAll: function removeAll(value, fromIndex) {
 		var index = this._validateIndex(fromIndex);
 		var items = this._items;
 		var changed = false;
 
-		while ((index = items.indexOf(item, index)) != -1) {
-			this._unregisterValue(item);
+		while ((index = items.indexOf(value, index)) != -1) {
+			this._unregisterValue(value);
 			items.splice(index, 1);
 			changed = true;
 		}
@@ -357,27 +369,31 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (items: Array, fromIndex?: int) -> boolean;
+	 * @typesign (values: Array|cellx.ObservableList, fromIndex?: int) -> boolean;
 	 */
-	removeEach: function removeEach(items, fromIndex) {
+	removeEach: function removeEach(values, fromIndex) {
 		fromIndex = this._validateIndex(fromIndex);
 
-		var listItems = this._items;
+		if (values instanceof ObservableList) {
+			values = values._items;
+		}
+
+		var items = this._items;
 		var changed = false;
 
-		for (var i = 0, l = items.length; i < l; i++) {
-			var item = items[i];
-			var index = listItems.indexOf(item, fromIndex);
+		for (var i = 0, l = values.length; i < l; i++) {
+			var value = values[i];
+			var index = items.indexOf(value, fromIndex);
 
 			if (index != -1) {
-				this._unregisterValue(item);
-				listItems.splice(index, 1);
+				this._unregisterValue(value);
+				items.splice(index, 1);
 				changed = true;
 			}
 		}
 
 		if (changed) {
-			this.length = listItems.length;
+			this.length = items.length;
 			this.emit('change');
 		}
 
@@ -385,26 +401,30 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (items: Array, fromIndex?: int) -> boolean;
+	 * @typesign (values: Array|cellx.ObservableList, fromIndex?: int) -> boolean;
 	 */
-	removeAllEach: function removeAllEach(items, fromIndex) {
+	removeAllEach: function removeAllEach(values, fromIndex) {
 		fromIndex = this._validateIndex(fromIndex);
 
-		var listItems = this._items;
+		if (values instanceof ObservableList) {
+			values = values._items;
+		}
+
+		var items = this._items;
 		var changed = false;
 
-		for (var i = 0, l = items.length; i < l; i++) {
-			var item = items[i];
+		for (var i = 0, l = values.length; i < l; i++) {
+			var value = values[i];
 
-			for (var index = fromIndex; (index = listItems.indexOf(item, index)) != -1;) {
-				this._unregisterValue(item);
-				listItems.splice(index, 1);
+			for (var index = fromIndex; (index = items.indexOf(value, index)) != -1;) {
+				this._unregisterValue(value);
+				items.splice(index, 1);
 				changed = true;
 			}
 		}
 
 		if (changed) {
-			this.length = listItems.length;
+			this.length = items.length;
 			this.emit('change');
 		}
 
@@ -415,13 +435,13 @@ var ObservableList = EventEmitter.extend({
 	 * @typesign (index: int) -> *;
 	 */
 	removeAt: function removeAt(index) {
-		var removedItem = this._items.splice(this._validateIndex(index), 1)[0];
-		this._unregisterValue(removedItem);
+		var value = this._items.splice(this._validateIndex(index), 1)[0];
+		this._unregisterValue(value);
 		this.length--;
 
 		this.emit('change');
 
-		return removedItem;
+		return value;
 	},
 
 	/**
@@ -445,12 +465,12 @@ var ObservableList = EventEmitter.extend({
 		for (var i = index + count; i > index;) {
 			this._unregisterValue(items[--i]);
 		}
-		var removedItems = items.splice(index, count);
+		var values = items.splice(index, count);
 		this.length -= count;
 
 		this.emit('change');
 
-		return removedItems;
+		return values;
 	},
 
 	/**

@@ -74,16 +74,18 @@ which contains initial values) by the formula A2=B1, B2=A1-C1, C2=B1+D1, D2=C1. 
 values of all first layer cells are changed and time needed to update all last layer cells is measured.
 Test results (in milliseconds) for different number of layers (for Google Chrome 53.0.2785.116 (64-bit)):
 
-| Number of computed layers ↓ \ Library → | cellx   | VanillaJS (naive)   | [Knockout](http://knockoutjs.com/)     | [jin-atom](https://github.com/nin-jin/pms-jin/) ([optimized for long chains](https://habrahabr.ru/post/308782/#comment_9781498)) | [Warp9](http://rystsov.info/warp9/) | [Reactor.js](https://github.com/fynyky/reactor.js) | [Reactive.js](https://github.com/mattbaker/Reactive.js) | [Kefir.js](https://rpominov.github.io/kefir/) | [MobX](https://mobxjs.github.io/mobx/)        | [Matreshka.js](https://matreshka.io/) |
-|-----------------------------------------|---------|---------------------|----------------------------------------|----------------------------------------------------------------------------------------------------------------------------------|-------------------------------------|----------------------------------------------------|---------------------------------------------------------|-----------------------------------------------|-----------------------------------------------|---------------------------------------|
-| 10                                      | <~1     | <~1                 | 10                                     | <~1 (2)                                                                                                                          | 2                                   | <~1                                                | <~1                                                     | 25                                            | <~1                                           | 11                                    |
-| 20                                      | <~1     | 15                  | 750, increases in subsequent runs      | <~1 (3)                                                                                                                          | 3                                   | <~1                                                | <~1                                                     | 2500                                          | <~1                                           | 1150                                  |
-| 30                                      | <~1     | 1750                | 67250, increases in subsequent runs    | <~1 (3)                                                                                                                          | 4                                   | 2                                                  | 2                                                       | >300000                                       | <~1                                           | 143000                                |
-| 50                                      | <~1     | >300000             | >300000                                | 2 (4)                                                                                                                            | 6                                   | 3                                                  | 3                                                       | >300000                                       | 2                                             | >300000                               |
-| 100                                     | <~1     | >300000             | >300000                                | 3 (6)                                                                                                                            | 10                                  | 5                                                  | 5                                                       | >300000                                       | 3                                             | >300000                               |
-| 1000                                    | 4       | >300000             | >300000                                | 35 (35)                                                                                                                          | 140                                 | 50                                                 | 140                                                     | >300000                                       | 40                                            | >300000                               |
-| 5000                                    | 20      | >300000             | >300000                                | 610 (200)                                                                                                                        | 900, increases in subsequent runs   | 230                                                | RangeError: Maximum call stack size exceeded            | >300000                                       | RangeError: Maximum call stack size exceeded  | >300000                               |
-| 25000                                   | 100     | >300000             | >300000                                | 12950 (1050)                                                                                                                     | 4200, increases in subsequent runs  | >300000                                            | RangeError: Maximum call stack size exceeded            | >300000                                       | RangeError: Maximum call stack size exceeded  | >300000                               |
+| Library ↓ \ Number of computed layers →                                                                                          | 10      | 20                                | 30                                  | 50      | 100     | 1000    | 5000                                         | 25000                                        |
+|----------------------------------------------------------------------------------------------------------------------------------|---------|-----------------------------------|-------------------------------------|---------|---------|---------|----------------------------------------------|----------------------------------------------|
+| cellx                                                                                                                            |     <~1 |                               <~1 |                                 <~1 |     <~1 |     <~1 |       4 |                                           20 |                                          100 |
+| VanillaJS (naive)                                                                                                                |     <~1 |                                15 |                                1750 | >300000 | >300000 | >300000 |                                      >300000 |                                      >300000 |
+| [Knockout](http://knockoutjs.com/)                                                                                               |      10 | 750, increases in subsequent runs | 67250, increases in subsequent runs | >300000 | >300000 | >300000 |                                      >300000 |                                      >300000 |
+| [jin-atom](https://github.com/nin-jin/pms-jin/) ([optimized for long chains](https://habrahabr.ru/post/308782/#comment_9781498)) | <~1 (2) |                           <~1 (3) |                             <~1 (3) |   2 (4) |   3 (6) | 35 (35) |                                    610 (200) |                                 12950 (1050) |
+| [Warp9](http://rystsov.info/warp9/)                                                                                              |       2 |                                 3 |                                   4 |       6 |      10 |     140 |            900, increases in subsequent runs |           4200, increases in subsequent runs |
+| [Reactor.js](https://github.com/fynyky/reactor.js)                                                                               |     <~1 |                               <~1 |                                   2 |       3 |       5 |      50 |                                          230 |                                      >300000 |
+| [Reactive.js](https://github.com/mattbaker/Reactive.js)                                                                          |     <~1 |                               <~1 |                                   2 |       3 |       5 |     140 | RangeError: Maximum call stack size exceeded | RangeError: Maximum call stack size exceeded |
+| [Kefir.js](https://rpominov.github.io/kefir/)                                                                                    |      25 |                              2500 |                             >300000 | >300000 | >300000 | >300000 |                                      >300000 |                                      >300000 |
+| [MobX](https://mobxjs.github.io/mobx/)                                                                                           |     <~1 |                               <~1 |                                 <~1 |       2 |       3 |      40 | RangeError: Maximum call stack size exceeded | RangeError: Maximum call stack size exceeded |
+| [Matreshka.js](https://matreshka.io/)                                                                                            |      11 |                              1150 |                              143000 | >300000 | >300000 | >300000 |                                      >300000 |                                      >300000 |
 
 Test sources can be found in the folder [perf](https://github.com/Riim/cellx/tree/master/perf).  
 Density of connections in real applications is usually lower than in the present test, that is,
@@ -732,39 +734,39 @@ Type signature: `(index: int, values: Array) -> cellx.ObservableList;`.
 
 ##### add
 
-Type signature: `(item) -> cellx.ObservableList;`.
+Type signature: `(value) -> cellx.ObservableList;`.
 
 ##### addRange
 
-Type signature: `(items: Array) -> cellx.ObservableList;`.
+Type signature: `(values: Array) -> cellx.ObservableList;`.
 
 ##### insert
 
-Type signature: `(index: int, item) -> cellx.ObservableList;`.
+Type signature: `(index: int, value) -> cellx.ObservableList;`.
 
 ##### insertRange
 
-Type signature: `(index: int, items: Array) -> cellx.ObservableList;`.
+Type signature: `(index: int, values: Array) -> cellx.ObservableList;`.
 
 ##### remove
 
-Type signature: `(item, fromIndex?: int) -> boolean;`.
+Type signature: `(value, fromIndex?: int) -> boolean;`.
 
-Removes the first occurrence of `item` in the list.
+Removes the first occurrence of `value` in the list.
 
 ##### removeAll
 
-Type signature: `(item, fromIndex?: int) -> boolean;`.
+Type signature: `(value, fromIndex?: int) -> boolean;`.
 
-It removes all occurrences of `item` list.
+It removes all occurrences of `value` list.
 
 ##### removeEach
 
-Type signature: `(items: Array, fromIndex?: int) -> boolean;`.
+Type signature: `(values: Array, fromIndex?: int) -> boolean;`.
 
 ##### removeAllEach
 
-Type signature: `(items: Array, fromIndex?: int) -> boolean;`.
+Type signature: `(values: Array, fromIndex?: int) -> boolean;`.
 
 ##### removeAt
 
@@ -836,8 +838,8 @@ Type signature: `() -> string;`.
 
 | File         | Original | Gzipped  |
 |--------------|----------|----------|
-| cellx.js     | 60.22 kB | 11.87 kB |
-| cellx.min.js | 25.85 kB | 7.28 kB  |
+| cellx.js     | 58.78 kB | 11.58 kB |
+| cellx.min.js | 24.96 kB |   7.1 kB |
 
 ## List of references
 
