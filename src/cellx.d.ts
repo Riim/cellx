@@ -13,8 +13,6 @@ declare namespace Cellx {
 		(a: T, b: T): number;
 	}
 
-	export let KEY_UID: symbol;
-
 	export namespace ErrorLogger {
 		function setHandler(handler: (...msg: Array<any>) => void): void;
 		function log(...msg: Array<any>): void;
@@ -194,6 +192,11 @@ declare namespace Cellx {
 		dispose(): Cell<T>;
 	}
 
+	export function autorun(cb: () => void, context?: any): () => void;
+
+	export let KEY_UID: symbol;
+	export let KEY_CELLS: symbol;
+
 	export function map<K, V>(entries?: ObservableMapEntries<K, V>, opts?: IObservableMapOptions): ObservableMap<K, V>;
 	export function map<K, V>(entries?: ObservableMapEntries<K, V>, adoptsItemChanges?: boolean): ObservableMap<K, V>;
 
@@ -220,7 +223,15 @@ declare namespace Cellx {
 
 	interface ICellx<T> {
 		(value?: T): T;
-		(method: string, arg1: any, arg2?: any, arg3?: any, arg4?: any, arg5?: any): ICellx<T> | Error | Promise<any> | Cell<T>;
+
+		(
+			method: string,
+			arg1: any,
+			arg2?: any,
+			arg3?: any,
+			arg4?: any,
+			arg5?: any
+		): ICellx<T> | Error | Promise<any> | Cell<T>;
 	}
 
 	export function cellx<T>(value?: T, opts?: ICellOptions<T>): ICellx<T>;
