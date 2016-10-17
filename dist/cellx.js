@@ -2452,17 +2452,28 @@ var Cell = EventEmitter.extend({
 	 * @typesign (value, internal: boolean) -> boolean;
 	 */
 	_push: function _push(value, internal) {
-		this._setError(null);
+		var oldValue = this._value;
 
 		if (!internal) {
 			if (currentCell) {
-				throw new TypeError('Cannot push when pulling');
+				if (is(value, oldValue)) {
+					this._setError(null);
+					return false;
+				}
+
+				var cell = this;
+
+				(afterReleaseCallbacks || (afterReleaseCallbacks = [])).push((function() {
+					cell._push(value);
+				}));
+
+				return true;
 			}
 
 			this._pushingIndex = ++pushingIndexCounter;
 		}
 
-		var oldValue = this._value;
+		this._setError(null);
 
 		if (is(value, oldValue)) {
 			return false;
