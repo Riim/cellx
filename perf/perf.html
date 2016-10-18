@@ -407,23 +407,23 @@ function testJinAtom(report, layerCount, done) {
 }
 
 function testMolAtom(report, layerCount, done) {
-	var $mol_atom = $.$mol_atom
+	var $mol_atom = $.$mol_atom;
 
 	var start = {
-		prop1: new $mol_atom( function(){ return 1 } ),
-		prop2: new $mol_atom( function(){ return 2 } ),
-		prop3: new $mol_atom( function(){ return 3 } ),
-		prop4: new $mol_atom( function(){ return 4 } )
+		prop1: new $mol_atom(function(){ return 1 }),
+		prop2: new $mol_atom(function(){ return 2 }),
+		prop3: new $mol_atom(function(){ return 3 }),
+		prop4: new $mol_atom(function(){ return 4 })
 	};
 	var layer = start;
 
 	for (var i = layerCount; i--;) {
 		layer = (function(m) {
 			var s = {
-				prop1: new $mol_atom( function() { return m.prop2.get(); } ),
-				prop2: new $mol_atom( function() { return m.prop1.get() - m.prop3.get(); } ),
-				prop3: new $mol_atom( function() { return m.prop2.get() + m.prop4.get(); } ),
-				prop4: new $mol_atom( function() { return m.prop3.get(); } )
+				prop1: new $mol_atom(function() { return m.prop2.get(); }),
+				prop2: new $mol_atom(function() { return m.prop1.get() - m.prop3.get(); }),
+				prop3: new $mol_atom(function() { return m.prop2.get() + m.prop4.get(); }),
+				prop4: new $mol_atom(function() { return m.prop3.get(); })
 			};
 
 			s.prop1.get();
