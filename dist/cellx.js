@@ -754,7 +754,7 @@ var ObservableCollectionMixin = EventEmitter.extend({
 		} else {
 			valueCounts.set(value, 1);
 
-			if (this.adoptsItemChanges && value instanceof EventEmitter) {
+			if (this.adoptsValueChanges && value instanceof EventEmitter) {
 				value.on('change', this._onItemChange, this);
 			}
 		}
@@ -772,7 +772,7 @@ var ObservableCollectionMixin = EventEmitter.extend({
 		} else {
 			valueCounts.delete(value);
 
-			if (this.adoptsItemChanges && value instanceof EventEmitter) {
+			if (this.adoptsValueChanges && value instanceof EventEmitter) {
 				value.off('change', this._onItemChange, this);
 			}
 		}
@@ -785,7 +785,7 @@ var ObservableCollectionMixin = EventEmitter.extend({
  * @implements {cellx.ObservableCollectionMixin}
  *
  * @typesign new ObservableMap(entries?: Object|cellx.ObservableMap|Map|Array<{ 0, 1 }>, opts?: {
- *     adoptsItemChanges?: boolean
+ *     adoptsValueChanges?: boolean
  * }) -> cellx.ObservableMap;
  */
 var ObservableMap = EventEmitter.extend({
@@ -802,7 +802,7 @@ var ObservableMap = EventEmitter.extend({
 		/**
 		 * @type {boolean}
 		 */
-		this.adoptsItemChanges = !opts || opts.adoptsItemChanges !== false;
+		this.adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
 
 		if (entries) {
 			var mapEntries = this._entries;
@@ -922,7 +922,7 @@ var ObservableMap = EventEmitter.extend({
 			return this;
 		}
 
-		if (this.adoptsItemChanges) {
+		if (this.adoptsValueChanges) {
 			this._valueCounts.forEach((function(value) {
 				if (value instanceof EventEmitter) {
 					value.off('change', this._onItemChange, this);
@@ -980,7 +980,7 @@ var ObservableMap = EventEmitter.extend({
 	 */
 	clone: function clone() {
 		return new this.constructor(this, {
-			adoptsItemChanges: this.adoptsItemChanges
+			adoptsValueChanges: this.adoptsValueChanges
 		});
 	}
 });
@@ -1007,7 +1007,7 @@ function defaultComparator(a, b) {
  * @implements {cellx.ObservableCollectionMixin}
  *
  * @typesign new ObservableList(items?: Array|cellx.ObservableList, opts?: {
- *     adoptsItemChanges?: boolean,
+ *     adoptsValueChanges?: boolean,
  *     comparator?: (a, b) -> int,
  *     sorted?: boolean
  * }) -> cellx.ObservableList;
@@ -1030,7 +1030,7 @@ var ObservableList = EventEmitter.extend({
 		/**
 		 * @type {boolean}
 		 */
-		this.adoptsItemChanges = opts.adoptsItemChanges !== false;
+		this.adoptsValueChanges = !!opts.adoptsValueChanges;
 
 		/**
 		 * @type {?(a, b) -> int}
@@ -1469,7 +1469,7 @@ var ObservableList = EventEmitter.extend({
 			return this;
 		}
 
-		if (this.adoptsItemChanges) {
+		if (this.adoptsValueChanges) {
 			this._valueCounts.forEach((function(value) {
 				if (value instanceof EventEmitter) {
 					value.off('change', this._onItemChange, this);
@@ -1591,7 +1591,7 @@ var ObservableList = EventEmitter.extend({
 	 */
 	clone: function clone() {
 		return new this.constructor(this, {
-			adoptsItemChanges: this.adoptsItemChanges,
+			adoptsValueChanges: this.adoptsValueChanges,
 			comparator: this.comparator,
 			sorted: this.sorted
 		});
@@ -2845,31 +2845,31 @@ cellx.KEY_CELLS = CELLS;
 /**
  * @typesign (
  *     entries?: Object|Array<{ 0, 1 }>|cellx.ObservableMap,
- *     opts?: { adoptsItemChanges?: boolean }
+ *     opts?: { adoptsValueChanges?: boolean }
  * ) -> cellx.ObservableMap;
  *
  * @typesign (
  *     entries?: Object|Array<{ 0, 1 }>|cellx.ObservableMap,
- *     adoptsItemChanges?: boolean
+ *     adoptsValueChanges?: boolean
  * ) -> cellx.ObservableMap;
  */
 function map$$1(entries, opts) {
-	return new ObservableMap(entries, typeof opts == 'boolean' ? { adoptsItemChanges: opts } : opts);
+	return new ObservableMap(entries, typeof opts == 'boolean' ? { adoptsValueChanges: opts } : opts);
 }
 
 cellx.map = map$$1;
 
 /**
  * @typesign (items?: Array|cellx.ObservableList, opts?: {
- *     adoptsItemChanges?: boolean,
+ *     adoptsValueChanges?: boolean,
  *     comparator?: (a, b) -> int,
  *     sorted?: boolean
  * }) -> cellx.ObservableList;
  *
- * @typesign (items?: Array|cellx.ObservableList, adoptsItemChanges?: boolean) -> cellx.ObservableList;
+ * @typesign (items?: Array|cellx.ObservableList, adoptsValueChanges?: boolean) -> cellx.ObservableList;
  */
 function list(items, opts) {
-	return new ObservableList(items, typeof opts == 'boolean' ? { adoptsItemChanges: opts } : opts);
+	return new ObservableList(items, typeof opts == 'boolean' ? { adoptsValueChanges: opts } : opts);
 }
 
 cellx.list = list;

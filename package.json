@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.6.55",
+  "version": "1.6.56",
   "description": "",
   "main": "dist/cellx.js",
   "typings": "src/cellx.d.ts",
@@ -47,6 +47,6 @@
     "rollup-plugin-eslint": "^3.0.0",
     "run-sequence": "^1.2.2",
     "sinon": "^1.17.6",
-    "yargs": "^6.2.0"
+    "yargs": "^6.3.0"
   }
 }

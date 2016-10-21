@@ -10,7 +10,7 @@ import Symbol from '../JS/Symbol';
  * @implements {cellx.ObservableCollectionMixin}
  *
  * @typesign new ObservableMap(entries?: Object|cellx.ObservableMap|Map|Array<{ 0, 1 }>, opts?: {
- *     adoptsItemChanges?: boolean
+ *     adoptsValueChanges?: boolean
  * }) -> cellx.ObservableMap;
  */
 var ObservableMap = EventEmitter.extend({
@@ -27,7 +27,7 @@ var ObservableMap = EventEmitter.extend({
 		/**
 		 * @type {boolean}
 		 */
-		this.adoptsItemChanges = !opts || opts.adoptsItemChanges !== false;
+		this.adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
 
 		if (entries) {
 			var mapEntries = this._entries;
@@ -147,7 +147,7 @@ var ObservableMap = EventEmitter.extend({
 			return this;
 		}
 
-		if (this.adoptsItemChanges) {
+		if (this.adoptsValueChanges) {
 			this._valueCounts.forEach(function(value) {
 				if (value instanceof EventEmitter) {
 					value.off('change', this._onItemChange, this);
@@ -205,7 +205,7 @@ var ObservableMap = EventEmitter.extend({
 	 */
 	clone: function clone() {
 		return new this.constructor(this, {
-			adoptsItemChanges: this.adoptsItemChanges
+			adoptsValueChanges: this.adoptsValueChanges
 		});
 	}
 });

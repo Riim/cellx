@@ -124,31 +124,31 @@ cellx.KEY_CELLS = KEY_CELLS;
 /**
  * @typesign (
  *     entries?: Object|Array<{ 0, 1 }>|cellx.ObservableMap,
- *     opts?: { adoptsItemChanges?: boolean }
+ *     opts?: { adoptsValueChanges?: boolean }
  * ) -> cellx.ObservableMap;
  *
  * @typesign (
  *     entries?: Object|Array<{ 0, 1 }>|cellx.ObservableMap,
- *     adoptsItemChanges?: boolean
+ *     adoptsValueChanges?: boolean
  * ) -> cellx.ObservableMap;
  */
 function map(entries, opts) {
-	return new ObservableMap(entries, typeof opts == 'boolean' ? { adoptsItemChanges: opts } : opts);
+	return new ObservableMap(entries, typeof opts == 'boolean' ? { adoptsValueChanges: opts } : opts);
 }
 
 cellx.map = map;
 
 /**
  * @typesign (items?: Array|cellx.ObservableList, opts?: {
- *     adoptsItemChanges?: boolean,
+ *     adoptsValueChanges?: boolean,
  *     comparator?: (a, b) -> int,
  *     sorted?: boolean
  * }) -> cellx.ObservableList;
  *
- * @typesign (items?: Array|cellx.ObservableList, adoptsItemChanges?: boolean) -> cellx.ObservableList;
+ * @typesign (items?: Array|cellx.ObservableList, adoptsValueChanges?: boolean) -> cellx.ObservableList;
  */
 function list(items, opts) {
-	return new ObservableList(items, typeof opts == 'boolean' ? { adoptsItemChanges: opts } : opts);
+	return new ObservableList(items, typeof opts == 'boolean' ? { adoptsValueChanges: opts } : opts);
 }
 
 cellx.list = list;

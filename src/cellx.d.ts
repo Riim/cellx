@@ -60,12 +60,12 @@ declare namespace Cellx {
 	type ObservableMapEntries<K, V> = Array<[K, V]> | { [key: string]: V } | Map<K, V> | ObservableMap<K, V>;
 
 	interface IObservableMapOptions {
-		adoptsItemChanges?: boolean;
+		adoptsValueChanges?: boolean;
 	}
 
 	export class ObservableMap<K, V> extends EventEmitter implements IObservableCollection {
 		size: number;
-		adoptsItemChanges: boolean;
+		adoptsValueChanges: boolean;
 
 		constructor(entries?: ObservableMapEntries<K, V>, opts?: IObservableMapOptions);
 
@@ -87,14 +87,14 @@ declare namespace Cellx {
 	type ObservableListItems<T> = Array<T> | ObservableList<T>;
 
 	interface IObservableListOptions<T> {
-		adoptsItemChanges?: boolean;
+		adoptsValueChanges?: boolean;
 		comparator?: IComparator<T>;
 		sorted?: boolean;
 	}
 
 	export class ObservableList<T> extends EventEmitter implements IObservableCollection {
 		length: number;
-		adoptsItemChanges: boolean;
+		adoptsValueChanges: boolean;
 		comparator: IComparator<T>;
 		sorted: boolean;
 
@@ -198,10 +198,10 @@ declare namespace Cellx {
 	export let KEY_CELLS: symbol;
 
 	export function map<K, V>(entries?: ObservableMapEntries<K, V>, opts?: IObservableMapOptions): ObservableMap<K, V>;
-	export function map<K, V>(entries?: ObservableMapEntries<K, V>, adoptsItemChanges?: boolean): ObservableMap<K, V>;
+	export function map<K, V>(entries?: ObservableMapEntries<K, V>, adoptsValueChanges?: boolean): ObservableMap<K, V>;
 
 	export function list<T>(items?: ObservableListItems<T>, opts?: IObservableListOptions<T>): ObservableList<T>;
-	export function list<T>(items?: ObservableListItems<T>, adoptsItemChanges?: boolean): ObservableList<T>;
+	export function list<T>(items?: ObservableListItems<T>, adoptsValueChanges?: boolean): ObservableList<T>;
 
 	export function defineObservableProperty(obj: EventEmitter, name: string, value: any): EventEmitter;
 	export function defineObservableProperties(obj: EventEmitter, props: { [key: string]: any }): EventEmitter;

@@ -19,7 +19,7 @@ function defaultComparator(a, b) {
  * @implements {cellx.ObservableCollectionMixin}
  *
  * @typesign new ObservableList(items?: Array|cellx.ObservableList, opts?: {
- *     adoptsItemChanges?: boolean,
+ *     adoptsValueChanges?: boolean,
  *     comparator?: (a, b) -> int,
  *     sorted?: boolean
  * }) -> cellx.ObservableList;
@@ -42,7 +42,7 @@ var ObservableList = EventEmitter.extend({
 		/**
 		 * @type {boolean}
 		 */
-		this.adoptsItemChanges = opts.adoptsItemChanges !== false;
+		this.adoptsValueChanges = !!opts.adoptsValueChanges;
 
 		/**
 		 * @type {?(a, b) -> int}
@@ -481,7 +481,7 @@ var ObservableList = EventEmitter.extend({
 			return this;
 		}
 
-		if (this.adoptsItemChanges) {
+		if (this.adoptsValueChanges) {
 			this._valueCounts.forEach(function(value) {
 				if (value instanceof EventEmitter) {
 					value.off('change', this._onItemChange, this);
@@ -603,7 +603,7 @@ var ObservableList = EventEmitter.extend({
 	 */
 	clone: function clone() {
 		return new this.constructor(this, {
-			adoptsItemChanges: this.adoptsItemChanges,
+			adoptsValueChanges: this.adoptsValueChanges,
 			comparator: this.comparator,
 			sorted: this.sorted
 		});

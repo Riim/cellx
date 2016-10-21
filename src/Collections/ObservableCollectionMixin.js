@@ -28,7 +28,7 @@ var ObservableCollectionMixin = EventEmitter.extend({
 		} else {
 			valueCounts.set(value, 1);
 
-			if (this.adoptsItemChanges && value instanceof EventEmitter) {
+			if (this.adoptsValueChanges && value instanceof EventEmitter) {
 				value.on('change', this._onItemChange, this);
 			}
 		}
@@ -46,7 +46,7 @@ var ObservableCollectionMixin = EventEmitter.extend({
 		} else {
 			valueCounts.delete(value);
 
-			if (this.adoptsItemChanges && value instanceof EventEmitter) {
+			if (this.adoptsValueChanges && value instanceof EventEmitter) {
 				value.off('change', this._onItemChange, this);
 			}
 		}
