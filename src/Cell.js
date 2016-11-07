@@ -1,9 +1,13 @@
+import ErrorLogger from './ErrorLogger';
 import EventEmitter from './EventEmitter';
 import { is } from './JS/Object';
 import { slice } from './JS/Array';
 import Map from './JS/Map';
 import Symbol from './JS/Symbol';
 import nextTick from './Utils/nextTick';
+import noop from './Utils/noop';
+
+var _handleEvent = EventEmitter.prototype._handleEvent;
 
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
 var KEY_INNER = EventEmitter.KEY_INNER;
@@ -11,15 +15,16 @@ var KEY_INNER = EventEmitter.KEY_INNER;
 var pushingIndexCounter = 0;
 
 var releasePlan = new Map();
-
 var releasePlanIndex = MAX_SAFE_INTEGER;
 var releasePlanToIndex = -1;
-
 var releasePlanned = false;
 var currentlyRelease = false;
 var currentCell = null;
 var error = { original: null };
 var releaseVersion = 1;
+
+var transactionLevel = 0;
+var pendingReactions = [];
 
 var afterReleaseCallbacks;
 
@@ -120,9 +125,7 @@ function release() {
 
 	releasePlanIndex = MAX_SAFE_INTEGER;
 	releasePlanToIndex = -1;
-
 	currentlyRelease = false;
-
 	releaseVersion++;
 
 	if (afterReleaseCallbacks) {
@@ -192,18 +195,91 @@ var Cell = EventEmitter.extend({
 		_nextTick: nextTick,
 
 		/**
+		 * @typesign (cb: (), context?) -> ();
+		 */
+		autorun: function autorun(cb, context) {
+			var cell = new Cell(function() {
+				if (transactionLevel) {
+					var index = pendingReactions.indexOf(this);
+
+					if (index > -1) {
+						pendingReactions.splice(index, 1);
+					}
+
+					pendingReactions.push(this);
+				} else {
+					cb.call(context);
+				}
+			}, { onChange: noop });
+
+			return function disposer() {
+				cell.dispose();
+			};
+		},
+
+		/**
 		 * @typesign ();
 		 */
-		forceRelease: function() {
+		forceRelease: function forceRelease() {
 			if (releasePlanned) {
 				release();
+			}
+		},
+
+		transaction: function transaction(cb) {
+			if (!transactionLevel++ && releasePlanned) {
+				release();
+			}
+
+			var success;
+
+			try {
+				cb();
+				success = true;
+			} catch (err) {
+				ErrorLogger.log(err);
+
+				for (var iterator = releasePlan.values(), step; !(step = iterator.next()).done;) {
+					var queue = step.value;
+
+					for (var i = queue.length; i;) {
+						var cell = queue[--i];
+						cell._value = cell._fixedValue;
+						cell._levelInRelease = -1;
+						cell._changeEvent = null;
+					}
+				}
+
+				releasePlan.clear();
+				releasePlanned = false;
+				pendingReactions.length = 0;
+
+				success = false;
+			}
+
+			if (!--transactionLevel && success) {
+				for (var i = 0, l = pendingReactions.length; i < l; i++) {
+					var reaction = pendingReactions[i];
+
+					if (reaction instanceof Cell) {
+						reaction.pull();
+					} else {
+						_handleEvent.call(reaction[1], reaction[0]);
+					}
+				}
+
+				pendingReactions.length = 0;
+
+				if (releasePlanned) {
+					release();
+				}
 			}
 		},
 
 		/**
 		 * @typesign (cb: Function);
 		 */
-		afterRelease: function(cb) {
+		afterRelease: function afterRelease(cb) {
 			(afterReleaseCallbacks || (afterReleaseCallbacks = [])).push(cb);
 		}
 	},
@@ -296,6 +372,14 @@ var Cell = EventEmitter.extend({
 		}
 		if (opts.onError) {
 			this.on('error', opts.onError);
+		}
+	},
+
+	_handleEvent: function __handleEvent(evt) {
+		if (transactionLevel) {
+			pendingReactions.push([evt, this]);
+		} else {
+			_handleEvent.call(this, evt);
 		}
 	},
 
@@ -767,7 +851,7 @@ var Cell = EventEmitter.extend({
 			value.on('change', this._onValueChange, this);
 		}
 
-		if (this._hasFollowers) {
+		if (this._hasFollowers || transactionLevel) {
 			if (this._changeEvent) {
 				if (is(value, this._fixedValue) && this._canCancelChange) {
 					this._levelInRelease = -1;
@@ -965,26 +1049,13 @@ var Cell = EventEmitter.extend({
 	 * @typesign () -> cellx.Cell;
 	 */
 	dispose: function dispose() {
-		if (releasePlanned) {
-			release();
-		}
-
-		this._dispose();
-
-		return this;
-	},
-
-	/**
-	 * @typesign ();
-	 */
-	_dispose: function _dispose() {
 		var slaves = this._slaves;
 
 		for (var i = 0, l = slaves.length; i < l; i++) {
-			slaves[i]._dispose();
+			slaves[i].dispose();
 		}
 
-		this.off();
+		return this.off();
 	}
 });
 

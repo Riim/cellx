@@ -10,9 +10,9 @@ var extend;
  *     Static?: Object,
  *     constructor?: Function,
  *     [key: string]
- * }, inheritStatic: boolean) -> Function;
+ * }) -> Function;
  */
-function createClass(description, inheritStatic) {
+function createClass(description) {
 	var parent;
 
 	if (description.Extends) {
@@ -53,11 +53,9 @@ function createClass(description, inheritStatic) {
 		delete description.Implements;
 	}
 
-	if (inheritStatic !== false) {
-		Object.keys(parent).forEach(function(name) {
-			Object.defineProperty(constr, name, Object.getOwnPropertyDescriptor(parent, name));
-		});
-	}
+	Object.keys(parent).forEach(function(name) {
+		Object.defineProperty(constr, name, Object.getOwnPropertyDescriptor(parent, name));
+	});
 
 	if (description.Static) {
 		mixin(constr, description.Static);

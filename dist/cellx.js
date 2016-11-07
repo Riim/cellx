@@ -83,9 +83,9 @@ var extend;
  *     Static?: Object,
  *     constructor?: Function,
  *     [key: string]
- * }, inheritStatic: boolean) -> Function;
+ * }) -> Function;
  */
-function createClass(description, inheritStatic) {
+function createClass(description) {
 	var parent;
 
 	if (description.Extends) {
@@ -126,11 +126,9 @@ function createClass(description, inheritStatic) {
 		delete description.Implements;
 	}
 
-	if (inheritStatic !== false) {
-		Object.keys(parent).forEach((function(name) {
-			Object.defineProperty(constr, name, Object.getOwnPropertyDescriptor(parent, name));
-		}));
-	}
+	Object.keys(parent).forEach((function(name) {
+		Object.defineProperty(constr, name, Object.getOwnPropertyDescriptor(parent, name));
+	}));
 
 	if (description.Static) {
 		mixin(constr, description.Static);
@@ -1726,21 +1724,26 @@ if (global$1.process && process.toString() == '[object process]' && process.next
 
 var nextTick$1 = nextTick;
 
+function noop() {}
+
+var _handleEvent$1 = EventEmitter.prototype._handleEvent;
+
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
 var KEY_INNER$1 = EventEmitter.KEY_INNER;
 
 var pushingIndexCounter = 0;
 
 var releasePlan = new Map$1();
-
 var releasePlanIndex = MAX_SAFE_INTEGER;
 var releasePlanToIndex = -1;
-
 var releasePlanned = false;
 var currentlyRelease = false;
 var currentCell = null;
 var error = { original: null };
 var releaseVersion = 1;
+
+var transactionLevel = 0;
+var pendingReactions = [];
 
 var afterReleaseCallbacks;
 
@@ -1841,9 +1844,7 @@ function release() {
 
 	releasePlanIndex = MAX_SAFE_INTEGER;
 	releasePlanToIndex = -1;
-
 	currentlyRelease = false;
-
 	releaseVersion++;
 
 	if (afterReleaseCallbacks) {
@@ -1913,18 +1914,91 @@ var Cell = EventEmitter.extend({
 		_nextTick: nextTick$1,
 
 		/**
+		 * @typesign (cb: (), context?) -> ();
+		 */
+		autorun: function autorun(cb, context) {
+			var cell = new Cell(function() {
+				if (transactionLevel) {
+					var index = pendingReactions.indexOf(this);
+
+					if (index > -1) {
+						pendingReactions.splice(index, 1);
+					}
+
+					pendingReactions.push(this);
+				} else {
+					cb.call(context);
+				}
+			}, { onChange: noop });
+
+			return function disposer() {
+				cell.dispose();
+			};
+		},
+
+		/**
 		 * @typesign ();
 		 */
-		forceRelease: function() {
+		forceRelease: function forceRelease() {
 			if (releasePlanned) {
 				release();
+			}
+		},
+
+		transaction: function transaction(cb) {
+			if (!transactionLevel++ && releasePlanned) {
+				release();
+			}
+
+			var success;
+
+			try {
+				cb();
+				success = true;
+			} catch (err) {
+				ErrorLogger.log(err);
+
+				for (var iterator = releasePlan.values(), step; !(step = iterator.next()).done;) {
+					var queue = step.value;
+
+					for (var i = queue.length; i;) {
+						var cell = queue[--i];
+						cell._value = cell._fixedValue;
+						cell._levelInRelease = -1;
+						cell._changeEvent = null;
+					}
+				}
+
+				releasePlan.clear();
+				releasePlanned = false;
+				pendingReactions.length = 0;
+
+				success = false;
+			}
+
+			if (!--transactionLevel && success) {
+				for (var i = 0, l = pendingReactions.length; i < l; i++) {
+					var reaction = pendingReactions[i];
+
+					if (reaction instanceof Cell) {
+						reaction.pull();
+					} else {
+						_handleEvent$1.call(reaction[1], reaction[0]);
+					}
+				}
+
+				pendingReactions.length = 0;
+
+				if (releasePlanned) {
+					release();
+				}
 			}
 		},
 
 		/**
 		 * @typesign (cb: Function);
 		 */
-		afterRelease: function(cb) {
+		afterRelease: function afterRelease(cb) {
 			(afterReleaseCallbacks || (afterReleaseCallbacks = [])).push(cb);
 		}
 	},
@@ -2017,6 +2091,14 @@ var Cell = EventEmitter.extend({
 		}
 		if (opts.onError) {
 			this.on('error', opts.onError);
+		}
+	},
+
+	_handleEvent: function __handleEvent(evt) {
+		if (transactionLevel) {
+			pendingReactions.push([evt, this]);
+		} else {
+			_handleEvent$1.call(this, evt);
 		}
 	},
 
@@ -2488,7 +2570,7 @@ var Cell = EventEmitter.extend({
 			value.on('change', this._onValueChange, this);
 		}
 
-		if (this._hasFollowers) {
+		if (this._hasFollowers || transactionLevel) {
 			if (this._changeEvent) {
 				if (is(value, this._fixedValue) && this._canCancelChange) {
 					this._levelInRelease = -1;
@@ -2686,47 +2768,19 @@ var Cell = EventEmitter.extend({
 	 * @typesign () -> cellx.Cell;
 	 */
 	dispose: function dispose() {
-		if (releasePlanned) {
-			release();
-		}
-
-		this._dispose();
-
-		return this;
-	},
-
-	/**
-	 * @typesign ();
-	 */
-	_dispose: function _dispose() {
 		var slaves = this._slaves;
 
 		for (var i = 0, l = slaves.length; i < l; i++) {
-			slaves[i]._dispose();
+			slaves[i].dispose();
 		}
 
-		this.off();
+		return this.off();
 	}
 });
 
 Cell.prototype[Symbol$1.iterator] = function() {
 	return this._value[Symbol$1.iterator]();
 };
-
-function noop() {}
-
-/**
- * @typesign (cb: (), context?) -> ();
- */
-function autorun(cb, context) {
-	var cell = new Cell(function() {
-		cb.call(context);
-	}, { onChange: noop });
-
-	return function disposer() {
-		cell.dispose();
-	};
-}
 
 /**
  * @typesign (...msg);
@@ -2838,7 +2892,8 @@ cellx.ObservableCollectionMixin = ObservableCollectionMixin;
 cellx.ObservableMap = ObservableMap;
 cellx.ObservableList = ObservableList;
 cellx.Cell = Cell;
-cellx.autorun = autorun;
+cellx.autorun = Cell.autorun;
+cellx.transact = cellx.transaction = Cell.transaction;
 cellx.KEY_UID = UID;
 cellx.KEY_CELLS = CELLS;
 

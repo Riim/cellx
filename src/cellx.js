@@ -4,7 +4,6 @@ import ObservableCollectionMixin from './Collections/ObservableCollectionMixin';
 import ObservableMap from './Collections/ObservableMap';
 import ObservableList from './Collections/ObservableList';
 import Cell from './Cell';
-import autorun from './autorun';
 import { UID as KEY_UID, CELLS as KEY_CELLS } from './keys';
 import global from './JS/global';
 import { is, hasOwn } from './JS/Object';
@@ -117,7 +116,8 @@ cellx.ObservableCollectionMixin = ObservableCollectionMixin;
 cellx.ObservableMap = ObservableMap;
 cellx.ObservableList = ObservableList;
 cellx.Cell = Cell;
-cellx.autorun = autorun;
+cellx.autorun = Cell.autorun;
+cellx.transact = cellx.transaction = Cell.transaction;
 cellx.KEY_UID = KEY_UID;
 cellx.KEY_CELLS = KEY_CELLS;
 
