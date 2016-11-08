@@ -110,6 +110,10 @@ function cellx(value, opts) {
 	return cx;
 }
 
+cellx.configure = function(config) {
+	Cell.configure(config);
+};
+
 cellx.ErrorLogger = ErrorLogger;
 cellx.EventEmitter = EventEmitter;
 cellx.ObservableCollectionMixin = ObservableCollectionMixin;

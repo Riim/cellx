@@ -146,6 +146,10 @@ function defaultPut(value, push) {
 	push(value);
 }
 
+var config = {
+	asynchronous: true
+};
+
 /**
  * @class cellx.Cell
  * @extends {cellx.EventEmitter}
@@ -193,6 +197,19 @@ function defaultPut(value, push) {
 var Cell = EventEmitter.extend({
 	Static: {
 		_nextTick: nextTick,
+
+		/**
+		 * @typesign (cnfg: { asynchronous?: boolean });
+		 */
+		configure: function configure(cnfg) {
+			if (cnfg.asynchronous !== void 0) {
+				if (releasePlanned) {
+					release();
+				}
+
+				config.asynchronous = cnfg.asynchronous;
+			}
+		},
 
 		/**
 		 * @typesign (cb: (), context?) -> ();
@@ -251,6 +268,8 @@ var Cell = EventEmitter.extend({
 				}
 
 				releasePlan.clear();
+				releasePlanIndex = MAX_SAFE_INTEGER;
+				releasePlanToIndex = -1;
 				releasePlanned = false;
 				pendingReactions.length = 0;
 
@@ -600,7 +619,12 @@ var Cell = EventEmitter.extend({
 
 		if (!releasePlanned && !currentlyRelease) {
 			releasePlanned = true;
-			Cell._nextTick(release);
+
+			if (!transactionLevel && !config.asynchronous) {
+				release();
+			} else {
+				Cell._nextTick(release);
+			}
 		}
 	},
 
