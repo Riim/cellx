@@ -157,6 +157,7 @@ declare namespace Cellx {
 	}
 
 	interface ICellEvent extends IEvent {
+		type: 'change' | 'error';
 		oldValue: any;
 		value: any;
 		prev: ICellEvent
