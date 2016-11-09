@@ -163,7 +163,11 @@ declare namespace Cellx {
 	}
 
 	export class Cell<T> extends EventEmitter {
-		static afterRelease(cb: Function): void;
+		static configure(config: { asynchronous?: boolean }): void;
+		static autorun(cb: () => void, context?: any): () => void;
+		static forceRelease(): void;
+		static transaction(cb: () => void): void;
+		static afterRelease(cb: () => void): void;
 
 		debugKey: string;
 		owner: Object;
@@ -186,7 +190,7 @@ declare namespace Cellx {
 		fail(err: any): Cell<T>;
 
 		isPending(): boolean;
-		then(onFulfilled?: (value: T) => any, onRejected?: (err: any) => any): Promise<any>;
+		then(onFulfilled: (value: T) => any, onRejected?: (err: any) => any): Promise<any>;
 		catch(onRejected: (err: any) => any): Promise<any>;
 
 		dispose(): Cell<T>;
@@ -224,14 +228,26 @@ declare namespace Cellx {
 	interface ICellx<T> {
 		(value?: T): T;
 
-		(
-			method: string,
-			arg1: any,
-			arg2?: any,
-			arg3?: any,
-			arg4?: any,
-			arg5?: any
-		): ICellx<T> | Error | Promise<any> | Cell<T>;
+		(method: 'bind', zeroArg: any): ICellx<T>;
+		(method: 'unwrap', zeroArg: any): Cell<T>;
+
+		(method: 'addChangeListener', listener: IEventEmitterListener, context?: any): Cell<T>;
+		(method: 'removeChangeListener', listener: IEventEmitterListener, context?: any): Cell<T>;
+		(method: 'addErrorListener', listener: IEventEmitterListener, context?: any): Cell<T>;
+		(method: 'removeErrorListener', listener: IEventEmitterListener, context?: any): Cell<T>;
+		(method: 'subscribe', listener: (err: Error | void, evt: ICellEvent) => boolean | void, context?: any): Cell<T>;
+		(method: 'unsubscribe', listener: (err: Error | void, evt: ICellEvent) => boolean | void, context?: any):
+			Cell<T>;
+
+		(method: 'pull', zeroArg: any): boolean;
+		(method: 'getError', zeroArg: any): Error;
+		(method: 'push', value: any): Cell<T>;
+		(method: 'fail', err: any): Cell<T>;
+
+		(method: 'isPending', zeroArg: any): boolean;
+		(method: 'then', onFulfilled: (value: T) => any, onRejected?: (err: any) => any): Promise<any>;
+		(method: 'catch', onRejected: (err: any) => any): Promise<any>;
+		(method: 'dispose', zeroArg: any): Cell<T>;
 	}
 
 	export function cellx<T>(value?: T, opts?: ICellOptions<T>): ICellx<T>;

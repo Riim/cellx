@@ -243,6 +243,9 @@ var Cell = EventEmitter.extend({
 			}
 		},
 
+		/**
+		 * @typesign (cb: ());
+		 */
 		transaction: function transaction(cb) {
 			if (!transactionLevel++ && releasePlanned) {
 				release();
@@ -296,7 +299,7 @@ var Cell = EventEmitter.extend({
 		},
 
 		/**
-		 * @typesign (cb: Function);
+		 * @typesign (cb: ());
 		 */
 		afterRelease: function afterRelease(cb) {
 			(afterReleaseCallbacks || (afterReleaseCallbacks = [])).push(cb);
@@ -1013,7 +1016,7 @@ var Cell = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (onFulfilled?: (value) -> *, onRejected?: (err) -> *) -> Promise;
+	 * @typesign (onFulfilled: ?(value) -> *, onRejected?: (err) -> *) -> Promise;
 	 */
 	then: function then(onFulfilled, onRejected) {
 		if (releasePlanned) {
