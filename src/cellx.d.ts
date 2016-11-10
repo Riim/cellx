@@ -156,12 +156,19 @@ declare namespace Cellx {
 		onError?: IEventEmitterListener;
 	}
 
-	interface ICellEvent extends IEvent {
-		type: 'change' | 'error';
+	interface ICellChangeEvent extends IEvent {
+		type: 'change';
 		oldValue: any;
 		value: any;
-		prev: ICellEvent
+		prev: ICellEvent;
 	}
+
+	interface ICellErrorEvent extends IEvent {
+		type: 'error';
+		error: any;
+	}
+
+	type ICellEvent = ICellChangeEvent | ICellErrorEvent;
 
 	export class Cell<T> extends EventEmitter {
 		static configure(config: { asynchronous?: boolean }): void;

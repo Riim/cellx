@@ -689,6 +689,20 @@ describe('Cell', function() {
 			}]);
 	});
 
+	it('[options.reap]', function() {
+		let aReapSpy = sinon.spy();
+		let a = new cellx.Cell(() => Math.random(), { debugKey: 'a', reap: aReapSpy });
+		let b = new cellx.Cell(() => a.get() + 1, { debugKey: 'b' });
+
+		let listener = function() {};
+
+		b.on('change', listener);
+		b.off('change', listener);
+
+		expect(aReapSpy.calledOnce)
+			.to.be.ok;
+	});
+
 	it('#then()', function(done) {
 		let a = new cellx.Cell(function(push) {
 			setTimeout(function() {

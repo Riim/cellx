@@ -64,7 +64,7 @@ if (!Map) {
 			return this;
 		},
 
-		delete: function _delete(key) {
+		delete: function delete_(key) {
 			var keyStamp = this._getValueStamp(key);
 			var entry = this._entries[keyStamp];
 

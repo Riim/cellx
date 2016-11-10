@@ -224,7 +224,7 @@ if (!Map) {
 			return this;
 		},
 
-		delete: function _delete(key) {
+		delete: function delete_(key) {
 			var keyStamp = this._getValueStamp(key);
 			var entry = this._entries[keyStamp];
 
@@ -888,7 +888,7 @@ var ObservableMap = EventEmitter.extend({
 	/**
 	 * @typesign (key) -> boolean;
 	 */
-	delete: function _delete(key) {
+	delete: function delete_(key) {
 		var entries = this._entries;
 
 		if (!entries.has(key)) {
@@ -1726,7 +1726,7 @@ var nextTick$1 = nextTick;
 
 function noop() {}
 
-var _handleEvent$1 = EventEmitter.prototype._handleEvent;
+var EventEmitterProto = EventEmitter.prototype;
 
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
 var KEY_INNER$1 = EventEmitter.KEY_INNER;
@@ -2005,7 +2005,7 @@ var Cell = EventEmitter.extend({
 					if (reaction instanceof Cell) {
 						reaction.pull();
 					} else {
-						_handleEvent$1.call(reaction[1], reaction[0]);
+						EventEmitterProto._handleEvent.call(reaction[1], reaction[0]);
 					}
 				}
 
@@ -2116,11 +2116,11 @@ var Cell = EventEmitter.extend({
 		}
 	},
 
-	_handleEvent: function __handleEvent(evt) {
+	_handleEvent: function _handleEvent(evt) {
 		if (transactionLevel) {
 			pendingReactions.push([evt, this]);
 		} else {
-			_handleEvent$1.call(this, evt);
+			EventEmitterProto._handleEvent.call(this, evt);
 		}
 	},
 
@@ -2135,9 +2135,9 @@ var Cell = EventEmitter.extend({
 		this._activate();
 
 		if (typeof type == 'object') {
-			EventEmitter.prototype.on.call(this, type, arguments.length >= 2 ? listener : this.owner);
+			EventEmitterProto.on.call(this, type, arguments.length >= 2 ? listener : this.owner);
 		} else {
-			EventEmitter.prototype.on.call(this, type, listener, arguments.length >= 3 ? context : this.owner);
+			EventEmitterProto.on.call(this, type, listener, arguments.length >= 3 ? context : this.owner);
 		}
 
 		this._hasFollowers = true;
@@ -2156,17 +2156,22 @@ var Cell = EventEmitter.extend({
 
 		if (argCount) {
 			if (typeof type == 'object') {
-				EventEmitter.prototype.off.call(this, type, argCount >= 2 ? listener : this.owner);
+				EventEmitterProto.off.call(this, type, argCount >= 2 ? listener : this.owner);
 			} else {
-				EventEmitter.prototype.off.call(this, type, listener, argCount >= 3 ? context : this.owner);
+				EventEmitterProto.off.call(this, type, listener, argCount >= 3 ? context : this.owner);
 			}
 		} else {
-			EventEmitter.prototype.off.call(this);
+			EventEmitterProto.off.call(this);
 		}
 
-		if (!this._slaves.length && !this._events.has('change') && !this._events.has('error')) {
+		if (!this._slaves.length && !this._events.has('change') && !this._events.has('error') && this._hasFollowers) {
 			this._hasFollowers = false;
+
 			this._deactivate();
+
+			if (this._reap) {
+				this._reap.call(this.owner);
+			}
 		}
 
 		return this;
@@ -2263,7 +2268,12 @@ var Cell = EventEmitter.extend({
 
 		if (!this._slaves.length && !this._events.has('change') && !this._events.has('error')) {
 			this._hasFollowers = false;
+
 			this._deactivate();
+
+			if (this._reap) {
+				this._reap.call(this.owner);
+			}
 		}
 	},
 
@@ -2310,10 +2320,6 @@ var Cell = EventEmitter.extend({
 		}
 
 		this._active = false;
-
-		if (this._reap) {
-			this._reap.call(this.owner);
-		}
 	},
 
 	/**
@@ -2774,7 +2780,7 @@ var Cell = EventEmitter.extend({
 	/**
 	 * @typesign (onRejected: (err) -> *) -> Promise;
 	 */
-	catch: function _catch(onRejected) {
+	catch: function catch_(onRejected) {
 		return this.then(null, onRejected);
 	},
 
@@ -2788,7 +2794,7 @@ var Cell = EventEmitter.extend({
 			msg.unshift('[' + this.debugKey + ']');
 		}
 
-		EventEmitter.prototype._logError.apply(this, msg);
+		EventEmitterProto._logError.apply(this, msg);
 	},
 
 	/**

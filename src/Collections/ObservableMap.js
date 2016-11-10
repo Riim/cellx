@@ -115,7 +115,7 @@ var ObservableMap = EventEmitter.extend({
 	/**
 	 * @typesign (key) -> boolean;
 	 */
-	delete: function _delete(key) {
+	delete: function delete_(key) {
 		var entries = this._entries;
 
 		if (!entries.has(key)) {
