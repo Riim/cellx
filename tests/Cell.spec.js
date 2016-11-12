@@ -950,4 +950,26 @@ describe('Cell', function() {
 			.to.eql(5);
 	});
 
+	it('должна минимизировать число лишних вызовов pull (3)', function(done) {
+		let a = new cellx.Cell({ x: 1 });
+		let b = new cellx.Cell(() => a.get(), { onChange(evt) {
+			if (evt.value) {
+				c = new cellx.Cell(() => a.get().x);
+			} else {
+				c.dispose();
+			}
+		} });
+		let cPullSpy = sinon.spy(() => a.get().x);
+		let c = new cellx.Cell(cPullSpy, { onChange: noop });
+
+		a.set(null);
+
+		setTimeout(function() {
+			expect(cPullSpy.calledOnce)
+				.to.be.ok;
+
+			done();
+		}, 1);
+	});
+
 });

@@ -602,6 +602,10 @@ var Cell = EventEmitter.extend({
 			masters[--i]._unregisterSlave(this);
 		}
 
+		if (this._levelInRelease != -1 && !this._changeEvent) {
+			this._levelInRelease = -1;
+		}
+
 		this._active = false;
 	},
 
