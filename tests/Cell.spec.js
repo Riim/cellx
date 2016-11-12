@@ -926,4 +926,28 @@ describe('Cell', function() {
 			.to.eql([1, 2, 3]);
 	});
 
+	it('должна позволять запись даже если является вычисляемой', function() {
+		let a = new cellx.Cell(1);
+		let b = new cellx.Cell(() => a.get() + 1, { onChange: noop });
+
+		b.set(5);
+
+		expect(a.get())
+			.to.eql(1);
+		expect(b.get())
+			.to.eql(5);
+	});
+
+	it('должна позволять запись даже если является вычисляемой 2', function() {
+		let a = new cellx.Cell(1);
+		let b = new cellx.Cell(() => a.get() + 1);
+
+		b.set(5);
+
+		expect(a.get())
+			.to.eql(1);
+		expect(b.get())
+			.to.eql(5);
+	});
+
 });

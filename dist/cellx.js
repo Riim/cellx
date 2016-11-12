@@ -2638,6 +2638,7 @@ var Cell = EventEmitter.extend({
 			}
 
 			this._fixedValue = value;
+			this._version = releaseVersion + currentlyRelease;
 		}
 
 		if (!internal && this._pending) {
