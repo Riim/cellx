@@ -24,11 +24,13 @@ ErrorLogger.setHandler(logError);
  *     debugKey?: string,
  *     owner?: Object,
  *     validate?: (value, oldValue),
+ *     put?: (value, push: (value), fail: (err), oldValue),
+ *     reap?: (),
  *     onChange?: (evt: cellx~Event) -> ?boolean,
  *     onError?: (evt: cellx~Event) -> ?boolean
  * }) -> cellx;
  *
- * @typesign (pull: (push: (value), fail: (err), oldValue) -> *, opts?: {
+ * @typesign (pull: (push: (value), fail: (err), next) -> *, opts?: {
  *     debugKey?: string
  *     owner?: Object,
  *     validate?: (value, oldValue),

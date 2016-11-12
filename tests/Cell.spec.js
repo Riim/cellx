@@ -757,19 +757,19 @@ describe('Cell', function() {
 		let cChangeSpy = sinon.spy();
 		let loadingChangeSpy = sinon.spy();
 
-		let a = new cellx.Cell(function(push, fail, oldValue) {
+		let a = new cellx.Cell(function(push, fail, next) {
 			setTimeout(function() {
-				push(Math.random())
+				push(Math.random());
 			}, 10);
 
-			return oldValue || 0;
+			return next || 0;
 		});
-		let b = new cellx.Cell(function(push, fail, oldValue) {
+		let b = new cellx.Cell(function(push, fail, next) {
 			setTimeout(function() {
-				push(Math.random())
+				push(Math.random());
 			}, 50);
 
-			return oldValue || 0;
+			return next || 0;
 		});
 
 		let c = new cellx.Cell(function() {

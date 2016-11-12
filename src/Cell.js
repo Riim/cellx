@@ -178,11 +178,13 @@ var config = {
  *     get?: (value) -> *,
  *     validate?: (value, oldValue),
  *     merge: (value, oldValue) -> *,
+ *     put?: (value, push: (value), fail: (err), oldValue),
+ *     reap?: (),
  *     onChange?: (evt: cellx~Event) -> ?boolean,
  *     onError?: (evt: cellx~Event) -> ?boolean
  * }) -> cellx.Cell;
  *
- * @typesign new Cell(pull: (push: (value), fail: (err), oldValue) -> *, opts?: {
+ * @typesign new Cell(pull: (push: (value), fail: (err), next) -> *, opts?: {
  *     debugKey?: string,
  *     owner?: Object,
  *     get?: (value) -> *,
@@ -380,7 +382,7 @@ var Cell = EventEmitter.extend({
 		this._levelInRelease = -1;
 
 		this._pending = false;
-		this._pendingCell = null;
+		this._pendingStatusCell = null;
 		this._fulfilled = false;
 		this._rejected = false;
 
@@ -728,37 +730,38 @@ var Cell = EventEmitter.extend({
 		var oldLevel;
 
 		if (hasFollowers) {
-			oldMasters = this._masters || [];
+			oldMasters = this._masters;
 			oldLevel = this._level;
 		}
 
 		var value = this._tryPull();
 
 		if (hasFollowers) {
-			var masters = this._masters || [];
-			var masterCount = masters.length;
-			var notFoundMasterCount = 0;
+			var masters = this._masters;
+			var newMasterCount = 0;
 
-			for (var i = masterCount; i;) {
-				var master = masters[--i];
+			if (masters) {
+				for (var i = masters.length; i;) {
+					var master = masters[--i];
 
-				if (oldMasters.indexOf(master) == -1) {
-					master._registerSlave(this);
-					notFoundMasterCount++;
+					if (!oldMasters || oldMasters.indexOf(master) == -1) {
+						master._registerSlave(this);
+						newMasterCount++;
+					}
 				}
 			}
 
-			if (masterCount - notFoundMasterCount < oldMasters.length) {
+			if (oldMasters && (masters ? masters.length - newMasterCount : 0) < oldMasters.length) {
 				for (var j = oldMasters.length; j;) {
 					var oldMaster = oldMasters[--j];
 
-					if (masters.indexOf(oldMaster) == -1) {
+					if (!masters || masters.indexOf(oldMaster) == -1) {
 						oldMaster._unregisterSlave(this);
 					}
 				}
 			}
 
-			this._active = !!masterCount;
+			this._active = !!(masters && masters.length);
 
 			if (currentlyRelease && this._level > oldLevel) {
 				this._addToRelease();
@@ -785,8 +788,8 @@ var Cell = EventEmitter.extend({
 		this._pending = true;
 		this._fulfilled = this._rejected = false;
 
-		if (this._pendingCell) {
-			this._pendingCell.set(true);
+		if (this._pendingStatusCell) {
+			this._pendingStatusCell.set(true);
 		}
 
 		var prevCell = currentCell;
@@ -922,8 +925,8 @@ var Cell = EventEmitter.extend({
 			this._pending = false;
 			this._fulfilled = true;
 
-			if (this._pendingCell) {
-				this._pendingCell.set(false);
+			if (this._pendingStatusCell) {
+				this._pendingStatusCell.set(false);
 			}
 
 			if (this._onFulfilled) {
@@ -956,8 +959,8 @@ var Cell = EventEmitter.extend({
 			this._pending = false;
 			this._rejected = true;
 
-			if (this._pendingCell) {
-				this._pendingCell.set(false);
+			if (this._pendingStatusCell) {
+				this._pendingStatusCell.set(false);
 			}
 
 			if (this._onRejected) {
@@ -1018,7 +1021,9 @@ var Cell = EventEmitter.extend({
 	 * @typesign () -> boolean;
 	 */
 	isPending: function isPending() {
-		return currentCell ? (this._pendingCell || (this._pendingCell = new Cell(this._pending))).get() : this._pending;
+		return currentCell ?
+			(this._pendingStatusCell || (this._pendingStatusCell = new Cell(this._pending))).get() :
+			this._pending;
 	},
 
 	/**

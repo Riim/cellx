@@ -141,7 +141,7 @@ declare namespace Cellx {
 	}
 
 	interface ICellPull {
-		(push: (value: any) => void, fail: (err: any) => void, oldValue: any): any;
+		(push: (value: any) => void, fail: (err: any) => void, next: any): any;
 	}
 
 	interface ICellOptions<T> {
