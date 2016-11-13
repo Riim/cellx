@@ -481,43 +481,6 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('должна минимизировать число лишних вызовов pull (2)', function(done) {
-		let a = new cellx.Cell(1, { debugKey: 'a' });
-		let b = new cellx.Cell(function() { return a.get() + 1; }, { debugKey: 'b', onChange: noop });
-
-		let c = new cellx.Cell(function() {
-			if (a.get() == 2) {
-				return b.get() + 1;
-			}
-
-			return a.get() + 1;
-		}, {
-			debugKey: 'c',
-			onChange: function() {
-				d.set(10);
-			}
-		});
-		let d = new cellx.Cell(function() { return c.get() + 1; }, { debugKey: 'd' });
-		let e = new cellx.Cell(function() { return c.get() + 1; }, { debugKey: 'e' });
-
-		let fPullSpy = sinon.spy(function() {
-			return d.get() + e.get();
-		});
-
-		let f = new cellx.Cell(fPullSpy, { debugKey: 'f', onChange: noop });
-
-		fPullSpy.reset();
-
-		a.set(2);
-
-		setTimeout(function() {
-			expect(fPullSpy.calledOnce)
-				.to.be.ok;
-
-			done();
-		}, 1);
-	});
-
 	it('должна учитывать последний set как более приоритетный', function() {
 		let a = new cellx.Cell(1);
 		let b = new cellx.Cell(function() { return a.get() + 1; });

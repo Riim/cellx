@@ -100,7 +100,7 @@ function release() {
 					slave._level = level + 1;
 				}
 
-				if (pushingIndex > slave._pushingIndex) {
+				if (pushingIndex >= slave._pushingIndex) {
 					slave._pushingIndex = pushingIndex;
 					slave._changeEvent = null;
 
@@ -382,6 +382,7 @@ var Cell = EventEmitter.extend({
 		this._levelInRelease = -1;
 
 		this._pending = false;
+		this._selfPendingStatusCell = null;
 		this._pendingStatusCell = null;
 		this._fulfilled = false;
 		this._rejected = false;
@@ -572,9 +573,9 @@ var Cell = EventEmitter.extend({
 			var value = this._tryPull();
 
 			if (value === error) {
-				this._fail(error.original, true);
+				this._fail(error.original, false);
 			} else {
-				this._push(value, true);
+				this._push(value, false);
 			}
 		}
 
@@ -689,9 +690,9 @@ var Cell = EventEmitter.extend({
 			}
 
 			if (value === error) {
-				this._fail(error.original, true);
+				this._fail(error.original, false);
 			} else {
-				this._push(value, true);
+				this._push(value, false);
 			}
 		}
 
@@ -774,11 +775,11 @@ var Cell = EventEmitter.extend({
 		}
 
 		if (value === error) {
-			this._fail(error.original, currentlyRelease);
+			this._fail(error.original, false);
 			return true;
 		}
 
-		return this._push(value, currentlyRelease);
+		return this._push(value, false);
 	},
 
 	/**
@@ -792,8 +793,8 @@ var Cell = EventEmitter.extend({
 		this._pending = true;
 		this._fulfilled = this._rejected = false;
 
-		if (this._pendingStatusCell) {
-			this._pendingStatusCell.set(true);
+		if (this._selfPendingStatusCell) {
+			this._selfPendingStatusCell.set(true);
 		}
 
 		var prevCell = currentCell;
@@ -847,27 +848,28 @@ var Cell = EventEmitter.extend({
 	 * @typesign (value) -> cellx.Cell;
 	 */
 	push: function push(value) {
-		this._push(value, false);
+		this._push(value, true);
 		return this;
 	},
 
 	/**
-	 * @typesign (value, internal: boolean) -> boolean;
+	 * @typesign (value, external: boolean) -> boolean;
 	 */
-	_push: function _push(value, internal) {
+	_push: function _push(value, external) {
 		var oldValue = this._value;
 
-		if (!internal) {
-			if (currentCell) {
+		if (external) {
+			if (currentlyRelease) {
 				if (is(value, oldValue)) {
 					this._setError(null);
+					this._fulfill(value);
 					return false;
 				}
 
 				var cell = this;
 
 				(afterReleaseCallbacks || (afterReleaseCallbacks = [])).push(function() {
-					cell._push(value);
+					cell._push(value, true);
 				});
 
 				return true;
@@ -879,6 +881,10 @@ var Cell = EventEmitter.extend({
 		this._setError(null);
 
 		if (is(value, oldValue)) {
+			if (external) {
+				this._fulfill(value);
+			}
+
 			return false;
 		}
 
@@ -918,7 +924,7 @@ var Cell = EventEmitter.extend({
 				this._addToRelease();
 			}
 		} else {
-			if (!currentlyRelease && !internal) {
+			if (!currentlyRelease && external) {
 				releaseVersion++;
 			}
 
@@ -926,57 +932,73 @@ var Cell = EventEmitter.extend({
 			this._version = releaseVersion + currentlyRelease;
 		}
 
-		if (!internal && this._pending) {
-			this._pending = false;
-			this._fulfilled = true;
-
-			if (this._pendingStatusCell) {
-				this._pendingStatusCell.set(false);
-			}
-
-			if (this._onFulfilled) {
-				this._onFulfilled(value);
-			}
+		if (external) {
+			this._fulfill(value);
 		}
 
 		return true;
+	},
+
+	_fulfill: function _fulfill(value) {
+		if (!this._pending) {
+			return;
+		}
+
+		this._pending = false;
+		this._fulfilled = true;
+
+		if (this._selfPendingStatusCell) {
+			this._selfPendingStatusCell.set(false);
+		}
+
+		if (this._onFulfilled) {
+			this._onFulfilled(value);
+		}
 	},
 
 	/**
 	 * @typesign (err) -> cellx.Cell;
 	 */
 	fail: function fail(err) {
-		this._fail(err, false);
+		this._fail(err, true);
 		return this;
 	},
 
 	/**
-	 * @typesign (err, internal: boolean);
+	 * @typesign (err, external: boolean);
 	 */
-	_fail: function _fail(err, internal) {
+	_fail: function _fail(err, external) {
 		this._logError(err);
 
 		if (!(err instanceof Error)) {
 			err = new Error(String(err));
 		}
 
-		if (!internal && this._pending) {
-			this._pending = false;
-			this._rejected = true;
-
-			if (this._pendingStatusCell) {
-				this._pendingStatusCell.set(false);
-			}
-
-			if (this._onRejected) {
-				this._onRejected(err);
-			}
+		if (external) {
+			this._reject(err);
 		}
 
 		this._handleErrorEvent({
 			type: 'error',
 			error: err
 		});
+	},
+
+	_reject: function _reject(err) {
+		if (!this._pending) {
+			return;
+		}
+
+		this._pending = false;
+		this._rejected = true;
+
+		if (this._selfPendingStatusCell) {
+			this._selfPendingStatusCell.set(false);
+		}
+
+		if (this._onRejected) {
+			this._onRejected(err);
+		}
 	},
 
 	/**
@@ -1026,9 +1048,36 @@ var Cell = EventEmitter.extend({
 	 * @typesign () -> boolean;
 	 */
 	isPending: function isPending() {
-		return currentCell ?
-			(this._pendingStatusCell || (this._pendingStatusCell = new Cell(this._pending))).get() :
-			this._pending;
+		if (!this._selfPendingStatusCell) {
+			var debugKey = this.debugKey;
+			var selfPendingStatusCell = this._selfPendingStatusCell = new Cell(
+				this._pending,
+				debugKey ? { debugKey: debugKey + '._selfPendingStatusCell' } : null
+			);
+			var cell = this;
+
+			this._pendingStatusCell = new Cell(function() {
+				if (selfPendingStatusCell.get()) {
+					return true;
+				}
+
+				cell.get();
+
+				var masters = cell._masters;
+
+				if (masters) {
+					for (var i = masters.length; i;) {
+						if (masters[--i].isPending()) {
+							return true;
+						}
+					}
+				}
+
+				return false;
+			}, debugKey ? { debugKey: debugKey + '._pendingStatusCell' } : null);
+		}
+
+		return this._pendingStatusCell.get();
 	},
 
 	/**
