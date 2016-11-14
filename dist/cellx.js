@@ -2292,9 +2292,9 @@ var Cell = EventEmitter.extend({
 			var value = this._tryPull();
 
 			if (value === error) {
-				this._fail(error.original, false);
+				this._fail(error.original, false, false);
 			} else {
-				this._push(value, false);
+				this._push(value, false, false);
 			}
 		}
 
@@ -2409,9 +2409,9 @@ var Cell = EventEmitter.extend({
 			}
 
 			if (value === error) {
-				this._fail(error.original, false);
+				this._fail(error.original, false, false);
 			} else {
-				this._push(value, false);
+				this._push(value, false, false);
 			}
 		}
 
@@ -2494,11 +2494,11 @@ var Cell = EventEmitter.extend({
 		}
 
 		if (value === error) {
-			this._fail(error.original, false);
+			this._fail(error.original, false, true);
 			return true;
 		}
 
-		return this._push(value, false);
+		return this._push(value, false, true);
 	},
 
 	/**
@@ -2567,33 +2567,33 @@ var Cell = EventEmitter.extend({
 	 * @typesign (value) -> cellx.Cell;
 	 */
 	push: function push(value) {
-		this._push(value, true);
+		this._push(value, true, false);
 		return this;
 	},
 
 	/**
-	 * @typesign (value, external: boolean) -> boolean;
+	 * @typesign (value, external: boolean, pulling: boolean) -> boolean;
 	 */
-	_push: function _push(value, external) {
+	_push: function _push(value, external, pulling) {
 		var oldValue = this._value;
 
-		if (external) {
-			if (currentlyRelease) {
-				if (is(value, oldValue)) {
-					this._setError(null);
-					this._fulfill(value);
-					return false;
-				}
-
-				var cell = this;
-
-				(afterReleaseCallbacks || (afterReleaseCallbacks = [])).push((function() {
-					cell._push(value, true);
-				}));
-
-				return true;
+		if (external && currentlyRelease) {
+			if (is(value, oldValue)) {
+				this._setError(null);
+				this._fulfill(value);
+				return false;
 			}
 
+			var cell = this;
+
+			(afterReleaseCallbacks || (afterReleaseCallbacks = [])).push((function() {
+				cell._push(value, true, false);
+			}));
+
+			return true;
+		}
+
+		if (external || !currentlyRelease && pulling) {
 			this._pushingIndex = ++pushingIndexCounter;
 		}
 
@@ -2643,7 +2643,7 @@ var Cell = EventEmitter.extend({
 				this._addToRelease();
 			}
 		} else {
-			if (!currentlyRelease && external) {
+			if (external || !currentlyRelease && pulling) {
 				releaseVersion++;
 			}
 
@@ -2679,7 +2679,7 @@ var Cell = EventEmitter.extend({
 	 * @typesign (err) -> cellx.Cell;
 	 */
 	fail: function fail(err) {
-		this._fail(err, true);
+		this._fail(err, true, false);
 		return this;
 	},
 
@@ -2767,22 +2767,24 @@ var Cell = EventEmitter.extend({
 	 * @typesign () -> boolean;
 	 */
 	isPending: function isPending() {
-		if (!this._selfPendingStatusCell) {
+		if (!this._pendingStatusCell) {
 			var debugKey = this.debugKey;
-			var selfPendingStatusCell = this._selfPendingStatusCell = new Cell(
-				this._pending,
-				debugKey ? { debugKey: debugKey + '._selfPendingStatusCell' } : null
-			);
-			var cell = this;
+
+			if (this._pull && this._pull.length) {
+				this._selfPendingStatusCell = new Cell(
+					this._pending,
+					debugKey ? { debugKey: debugKey + '._selfPendingStatusCell' } : null
+				);
+			}
 
 			this._pendingStatusCell = new Cell(function() {
-				if (selfPendingStatusCell.get()) {
+				if (this._selfPendingStatusCell && this._selfPendingStatusCell.get()) {
 					return true;
 				}
 
-				cell.get();
+				this.get();
 
-				var masters = cell._masters;
+				var masters = this._masters;
 
 				if (masters) {
 					for (var i = masters.length; i;) {
@@ -2793,7 +2795,7 @@ var Cell = EventEmitter.extend({
 				}
 
 				return false;
-			}, debugKey ? { debugKey: debugKey + '._pendingStatusCell' } : null);
+			}, debugKey ? { debugKey: debugKey + '._pendingStatusCell', owner: this } : { owner: this });
 		}
 
 		return this._pendingStatusCell.get();

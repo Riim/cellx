@@ -517,6 +517,30 @@ describe('Cell', function() {
 			.to.equal(3);
 	});
 
+	it('должна учитывать последний set как более приоритетный (4)', function() {
+		let counter = 0;
+		let a = new cellx.Cell(() => ++counter);
+		let b = new cellx.Cell(() => a.get() + 1);
+
+		b.set(5);
+		a.pull();
+
+		expect(b.get())
+			.to.equal(2);
+	});
+
+	it('должна учитывать последний set как более приоритетный (5)', function() {
+		let counter = 0;
+		let a = new cellx.Cell(() => ++counter, { onChange() {} });
+		let b = new cellx.Cell(() => a.get() + 1, { onChange() {} });
+
+		b.set(5);
+		a.pull();
+
+		expect(b.get())
+			.to.equal(3);
+	});
+
 	it('не должна создавать бесконечный цикл', function(done) {
 		let a = new cellx.Cell(1);
 		let b = new cellx.Cell(function() { return a.get() + 1; });
