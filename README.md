@@ -844,6 +844,6 @@ Type signature: `() -> string;`.
 
 ## List of references
 
+- [Building a Reactive App Using Cellx and React](https://60devs.com/building-a-reactive-todo-app-using-cellx-and-react.html)
 - [Атом — минимальный кирпичик FRP приложения](http://habrahabr.ru/post/235121/)
-- [Warp9 — The next generation of reactive js libraries](http://rystsov.info/warp9/)
 - [Knockout — Simplify dynamic JavaScript UIs with the Model-View-View Model (MVVM) pattern](http://knockoutjs.com/)

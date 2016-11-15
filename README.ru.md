@@ -827,6 +827,6 @@ console.log(list.toArray());
 
 ## Использованные материалы
 
+- [Пишем простое приложение на React с использованием библиотеки cellx](https://habrahabr.ru/post/313038/)
 - [Атом — минимальный кирпичик FRP приложения](http://habrahabr.ru/post/235121/)
-- [Warp9 — The next generation of reactive js libraries](http://rystsov.info/warp9/)
 - [Knockout — Simplify dynamic JavaScript UIs with the Model-View-View Model (MVVM) pattern](http://knockoutjs.com/)
