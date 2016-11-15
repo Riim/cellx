@@ -157,6 +157,7 @@ var ObservableMap = EventEmitter.extend({
 
 		this._entries.clear();
 		this._valueCounts.clear();
+
 		this.size = 0;
 
 		this.emit({

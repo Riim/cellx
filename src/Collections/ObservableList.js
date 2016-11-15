@@ -494,7 +494,10 @@ var ObservableList = EventEmitter.extend({
 
 		this.length = 0;
 
-		this.emit('change');
+		this.emit({
+			type: 'change',
+			subtype: 'clear'
+		});
 
 		return this;
 	},

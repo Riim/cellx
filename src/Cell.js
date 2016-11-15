@@ -12,6 +12,7 @@ var EventEmitterProto = EventEmitter.prototype;
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
 var KEY_INNER = EventEmitter.KEY_INNER;
 
+var errorIndexCounter = 0;
 var pushingIndexCounter = 0;
 
 var releasePlan = new Map();
@@ -356,16 +357,14 @@ var Cell = EventEmitter.extend({
 			}
 		}
 
-		this._error = null;
-		this._errorCell = null;
-
-		this._pushingIndex = 0;
-		this._version = 0;
-
 		this._inited = false;
 		this._currentlyPulling = false;
 		this._active = false;
 		this._hasFollowers = false;
+
+		this._errorIndex = 0;
+		this._pushingIndex = 0;
+		this._version = 0;
 
 		/**
 		 * Ведущие ячейки.
@@ -384,6 +383,11 @@ var Cell = EventEmitter.extend({
 		this._pending = false;
 		this._selfPendingStatusCell = null;
 		this._pendingStatusCell = null;
+
+		this._error = null;
+		this._selfErrorCell = null;
+		this._errorCell = null;
+
 		this._fulfilled = false;
 		this._rejected = false;
 
@@ -573,7 +577,7 @@ var Cell = EventEmitter.extend({
 			var value = this._tryPull();
 
 			if (value === error) {
-				this._fail(error.original, false, false);
+				this._fail(error.original, false);
 			} else {
 				this._push(value, false, false);
 			}
@@ -582,9 +586,11 @@ var Cell = EventEmitter.extend({
 		var masters = this._masters;
 
 		if (masters) {
-			for (var i = masters.length; i;) {
+			var i = masters.length;
+
+			do {
 				masters[--i]._registerSlave(this);
-			}
+			} while (i);
 
 			this._active = true;
 		}
@@ -598,10 +604,11 @@ var Cell = EventEmitter.extend({
 		}
 
 		var masters = this._masters;
+		var i = masters.length;
 
-		for (var i = masters.length; i;) {
+		do {
 			masters[--i]._unregisterSlave(this);
-		}
+		} while (i);
 
 		if (this._levelInRelease != -1 && !this._changeEvent) {
 			this._levelInRelease = -1;
@@ -681,16 +688,18 @@ var Cell = EventEmitter.extend({
 				var masters = this._masters;
 
 				if (masters) {
-					for (var i = masters.length; i;) {
+					var i = masters.length;
+
+					do {
 						masters[--i]._registerSlave(this);
-					}
+					} while (i);
 
 					this._active = true;
 				}
 			}
 
 			if (value === error) {
-				this._fail(error.original, false, false);
+				this._fail(error.original, false);
 			} else {
 				this._push(value, false, false);
 			}
@@ -746,14 +755,16 @@ var Cell = EventEmitter.extend({
 			var newMasterCount = 0;
 
 			if (masters) {
-				for (var i = masters.length; i;) {
+				var i = masters.length;
+
+				do {
 					var master = masters[--i];
 
 					if (!oldMasters || oldMasters.indexOf(master) == -1) {
 						master._registerSlave(this);
 						newMasterCount++;
 					}
-				}
+				} while (i);
 			}
 
 			if (oldMasters && (masters ? masters.length - newMasterCount : 0) < oldMasters.length) {
@@ -775,7 +786,7 @@ var Cell = EventEmitter.extend({
 		}
 
 		if (value === error) {
-			this._fail(error.original, false, true);
+			this._fail(error.original, false);
 			return true;
 		}
 
@@ -814,6 +825,18 @@ var Cell = EventEmitter.extend({
 
 			this._version = releaseVersion + currentlyRelease;
 
+			var pendingStatusCell = this._pendingStatusCell;
+
+			if (pendingStatusCell && pendingStatusCell._active) {
+				pendingStatusCell.pull();
+			}
+
+			var errorCell = this._errorCell;
+
+			if (errorCell && errorCell._active) {
+				errorCell.pull();
+			}
+
 			this._inited = true;
 			this._currentlyPulling = false;
 		}
@@ -823,7 +846,54 @@ var Cell = EventEmitter.extend({
 	 * @typesign () -> ?Error;
 	 */
 	getError: function getError() {
-		return currentCell ? (this._errorCell || (this._errorCell = new Cell(this._error))).get() : this._error;
+		if (!this._errorCell) {
+			var debugKey = this.debugKey;
+
+			this._selfErrorCell = new Cell(this._error, debugKey ? { debugKey: debugKey + '._selfErrorCell' } : null);
+
+			this._errorCell = new Cell(function() {
+				this.get();
+
+				var err = this._selfErrorCell.get();
+				var index;
+
+				if (err) {
+					index = this._errorIndex;
+
+					if (index == errorIndexCounter) {
+						return err;
+					}
+				}
+
+				var masters = this._masters;
+
+				if (masters) {
+					var i = masters.length;
+
+					do {
+						var master = masters[--i];
+						var masterError = master.getError();
+
+						if (masterError) {
+							var masterErrorIndex = master._errorIndex;
+
+							if (masterErrorIndex == errorIndexCounter) {
+								return masterError;
+							}
+
+							if (!err || index < masterErrorIndex) {
+								err = masterError;
+								index = masterErrorIndex;
+							}
+						}
+					} while (i);
+				}
+
+				return err;
+			}, debugKey ? { debugKey: debugKey + '._errorCell', owner: this } : { owner: this });
+		}
+
+		return this._errorCell.get();
 	},
 
 	/**
@@ -960,7 +1030,7 @@ var Cell = EventEmitter.extend({
 	 * @typesign (err) -> cellx.Cell;
 	 */
 	fail: function fail(err) {
-		this._fail(err, true, false);
+		this._fail(err, true);
 		return this;
 	},
 
@@ -974,14 +1044,52 @@ var Cell = EventEmitter.extend({
 			err = new Error(String(err));
 		}
 
+		this._setError(err);
+
 		if (external) {
 			this._reject(err);
 		}
+	},
 
-		this._handleErrorEvent({
-			type: 'error',
-			error: err
-		});
+	/**
+	 * @typesign (err: ?Error);
+	 */
+	_setError: function _setError(err) {
+		if (!err && !this._error) {
+			return;
+		}
+
+		this._error = err;
+		if (this._selfErrorCell) {
+			this._selfErrorCell.set(err);
+		}
+
+		if (err) {
+			this._errorIndex = ++errorIndexCounter;
+
+			this._handleErrorEvent({
+				type: 'error',
+				error: err
+			});
+		}
+	},
+
+	/**
+	 * @typesign (evt: cellx~Event{ error: Error });
+	 */
+	_handleErrorEvent: function _handleErrorEvent(evt) {
+		if (this._lastErrorEvent === evt) {
+			return;
+		}
+
+		this._lastErrorEvent = evt;
+		this._handleEvent(evt);
+
+		var slaves = this._slaves;
+
+		for (var i = 0, l = slaves.length; i < l; i++) {
+			slaves[i]._handleErrorEvent(evt);
+		}
 	},
 
 	_reject: function _reject(err) {
@@ -998,49 +1106,6 @@ var Cell = EventEmitter.extend({
 
 		if (this._onRejected) {
 			this._onRejected(err);
-		}
-	},
-
-	/**
-	 * @typesign (evt: cellx~Event{ error: Error });
-	 */
-	_handleErrorEvent: function _handleErrorEvent(evt) {
-		if (this._lastErrorEvent === evt) {
-			return;
-		}
-
-		this._setError(evt.error);
-
-		this._lastErrorEvent = evt;
-		this._handleEvent(evt);
-
-		var slaves = this._slaves;
-
-		for (var i = 0, l = slaves.length; i < l; i++) {
-			slaves[i]._handleErrorEvent(evt);
-		}
-	},
-
-	/**
-	 * @typesign (err: ?Error);
-	 */
-	_setError: function _setError(err) {
-		if (this._error === err) {
-			return;
-		}
-
-		this._error = err;
-
-		if (this._errorCell) {
-			this._errorCell.set(err);
-		}
-
-		if (!err) {
-			var slaves = this._slaves;
-
-			for (var i = 0, l = slaves.length; i < l; i++) {
-				slaves[i]._setError(err);
-			}
 		}
 	},
 
@@ -1068,11 +1133,13 @@ var Cell = EventEmitter.extend({
 				var masters = this._masters;
 
 				if (masters) {
-					for (var i = masters.length; i;) {
+					var i = masters.length;
+
+					do {
 						if (masters[--i].isPending()) {
 							return true;
 						}
-					}
+					} while (i);
 				}
 
 				return false;
