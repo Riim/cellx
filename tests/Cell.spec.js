@@ -959,4 +959,32 @@ describe('Cell', function() {
 		}, 1);
 	});
 
+	it('должна инициализироваться устанавливаемым значением даже если вычисляемая', function() {
+		let a = new cellx.Cell(() => {
+			return 1;
+		});
+		let b = new cellx.Cell(2);
+
+		a.set(5);
+		b.set(5);
+
+		expect(a.get())
+			.to.equal(5);
+	});
+
+	it('должна инициализироваться устанавливаемым значением даже если вычисляемая (2)', function() {
+		let a = new cellx.Cell(() => {
+			return 1;
+		});
+		let b = new cellx.Cell(2);
+
+		a.set(5);
+		b.set(5);
+
+		a.on('change', () => {});
+
+		expect(a.get())
+			.to.equal(5);
+	});
+
 });

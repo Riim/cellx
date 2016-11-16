@@ -370,7 +370,7 @@ var Cell = EventEmitter.extend({
 		 * Ведущие ячейки.
 		 * @type {?Array<cellx.Cell>}
 		 */
-		this._masters = null;
+		this._masters = void 0;
 		/**
 		 * Ведомые ячейки.
 		 * @type {Array<cellx.Cell>}
@@ -569,21 +569,25 @@ var Cell = EventEmitter.extend({
 	 * @typesign ();
 	 */
 	_activate: function _activate() {
-		if (!this._pull || this._active || this._inited && !this._masters) {
+		if (!this._pull || this._active || this._masters === null) {
 			return;
 		}
+
+		var masters = this._masters;
 
 		if (this._version < releaseVersion) {
 			var value = this._tryPull();
 
-			if (value === error) {
-				this._fail(error.original, false);
-			} else {
-				this._push(value, false, false);
+			if (masters || this._masters || !this._inited) {
+				if (value === error) {
+					this._fail(error.original, false);
+				} else {
+					this._push(value, false, false);
+				}
 			}
-		}
 
-		var masters = this._masters;
+			masters = this._masters;
+		}
 
 		if (masters) {
 			var i = masters.length;
@@ -681,13 +685,13 @@ var Cell = EventEmitter.extend({
 			release();
 		}
 
-		if (this._pull && !this._active && this._version < releaseVersion && (!this._inited || this._masters)) {
+		if (this._pull && !this._active && this._version < releaseVersion && this._masters !== null) {
+			var oldMasters = this._masters;
 			var value = this._tryPull();
+			var masters = this._masters;
 
-			if (this._hasFollowers) {
-				var masters = this._masters;
-
-				if (masters) {
+			if (oldMasters || masters || !this._inited) {
+				if (masters && this._hasFollowers) {
 					var i = masters.length;
 
 					do {
@@ -696,12 +700,12 @@ var Cell = EventEmitter.extend({
 
 					this._active = true;
 				}
-			}
 
-			if (value === error) {
-				this._fail(error.original, false);
-			} else {
-				this._push(value, false, false);
+				if (value === error) {
+					this._fail(error.original, false);
+				} else {
+					this._push(value, false, false);
+				}
 			}
 		}
 
@@ -837,7 +841,6 @@ var Cell = EventEmitter.extend({
 				errorCell.pull();
 			}
 
-			this._inited = true;
 			this._currentlyPulling = false;
 		}
 	},
@@ -926,6 +929,8 @@ var Cell = EventEmitter.extend({
 	 * @typesign (value, external: boolean, pulling: boolean) -> boolean;
 	 */
 	_push: function _push(value, external, pulling) {
+		this._inited = true;
+
 		var oldValue = this._value;
 
 		if (external && currentlyRelease) {
