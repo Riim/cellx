@@ -1080,14 +1080,14 @@ var ObservableList = EventEmitter.extend({
 	 * @typesign (value, fromIndex?: int) -> int;
 	 */
 	indexOf: function indexOf(value, fromIndex) {
-		return this._items.indexOf(value, this._validateIndex(fromIndex));
+		return this._items.indexOf(value, this._validateIndex(fromIndex, true));
 	},
 
 	/**
 	 * @typesign (value, fromIndex?: int) -> int;
 	 */
 	lastIndexOf: function lastIndexOf(value, fromIndex) {
-		return this._items.lastIndexOf(value, fromIndex === void 0 ? -1 : this._validateIndex(fromIndex));
+		return this._items.lastIndexOf(value, fromIndex === void 0 ? -1 : this._validateIndex(fromIndex, true));
 	},
 
 	/**
@@ -1124,7 +1124,7 @@ var ObservableList = EventEmitter.extend({
 			throw new TypeError('Cannot set to sorted list');
 		}
 
-		index = this._validateIndex(index);
+		index = this._validateIndex(index, true);
 
 		var items = this._items;
 
@@ -1149,7 +1149,7 @@ var ObservableList = EventEmitter.extend({
 			throw new TypeError('Cannot set to sorted list');
 		}
 
-		index = this._validateIndex(index);
+		index = this._validateIndex(index, true);
 
 		if (values instanceof ObservableList) {
 			values = values._items;
@@ -1318,7 +1318,7 @@ var ObservableList = EventEmitter.extend({
 	 * @typesign (value, fromIndex?: int) -> boolean;
 	 */
 	remove: function remove(value, fromIndex) {
-		var index = this._items.indexOf(value, this._validateIndex(fromIndex));
+		var index = this._items.indexOf(value, this._validateIndex(fromIndex, true));
 
 		if (index == -1) {
 			return false;
@@ -1337,7 +1337,7 @@ var ObservableList = EventEmitter.extend({
 	 * @typesign (value, fromIndex?: int) -> boolean;
 	 */
 	removeAll: function removeAll(value, fromIndex) {
-		var index = this._validateIndex(fromIndex);
+		var index = this._validateIndex(fromIndex, true);
 		var items = this._items;
 		var changed = false;
 
@@ -1359,7 +1359,7 @@ var ObservableList = EventEmitter.extend({
 	 * @typesign (values: Array|cellx.ObservableList, fromIndex?: int) -> boolean;
 	 */
 	removeEach: function removeEach(values, fromIndex) {
-		fromIndex = this._validateIndex(fromIndex);
+		fromIndex = this._validateIndex(fromIndex, true);
 
 		if (values instanceof ObservableList) {
 			values = values._items;
@@ -1391,7 +1391,7 @@ var ObservableList = EventEmitter.extend({
 	 * @typesign (values: Array|cellx.ObservableList, fromIndex?: int) -> boolean;
 	 */
 	removeAllEach: function removeAllEach(values, fromIndex) {
-		fromIndex = this._validateIndex(fromIndex);
+		fromIndex = this._validateIndex(fromIndex, true);
 
 		if (values instanceof ObservableList) {
 			values = values._items;
