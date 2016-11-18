@@ -25,6 +25,7 @@ var error = { original: null };
 var releaseVersion = 1;
 
 var transactionLevel = 0;
+var transactionFailure = false;
 var pendingReactions = [];
 
 var afterReleaseCallbacks;
@@ -254,14 +255,14 @@ var Cell = EventEmitter.extend({
 				release();
 			}
 
-			var success;
-
 			try {
 				cb();
-				success = true;
 			} catch (err) {
 				ErrorLogger.log(err);
+				transactionFailure = true;
+			}
 
+			if (transactionFailure) {
 				for (var iterator = releasePlan.values(), step; !(step = iterator.next()).done;) {
 					var queue = step.value;
 
@@ -278,11 +279,9 @@ var Cell = EventEmitter.extend({
 				releasePlanToIndex = -1;
 				releasePlanned = false;
 				pendingReactions.length = 0;
-
-				success = false;
 			}
 
-			if (!--transactionLevel && success) {
+			if (!--transactionLevel && !transactionFailure) {
 				for (var i = 0, l = pendingReactions.length; i < l; i++) {
 					var reaction = pendingReactions[i];
 
@@ -293,6 +292,7 @@ var Cell = EventEmitter.extend({
 					}
 				}
 
+				transactionFailure = false;
 				pendingReactions.length = 0;
 
 				if (releasePlanned) {
@@ -1109,6 +1109,10 @@ var Cell = EventEmitter.extend({
 	 * @typesign (err, external: boolean);
 	 */
 	_fail: function _fail(err, external) {
+		if (transactionLevel) {
+			transactionFailure = true;
+		}
+
 		this._logError(err);
 
 		if (!(err instanceof Error)) {
