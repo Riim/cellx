@@ -2967,14 +2967,21 @@ var Cell = EventEmitter.extend({
 	/**
 	 * @typesign () -> cellx.Cell;
 	 */
-	dispose: function dispose() {
+	reap: function reap() {
 		var slaves = this._slaves;
 
 		for (var i = 0, l = slaves.length; i < l; i++) {
-			slaves[i].dispose();
+			slaves[i].reap();
 		}
 
 		return this.off();
+	},
+
+	/**
+	 * @typesign () -> cellx.Cell;
+	 */
+	dispose: function dispose() {
+		return this.reap();
 	}
 });
 
