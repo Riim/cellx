@@ -2679,8 +2679,8 @@ var Cell = EventEmitter.extend({
 					return cell.isPending();
 				},
 
-				get error() {
-					return cell.getError();
+				get success() {
+					return !cell.getError();
 				}
 			};
 		}
