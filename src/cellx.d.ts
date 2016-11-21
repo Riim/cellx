@@ -150,7 +150,7 @@ declare namespace Cellx {
 		get?: (value: any) => T,
 		validate?: (value: T, oldValue: any) => void;
 		merge?: (value: T, oldValue: any) => any;
-		put?: (value: any, push: (value: any) => void, fail: (err: any) => void, oldValue: any) => void;
+		put?: (value: any, push: (value: any) => void, fail: (err: any) => void) => void;
 		reap?: () => void;
 		onChange?: IEventEmitterListener;
 		onError?: IEventEmitterListener;

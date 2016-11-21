@@ -815,69 +815,6 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it.skip('#freeze(), #unfreeze()', function(done) {
-		let a = new cellx.Cell(1, { debugKey: 'a' });
-		let b = new cellx.Cell(function() { return a.get() + 1; }, { debugKey: 'b', onChange: noop });
-		
-		let cChangeSpy = sinon.spy();
-		let c = new cellx.Cell(function() { return b.get() + 1; }, { debugKey: 'c', onChange: cChangeSpy });
-
-		a.set(2);
-
-		setTimeout(function() {
-			expect(cChangeSpy.calledOnce)
-				.to.be.ok;
-
-			cChangeSpy.reset();
-
-			b.freeze();
-			a.set(3);
-
-			setTimeout(function() {
-				expect(cChangeSpy.calledOnce)
-					.to.not.be.ok;
-
-				b.unfreeze();
-
-				setTimeout(function() {
-					expect(cChangeSpy.calledOnce)
-						.to.be.ok;
-
-					done();
-				}, 1);
-			}, 1);
-		}, 1);
-	});
-
-	it.skip('#freeze(), #unfreeze() (2)', function(done) {
-		let a = new cellx.Cell(1, { debugKey: 'a' });
-		let b = new cellx.Cell(function() { return a.get() + 1; }, { debugKey: 'b', onChange: noop });
-		
-		let cChangeSpy = sinon.spy();
-		let c = new cellx.Cell(function() { return b.get() + 1; }, { debugKey: 'c', onChange: cChangeSpy });
-
-		a.set(2);
-
-		setTimeout(function() {
-			cChangeSpy.reset();
-
-			b.freeze();
-			a.set(3);
-
-			setTimeout(function() {
-				b.unfreeze();
-				a.set(4);
-
-				setTimeout(function() {
-					expect(cChangeSpy.calledOnce)
-						.to.be.ok;
-
-					done();
-				}, 1);
-			}, 1);
-		}, 1);
-	});
-
 	it('должна подписывать через EventEmitter', function(done) {
 		let emitter = new cellx.EventEmitter();
 		let changeSpy = sinon.spy();

@@ -1903,7 +1903,7 @@ var config = {
  *     get?: (value) -> *,
  *     validate?: (value, oldValue),
  *     merge: (value, oldValue) -> *,
- *     put?: (value, push: (value), fail: (err), oldValue),
+ *     put?: (value, push: (value), fail: (err)),
  *     reap?: (),
  *     onChange?: (evt: cellx~Event) -> ?boolean,
  *     onError?: (evt: cellx~Event) -> ?boolean
@@ -1915,7 +1915,7 @@ var config = {
  *     get?: (value) -> *,
  *     validate?: (value, oldValue),
  *     merge: (value, oldValue) -> *,
- *     put?: (value, push: (value), fail: (err), oldValue),
+ *     put?: (value, push: (value), fail: (err)),
  *     reap?: (),
  *     onChange?: (evt: cellx~Event) -> ?boolean,
  *     onError?: (evt: cellx~Event) -> ?boolean
@@ -1942,7 +1942,17 @@ var Cell = EventEmitter.extend({
 		 * @typesign (cb: (), context?) -> ();
 		 */
 		autorun: function autorun(cb, context) {
-			var cell = new Cell(function() {
+			var disposer;
+
+			new Cell(function() {
+				var cell = this;
+
+				if (!disposer) {
+					disposer = function disposer() {
+						cell.dispose();
+					};
+				}
+
 				if (transactionLevel) {
 					var index = pendingReactions.indexOf(this);
 
@@ -1952,13 +1962,11 @@ var Cell = EventEmitter.extend({
 
 					pendingReactions.push(this);
 				} else {
-					cb.call(context);
+					cb.call(context, disposer);
 				}
 			}, { onChange: noop });
 
-			return function disposer() {
-				cell.dispose();
-			};
+			return disposer;
 		},
 
 		/**
@@ -2530,11 +2538,15 @@ var Cell = EventEmitter.extend({
 			throw new TypeError('Circular pulling detected');
 		}
 
-		this._pending = true;
-		this._fulfilled = this._rejected = false;
+		var pull = this._pull;
 
-		if (this._selfPendingStatusCell) {
-			this._selfPendingStatusCell.set(true);
+		if (pull.length) {
+			this._pending = true;
+			if (this._selfPendingStatusCell) {
+				this._selfPendingStatusCell.set(true);
+			}
+
+			this._fulfilled = this._rejected = false;
 		}
 
 		var prevCell = currentCell;
@@ -2545,7 +2557,7 @@ var Cell = EventEmitter.extend({
 		this._level = 0;
 
 		try {
-			return this._pull.call(this.owner, this.push, this.fail, this._value);
+			return pull.length ? pull.call(this.owner, this.push, this.fail, this._value) : pull.call(this.owner);
 		} catch (err) {
 			error.original = err;
 			return error;
@@ -2579,15 +2591,13 @@ var Cell = EventEmitter.extend({
 		if (!pendingStatusCell) {
 			var debugKey = this.debugKey;
 
-			if (this._pull && this._pull.length) {
-				this._selfPendingStatusCell = new Cell(
-					this._pending,
-					debugKey ? { debugKey: debugKey + '._selfPendingStatusCell' } : null
-				);
-			}
+			this._selfPendingStatusCell = new Cell(
+				this._pending,
+				debugKey ? { debugKey: debugKey + '._selfPendingStatusCell' } : null
+			);
 
 			pendingStatusCell = this._pendingStatusCell = new Cell(function() {
-				if (this._selfPendingStatusCell && this._selfPendingStatusCell.get()) {
+				if (this._selfPendingStatusCell.get()) {
 					return true;
 				}
 
@@ -2701,7 +2711,18 @@ var Cell = EventEmitter.extend({
 			value = this._merge(value, oldValue);
 		}
 
-		this._put.call(this.owner, value, this.push, this.fail, oldValue);
+		this._pending = true;
+		if (this._selfPendingStatusCell) {
+			this._selfPendingStatusCell.set(true);
+		}
+
+		this._fulfilled = this._rejected = false;
+
+		if (this._put.length >= 2) {
+			this._put.call(this.owner, value, this.push, this.fail, oldValue);
+		} else {
+			this._put.call(this.owner, value);
+		}
 
 		return this;
 	},
@@ -2745,7 +2766,7 @@ var Cell = EventEmitter.extend({
 		this._setError(null);
 
 		if (is(value, oldValue)) {
-			if (external) {
+			if (external || currentlyRelease && pulling) {
 				this._fulfill(value);
 			}
 
@@ -2796,7 +2817,7 @@ var Cell = EventEmitter.extend({
 			this._version = releaseVersion + currentlyRelease;
 		}
 
-		if (external) {
+		if (external || currentlyRelease && pulling) {
 			this._fulfill(value);
 		}
 
@@ -2804,19 +2825,20 @@ var Cell = EventEmitter.extend({
 	},
 
 	_fulfill: function _fulfill(value) {
-		if (!this._pending) {
-			return;
+		if (this._pending) {
+			this._pending = false;
+
+			if (this._selfPendingStatusCell) {
+				this._selfPendingStatusCell.set(false);
+			}
 		}
 
-		this._pending = false;
-		this._fulfilled = true;
+		if (!this._fulfilled) {
+			this._fulfilled = true;
 
-		if (this._selfPendingStatusCell) {
-			this._selfPendingStatusCell.set(false);
-		}
-
-		if (this._onFulfilled) {
-			this._onFulfilled(value);
+			if (this._onFulfilled) {
+				this._onFulfilled(value);
+			}
 		}
 	},
 
@@ -2891,19 +2913,20 @@ var Cell = EventEmitter.extend({
 	},
 
 	_reject: function _reject(err) {
-		if (!this._pending) {
-			return;
+		if (this._pending) {
+			this._pending = false;
+
+			if (this._selfPendingStatusCell) {
+				this._selfPendingStatusCell.set(false);
+			}
 		}
 
-		this._pending = false;
-		this._rejected = true;
+		if (!this._rejected) {
+			this._rejected = true;
 
-		if (this._selfPendingStatusCell) {
-			this._selfPendingStatusCell.set(false);
-		}
-
-		if (this._onRejected) {
-			this._onRejected(err);
+			if (this._onRejected) {
+				this._onRejected(err);
+			}
 		}
 	},
 
@@ -2918,7 +2941,6 @@ var Cell = EventEmitter.extend({
 		if (!this._pull || this._fulfilled) {
 			return Promise.resolve(this._get ? this._get(this._value) : this._value).then(onFulfilled);
 		}
-
 		if (this._rejected) {
 			return Promise.reject(this._error).catch(onRejected);
 		}
@@ -2940,6 +2962,22 @@ var Cell = EventEmitter.extend({
 		if (!this._pending) {
 			this.pull();
 		}
+
+		Cell.autorun((function(disposer) {
+			if (!cell.isPending()) {
+				disposer();
+
+				if (!cell._fulfilled && !cell._rejected) {
+					var err = cell.getError();
+
+					if (err) {
+						cell._reject(err);
+					} else {
+						cell._fulfill(cell._get ? cell._get(cell._value) : cell._value);
+					}
+				}
+			}
+		}));
 
 		return promise;
 	},
