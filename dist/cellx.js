@@ -2824,14 +2824,11 @@ var Cell = EventEmitter.extend({
 		return true;
 	},
 
+	/**
+	 * @typesign (value);
+	 */
 	_fulfill: function _fulfill(value) {
-		if (this._pending) {
-			this._pending = false;
-
-			if (this._selfPendingStatusCell) {
-				this._selfPendingStatusCell.set(false);
-			}
-		}
+		this._resolvePending();
 
 		if (!this._fulfilled) {
 			this._fulfilled = true;
@@ -2912,20 +2909,30 @@ var Cell = EventEmitter.extend({
 		}
 	},
 
+	/**
+	 * @typesign (err: Error);
+	 */
 	_reject: function _reject(err) {
-		if (this._pending) {
-			this._pending = false;
-
-			if (this._selfPendingStatusCell) {
-				this._selfPendingStatusCell.set(false);
-			}
-		}
+		this._resolvePending();
 
 		if (!this._rejected) {
 			this._rejected = true;
 
 			if (this._onRejected) {
 				this._onRejected(err);
+			}
+		}
+	},
+
+	/**
+	 * @typesign ();
+	 */
+	_resolvePending: function _resolvePending() {
+		if (this._pending) {
+			this._pending = false;
+
+			if (this._selfPendingStatusCell) {
+				this._selfPendingStatusCell.set(false);
 			}
 		}
 	},
