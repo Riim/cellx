@@ -104,7 +104,7 @@ describe('ObservableMap', function() {
 			.to.be.not.ok;
 
 		expect(map.get('foo'))
-			.to.equal(void 0);
+			.to.equal(undefined);
 	});
 
 	it('#size', function() {

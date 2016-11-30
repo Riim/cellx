@@ -9,7 +9,7 @@ var Map = global.Map;
 
 if (!Map) {
 	var entryStub = {
-		value: void 0
+		value: undefined
 	};
 
 	Map = createClass({
@@ -223,7 +223,7 @@ if (!Map) {
 					}
 
 					return {
-						value: void 0,
+						value: undefined,
 						done: true
 					};
 				}

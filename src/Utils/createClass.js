@@ -62,7 +62,7 @@ function createClass(description) {
 		delete description.Static;
 	}
 
-	if (constr.extend === void 0) {
+	if (constr.extend === undefined) {
 		constr.extend = extend;
 	}
 

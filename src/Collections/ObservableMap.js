@@ -133,7 +133,7 @@ var ObservableMap = EventEmitter.extend({
 			subtype: 'delete',
 			key: key,
 			oldValue: value,
-			value: void 0
+			value: undefined
 		});
 
 		return true;

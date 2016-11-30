@@ -307,7 +307,7 @@ describe('ObservableList', function() {
 		expect(callbackSpy.calledTwice)
 			.to.be.ok;
 
-		expect(callbackSpy.firstCall.calledOn(void 0))
+		expect(callbackSpy.firstCall.calledOn(undefined))
 			.to.be.ok;
 
 		expect(callbackSpy.secondCall.args)

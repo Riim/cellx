@@ -65,7 +65,7 @@ var ObservableList = EventEmitter.extend({
 	 * @typesign (index: ?int, allowedEndIndex?: boolean) -> ?uint;
 	 */
 	_validateIndex: function _validateIndex(index, allowedEndIndex) {
-		if (index === void 0) {
+		if (index === undefined) {
 			return index;
 		}
 
@@ -100,7 +100,7 @@ var ObservableList = EventEmitter.extend({
 	 * @typesign (value, fromIndex?: int) -> int;
 	 */
 	lastIndexOf: function lastIndexOf(value, fromIndex) {
-		return this._items.lastIndexOf(value, fromIndex === void 0 ? -1 : this._validateIndex(fromIndex, true));
+		return this._items.lastIndexOf(value, fromIndex === undefined ? -1 : this._validateIndex(fromIndex, true));
 	},
 
 	/**
@@ -118,7 +118,7 @@ var ObservableList = EventEmitter.extend({
 
 		var items = this._items;
 
-		if (count === void 0) {
+		if (count === undefined) {
 			return items.slice(index);
 		}
 
@@ -452,7 +452,7 @@ var ObservableList = EventEmitter.extend({
 
 		var items = this._items;
 
-		if (count === void 0) {
+		if (count === undefined) {
 			count = items.length - index;
 		} else if (index + count > items.length) {
 			throw new RangeError('Sum of "index" and "count" out of valid range');
@@ -680,7 +680,7 @@ var ObservableList = EventEmitter.extend({
 				}
 
 				return {
-					value: void 0,
+					value: undefined,
 					done: true
 				};
 			}

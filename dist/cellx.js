@@ -135,7 +135,7 @@ function createClass(description) {
 		delete description.Static;
 	}
 
-	if (constr.extend === void 0) {
+	if (constr.extend === undefined) {
 		constr.extend = extend;
 	}
 
@@ -169,7 +169,7 @@ var Map = global$1.Map;
 
 if (!Map) {
 	var entryStub = {
-		value: void 0
+		value: undefined
 	};
 
 	Map = createClass({
@@ -383,7 +383,7 @@ if (!Map) {
 					}
 
 					return {
-						value: void 0,
+						value: undefined,
 						done: true
 					};
 				}
@@ -906,7 +906,7 @@ var ObservableMap = EventEmitter.extend({
 			subtype: 'delete',
 			key: key,
 			oldValue: value,
-			value: void 0
+			value: undefined
 		});
 
 		return true;
@@ -1052,7 +1052,7 @@ var ObservableList = EventEmitter.extend({
 	 * @typesign (index: ?int, allowedEndIndex?: boolean) -> ?uint;
 	 */
 	_validateIndex: function _validateIndex(index, allowedEndIndex) {
-		if (index === void 0) {
+		if (index === undefined) {
 			return index;
 		}
 
@@ -1087,7 +1087,7 @@ var ObservableList = EventEmitter.extend({
 	 * @typesign (value, fromIndex?: int) -> int;
 	 */
 	lastIndexOf: function lastIndexOf(value, fromIndex) {
-		return this._items.lastIndexOf(value, fromIndex === void 0 ? -1 : this._validateIndex(fromIndex, true));
+		return this._items.lastIndexOf(value, fromIndex === undefined ? -1 : this._validateIndex(fromIndex, true));
 	},
 
 	/**
@@ -1105,7 +1105,7 @@ var ObservableList = EventEmitter.extend({
 
 		var items = this._items;
 
-		if (count === void 0) {
+		if (count === undefined) {
 			return items.slice(index);
 		}
 
@@ -1439,7 +1439,7 @@ var ObservableList = EventEmitter.extend({
 
 		var items = this._items;
 
-		if (count === void 0) {
+		if (count === undefined) {
 			count = items.length - index;
 		} else if (index + count > items.length) {
 			throw new RangeError('Sum of "index" and "count" out of valid range');
@@ -1667,7 +1667,7 @@ var ObservableList = EventEmitter.extend({
 				}
 
 				return {
-					value: void 0,
+					value: undefined,
 					done: true
 				};
 			}
@@ -1929,7 +1929,7 @@ var Cell = EventEmitter.extend({
 		 * @typesign (cnfg: { asynchronous?: boolean });
 		 */
 		configure: function configure(cnfg) {
-			if (cnfg.asynchronous !== void 0) {
+			if (cnfg.asynchronous !== undefined) {
 				if (releasePlanned) {
 					release();
 				}
@@ -2072,13 +2072,13 @@ var Cell = EventEmitter.extend({
 		this._reap = opts.reap || null;
 
 		if (this._pull) {
-			this._fixedValue = this._value = void 0;
+			this._fixedValue = this._value = undefined;
 		} else {
 			if (this._validate) {
-				this._validate(value, void 0);
+				this._validate(value, undefined);
 			}
 			if (this._merge) {
-				value = this._merge(value, void 0);
+				value = this._merge(value, undefined);
 			}
 
 			this._fixedValue = this._value = value;
@@ -2101,7 +2101,7 @@ var Cell = EventEmitter.extend({
 		 * Ведущие ячейки.
 		 * @type {?Array<cellx.Cell>}
 		 */
-		this._masters = void 0;
+		this._masters = undefined;
 		/**
 		 * Ведомые ячейки.
 		 * @type {Array<cellx.Cell>}
@@ -2743,7 +2743,7 @@ var Cell = EventEmitter.extend({
 
 		var oldValue = this._value;
 
-		if (external && currentlyRelease) {
+		if (external && currentlyRelease && this._hasFollowers) {
 			if (is(value, oldValue)) {
 				this._setError(null);
 				this._fulfill(value);

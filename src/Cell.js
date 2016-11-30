@@ -206,7 +206,7 @@ var Cell = EventEmitter.extend({
 		 * @typesign (cnfg: { asynchronous?: boolean });
 		 */
 		configure: function configure(cnfg) {
-			if (cnfg.asynchronous !== void 0) {
+			if (cnfg.asynchronous !== undefined) {
 				if (releasePlanned) {
 					release();
 				}
@@ -349,13 +349,13 @@ var Cell = EventEmitter.extend({
 		this._reap = opts.reap || null;
 
 		if (this._pull) {
-			this._fixedValue = this._value = void 0;
+			this._fixedValue = this._value = undefined;
 		} else {
 			if (this._validate) {
-				this._validate(value, void 0);
+				this._validate(value, undefined);
 			}
 			if (this._merge) {
-				value = this._merge(value, void 0);
+				value = this._merge(value, undefined);
 			}
 
 			this._fixedValue = this._value = value;
@@ -378,7 +378,7 @@ var Cell = EventEmitter.extend({
 		 * Ведущие ячейки.
 		 * @type {?Array<cellx.Cell>}
 		 */
-		this._masters = void 0;
+		this._masters = undefined;
 		/**
 		 * Ведомые ячейки.
 		 * @type {Array<cellx.Cell>}
@@ -1020,7 +1020,7 @@ var Cell = EventEmitter.extend({
 
 		var oldValue = this._value;
 
-		if (external && currentlyRelease) {
+		if (external && currentlyRelease && this._hasFollowers) {
 			if (is(value, oldValue)) {
 				this._setError(null);
 				this._fulfill(value);

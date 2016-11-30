@@ -1,10 +1,10 @@
-describe('Cell', function() {
+describe('Cell', () => {
 
 	function noop() {}
 
-	it('.afterRelease', function(done) {
+	it('.afterRelease', done => {
 		let a = new cellx.Cell(1);
-		let b = new cellx.Cell(function() { return a.get() + 1; }, { onChange: noop });
+		let b = new cellx.Cell(() => { return a.get() + 1; }, { onChange: noop });
 
 		a.set(2);
 
@@ -12,7 +12,7 @@ describe('Cell', function() {
 
 		cellx.Cell.afterRelease(afterReleaseSpy);
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(afterReleaseSpy.calledOnce)
 				.to.be.ok;
 
@@ -20,20 +20,20 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('#pull()', function(done) {
+	it('#pull()', done => {
 		let counter = 0;
-		let a = new cellx.Cell(function() {
+		let a = new cellx.Cell(() => {
 			return ++counter;
 		});
 
 		let changeSpy = sinon.spy();
-		let b = new cellx.Cell(function() {
+		let b = new cellx.Cell(() => {
 			return a.get() + 1;
 		}, { onChange: changeSpy });
 
 		a.pull();
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(changeSpy.calledOnce)
 				.to.be.ok;
 
@@ -46,15 +46,15 @@ describe('Cell', function() {
 
 	// Если в get устанавливать _level раньше запуска _tryPull,
 	// то на уровнях 2+ _level всегда будет 1, что как-то не очень хорошо.
-	it('должна минимизировать число лишних вызовов pull', function(done) {
+	it('должна минимизировать число лишних вызовов pull', done => {
 		let a = new cellx.Cell(1, { debugKey: 'a' });
 		let b = new cellx.Cell(2, { debugKey: 'b' });
 
-		let c = new cellx.Cell(function() {
+		let c = new cellx.Cell(() => {
 			return b.get() + 1;
 		}, { debugKey: 'c' });
 
-		let dPullSpy = sinon.spy(function() {
+		let dPullSpy = sinon.spy(() => {
 			return a.get() + c.get();
 		});
 
@@ -67,7 +67,7 @@ describe('Cell', function() {
 		a.set(2);
 		b.set(3);
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(dPullSpy.calledOnce)
 				.to.be.ok;
 
@@ -75,13 +75,13 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('не должна создавать событие `change` при установке значения равного текущему', function(done) {
+	it('не должна создавать событие `change` при установке значения равного текущему', done => {
 		let changeSpy = sinon.spy();
 		let a = new cellx.Cell(1, { onChange: changeSpy });
 
 		a.set(1);
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(changeSpy.called)
 				.to.not.be.ok;
 
@@ -89,13 +89,13 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('не должна создавать событие `change` при установке значения равного текущему (NaN)', function(done) {
+	it('не должна создавать событие `change` при установке значения равного текущему (NaN)', done => {
 		let changeSpy = sinon.spy();
 		let a = new cellx.Cell(NaN, { onChange: changeSpy });
 
 		a.set(NaN);
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(changeSpy.called)
 				.to.not.be.ok;
 
@@ -103,17 +103,17 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('не должна создавать событие `change`, если вычесляемое значение не меняется (NaN)', function(done) {
+	it('не должна создавать событие `change`, если вычесляемое значение не меняется (NaN)', done => {
 		let changeSpy = sinon.spy();
 
 		let a = new cellx.Cell(1);
-		let b = new cellx.Cell(function() {
+		let b = new cellx.Cell(() => {
 			return a.get() + NaN;
 		}, { onChange: changeSpy });
 
 		a.set(2);
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(changeSpy.called)
 				.to.not.be.ok;
 
@@ -121,14 +121,14 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('не должна создавать событие `change`, если установить новое значение и сразу вернуть исходное', function(done) {
+	it('не должна создавать событие `change`, если установить новое значение и сразу вернуть исходное', done => {
 		let changeSpy = sinon.spy();
 		let a = new cellx.Cell(1, { onChange: changeSpy });
 
 		a.set(5);
 		a.set(1);
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(changeSpy.called)
 				.to.not.be.ok;
 
@@ -139,7 +139,7 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('не должна создавать событие `change` если установить новое значение и сразу вернуть исходное (2)', function(done) {
+	it('не должна создавать событие `change` если установить новое значение и сразу вернуть исходное (2)', done => {
 		let emitter1 = new cellx.EventEmitter();
 		let emitter2 = new cellx.EventEmitter();
 
@@ -149,7 +149,7 @@ describe('Cell', function() {
 		a.set(emitter2);
 		a.set(emitter1);
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(changeSpy.called)
 				.to.not.be.ok;
 
@@ -157,7 +157,7 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('должна подписываться на внутренние изменения значения-EventEmitter-а и эмиттить их на себе', function(done) {
+	it('должна подписываться на внутренние изменения значения-EventEmitter-а и эмиттить их на себе', done => {
 		let emitter = new cellx.EventEmitter();
 
 		let changeSpy = sinon.spy();
@@ -165,7 +165,7 @@ describe('Cell', function() {
 
 		emitter.emit('change');
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(changeSpy.called)
 				.to.be.ok;
 
@@ -173,20 +173,20 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('должна подписываться на внутренние изменения значения-EventEmitter-а и эмиттить их на себе (2)', function(done) {
+	it('должна подписываться на внутренние изменения значения-EventEmitter-а и эмиттить их на себе (2)', done => {
 		let emitter = new cellx.EventEmitter();
 
 		let changeSpy = sinon.spy();
 
 		let a = new cellx.Cell(emitter);
-		let b = new cellx.Cell(function() {
+		let b = new cellx.Cell(() => {
 			a.get();
 			return Math.random();
 		}, { onChange: changeSpy });
 
 		emitter.emit('change');
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(changeSpy.called)
 				.to.be.ok;
 
@@ -194,7 +194,7 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('не должна создавать событие `change`, если установить новое значение, изменить его (внутреннее изменение) и вернуть исходное значение', function(done) {
+	it('не должна создавать событие `change`, если установить новое значение, изменить его (внутреннее изменение) и вернуть исходное значение', done => {
 		let emitter1 = new cellx.EventEmitter();
 		let emitter2 = new cellx.EventEmitter();
 
@@ -207,7 +207,7 @@ describe('Cell', function() {
 
 		a.set(emitter1);
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(changeSpy.called)
 				.to.not.be.ok;
 
@@ -215,7 +215,7 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('должна создавать событие `change`, если измененить текущее значение (внутреннее изменение), установить новое значение и сразу вернуть исходное', function(done) {
+	it('должна создавать событие `change`, если измененить текущее значение (внутреннее изменение), установить новое значение и сразу вернуть исходное', done => {
 		let emitter1 = new cellx.EventEmitter();
 		let emitter2 = new cellx.EventEmitter();
 
@@ -227,7 +227,7 @@ describe('Cell', function() {
 		a.set(emitter2);
 		a.set(emitter1);
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(changeSpy.called)
 				.to.be.ok;
 
@@ -235,17 +235,17 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('при инициализации должна вычисляться только 1 раз, даже если родительских ячеек больше одной', function(done) {
+	it('при инициализации должна вычисляться только 1 раз, даже если родительских ячеек больше одной', done => {
 		let a = new cellx.Cell(1);
 		let b = new cellx.Cell(2);
 
-		let cPullSpy = sinon.spy(function() {
+		let cPullSpy = sinon.spy(() => {
 			return a.get() + b.get();
 		});
 
 		let c = new cellx.Cell(cPullSpy, { onChange: noop });
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(cPullSpy.calledOnce)
 				.to.be.ok;
 
@@ -256,11 +256,11 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('должна вычисляться только 1 раз, даже если поменять сразу несколько родительских ячеек', function(done) {
+	it('должна вычисляться только 1 раз, даже если поменять сразу несколько родительских ячеек', done => {
 		let a = new cellx.Cell(1, { debugKey: 'a' });
 		let b = new cellx.Cell(2, { debugKey: 'b' });
 
-		let cPullSpy = sinon.spy(function() {
+		let cPullSpy = sinon.spy(() => {
 			return a.get() + b.get();
 		});
 
@@ -269,13 +269,13 @@ describe('Cell', function() {
 			onChange: noop
 		});
 
-		setTimeout(function() {
+		setTimeout(() => {
 			cPullSpy.reset();
 
 			a.set(5);
 			b.set(10);
 
-			setTimeout(function() {
+			setTimeout(() => {
 				expect(cPullSpy.calledOnce)
 					.to.be.ok;
 
@@ -287,25 +287,25 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('должна вычисляться только 1 раз, даже если поменять сразу несколько родительских ячеек (2)', function(done) {
+	it('должна вычисляться только 1 раз, даже если поменять сразу несколько родительских ячеек (2)', done => {
 		let a = new cellx.Cell(1);
 		let b = new cellx.Cell(2);
-		let aa = new cellx.Cell(function() { return a.get() + 1; });
-		let bb = new cellx.Cell(function() { return b.get() + 1; });
+		let aa = new cellx.Cell(() => { return a.get() + 1; });
+		let bb = new cellx.Cell(() => { return b.get() + 1; });
 
-		let cPullSpy = sinon.spy(function() {
+		let cPullSpy = sinon.spy(() => {
 			return aa.get() + bb.get();
 		});
 
 		let c = new cellx.Cell(cPullSpy, { onChange: noop });
 
-		setTimeout(function() {
+		setTimeout(() => {
 			cPullSpy.reset();
 
 			a.set(5);
 			b.set(10);
 
-			setTimeout(function() {
+			setTimeout(() => {
 				expect(cPullSpy.calledOnce)
 					.to.be.ok;
 
@@ -317,14 +317,14 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('не должна отменять событие `change` при чтении пока событие запланировано', function(done) {
-		let aChangeSpy = sinon.spy(function() {
+	it('не должна отменять событие `change` при чтении пока событие запланировано', done => {
+		let aChangeSpy = sinon.spy(() => {
 			let bValue = b.get();
 		});
-		let bChangeSpy = sinon.spy(function() {
+		let bChangeSpy = sinon.spy(() => {
 			let cValue = c.get();
 		});
-		let cChangeSpy = sinon.spy(function() {
+		let cChangeSpy = sinon.spy(() => {
 			let aValue = a.get();
 		});
 
@@ -332,12 +332,12 @@ describe('Cell', function() {
 		let b = new cellx.Cell(2, { onChange: bChangeSpy });
 		let c = new cellx.Cell(3, { onChange: cChangeSpy });
 
-		setTimeout(function() {
+		setTimeout(() => {
 			a.set(5);
 			b.set(10);
 			c.set(15);
 
-			setTimeout(function() {
+			setTimeout(() => {
 				expect(aChangeSpy.calledOnce)
 					.to.be.ok;
 
@@ -352,12 +352,12 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it.skip('один поток не должен мешать другому', function() {
+	it.skip('один поток не должен мешать другому', () => {
 		let a = new cellx.Cell(1, { debugKey: 'a' });
 		let b = new cellx.Cell(2, { debugKey: 'b' });
 
 		let t = 0;
-		let aa = new cellx.Cell(function() {
+		let aa = new cellx.Cell(() => {
 			if (t++) {
 				b.set(10);
 			}
@@ -365,7 +365,7 @@ describe('Cell', function() {
 			return a.get() + 1;
 		}, { debugKey: 'aa', onChange: noop });
 
-		let bb = new cellx.Cell(function() {
+		let bb = new cellx.Cell(() => {
 			return b.get() + 1;
 		}, { debugKey: 'bb', onChange: noop });
 
@@ -375,12 +375,12 @@ describe('Cell', function() {
 			.to.equal(6);
 	});
 
-	it.skip('должна правильно вычисляться при записи в родительскую ячейку в формуле', function() {
+	it.skip('должна правильно вычисляться при записи в родительскую ячейку в формуле', () => {
 		let a = new cellx.Cell(1);
-		let b = new cellx.Cell(function() {
+		let b = new cellx.Cell(() => {
 			return a.get() + 1;
 		});
-		let c = new cellx.Cell(function() {
+		let c = new cellx.Cell(() => {
 			if (b.get() == 3) {
 				a.set(10);
 			}
@@ -394,7 +394,7 @@ describe('Cell', function() {
 			.to.equal(12);
 	});
 
-	it('не должна вызывать обработчик `change` при добавлении его после изменения', function(done) {
+	it('не должна вызывать обработчик `change` при добавлении его после изменения', done => {
 		let aChangeSpy = sinon.spy();
 		let a = new cellx.Cell(1, { onChange: noop });
 
@@ -402,7 +402,7 @@ describe('Cell', function() {
 
 		a.on('change', aChangeSpy);
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(aChangeSpy.called)
 				.to.not.be.ok;
 
@@ -410,9 +410,9 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('должна применять изменения при чтении вычисляемой ячейки', function() {
+	it('должна применять изменения при чтении вычисляемой ячейки', () => {
 		let a = new cellx.Cell(1);
-		let b = new cellx.Cell(function() { return a.get() + 1; });
+		let b = new cellx.Cell(() => { return a.get() + 1; });
 
 		a.set(2);
 
@@ -420,12 +420,12 @@ describe('Cell', function() {
 			.to.equal(3);
 	});
 
-	it('не должна применять изменения при чтении невычисляемой ячейки', function(done) {
+	it('не должна применять изменения при чтении невычисляемой ячейки', done => {
 		let cChangeSpy = sinon.spy();
 
 		let a = new cellx.Cell(1);
 		let b = new cellx.Cell(2);
-		let c = new cellx.Cell(function() { return a.get() + b.get(); }, { onChange: cChangeSpy });
+		let c = new cellx.Cell(() => { return a.get() + b.get(); }, { onChange: cChangeSpy });
 
 		a.set(2);
 		b.get();
@@ -433,7 +433,7 @@ describe('Cell', function() {
 		expect(cChangeSpy.called)
 			.to.not.be.ok;
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(cChangeSpy.called)
 				.to.be.ok;
 
@@ -441,7 +441,7 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('должна распространять ошибку потомкам без дублирования', function(done) {
+	it('должна распространять ошибку потомкам без дублирования', done => {
 		let bErrorSpy = sinon.spy();
 		let c1ErrorSpy = sinon.spy();
 		let c2ErrorSpy = sinon.spy();
@@ -450,7 +450,7 @@ describe('Cell', function() {
 		let a = new cellx.Cell(1);
 
 		let t = 0;
-		let b = new cellx.Cell(function() {
+		let b = new cellx.Cell(() => {
 			if (t++) {
 				throw 1;
 			}
@@ -458,13 +458,13 @@ describe('Cell', function() {
 			return a.get() + 1;
 		}, { onError: bErrorSpy });
 
-		let c1 = new cellx.Cell(function() { return b.get() + 1; }, { onError: c1ErrorSpy });
-		let c2 = new cellx.Cell(function() { return b.get() + 1; }, { onError: c2ErrorSpy });
-		let d = new cellx.Cell(function() { return c1.get() + c2.get(); }, { onError: dErrorSpy });
+		let c1 = new cellx.Cell(() => { return b.get() + 1; }, { onError: c1ErrorSpy });
+		let c2 = new cellx.Cell(() => { return b.get() + 1; }, { onError: c2ErrorSpy });
+		let d = new cellx.Cell(() => { return c1.get() + c2.get(); }, { onError: dErrorSpy });
 
 		a.set(2);
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(bErrorSpy.calledOnce)
 				.to.be.ok;
 
@@ -481,10 +481,10 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('должна учитывать последний set как более приоритетный', function() {
+	it('должна учитывать последний set как более приоритетный', () => {
 		let a = new cellx.Cell(1);
-		let b = new cellx.Cell(function() { return a.get() + 1; });
-		let c = new cellx.Cell(function() { return b.get() + 1; }, { onChange: noop });
+		let b = new cellx.Cell(() => { return a.get() + 1; });
+		let c = new cellx.Cell(() => { return b.get() + 1; }, { onChange: noop });
 
 		a.set(2);
 		b.set(4);
@@ -493,10 +493,10 @@ describe('Cell', function() {
 			.to.equal(5);
 	});
 
-	it('должна учитывать последний set как более приоритетный (2)', function() {
+	it('должна учитывать последний set как более приоритетный (2)', () => {
 		let a = new cellx.Cell(1);
-		let b = new cellx.Cell(function() { return a.get() + 1; });
-		let c = new cellx.Cell(function() { return b.get() + 1; }, { onChange: noop });
+		let b = new cellx.Cell(() => { return a.get() + 1; });
+		let c = new cellx.Cell(() => { return b.get() + 1; }, { onChange: noop });
 
 		b.set(4);
 		a.set(2);
@@ -505,10 +505,10 @@ describe('Cell', function() {
 			.to.equal(4);
 	});
 
-	it('должна учитывать последний set как более приоритетный (3)', function() {
+	it('должна учитывать последний set как более приоритетный (3)', () => {
 		let a = new cellx.Cell(1);
-		let b = new cellx.Cell(function() { return a.get() + 1; });
-		let c = new cellx.Cell(function() { return b.get() + 1; }, { onChange: noop });
+		let b = new cellx.Cell(() => { return a.get() + 1; });
+		let c = new cellx.Cell(() => { return b.get() + 1; }, { onChange: noop });
 
 		a.set(2);
 		b.set(2);
@@ -517,7 +517,7 @@ describe('Cell', function() {
 			.to.equal(3);
 	});
 
-	it('должна учитывать последний set как более приоритетный (4)', function() {
+	it('должна учитывать последний set как более приоритетный (4)', () => {
 		let counter = 0;
 		let a = new cellx.Cell(() => ++counter);
 		let b = new cellx.Cell(() => a.get() + 1);
@@ -529,7 +529,7 @@ describe('Cell', function() {
 			.to.equal(2);
 	});
 
-	it('должна учитывать последний set как более приоритетный (5)', function() {
+	it('должна учитывать последний set как более приоритетный (5)', () => {
 		let counter = 0;
 		let a = new cellx.Cell(() => ++counter, { onChange() {} });
 		let b = new cellx.Cell(() => a.get() + 1, { onChange() {} });
@@ -541,19 +541,19 @@ describe('Cell', function() {
 			.to.equal(3);
 	});
 
-	it('не должна создавать бесконечный цикл', function(done) {
+	it('не должна создавать бесконечный цикл', done => {
 		let a = new cellx.Cell(1);
-		let b = new cellx.Cell(function() { return a.get() + 1; });
-		let c = new cellx.Cell(function() { return b.get() + 1; });
+		let b = new cellx.Cell(() => { return a.get() + 1; });
+		let c = new cellx.Cell(() => { return b.get() + 1; });
 
 		let d = new cellx.Cell(1);
-		let e = new cellx.Cell(function() { return c.get() + d.get(); }, { onChange: noop });
+		let e = new cellx.Cell(() => { return c.get() + d.get(); }, { onChange: noop });
 
 		c.get();
 
 		d.set(2);
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(e.get())
 				.to.equal(5);
 
@@ -561,9 +561,9 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('не должна создавать бесконечный цикл (2)', function(done) {
+	it('не должна создавать бесконечный цикл (2)', done => {
 		let a = new cellx.Cell(1);
-		let b = new cellx.Cell(function() { return a.get() + 1; }, {
+		let b = new cellx.Cell(() => { return a.get() + 1; }, {
 			onChange() {
 				c.set(2);
 			}
@@ -573,7 +573,7 @@ describe('Cell', function() {
 
 		a.set(2);
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(c.get())
 				.to.equal(2);
 
@@ -581,10 +581,10 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('должна уметь синхронизировать своё значение с внешним хранилищем', function() {
+	it('должна уметь синхронизировать своё значение с внешним хранилищем', () => {
 		localStorage.clear();
 
-		let a = new cellx.Cell(function() {
+		let a = new cellx.Cell(() => {
 			return +(localStorage.a || 1);
 		}, {
 			put(value) {
@@ -593,7 +593,7 @@ describe('Cell', function() {
 			}
 		});
 
-		let b = new cellx.Cell(function() {
+		let b = new cellx.Cell(() => {
 			return a.get() + 1;
 		});
 
@@ -606,9 +606,9 @@ describe('Cell', function() {
 			.to.equal(6);
 	});
 
-	it('validation', function() {
+	it('validation', () => {
 		let a = new cellx.Cell(1, {
-			validate: function(value) {
+			validate(value) {
 				if (typeof value != 'number') {
 					throw 1;
 				}
@@ -629,7 +629,7 @@ describe('Cell', function() {
 			.to.equal(1);
 	});
 
-	it('#subscribe(), #unsubscribe()', function() {
+	it('#subscribe(), #unsubscribe()', () => {
 		let a = new cellx.Cell(1);
 		let changeSpy = sinon.spy();
 
@@ -652,9 +652,9 @@ describe('Cell', function() {
 			}]);
 	});
 
-	it('#subscribe(), #unsubscribe() (2)', function() {
+	it('#subscribe(), #unsubscribe() (2)', () => {
 		let a = new cellx.Cell(1);
-		let b = new cellx.Cell(function() { return a.get() + 1; });
+		let b = new cellx.Cell(() => { return a.get() + 1; });
 		let bChangeSpy = sinon.spy();
 
 		a.set(2);
@@ -676,12 +676,12 @@ describe('Cell', function() {
 			}]);
 	});
 
-	it('[options.reap]', function() {
+	it('[options.reap]', () => {
 		let aReapSpy = sinon.spy();
 		let a = new cellx.Cell(() => Math.random(), { debugKey: 'a', reap: aReapSpy });
 		let b = new cellx.Cell(() => a.get() + 1, { debugKey: 'b' });
 
-		let listener = function() {};
+		let listener = () => {};
 
 		b.on('change', listener);
 		b.off('change', listener);
@@ -690,14 +690,14 @@ describe('Cell', function() {
 			.to.be.ok;
 	});
 
-	it('#then()', function(done) {
-		let a = new cellx.Cell(function(push) {
-			setTimeout(function() {
+	it('#then()', done => {
+		let a = new cellx.Cell(push => {
+			setTimeout(() => {
 				push(5);
 			}, 1);
 		});
 
-		a.then(function(value) {
+		a.then(value => {
 			expect(value)
 				.to.equal(5);
 
@@ -708,10 +708,10 @@ describe('Cell', function() {
 		});
 	});
 
-	it('#then() 2', function(done) {
+	it('#then() 2', done => {
 		let a = new cellx.Cell(1);
 
-		a.then(function(value) {
+		a.then(value => {
 			expect(value)
 				.to.equal(1);
 
@@ -722,14 +722,14 @@ describe('Cell', function() {
 		});
 	});
 
-	it('#catch()', function(done) {
-		let a = new cellx.Cell(function(push, fail) {
-			setTimeout(function() {
+	it('#catch()', done => {
+		let a = new cellx.Cell((push, fail) => {
+			setTimeout(() => {
 				fail('5');
 			}, 1);
 		});
 
-		a.catch(function(err) {
+		a.catch(err => {
 			expect(err.message)
 				.to.equal('5');
 
@@ -740,34 +740,34 @@ describe('Cell', function() {
 		});
 	});
 
-	it('#isPending()', function(done) {
+	it('#isPending()', done => {
 		let cChangeSpy = sinon.spy();
 		let loadingChangeSpy = sinon.spy();
 
-		let a = new cellx.Cell(function(push, fail, next) {
-			setTimeout(function() {
+		let a = new cellx.Cell((push, fail, next) => {
+			setTimeout(() => {
 				push(Math.random());
 			}, 10);
 
 			return next || 0;
 		});
-		let b = new cellx.Cell(function(push, fail, next) {
-			setTimeout(function() {
+		let b = new cellx.Cell((push, fail, next) => {
+			setTimeout(() => {
 				push(Math.random());
 			}, 50);
 
 			return next || 0;
 		});
 
-		let c = new cellx.Cell(function() {
+		let c = new cellx.Cell(() => {
 			return a.get() + b.get();
 		}, { onChange: cChangeSpy });
 
-		let loading = new cellx.Cell(function() {
+		let loading = new cellx.Cell(() => {
 			return a.isPending() || b.isPending();
 		}, { onChange: loadingChangeSpy });
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(c.get())
 				.to.equal(0);
 
@@ -780,7 +780,7 @@ describe('Cell', function() {
 			expect(loadingChangeSpy.called)
 				.to.not.be.ok;
 
-			setTimeout(function() {
+			setTimeout(() => {
 				expect(c.get())
 					.to.not.equal(0);
 
@@ -793,17 +793,17 @@ describe('Cell', function() {
 				expect(loadingChangeSpy.called)
 					.to.not.be.ok;
 
-				setTimeout(function() {
+				setTimeout(() => {
 					expect(loading.get())
 						.to.equal(false);
 
 					a.pull();
 
-					setTimeout(function() {
+					setTimeout(() => {
 						expect(loading.get())
 							.to.equal(true);
 
-						setTimeout(function() {
+						setTimeout(() => {
 							expect(loading.get())
 								.to.equal(false);
 
@@ -815,7 +815,7 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('должна подписывать через EventEmitter', function(done) {
+	it('должна подписывать через EventEmitter', done => {
 		let emitter = new cellx.EventEmitter();
 		let changeSpy = sinon.spy();
 
@@ -827,7 +827,7 @@ describe('Cell', function() {
 
 		emitter.foo = 2;
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(changeSpy.calledOnce)
 				.to.be.ok;
 
@@ -838,7 +838,7 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('должна поддерживать перебор for-of-ом', function() {
+	it('должна поддерживать перебор for-of-ом', () => {
 		let list = new cellx.Cell(cellx.list([1, 2, 3]));
 		let result = [];
 
@@ -850,7 +850,7 @@ describe('Cell', function() {
 			.to.eql([1, 2, 3]);
 	});
 
-	it('должна позволять запись даже если является вычисляемой', function() {
+	it('должна позволять запись даже если является вычисляемой', () => {
 		let a = new cellx.Cell(1);
 		let b = new cellx.Cell(() => a.get() + 1, { onChange: noop });
 
@@ -862,7 +862,7 @@ describe('Cell', function() {
 			.to.eql(5);
 	});
 
-	it('должна позволять запись даже если является вычисляемой 2', function() {
+	it('должна позволять запись даже если является вычисляемой 2', () => {
 		let a = new cellx.Cell(1);
 		let b = new cellx.Cell(() => a.get() + 1);
 
@@ -874,7 +874,7 @@ describe('Cell', function() {
 			.to.eql(5);
 	});
 
-	it('должна минимизировать число лишних вызовов pull (3)', function(done) {
+	it('должна минимизировать число лишних вызовов pull (3)', done => {
 		let a = new cellx.Cell({ x: 1 });
 		let b = new cellx.Cell(() => a.get(), { onChange(evt) {
 			if (evt.value) {
@@ -888,7 +888,7 @@ describe('Cell', function() {
 
 		a.set(null);
 
-		setTimeout(function() {
+		setTimeout(() => {
 			expect(cPullSpy.calledOnce)
 				.to.be.ok;
 
@@ -896,7 +896,7 @@ describe('Cell', function() {
 		}, 1);
 	});
 
-	it('должна инициализироваться устанавливаемым значением даже если вычисляемая', function() {
+	it('должна инициализироваться устанавливаемым значением даже если вычисляемая', () => {
 		let a = new cellx.Cell(() => {
 			return 1;
 		});
@@ -909,7 +909,7 @@ describe('Cell', function() {
 			.to.equal(5);
 	});
 
-	it('должна инициализироваться устанавливаемым значением даже если вычисляемая (2)', function() {
+	it('должна инициализироваться устанавливаемым значением даже если вычисляемая (2)', () => {
 		let a = new cellx.Cell(() => {
 			return 1;
 		});

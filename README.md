@@ -278,7 +278,7 @@ console.log(num());
 
 Calling the cell method is somewhat unusual — the cell itself is called, the first argument passes the method name,
 rest ones — the arguments. In this case, there must be at least one argument, or call of the cell will be counted as its
-recording. If the method has no arguments, you need to transfer an additional `void 0` with a call or to shorten it
+recording. If the method has no arguments, you need to transfer an additional `undefined` with a call or to shorten it
 just `0` (see `dispose`).
 
 #### addChangeListener

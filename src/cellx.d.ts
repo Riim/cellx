@@ -23,6 +23,7 @@ declare namespace Cellx {
 		type: string;
 		bubbles?: boolean;
 		isPropagationStopped?: boolean;
+		[key: string]: any;
 	}
 
 	interface IEventEmitterListener {
