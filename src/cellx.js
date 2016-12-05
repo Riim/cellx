@@ -231,4 +231,7 @@ cellx.Utils = cellx.utils = {
 
 cellx.cellx = cellx; // for destructuring
 
+cellx.__esModule = true;
+cellx.default = cellx;
+
 export default cellx;

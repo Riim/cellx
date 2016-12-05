@@ -18,8 +18,16 @@ declare namespace Cellx {
 		function log(...msg: Array<any>): void;
 	}
 
+	interface IEventData {
+		target?: EventEmitter;
+		type: string;
+		bubbles?: boolean;
+		isPropagationStopped?: boolean;
+		[key: string]: any;
+	}
+
 	interface IEvent {
-		target?: Object;
+		target: EventEmitter;
 		type: string;
 		bubbles?: boolean;
 		isPropagationStopped?: boolean;
@@ -47,7 +55,7 @@ declare namespace Cellx {
 
 		once(type: string, listener: IEventEmitterListener, context?: any): EventEmitter;
 
-		emit(evt: IEvent): IEvent;
+		emit(evt: IEventData): IEvent;
 		emit(type: string): IEvent;
 
 		protected _handleEvent(evt: IEvent): void;
@@ -161,7 +169,7 @@ declare namespace Cellx {
 		type: 'change';
 		oldValue: any;
 		value: any;
-		prev: ICellEvent;
+		prev: ICellChangeEvent;
 	}
 
 	interface ICellErrorEvent extends IEvent {
