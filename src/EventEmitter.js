@@ -3,8 +3,9 @@ import Map from './JS/Map';
 import Symbol from './JS/Symbol';
 import createClass from './Utils/createClass';
 
-var KEY_IS_EMITTER_EVENT = Symbol('cellx.EventEmitter~isEmitterEvent');
 var KEY_INNER = Symbol('cellx.EventEmitter.inner');
+
+var isEventType = {};
 
 /**
  * @typedef {{
@@ -47,13 +48,13 @@ var EventEmitter = createClass({
 				return [];
 			}
 
-			return events._isEmitterEvent === KEY_IS_EMITTER_EVENT ? [events] : events;
+			return events._isEvent === isEventType ? [events] : events;
 		}
 
 		var resultEvents = Object.create(null);
 
 		this._events.forEach(function(events, type) {
-			resultEvents[type] = events._isEmitterEvent === KEY_IS_EMITTER_EVENT ? [events] : events;
+			resultEvents[type] = events._isEvent === isEventType ? [events] : events;
 		});
 
 		return resultEvents;
@@ -137,14 +138,14 @@ var EventEmitter = createClass({
 		} else {
 			var events = (this._events || (this._events = new Map())).get(type);
 			var evt = {
-				_isEmitterEvent: KEY_IS_EMITTER_EVENT,
+				_isEvent: isEventType,
 				listener: listener,
 				context: context
 			};
 
 			if (!events) {
 				this._events.set(type, evt);
-			} else if (events._isEmitterEvent === KEY_IS_EMITTER_EVENT) {
+			} else if (events._isEvent === isEventType) {
 				this._events.set(type, [events, evt]);
 			} else {
 				events.push(evt);
@@ -170,7 +171,7 @@ var EventEmitter = createClass({
 				return;
 			}
 
-			if (events._isEmitterEvent === KEY_IS_EMITTER_EVENT) {
+			if (events._isEvent === isEventType) {
 				if (
 					(events.listener == listener || events.listener[KEY_INNER] === listener) &&
 						events.context === context
@@ -291,7 +292,7 @@ var EventEmitter = createClass({
 			return;
 		}
 
-		if (events._isEmitterEvent === KEY_IS_EMITTER_EVENT) {
+		if (events._isEvent === isEventType) {
 			if (this._tryEventListener(events, evt) === false) {
 				evt.isPropagationStopped = true;
 			}

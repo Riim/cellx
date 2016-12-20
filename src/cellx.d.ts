@@ -6,7 +6,7 @@ import { Promise } from 'es6-promise';
 
 declare namespace Cellx {
 	interface IIterator<T> {
-		next: () => { value: T, done: boolean }
+		next: () => { value: T; done: boolean }
 	}
 
 	interface IComparator<T> {
@@ -41,7 +41,10 @@ declare namespace Cellx {
 	export class EventEmitter {
 		static KEY_INNER: symbol;
 
-		protected _events: Map<string, Array<{ listener: IEventEmitterListener, context: any }>>;
+		protected _events: Map<string, Array<{ listener: IEventEmitterListener; context: any }>>;
+
+		getEvents(type?: string): Array<{ listener: (evt: IEvent) => boolean | void; context: any }> |
+			{ [type: string]: Array<{ listener: (evt: IEvent) => boolean | void; context: any }> };
 
 		on(type: string, listener: IEventEmitterListener, context?: any): EventEmitter;
 		on(listeners: { [key: string]: IEventEmitterListener }, context?: any): EventEmitter;

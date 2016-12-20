@@ -398,8 +398,9 @@ if (!Map.prototype[Symbol$1.iterator]) {
 
 var Map$1 = Map;
 
-var KEY_IS_EMITTER_EVENT = Symbol$1('cellx.EventEmitter~isEmitterEvent');
 var KEY_INNER = Symbol$1('cellx.EventEmitter.inner');
+
+var isEventType = {};
 
 /**
  * @typedef {{
@@ -442,13 +443,13 @@ var EventEmitter = createClass({
 				return [];
 			}
 
-			return events._isEmitterEvent === KEY_IS_EMITTER_EVENT ? [events] : events;
+			return events._isEvent === isEventType ? [events] : events;
 		}
 
 		var resultEvents = Object.create(null);
 
 		this._events.forEach((function(events, type) {
-			resultEvents[type] = events._isEmitterEvent === KEY_IS_EMITTER_EVENT ? [events] : events;
+			resultEvents[type] = events._isEvent === isEventType ? [events] : events;
 		}));
 
 		return resultEvents;
@@ -532,14 +533,14 @@ var EventEmitter = createClass({
 		} else {
 			var events = (this._events || (this._events = new Map$1())).get(type);
 			var evt = {
-				_isEmitterEvent: KEY_IS_EMITTER_EVENT,
+				_isEvent: isEventType,
 				listener: listener,
 				context: context
 			};
 
 			if (!events) {
 				this._events.set(type, evt);
-			} else if (events._isEmitterEvent === KEY_IS_EMITTER_EVENT) {
+			} else if (events._isEvent === isEventType) {
 				this._events.set(type, [events, evt]);
 			} else {
 				events.push(evt);
@@ -565,7 +566,7 @@ var EventEmitter = createClass({
 				return;
 			}
 
-			if (events._isEmitterEvent === KEY_IS_EMITTER_EVENT) {
+			if (events._isEvent === isEventType) {
 				if (
 					(events.listener == listener || events.listener[KEY_INNER] === listener) &&
 						events.context === context
@@ -686,7 +687,7 @@ var EventEmitter = createClass({
 			return;
 		}
 
-		if (events._isEmitterEvent === KEY_IS_EMITTER_EVENT) {
+		if (events._isEvent === isEventType) {
 			if (this._tryEventListener(events, evt) === false) {
 				evt.isPropagationStopped = true;
 			}
@@ -2088,6 +2089,10 @@ var Cell = EventEmitter.extend({
 			}
 		}
 
+		this._error = null;
+		this._selfErrorCell = null;
+		this._errorCell = null;
+
 		this._inited = false;
 		this._currentlyPulling = false;
 		this._active = false;
@@ -2114,10 +2119,6 @@ var Cell = EventEmitter.extend({
 		this._pending = false;
 		this._selfPendingStatusCell = null;
 		this._pendingStatusCell = null;
-
-		this._error = null;
-		this._selfErrorCell = null;
-		this._errorCell = null;
 
 		this._status = null;
 
@@ -2583,46 +2584,6 @@ var Cell = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign () -> boolean;
-	 */
-	isPending: function isPending() {
-		var pendingStatusCell = this._pendingStatusCell;
-
-		if (!pendingStatusCell) {
-			var debugKey = this.debugKey;
-
-			this._selfPendingStatusCell = new Cell(
-				this._pending,
-				debugKey ? { debugKey: debugKey + '._selfPendingStatusCell' } : null
-			);
-
-			pendingStatusCell = this._pendingStatusCell = new Cell(function() {
-				if (this._selfPendingStatusCell.get()) {
-					return true;
-				}
-
-				this.get();
-
-				var masters = this._masters;
-
-				if (masters) {
-					var i = masters.length;
-
-					do {
-						if (masters[--i].isPending()) {
-							return true;
-						}
-					} while (i);
-				}
-
-				return false;
-			}, debugKey ? { debugKey: debugKey + '._pendingStatusCell', owner: this } : { owner: this });
-		}
-
-		return pendingStatusCell.get();
-	},
-
-	/**
 	 * @typesign () -> ?Error;
 	 */
 	getError: function getError() {
@@ -2678,6 +2639,46 @@ var Cell = EventEmitter.extend({
 		return errorCell.get();
 	},
 
+	/**
+	 * @typesign () -> boolean;
+	 */
+	isPending: function isPending() {
+		var pendingStatusCell = this._pendingStatusCell;
+
+		if (!pendingStatusCell) {
+			var debugKey = this.debugKey;
+
+			this._selfPendingStatusCell = new Cell(
+				this._pending,
+				debugKey ? { debugKey: debugKey + '._selfPendingStatusCell' } : null
+			);
+
+			pendingStatusCell = this._pendingStatusCell = new Cell(function() {
+				if (this._selfPendingStatusCell.get()) {
+					return true;
+				}
+
+				this.get();
+
+				var masters = this._masters;
+
+				if (masters) {
+					var i = masters.length;
+
+					do {
+						if (masters[--i].isPending()) {
+							return true;
+						}
+					} while (i);
+				}
+
+				return false;
+			}, debugKey ? { debugKey: debugKey + '._pendingStatusCell', owner: this } : { owner: this });
+		}
+
+		return pendingStatusCell.get();
+	},
+
 	getStatus: function getStatus() {
 		var status = this._status;
 
@@ -2685,12 +2686,12 @@ var Cell = EventEmitter.extend({
 			var cell = this;
 
 			status = this._status = {
-				get pending() {
-					return cell.isPending();
-				},
-
 				get success() {
 					return !cell.getError();
+				},
+
+				get pending() {
+					return cell.isPending();
 				}
 			};
 		}

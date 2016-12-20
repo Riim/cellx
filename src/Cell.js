@@ -365,6 +365,10 @@ var Cell = EventEmitter.extend({
 			}
 		}
 
+		this._error = null;
+		this._selfErrorCell = null;
+		this._errorCell = null;
+
 		this._inited = false;
 		this._currentlyPulling = false;
 		this._active = false;
@@ -391,10 +395,6 @@ var Cell = EventEmitter.extend({
 		this._pending = false;
 		this._selfPendingStatusCell = null;
 		this._pendingStatusCell = null;
-
-		this._error = null;
-		this._selfErrorCell = null;
-		this._errorCell = null;
 
 		this._status = null;
 
@@ -860,46 +860,6 @@ var Cell = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign () -> boolean;
-	 */
-	isPending: function isPending() {
-		var pendingStatusCell = this._pendingStatusCell;
-
-		if (!pendingStatusCell) {
-			var debugKey = this.debugKey;
-
-			this._selfPendingStatusCell = new Cell(
-				this._pending,
-				debugKey ? { debugKey: debugKey + '._selfPendingStatusCell' } : null
-			);
-
-			pendingStatusCell = this._pendingStatusCell = new Cell(function() {
-				if (this._selfPendingStatusCell.get()) {
-					return true;
-				}
-
-				this.get();
-
-				var masters = this._masters;
-
-				if (masters) {
-					var i = masters.length;
-
-					do {
-						if (masters[--i].isPending()) {
-							return true;
-						}
-					} while (i);
-				}
-
-				return false;
-			}, debugKey ? { debugKey: debugKey + '._pendingStatusCell', owner: this } : { owner: this });
-		}
-
-		return pendingStatusCell.get();
-	},
-
-	/**
 	 * @typesign () -> ?Error;
 	 */
 	getError: function getError() {
@@ -955,6 +915,46 @@ var Cell = EventEmitter.extend({
 		return errorCell.get();
 	},
 
+	/**
+	 * @typesign () -> boolean;
+	 */
+	isPending: function isPending() {
+		var pendingStatusCell = this._pendingStatusCell;
+
+		if (!pendingStatusCell) {
+			var debugKey = this.debugKey;
+
+			this._selfPendingStatusCell = new Cell(
+				this._pending,
+				debugKey ? { debugKey: debugKey + '._selfPendingStatusCell' } : null
+			);
+
+			pendingStatusCell = this._pendingStatusCell = new Cell(function() {
+				if (this._selfPendingStatusCell.get()) {
+					return true;
+				}
+
+				this.get();
+
+				var masters = this._masters;
+
+				if (masters) {
+					var i = masters.length;
+
+					do {
+						if (masters[--i].isPending()) {
+							return true;
+						}
+					} while (i);
+				}
+
+				return false;
+			}, debugKey ? { debugKey: debugKey + '._pendingStatusCell', owner: this } : { owner: this });
+		}
+
+		return pendingStatusCell.get();
+	},
+
 	getStatus: function getStatus() {
 		var status = this._status;
 
@@ -962,12 +962,12 @@ var Cell = EventEmitter.extend({
 			var cell = this;
 
 			status = this._status = {
-				get pending() {
-					return cell.isPending();
-				},
-
 				get success() {
 					return !cell.getError();
+				},
+
+				get pending() {
+					return cell.isPending();
 				}
 			};
 		}
