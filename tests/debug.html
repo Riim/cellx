@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<title></title>
+</head>
+<body>
+
+<script src="../dist/cellx.js"></script>
+<script>
+
+/*
+let a = new cellx.Cell(1, {
+	put(v, push, fail) {
+		setTimeout(() => {
+			fail(v);
+		}, 1000);
+	},
+	debugKey: 'a'
+});
+
+let b = new cellx.Cell(() => {
+	return {
+		v: a.get()
+		//, p: a.isPending()
+	};
+}, { debugKey: 'b' });
+
+// b.subscribe((err, { value }) => {});
+
+console.log(b.isPending());
+a.set(2);
+console.log(b.isPending());
+setTimeout(() => {
+	console.log(b.isPending());
+}, 2000);
+//*/
+
+
+/*
+let a = new cellx.Cell(1, {
+	put(v, push, fail) {
+		setTimeout(() => {
+			fail(v);
+		}, 1000);
+	},
+	debugKey: 'a'
+})
+
+let b = new cellx.Cell(() => {
+	return {
+		v: a.get()
+		// , p: a.isPending()
+	};
+}, { debugKey: 'b' });
+
+b.subscribe((err, { value }) => {
+	console.log(
+		1,
+		'a.subscribe, err: ' + (err ? err.message : 'null') + ', val: ' +
+			(value && value.v) + ', isPending = '+ (value && value.p)
+	);
+});
+
+a.set(2);
+
+b.then(v => {
+	console.log(11111, v);
+}, v => {
+	console.log(22222, v);
+});
+
+//*console.log(b.isPending());
+
+setTimeout(() => {
+	console.log(b.isPending());
+}, 2000);
+//*/
+
+
+/*let a = new cellx.Cell(1)
+
+let b = new cellx.Cell(1, {
+  put(val, push, fail) {
+     setTimeout(() => {
+        cellx.transact(() => {
+            a.set(3)
+            // throw 'some error';
+            fail(new Error('some error'))
+        })
+     }, 0)
+  }
+})
+
+cellx.configure({asynchronous: false})
+const c = new cellx.Cell(() => a.get() + b.get())
+c.subscribe((err, {value}) => {
+  console.log('c.subscribe: ' + (err ? err.message : '') + ', val: ' + value)
+})
+console.log('c.get:'+ c.get())
+b.set(2)*/
+
+
+
+/*
+let counter = 0;
+let a = new cellx.Cell(() => ++counter);
+let b = new cellx.Cell(() => a.get() + 1);
+
+b.set(5);
+a.pull();
+
+console.log(b.get(), 2);
+
+let a2 = new cellx.Cell(() => {
+	return 1;
+});
+let b2 = new cellx.Cell(2);
+
+a2.set(5);
+b2.set(5);
+
+a2.on('change', () => {});
+
+console.log(a2.get(), 5);
+//*/
+
+
+/*
+let a = new cellx.Cell(1);
+let b = new cellx.Cell(push => 2);
+
+let c = new cellx.Cell(() => {
+	if (a.get() == 2) {
+		return a.get();
+	}
+
+	return b.get();
+}, { onChange() {} });
+
+cellx.autorun(() => {
+	c.isPending();
+});
+
+console.log(c.isPending());
+
+a.set(2);
+
+setTimeout(function() {
+console.log(c.isPending());
+}, 1);
+//*/
+
+
+/*
+let a = new cellx.Cell(1);
+
+let t = 0;
+let b = new cellx.Cell(function() {
+	if (t++) {
+		throw 1;
+	}
+
+	return a.get() + 1;
+}, { onError() {
+	console.log('b');
+} });
+
+let c1 = new cellx.Cell(function() { return b.get() + 1; }, { onError() {
+	console.log('c1');
+} });
+let c2 = new cellx.Cell(function() { return b.get() + 1; }, { onError() {
+	console.log('c2');
+} });
+let d = new cellx.Cell(function() { return c1.get() + c2.get(); }, { onError() {
+	console.log('d');
+} });
+
+a.set(2);
+//*/
+
+
+/*
+let a = new cellx.Cell(() => {
+	throw 1;
+});
+a.get();
+
+let b = new cellx.Cell(() => {
+	return a.get() + 1;
+}, { onChange() {} });
+
+console.log(b.getStatus().success);
+//*/
+
+
+/*
+let a = new cellx.Cell((push, fail, oldValue) => {
+	setTimeout(() => {
+		push(1);
+	}, 500);
+	return oldValue || 0;
+});
+
+let b = new cellx.Cell((push, fail, oldValue) => {
+	setTimeout(() => {
+		push(2);
+	}, 700);
+	return oldValue || 0;
+});
+
+let c = new cellx.Cell(() => a.get() + b.get());
+let d = new cellx.Cell(() => ({
+	isPending: c.isPending(),
+	c: c.get()
+}));
+
+d.subscribe((err, { value }) => {
+	if (err) {
+		console.error(err);
+	}
+	console.log('d.c = ' + value.c + ', d.isPending = ' + value.isPending);
+});
+
+const value = d.get();
+console.log('start, d.c = ' + value.c + ', d.isPending = ' + value.isPending);
+//*/
+
+
+/*
+let a = new cellx.Cell((push, fail, next) => {
+	setTimeout(() => {
+		push(1);
+	}, 500);
+	return next || 0;
+}, { debugKey: 'a' });
+
+let b = new cellx.Cell((push, fail, next) => {
+	setTimeout(() => {
+		push(2);
+	}, 1500);
+	return next || 0;
+}, { debugKey: 'b' });
+
+a.get();
+b.get();
+
+let c = new cellx.Cell(push => {
+	push(a.get() + b.get());
+}, { debugKey: 'c', onChange() {} });
+
+cellx.autorun(() => {
+	c.isPending();
+});
+
+console.log(a.isPending(), b.isPending(), c.isPending());
+
+setTimeout(() => {
+	console.log(a.isPending(), b.isPending(), c.isPending());
+}, 1000);
+
+setTimeout(() => {
+	console.log(a.isPending(), b.isPending(), c.isPending());
+}, 2500);
+//*/
+
+</script>
+
+</body>
+</html>

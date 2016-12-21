@@ -1247,9 +1247,9 @@ var Cell = EventEmitter.extend({
 			this.pull();
 		}
 
-		Cell.autorun(function(disposer) {
-			if (!cell.isPending()) {
-				disposer();
+		if (cell.isPending()) {
+			cell._pendingStatusCell.on('change', function onPendingStatusCellChange() {
+				cell._pendingStatusCell.off('change', onPendingStatusCellChange);
 
 				if (!cell._fulfilled && !cell._rejected) {
 					var err = cell.getError();
@@ -1260,8 +1260,8 @@ var Cell = EventEmitter.extend({
 						cell._fulfill(cell._get ? cell._get(cell._value) : cell._value);
 					}
 				}
-			}
-		});
+			});
+		}
 
 		return promise;
 	},

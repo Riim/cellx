@@ -722,6 +722,27 @@ describe('Cell', () => {
 		});
 	});
 
+	it('#then() 3', done => {
+		let a = new cellx.Cell(push => {
+			setTimeout(() => {
+				push(5);
+			}, 1);
+		});
+		let b = new cellx.Cell(() => {
+			return a.get() + 1;
+		});
+
+		b.then(value => {
+			expect(value)
+				.to.equal(6);
+
+			expect(a.get())
+				.to.equal(5);
+
+			done();
+		});
+	});
+
 	it('#catch()', done => {
 		let a = new cellx.Cell((push, fail) => {
 			setTimeout(() => {
