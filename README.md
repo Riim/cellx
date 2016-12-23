@@ -345,9 +345,9 @@ user.fullName('subscribe', function(err, evt) {
 
 Unsubscribes from events `change` and `error`.
 
-#### Подписка на свойства созданные с помощью `cellx.define`
+#### Subscription to the properties created with help `cellx.define`
 
-Подписаться на изменение свойства созданного с помощью `cellx.define` можно через `EventEmitter`:
+Subscribe to changes in the properties created with help of `cellx.define` possible through `EventEmitter`:
 
 ```js
 class User extends cellx.EventEmitter {
@@ -359,17 +359,17 @@ class User extends cellx.EventEmitter {
     }
 }
 
-let user = new User('Матроскин');
+let user = new User('Matroskin');
 
 user.on('change:nameInitial', function(evt) {
     console.log('nameInitial: ' + evt.value);
 });
 
 console.log(user.nameInitial);
-// => 'М'
+// => 'M'
 
-user.name = 'Шарик';
-// => 'nameInitial: Ш'
+user.name = 'Sharik';
+// => 'nameInitial: S'
 ```
 
 #### dispose or how to kill the cell
