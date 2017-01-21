@@ -79,7 +79,7 @@ var extend;
 /**
  * @typesign (description: {
  *     Extends?: Function,
- *     Implements?: Array<Object|Function>,
+ *     Implements?: Array<Object | Function>,
  *     Static?: Object,
  *     constructor?: Function,
  *     [key: string]
@@ -154,7 +154,7 @@ function createClass(description) {
  * @this {Function}
  *
  * @typesign (description: {
- *     Implements?: Array<Object|Function>,
+ *     Implements?: Array<Object | Function>,
  *     Static?: Object,
  *     constructor?: Function,
  *     [key: string]
@@ -400,7 +400,14 @@ var Map$1 = Map;
 
 var KEY_INNER = Symbol$1('cellx.EventEmitter.inner');
 
-var isEventType = {};
+var IS_EVENT = {};
+
+/**
+ * @typedef {{
+ *     listener: (evt: cellx~Event) -> ?boolean,
+ *     context
+ * }} cellx~EmitterEvent
+ */
 
 /**
  * @typedef {{
@@ -423,36 +430,35 @@ var EventEmitter = createClass({
 
 	constructor: function EventEmitter() {
 		/**
-		 * @type {Object<Array<{
-		 *     listener: (evt: cellx~Event) -> ?boolean,
-		 *     context
-		 * }>>}
+		 * @type {{ [type: string]: cellx~EmitterEvent | Array<cellx~EmitterEvent> }}
 		 */
 		this._events = new Map$1();
 	},
 
 	/**
-	 * @typesign (type?: string) -> Array<{ listener: (evt: cellx~Event) -> ?boolean, context }> |
-	 *     Object<Array<{ listener: (evt: cellx~Event) -> ?boolean, context }>>;
+	 * @typesign () -> { [type: string]: Array<cellx~EmitterEvent> };
+	 * @typesign (type: string) -> Array<cellx~EmitterEvent>;
 	 */
 	getEvents: function getEvents(type) {
+		var events;
+
 		if (type) {
-			var events = this._events && this._events.get(type);
+			events = this._events.get(type);
 
 			if (!events) {
 				return [];
 			}
 
-			return events._isEvent === isEventType ? [events] : events;
+			return events._isEvent === IS_EVENT ? [events] : events;
 		}
 
-		var resultEvents = Object.create(null);
+		events = Object.create(null);
 
-		this._events.forEach((function(events, type) {
-			resultEvents[type] = events._isEvent === isEventType ? [events] : events;
+		this._events.forEach((function(typeEvents, type) {
+			events[type] = typeEvents._isEvent === IS_EVENT ? [typeEvents] : typeEvents;
 		}));
 
-		return resultEvents;
+		return events;
 	},
 
 	/**
@@ -463,7 +469,7 @@ var EventEmitter = createClass({
 	 * ) -> cellx.EventEmitter;
 	 *
 	 * @typesign (
-	 *     listeners: Object<(evt: cellx~Event) -> ?boolean>,
+	 *     listeners: { [type: string]: (evt: cellx~Event) -> ?boolean },
 	 *     context?
 	 * ) -> cellx.EventEmitter;
 	 */
@@ -490,7 +496,7 @@ var EventEmitter = createClass({
 	 * ) -> cellx.EventEmitter;
 	 *
 	 * @typesign (
-	 *     listeners: Object<(evt: cellx~Event) -> ?boolean>,
+	 *     listeners: { [type: string]: (evt: cellx~Event) -> ?boolean },
 	 *     context?
 	 * ) -> cellx.EventEmitter;
 	 *
@@ -511,7 +517,7 @@ var EventEmitter = createClass({
 			} else {
 				this._off(type, listener, argCount >= 3 ? context : this);
 			}
-		} else if (this._events) {
+		} else {
 			this._events.clear();
 		}
 
@@ -531,16 +537,16 @@ var EventEmitter = createClass({
 		if (index != -1) {
 			this['_' + type.slice(index + 1)].on(type.slice(0, index), listener, context);
 		} else {
-			var events = (this._events || (this._events = new Map$1())).get(type);
+			var events = this._events.get(type);
 			var evt = {
-				_isEvent: isEventType,
+				_isEvent: IS_EVENT,
 				listener: listener,
 				context: context
 			};
 
 			if (!events) {
 				this._events.set(type, evt);
-			} else if (events._isEvent === isEventType) {
+			} else if (events._isEvent === IS_EVENT) {
 				this._events.set(type, [events, evt]);
 			} else {
 				events.push(evt);
@@ -560,39 +566,28 @@ var EventEmitter = createClass({
 		if (index != -1) {
 			this['_' + type.slice(index + 1)].off(type.slice(0, index), listener, context);
 		} else {
-			var events = this._events && this._events.get(type);
+			var events = this._events.get(type);
 
 			if (!events) {
 				return;
 			}
 
-			if (events._isEvent === isEventType) {
-				if (
-					(events.listener == listener || events.listener[KEY_INNER] === listener) &&
-						events.context === context
-				) {
+			var isEvent = events._isEvent === IS_EVENT;
+			var evt;
+
+			if (isEvent || events.length == 1) {
+				evt = isEvent ? events : events[0];
+
+				if ((evt.listener == listener || evt.listener[KEY_INNER] === listener) && evt.context === context) {
 					this._events.delete(type);
 				}
 			} else {
-				var eventCount = events.length;
-
-				if (eventCount == 1) {
-					var evt = events[0];
+				for (var i = events.length; i;) {
+					evt = events[--i];
 
 					if ((evt.listener == listener || evt.listener[KEY_INNER] === listener) && evt.context === context) {
-						this._events.delete(type);
-					}
-				} else {
-					for (var i = eventCount; i;) {
-						var evt2 = events[--i];
-
-						if (
-							(evt2.listener == listener || evt2.listener[KEY_INNER] === listener) &&
-								evt2.context === context
-						) {
-							events.splice(i, 1);
-							break;
-						}
+						events.splice(i, 1);
+						break;
 					}
 				}
 			}
@@ -653,41 +648,43 @@ var EventEmitter = createClass({
 	 *     el._view = this;
 	 * }
 	 *
-	 * View.prototype = Object.create(EventEmitter.prototype);
-	 * View.prototype.constructor = View;
+	 * View.prototype = {
+	 *     __proto__: EventEmitter.prototype,
+	 *     constructor: View,
 	 *
-	 * View.prototype.getParent = function() {
-	 *     var node = this.element;
+	 *     getParent: function() {
+	 *         var node = this.element;
 	 *
-	 *     while (node = node.parentNode) {
-	 *         if (node._view) {
-	 *             return node._view;
+	 *         while (node = node.parentNode) {
+	 *             if (node._view) {
+	 *                 return node._view;
+	 *             }
 	 *         }
-	 *     }
 	 *
-	 *     return null;
-	 * };
+	 *         return null;
+	 *     },
 	 *
-	 * View.prototype._handleEvent = function(evt) {
-	 *     EventEmitter.prototype._handleEvent.call(this, evt);
+	 *     _handleEvent: function(evt) {
+	 *         EventEmitter.prototype._handleEvent.call(this, evt);
 	 *
-	 *     if (evt.bubbles !== false && !evt.isPropagationStopped) {
-	 *         var parent = this.getParent();
+	 *         if (evt.bubbles !== false && !evt.isPropagationStopped) {
+	 *             var parent = this.getParent();
 	 *
-	 *         if (parent) {
-	 *             parent._handleEvent(evt);
+	 *             if (parent) {
+	 *                 parent._handleEvent(evt);
+	 *             }
 	 *         }
 	 *     }
 	 * };
 	 */
 	_handleEvent: function _handleEvent(evt) {
-		var events = this._events && this._events.get(evt.type);
+		var events = this._events.get(evt.type);
 
 		if (!events) {
 			return;
 		}
 
-		if (events._isEvent === isEventType) {
+		if (events._isEvent === IS_EVENT) {
 			if (this._tryEventListener(events, evt) === false) {
 				evt.isPropagationStopped = true;
 			}
@@ -710,6 +707,9 @@ var EventEmitter = createClass({
 		}
 	},
 
+	/**
+	 * @typesign (emEvt: cellx~EmitterEvent, evt: cellx~Event);
+	 */
 	_tryEventListener: function _tryEventListener(emEvt, evt) {
 		try {
 			return emEvt.listener.call(emEvt.context, evt);
@@ -783,9 +783,14 @@ var ObservableCollectionMixin = EventEmitter.extend({
  * @extends {cellx.EventEmitter}
  * @implements {cellx.ObservableCollectionMixin}
  *
- * @typesign new ObservableMap(entries?: Object|cellx.ObservableMap|Map|Array<{ 0, 1 }>, opts?: {
+ * @typesign new ObservableMap(entries?: Object | cellx.ObservableMap | Map | Array<{ 0, 1 }>, opts?: {
  *     adoptsValueChanges?: boolean
  * }) -> cellx.ObservableMap;
+ *
+ * @typesign new ObservableMap(
+ *     entries?: Object | cellx.ObservableMap | Map | Array<{ 0, 1 }>,
+ *     adoptsValueChanges?: boolean
+ * ) -> cellx.ObservableMap;
  */
 var ObservableMap = EventEmitter.extend({
 	Implements: [ObservableCollectionMixin],
@@ -793,6 +798,10 @@ var ObservableMap = EventEmitter.extend({
 	constructor: function ObservableMap(entries, opts) {
 		EventEmitter.call(this);
 		ObservableCollectionMixin.call(this);
+
+		if (typeof opts == 'boolean') {
+			opts = { adoptsValueChanges: opts };
+		}
 
 		this._entries = new Map$1();
 
@@ -988,12 +997,12 @@ var ObservableMap = EventEmitter.extend({
 ObservableMap.prototype[Symbol$1.iterator] = ObservableMap.prototype.entries;
 
 var slice = Array.prototype.slice;
-var push$1 = Array.prototype.push;
+var push = Array.prototype.push;
 var splice = Array.prototype.splice;
 var map$1 = Array.prototype.map;
 
 /**
- * @typesign (a, b) -> -1|1|0;
+ * @typesign (a, b) -> 0 | -1 | 1;
  */
 function defaultComparator(a, b) {
 	if (a < b) { return -1; }
@@ -1006,11 +1015,16 @@ function defaultComparator(a, b) {
  * @extends {cellx.EventEmitter}
  * @implements {cellx.ObservableCollectionMixin}
  *
- * @typesign new ObservableList(items?: Array|cellx.ObservableList, opts?: {
+ * @typesign new ObservableList(items?: Array | cellx.ObservableList, opts?: {
  *     adoptsValueChanges?: boolean,
  *     comparator?: (a, b) -> int,
  *     sorted?: boolean
  * }) -> cellx.ObservableList;
+ *
+ * @typesign new ObservableList(
+ *     items?: Array | cellx.ObservableList,
+ *     adoptsValueChanges?: boolean
+ * ) -> cellx.ObservableList;
  */
 var ObservableList = EventEmitter.extend({
 	Implements: [ObservableCollectionMixin],
@@ -1019,8 +1033,8 @@ var ObservableList = EventEmitter.extend({
 		EventEmitter.call(this);
 		ObservableCollectionMixin.call(this);
 
-		if (!opts) {
-			opts = {};
+		if (typeof opts == 'boolean') {
+			opts = { adoptsValueChanges: opts };
 		}
 
 		this._items = [];
@@ -1030,7 +1044,7 @@ var ObservableList = EventEmitter.extend({
 		/**
 		 * @type {boolean}
 		 */
-		this.adoptsValueChanges = !!opts.adoptsValueChanges;
+		this.adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
 
 		/**
 		 * @type {?(a, b) -> int}
@@ -1039,7 +1053,7 @@ var ObservableList = EventEmitter.extend({
 
 		this.sorted = false;
 
-		if (opts.sorted || (opts.comparator && opts.sorted !== false)) {
+		if (opts && (opts.sorted || (opts.comparator && opts.sorted !== false))) {
 			this.comparator = opts.comparator || defaultComparator;
 			this.sorted = true;
 		}
@@ -1143,7 +1157,7 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (index: int, values: Array|cellx.ObservableList) -> cellx.ObservableList;
+	 * @typesign (index: int, values: Array | cellx.ObservableList) -> cellx.ObservableList;
 	 */
 	setRange: function setRange(index, values) {
 		if (this.sorted) {
@@ -1206,7 +1220,7 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (values: Array|cellx.ObservableList) -> cellx.ObservableList;
+	 * @typesign (values: Array | cellx.ObservableList) -> cellx.ObservableList;
 	 */
 	addRange: function addRange(values) {
 		if (values.length) {
@@ -1218,7 +1232,7 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (values: Array|cellx.ObservableList);
+	 * @typesign (values: Array | cellx.ObservableList);
 	 */
 	_addRange: function _addRange(values) {
 		if (values instanceof ObservableList) {
@@ -1236,7 +1250,7 @@ var ObservableList = EventEmitter.extend({
 				this._registerValue(values[--j]);
 			}
 
-			this.length = push$1.apply(this._items, values);
+			this.length = push.apply(this._items, values);
 		}
 	},
 
@@ -1284,7 +1298,7 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (index: int, values: Array|cellx.ObservableList) -> cellx.ObservableList;
+	 * @typesign (index: int, values: Array | cellx.ObservableList) -> cellx.ObservableList;
 	 */
 	insertRange: function insertRange(index, values) {
 		if (this.sorted) {
@@ -1357,7 +1371,7 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (values: Array|cellx.ObservableList, fromIndex?: int) -> boolean;
+	 * @typesign (values: Array | cellx.ObservableList, fromIndex?: int) -> boolean;
 	 */
 	removeEach: function removeEach(values, fromIndex) {
 		fromIndex = this._validateIndex(fromIndex, true);
@@ -1389,7 +1403,7 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (values: Array|cellx.ObservableList, fromIndex?: int) -> boolean;
+	 * @typesign (values: Array | cellx.ObservableList, fromIndex?: int) -> boolean;
 	 */
 	removeAllEach: function removeAllEach(values, fromIndex) {
 		fromIndex = this._validateIndex(fromIndex, true);
@@ -2731,7 +2745,7 @@ var Cell = EventEmitter.extend({
 	/**
 	 * @typesign (value) -> cellx.Cell;
 	 */
-	push: function push(value) {
+	push: function push$$1(value) {
 		this._push(value, true, false);
 		return this;
 	},
@@ -3084,9 +3098,7 @@ function cellx(value, opts) {
 		}
 
 		if (!hasOwn.call(owner, CELLS)) {
-			Object.defineProperty(owner, CELLS, {
-				value: new Map$1()
-			});
+			Object.defineProperty(owner, CELLS, { value: new Map$1() });
 		}
 
 		var cell = owner[CELLS].get(cx);
@@ -3158,32 +3170,32 @@ cellx.KEY_CELLS = CELLS;
 
 /**
  * @typesign (
- *     entries?: Object|Array<{ 0, 1 }>|cellx.ObservableMap,
+ *     entries?: Object | Array<{ 0, 1 }> | cellx.ObservableMap,
  *     opts?: { adoptsValueChanges?: boolean }
  * ) -> cellx.ObservableMap;
  *
  * @typesign (
- *     entries?: Object|Array<{ 0, 1 }>|cellx.ObservableMap,
+ *     entries?: Object | Array<{ 0, 1 }> | cellx.ObservableMap,
  *     adoptsValueChanges?: boolean
  * ) -> cellx.ObservableMap;
  */
 function map$$1(entries, opts) {
-	return new ObservableMap(entries, typeof opts == 'boolean' ? { adoptsValueChanges: opts } : opts);
+	return new ObservableMap(entries, opts);
 }
 
 cellx.map = map$$1;
 
 /**
- * @typesign (items?: Array|cellx.ObservableList, opts?: {
+ * @typesign (items?: Array | cellx.ObservableList, opts?: {
  *     adoptsValueChanges?: boolean,
  *     comparator?: (a, b) -> int,
  *     sorted?: boolean
  * }) -> cellx.ObservableList;
  *
- * @typesign (items?: Array|cellx.ObservableList, adoptsValueChanges?: boolean) -> cellx.ObservableList;
+ * @typesign (items?: Array | cellx.ObservableList, adoptsValueChanges?: boolean) -> cellx.ObservableList;
  */
 function list(items, opts) {
-	return new ObservableList(items, typeof opts == 'boolean' ? { adoptsValueChanges: opts } : opts);
+	return new ObservableList(items, opts);
 }
 
 cellx.list = list;
@@ -3258,7 +3270,7 @@ cellx.Utils = cellx.utils = {
 	noop: noop
 };
 
-cellx.cellx = cellx; // for destructuring
+cellx.cellx = cellx;
 
 cellx.__esModule = true;
 cellx.default = cellx;

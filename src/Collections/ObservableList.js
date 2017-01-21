@@ -5,7 +5,7 @@ import { push, splice } from '../JS/Array';
 import Symbol from '../JS/Symbol';
 
 /**
- * @typesign (a, b) -> -1|1|0;
+ * @typesign (a, b) -> 0 | -1 | 1;
  */
 function defaultComparator(a, b) {
 	if (a < b) { return -1; }
@@ -18,11 +18,16 @@ function defaultComparator(a, b) {
  * @extends {cellx.EventEmitter}
  * @implements {cellx.ObservableCollectionMixin}
  *
- * @typesign new ObservableList(items?: Array|cellx.ObservableList, opts?: {
+ * @typesign new ObservableList(items?: Array | cellx.ObservableList, opts?: {
  *     adoptsValueChanges?: boolean,
  *     comparator?: (a, b) -> int,
  *     sorted?: boolean
  * }) -> cellx.ObservableList;
+ *
+ * @typesign new ObservableList(
+ *     items?: Array | cellx.ObservableList,
+ *     adoptsValueChanges?: boolean
+ * ) -> cellx.ObservableList;
  */
 var ObservableList = EventEmitter.extend({
 	Implements: [ObservableCollectionMixin],
@@ -31,8 +36,8 @@ var ObservableList = EventEmitter.extend({
 		EventEmitter.call(this);
 		ObservableCollectionMixin.call(this);
 
-		if (!opts) {
-			opts = {};
+		if (typeof opts == 'boolean') {
+			opts = { adoptsValueChanges: opts };
 		}
 
 		this._items = [];
@@ -42,7 +47,7 @@ var ObservableList = EventEmitter.extend({
 		/**
 		 * @type {boolean}
 		 */
-		this.adoptsValueChanges = !!opts.adoptsValueChanges;
+		this.adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
 
 		/**
 		 * @type {?(a, b) -> int}
@@ -51,7 +56,7 @@ var ObservableList = EventEmitter.extend({
 
 		this.sorted = false;
 
-		if (opts.sorted || (opts.comparator && opts.sorted !== false)) {
+		if (opts && (opts.sorted || (opts.comparator && opts.sorted !== false))) {
 			this.comparator = opts.comparator || defaultComparator;
 			this.sorted = true;
 		}
@@ -155,7 +160,7 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (index: int, values: Array|cellx.ObservableList) -> cellx.ObservableList;
+	 * @typesign (index: int, values: Array | cellx.ObservableList) -> cellx.ObservableList;
 	 */
 	setRange: function setRange(index, values) {
 		if (this.sorted) {
@@ -218,7 +223,7 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (values: Array|cellx.ObservableList) -> cellx.ObservableList;
+	 * @typesign (values: Array | cellx.ObservableList) -> cellx.ObservableList;
 	 */
 	addRange: function addRange(values) {
 		if (values.length) {
@@ -230,7 +235,7 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (values: Array|cellx.ObservableList);
+	 * @typesign (values: Array | cellx.ObservableList);
 	 */
 	_addRange: function _addRange(values) {
 		if (values instanceof ObservableList) {
@@ -296,7 +301,7 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (index: int, values: Array|cellx.ObservableList) -> cellx.ObservableList;
+	 * @typesign (index: int, values: Array | cellx.ObservableList) -> cellx.ObservableList;
 	 */
 	insertRange: function insertRange(index, values) {
 		if (this.sorted) {
@@ -369,7 +374,7 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (values: Array|cellx.ObservableList, fromIndex?: int) -> boolean;
+	 * @typesign (values: Array | cellx.ObservableList, fromIndex?: int) -> boolean;
 	 */
 	removeEach: function removeEach(values, fromIndex) {
 		fromIndex = this._validateIndex(fromIndex, true);
@@ -401,7 +406,7 @@ var ObservableList = EventEmitter.extend({
 	},
 
 	/**
-	 * @typesign (values: Array|cellx.ObservableList, fromIndex?: int) -> boolean;
+	 * @typesign (values: Array | cellx.ObservableList, fromIndex?: int) -> boolean;
 	 */
 	removeAllEach: function removeAllEach(values, fromIndex) {
 		fromIndex = this._validateIndex(fromIndex, true);

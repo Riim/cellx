@@ -9,9 +9,14 @@ import Symbol from '../JS/Symbol';
  * @extends {cellx.EventEmitter}
  * @implements {cellx.ObservableCollectionMixin}
  *
- * @typesign new ObservableMap(entries?: Object|cellx.ObservableMap|Map|Array<{ 0, 1 }>, opts?: {
+ * @typesign new ObservableMap(entries?: Object | cellx.ObservableMap | Map | Array<{ 0, 1 }>, opts?: {
  *     adoptsValueChanges?: boolean
  * }) -> cellx.ObservableMap;
+ *
+ * @typesign new ObservableMap(
+ *     entries?: Object | cellx.ObservableMap | Map | Array<{ 0, 1 }>,
+ *     adoptsValueChanges?: boolean
+ * ) -> cellx.ObservableMap;
  */
 var ObservableMap = EventEmitter.extend({
 	Implements: [ObservableCollectionMixin],
@@ -19,6 +24,10 @@ var ObservableMap = EventEmitter.extend({
 	constructor: function ObservableMap(entries, opts) {
 		EventEmitter.call(this);
 		ObservableCollectionMixin.call(this);
+
+		if (typeof opts == 'boolean') {
+			opts = { adoptsValueChanges: opts };
+		}
 
 		this._entries = new Map();
 

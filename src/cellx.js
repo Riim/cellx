@@ -55,9 +55,7 @@ function cellx(value, opts) {
 		}
 
 		if (!hasOwn.call(owner, KEY_CELLS)) {
-			Object.defineProperty(owner, KEY_CELLS, {
-				value: new Map()
-			});
+			Object.defineProperty(owner, KEY_CELLS, { value: new Map() });
 		}
 
 		var cell = owner[KEY_CELLS].get(cx);
@@ -129,32 +127,32 @@ cellx.KEY_CELLS = KEY_CELLS;
 
 /**
  * @typesign (
- *     entries?: Object|Array<{ 0, 1 }>|cellx.ObservableMap,
+ *     entries?: Object | Array<{ 0, 1 }> | cellx.ObservableMap,
  *     opts?: { adoptsValueChanges?: boolean }
  * ) -> cellx.ObservableMap;
  *
  * @typesign (
- *     entries?: Object|Array<{ 0, 1 }>|cellx.ObservableMap,
+ *     entries?: Object | Array<{ 0, 1 }> | cellx.ObservableMap,
  *     adoptsValueChanges?: boolean
  * ) -> cellx.ObservableMap;
  */
 function map(entries, opts) {
-	return new ObservableMap(entries, typeof opts == 'boolean' ? { adoptsValueChanges: opts } : opts);
+	return new ObservableMap(entries, opts);
 }
 
 cellx.map = map;
 
 /**
- * @typesign (items?: Array|cellx.ObservableList, opts?: {
+ * @typesign (items?: Array | cellx.ObservableList, opts?: {
  *     adoptsValueChanges?: boolean,
  *     comparator?: (a, b) -> int,
  *     sorted?: boolean
  * }) -> cellx.ObservableList;
  *
- * @typesign (items?: Array|cellx.ObservableList, adoptsValueChanges?: boolean) -> cellx.ObservableList;
+ * @typesign (items?: Array | cellx.ObservableList, adoptsValueChanges?: boolean) -> cellx.ObservableList;
  */
 function list(items, opts) {
-	return new ObservableList(items, typeof opts == 'boolean' ? { adoptsValueChanges: opts } : opts);
+	return new ObservableList(items, opts);
 }
 
 cellx.list = list;
@@ -229,7 +227,7 @@ cellx.Utils = cellx.utils = {
 	noop: noop
 };
 
-cellx.cellx = cellx; // for destructuring
+cellx.cellx = cellx;
 
 cellx.__esModule = true;
 cellx.default = cellx;

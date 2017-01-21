@@ -5,7 +5,14 @@ import createClass from './Utils/createClass';
 
 var KEY_INNER = Symbol('cellx.EventEmitter.inner');
 
-var isEventType = {};
+var IS_EVENT = {};
+
+/**
+ * @typedef {{
+ *     listener: (evt: cellx~Event) -> ?boolean,
+ *     context
+ * }} cellx~EmitterEvent
+ */
 
 /**
  * @typedef {{
@@ -28,36 +35,35 @@ var EventEmitter = createClass({
 
 	constructor: function EventEmitter() {
 		/**
-		 * @type {Object<Array<{
-		 *     listener: (evt: cellx~Event) -> ?boolean,
-		 *     context
-		 * }>>}
+		 * @type {{ [type: string]: cellx~EmitterEvent | Array<cellx~EmitterEvent> }}
 		 */
 		this._events = new Map();
 	},
 
 	/**
-	 * @typesign (type?: string) -> Array<{ listener: (evt: cellx~Event) -> ?boolean, context }> |
-	 *     Object<Array<{ listener: (evt: cellx~Event) -> ?boolean, context }>>;
+	 * @typesign () -> { [type: string]: Array<cellx~EmitterEvent> };
+	 * @typesign (type: string) -> Array<cellx~EmitterEvent>;
 	 */
 	getEvents: function getEvents(type) {
+		var events;
+
 		if (type) {
-			var events = this._events && this._events.get(type);
+			events = this._events.get(type);
 
 			if (!events) {
 				return [];
 			}
 
-			return events._isEvent === isEventType ? [events] : events;
+			return events._isEvent === IS_EVENT ? [events] : events;
 		}
 
-		var resultEvents = Object.create(null);
+		events = Object.create(null);
 
-		this._events.forEach(function(events, type) {
-			resultEvents[type] = events._isEvent === isEventType ? [events] : events;
+		this._events.forEach(function(typeEvents, type) {
+			events[type] = typeEvents._isEvent === IS_EVENT ? [typeEvents] : typeEvents;
 		});
 
-		return resultEvents;
+		return events;
 	},
 
 	/**
@@ -68,7 +74,7 @@ var EventEmitter = createClass({
 	 * ) -> cellx.EventEmitter;
 	 *
 	 * @typesign (
-	 *     listeners: Object<(evt: cellx~Event) -> ?boolean>,
+	 *     listeners: { [type: string]: (evt: cellx~Event) -> ?boolean },
 	 *     context?
 	 * ) -> cellx.EventEmitter;
 	 */
@@ -95,7 +101,7 @@ var EventEmitter = createClass({
 	 * ) -> cellx.EventEmitter;
 	 *
 	 * @typesign (
-	 *     listeners: Object<(evt: cellx~Event) -> ?boolean>,
+	 *     listeners: { [type: string]: (evt: cellx~Event) -> ?boolean },
 	 *     context?
 	 * ) -> cellx.EventEmitter;
 	 *
@@ -116,7 +122,7 @@ var EventEmitter = createClass({
 			} else {
 				this._off(type, listener, argCount >= 3 ? context : this);
 			}
-		} else if (this._events) {
+		} else {
 			this._events.clear();
 		}
 
@@ -136,16 +142,16 @@ var EventEmitter = createClass({
 		if (index != -1) {
 			this['_' + type.slice(index + 1)].on(type.slice(0, index), listener, context);
 		} else {
-			var events = (this._events || (this._events = new Map())).get(type);
+			var events = this._events.get(type);
 			var evt = {
-				_isEvent: isEventType,
+				_isEvent: IS_EVENT,
 				listener: listener,
 				context: context
 			};
 
 			if (!events) {
 				this._events.set(type, evt);
-			} else if (events._isEvent === isEventType) {
+			} else if (events._isEvent === IS_EVENT) {
 				this._events.set(type, [events, evt]);
 			} else {
 				events.push(evt);
@@ -165,39 +171,28 @@ var EventEmitter = createClass({
 		if (index != -1) {
 			this['_' + type.slice(index + 1)].off(type.slice(0, index), listener, context);
 		} else {
-			var events = this._events && this._events.get(type);
+			var events = this._events.get(type);
 
 			if (!events) {
 				return;
 			}
 
-			if (events._isEvent === isEventType) {
-				if (
-					(events.listener == listener || events.listener[KEY_INNER] === listener) &&
-						events.context === context
-				) {
+			var isEvent = events._isEvent === IS_EVENT;
+			var evt;
+
+			if (isEvent || events.length == 1) {
+				evt = isEvent ? events : events[0];
+
+				if ((evt.listener == listener || evt.listener[KEY_INNER] === listener) && evt.context === context) {
 					this._events.delete(type);
 				}
 			} else {
-				var eventCount = events.length;
-
-				if (eventCount == 1) {
-					var evt = events[0];
+				for (var i = events.length; i;) {
+					evt = events[--i];
 
 					if ((evt.listener == listener || evt.listener[KEY_INNER] === listener) && evt.context === context) {
-						this._events.delete(type);
-					}
-				} else {
-					for (var i = eventCount; i;) {
-						var evt2 = events[--i];
-
-						if (
-							(evt2.listener == listener || evt2.listener[KEY_INNER] === listener) &&
-								evt2.context === context
-						) {
-							events.splice(i, 1);
-							break;
-						}
+						events.splice(i, 1);
+						break;
 					}
 				}
 			}
@@ -258,41 +253,43 @@ var EventEmitter = createClass({
 	 *     el._view = this;
 	 * }
 	 *
-	 * View.prototype = Object.create(EventEmitter.prototype);
-	 * View.prototype.constructor = View;
+	 * View.prototype = {
+	 *     __proto__: EventEmitter.prototype,
+	 *     constructor: View,
 	 *
-	 * View.prototype.getParent = function() {
-	 *     var node = this.element;
+	 *     getParent: function() {
+	 *         var node = this.element;
 	 *
-	 *     while (node = node.parentNode) {
-	 *         if (node._view) {
-	 *             return node._view;
+	 *         while (node = node.parentNode) {
+	 *             if (node._view) {
+	 *                 return node._view;
+	 *             }
 	 *         }
-	 *     }
 	 *
-	 *     return null;
-	 * };
+	 *         return null;
+	 *     },
 	 *
-	 * View.prototype._handleEvent = function(evt) {
-	 *     EventEmitter.prototype._handleEvent.call(this, evt);
+	 *     _handleEvent: function(evt) {
+	 *         EventEmitter.prototype._handleEvent.call(this, evt);
 	 *
-	 *     if (evt.bubbles !== false && !evt.isPropagationStopped) {
-	 *         var parent = this.getParent();
+	 *         if (evt.bubbles !== false && !evt.isPropagationStopped) {
+	 *             var parent = this.getParent();
 	 *
-	 *         if (parent) {
-	 *             parent._handleEvent(evt);
+	 *             if (parent) {
+	 *                 parent._handleEvent(evt);
+	 *             }
 	 *         }
 	 *     }
 	 * };
 	 */
 	_handleEvent: function _handleEvent(evt) {
-		var events = this._events && this._events.get(evt.type);
+		var events = this._events.get(evt.type);
 
 		if (!events) {
 			return;
 		}
 
-		if (events._isEvent === isEventType) {
+		if (events._isEvent === IS_EVENT) {
 			if (this._tryEventListener(events, evt) === false) {
 				evt.isPropagationStopped = true;
 			}
@@ -315,6 +312,9 @@ var EventEmitter = createClass({
 		}
 	},
 
+	/**
+	 * @typesign (emEvt: cellx~EmitterEvent, evt: cellx~Event);
+	 */
 	_tryEventListener: function _tryEventListener(emEvt, evt) {
 		try {
 			return emEvt.listener.call(emEvt.context, evt);

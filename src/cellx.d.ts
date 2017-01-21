@@ -43,8 +43,8 @@ declare namespace Cellx {
 
 		protected _events: Map<string, Array<{ listener: IEventEmitterListener; context: any }>>;
 
-		getEvents(type?: string): Array<{ listener: (evt: IEvent) => boolean | void; context: any }> |
-			{ [type: string]: Array<{ listener: (evt: IEvent) => boolean | void; context: any }> };
+		getEvents(): { [type: string]: Array<{ listener: (evt: IEvent) => boolean | void; context: any }> };
+		getEvents(type: string): Array<{ listener: (evt: IEvent) => boolean | void; context: any }>;
 
 		on(type: string, listener: IEventEmitterListener, context?: any): EventEmitter;
 		on(listeners: { [key: string]: IEventEmitterListener }, context?: any): EventEmitter;
@@ -80,6 +80,7 @@ declare namespace Cellx {
 		adoptsValueChanges: boolean;
 
 		constructor(entries?: ObservableMapEntries<K, V>, opts?: IObservableMapOptions);
+		constructor(entries?: ObservableMapEntries<K, V>, adoptsValueChanges?: boolean);
 
 		has(key: K): boolean;
 		contains(value: V): boolean;
@@ -111,6 +112,7 @@ declare namespace Cellx {
 		sorted: boolean;
 
 		constructor(items?: ObservableListItems<T>, opts?: IObservableListOptions<T>);
+		constructor(items?: ObservableListItems<T>, adoptsValueChanges?: boolean);
 
 		contains(value: T): boolean;
 		indexOf(value: T, fromIndex?: number): number;

@@ -6,7 +6,7 @@ var extend;
 /**
  * @typesign (description: {
  *     Extends?: Function,
- *     Implements?: Array<Object|Function>,
+ *     Implements?: Array<Object | Function>,
  *     Static?: Object,
  *     constructor?: Function,
  *     [key: string]
@@ -81,7 +81,7 @@ function createClass(description) {
  * @this {Function}
  *
  * @typesign (description: {
- *     Implements?: Array<Object|Function>,
+ *     Implements?: Array<Object | Function>,
  *     Static?: Object,
  *     constructor?: Function,
  *     [key: string]
