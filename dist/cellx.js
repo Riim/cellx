@@ -535,7 +535,10 @@ var EventEmitter = createClass({
 		var index = type.indexOf(':');
 
 		if (index != -1) {
-			this['_' + type.slice(index + 1)].on(type.slice(0, index), listener, context);
+			var propName = type.slice(index + 1);
+
+			(this['_' + propName] || (this[propName], this['_' + propName]))
+				.on(type.slice(0, index), listener, context);
 		} else {
 			var events = this._events.get(type);
 			var evt = {
@@ -564,7 +567,10 @@ var EventEmitter = createClass({
 		var index = type.indexOf(':');
 
 		if (index != -1) {
-			this['_' + type.slice(index + 1)].off(type.slice(0, index), listener, context);
+			var propName = type.slice(index + 1);
+
+			(this['_' + propName] || (this[propName], this['_' + propName]))
+				.off(type.slice(0, index), listener, context);
 		} else {
 			var events = this._events.get(type);
 

@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.6.90",
+  "version": "1.6.91",
   "description": "",
   "main": "dist/cellx.js",
   "typings": "src/cellx.d.ts",
@@ -31,8 +31,8 @@
     "gulp-optimize-js": "^1.1.0",
     "gulp-rename": "^1.2.2",
     "gulp-sizereport": "^1.2.0",
-    "gulp-uglify": "^2.0.0",
-    "karma": "^1.4.0",
+    "gulp-uglify": "^2.0.1",
+    "karma": "^1.4.1",
     "karma-babel-preprocessor": "^6.0.1",
     "karma-chai": "^0.1.0",
     "karma-coverage": "^1.1.1",
