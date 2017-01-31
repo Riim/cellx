@@ -3068,6 +3068,14 @@ function logError() {
 
 ErrorLogger.setHandler(logError);
 
+var assign = Object.assign || function(target, source) {
+	for (var name in source) {
+		target[name] = source[name];
+	}
+
+	return target;
+};
+
 /**
  * @typesign (value?, opts?: {
  *     debugKey?: string,
@@ -3114,10 +3122,7 @@ function cellx(value, opts) {
 				return;
 			}
 
-			opts = Object.create(opts);
-			opts.owner = owner;
-
-			cell = new Cell(initialValue, opts);
+			cell = new Cell(initialValue, assign({ owner: owner }, opts));
 
 			owner[CELLS].set(cx, cell);
 		}
