@@ -233,7 +233,7 @@ var Cell = EventEmitter.extend({
 				if (transactionLevel) {
 					var index = pendingReactions.indexOf(this);
 
-					if (index > -1) {
+					if (index != -1) {
 						pendingReactions.splice(index, 1);
 					}
 

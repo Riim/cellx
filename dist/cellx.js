@@ -167,7 +167,7 @@ extend = function extend(description) {
 
 var Map = global$1.Map;
 
-if (!Map) {
+if (!Map || Map.toString().indexOf('[native code]') == -1) {
 	var entryStub = {
 		value: undefined
 	};
@@ -1977,7 +1977,7 @@ var Cell = EventEmitter.extend({
 				if (transactionLevel) {
 					var index = pendingReactions.indexOf(this);
 
-					if (index > -1) {
+					if (index != -1) {
 						pendingReactions.splice(index, 1);
 					}
 

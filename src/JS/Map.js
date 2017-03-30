@@ -7,7 +7,7 @@ import createClass from '../Utils/createClass';
 
 var Map = global.Map;
 
-if (!Map) {
+if (!Map || Map.toString().indexOf('[native code]') == -1) {
 	var entryStub = {
 		value: undefined
 	};
