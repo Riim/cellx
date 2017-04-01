@@ -154,8 +154,8 @@ declare namespace Cellx {
 		toString(): string;
 	}
 
-	interface ICellPull {
-		(push: (value: any) => void, fail: (err: any) => void, next: any): any;
+	interface ICellPull<T> {
+		(cell: Cell<T>, next: any): any;
 	}
 
 	interface ICellOptions<T> {
@@ -164,7 +164,7 @@ declare namespace Cellx {
 		get?: (value: any) => T,
 		validate?: (value: T, oldValue: any) => void;
 		merge?: (value: T, oldValue: any) => any;
-		put?: (value: any, push: (value: any) => void, fail: (err: any) => void) => void;
+		put?: (cell: Cell<T>, value: any, oldValue: any) => void;
 		reap?: () => void;
 		onChange?: IEventEmitterListener;
 		onError?: IEventEmitterListener;
@@ -195,7 +195,7 @@ declare namespace Cellx {
 		owner: Object;
 
 		constructor(value?: T, opts?: ICellOptions<T>);
-		constructor(pull: ICellPull, opts?: ICellOptions<T>);
+		constructor(pull: ICellPull<T>, opts?: ICellOptions<T>);
 
 		addChangeListener(listener: IEventEmitterListener, context?: any): Cell<T>;
 		removeChangeListener(listener: IEventEmitterListener, context?: any): Cell<T>;
@@ -273,10 +273,10 @@ declare namespace Cellx {
 	}
 
 	export function cellx<T>(value?: T, opts?: ICellOptions<T>): ICellx<T>;
-	export function cellx<T>(pull: ICellPull, opts?: ICellOptions<T>): ICellx<T>;
+	export function cellx<T>(pull: ICellPull<T>, opts?: ICellOptions<T>): ICellx<T>;
 }
 
 declare function Cellx<T>(value?: T, opts?: Cellx.ICellOptions<T>): Cellx.ICellx<T>;
-declare function Cellx<T>(pull: Cellx.ICellPull, opts?: Cellx.ICellOptions<T>): Cellx.ICellx<T>;
+declare function Cellx<T>(pull: Cellx.ICellPull<T>, opts?: Cellx.ICellOptions<T>): Cellx.ICellx<T>;
 
 export = Cellx;

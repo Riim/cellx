@@ -144,8 +144,8 @@ function release() {
 /**
  * @typesign (value);
  */
-function defaultPut(value, push) {
-	push(value);
+function defaultPut(cell, value) {
+	cell.push(value);
 }
 
 var config = {
@@ -180,19 +180,19 @@ var config = {
  *     get?: (value) -> *,
  *     validate?: (value, oldValue),
  *     merge: (value, oldValue) -> *,
- *     put?: (value, push: (value), fail: (err)),
+ *     put?: (cell: Cell, value, oldValue),
  *     reap?: (),
  *     onChange?: (evt: cellx~Event) -> ?boolean,
  *     onError?: (evt: cellx~Event) -> ?boolean
  * }) -> cellx.Cell;
  *
- * @typesign new Cell(pull: (push: (value), fail: (err), next) -> *, opts?: {
+ * @typesign new Cell(pull: (cell: Cell, next) -> *, opts?: {
  *     debugKey?: string,
  *     owner?: Object,
  *     get?: (value) -> *,
  *     validate?: (value, oldValue),
  *     merge: (value, oldValue) -> *,
- *     put?: (value, push: (value), fail: (err)),
+ *     put?: (cell: Cell, value, oldValue),
  *     reap?: (),
  *     onChange?: (evt: cellx~Event) -> ?boolean,
  *     onError?: (evt: cellx~Event) -> ?boolean
@@ -200,8 +200,6 @@ var config = {
  */
 var Cell = EventEmitter.extend({
 	Static: {
-		_nextTick: nextTick,
-
 		/**
 		 * @typesign (cnfg: { asynchronous?: boolean });
 		 */
@@ -320,33 +318,20 @@ var Cell = EventEmitter.extend({
 	constructor: function Cell(value, opts) {
 		EventEmitter.call(this);
 
-		if (!opts) {
-			opts = {};
-		}
+		this.debugKey = opts && opts.debugKey;
 
-		var cell = this;
-
-		this.debugKey = opts.debugKey;
-
-		this.owner = opts.owner || this;
+		this.owner = opts && opts.owner || this;
 
 		this._pull = typeof value == 'function' ? value : null;
-		this._get = opts.get || null;
+		this._get = opts && opts.get || null;
 
-		this._validate = opts.validate || null;
-		this._merge = opts.merge || null;
-
-		this._put = opts.put || defaultPut;
-
-		var push = this.push;
-		var fail = this.fail;
-
-		this.push = function(value) { push.call(cell, value); };
-		this.fail = function(err) { fail.call(cell, err); };
+		this._validate = opts && opts.validate || null;
+		this._merge = opts && opts.merge || null;
+		this._put = opts && opts.put || defaultPut;
 
 		this._onFulfilled = this._onRejected = null;
 
-		this._reap = opts.reap || null;
+		this._reap = opts && opts.reap || null;
 
 		if (this._pull) {
 			this._fixedValue = this._value = undefined;
@@ -406,11 +391,13 @@ var Cell = EventEmitter.extend({
 
 		this._lastErrorEvent = null;
 
-		if (opts.onChange) {
-			this.on('change', opts.onChange);
-		}
-		if (opts.onError) {
-			this.on('error', opts.onError);
+		if (opts) {
+			if (opts.onChange) {
+				this.on('change', opts.onChange);
+			}
+			if (opts.onError) {
+				this.on('error', opts.onError);
+			}
 		}
 	},
 
@@ -660,7 +647,7 @@ var Cell = EventEmitter.extend({
 			if (!transactionLevel && !config.asynchronous) {
 				release();
 			} else {
-				Cell._nextTick(release);
+				nextTick(release);
 			}
 		}
 	},
@@ -834,7 +821,7 @@ var Cell = EventEmitter.extend({
 		this._level = 0;
 
 		try {
-			return pull.length ? pull.call(this.owner, this.push, this.fail, this._value) : pull.call(this.owner);
+			return pull.length ? pull.call(this.owner, this, this._value) : pull.call(this.owner);
 		} catch (err) {
 			error.original = err;
 			return error;
@@ -979,13 +966,11 @@ var Cell = EventEmitter.extend({
 	 * @typesign (value) -> cellx.Cell;
 	 */
 	set: function set(value) {
-		var oldValue = this._value;
-
 		if (this._validate) {
-			this._validate(value, oldValue);
+			this._validate(value, this._value);
 		}
 		if (this._merge) {
-			value = this._merge(value, oldValue);
+			value = this._merge(value, this._value);
 		}
 
 		this._pending = true;
@@ -995,10 +980,10 @@ var Cell = EventEmitter.extend({
 
 		this._fulfilled = this._rejected = false;
 
-		if (this._put.length >= 2) {
-			this._put.call(this.owner, value, this.push, this.fail, oldValue);
+		if (this._put.length >= 3) {
+			this._put.call(this.owner, this, value, this._value);
 		} else {
-			this._put.call(this.owner, value);
+			this._put.call(this.owner, this, value);
 		}
 
 		return this;

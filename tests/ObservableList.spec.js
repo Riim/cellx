@@ -1,7 +1,7 @@
 describe('ObservableList', function() {
 
 	if (!window.Symbol) {
-		window.Symbol = cellx.js.Symbol;
+		window.Symbol = cellx.JS.Symbol;
 	}
 
 	it('#sorted', function() {

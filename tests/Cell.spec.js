@@ -352,30 +352,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	it.skip('один поток не должен мешать другому', () => {
-		let a = new cellx.Cell(1, { debugKey: 'a' });
-		let b = new cellx.Cell(2, { debugKey: 'b' });
-
-		let t = 0;
-		let aa = new cellx.Cell(() => {
-			if (t++) {
-				b.set(10);
-			}
-
-			return a.get() + 1;
-		}, { debugKey: 'aa', onChange: noop });
-
-		let bb = new cellx.Cell(() => {
-			return b.get() + 1;
-		}, { debugKey: 'bb', onChange: noop });
-
-		a.set(5);
-
-		expect(aa.get())
-			.to.equal(6);
-	});
-
-	it.skip('должна правильно вычисляться при записи в родительскую ячейку в формуле', () => {
+	it('должна правильно вычисляться при записи в родительскую ячейку в формуле', () => {
 		let a = new cellx.Cell(1);
 		let b = new cellx.Cell(() => {
 			return a.get() + 1;
@@ -587,9 +564,9 @@ describe('Cell', () => {
 		let a = new cellx.Cell(() => {
 			return +(localStorage.a || 1);
 		}, {
-			put(value) {
+			put(cell, value) {
 				localStorage.a = value;
-				this.push(value);
+				cell.push(value);
 			}
 		});
 
@@ -691,9 +668,9 @@ describe('Cell', () => {
 	});
 
 	it('#then()', done => {
-		let a = new cellx.Cell(push => {
+		let a = new cellx.Cell(cell => {
 			setTimeout(() => {
-				push(5);
+				cell.push(5);
 			}, 1);
 		});
 
@@ -723,9 +700,9 @@ describe('Cell', () => {
 	});
 
 	it('#then() 3', done => {
-		let a = new cellx.Cell(push => {
+		let a = new cellx.Cell(cell => {
 			setTimeout(() => {
-				push(5);
+				cell.push(5);
 			}, 1);
 		});
 		let b = new cellx.Cell(() => {
@@ -744,9 +721,9 @@ describe('Cell', () => {
 	});
 
 	it('#catch()', done => {
-		let a = new cellx.Cell((push, fail) => {
+		let a = new cellx.Cell(cell => {
 			setTimeout(() => {
-				fail('5');
+				cell.fail('5');
 			}, 1);
 		});
 
@@ -765,16 +742,16 @@ describe('Cell', () => {
 		let cChangeSpy = sinon.spy();
 		let loadingChangeSpy = sinon.spy();
 
-		let a = new cellx.Cell((push, fail, next) => {
+		let a = new cellx.Cell((cell, next) => {
 			setTimeout(() => {
-				push(Math.random());
+				cell.push(Math.random());
 			}, 10);
 
 			return next || 0;
 		});
-		let b = new cellx.Cell((push, fail, next) => {
+		let b = new cellx.Cell((cell, next) => {
 			setTimeout(() => {
-				push(Math.random());
+				cell.push(Math.random());
 			}, 50);
 
 			return next || 0;

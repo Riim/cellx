@@ -32,17 +32,19 @@ var assign = Object.assign || function(target, source) {
  *     debugKey?: string,
  *     owner?: Object,
  *     validate?: (value, oldValue),
- *     put?: (value, push: (value), fail: (err), oldValue),
+ *     merge: (value, oldValue) -> *,
+ *     put?: (cell: Cell, value, oldValue),
  *     reap?: (),
  *     onChange?: (evt: cellx~Event) -> ?boolean,
  *     onError?: (evt: cellx~Event) -> ?boolean
  * }) -> cellx;
  *
- * @typesign (pull: (push: (value), fail: (err), next) -> *, opts?: {
- *     debugKey?: string
+ * @typesign (pull: (cell: Cell, next) -> *, opts?: {
+ *     debugKey?: string,
  *     owner?: Object,
  *     validate?: (value, oldValue),
- *     put?: (value, push: (value), fail: (err), oldValue),
+ *     merge: (value, oldValue) -> *,
+ *     put?: (cell: Cell, value, oldValue),
  *     reap?: (),
  *     onChange?: (evt: cellx~Event) -> ?boolean,
  *     onError?: (evt: cellx~Event) -> ?boolean

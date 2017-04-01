@@ -5,12 +5,10 @@ import { push, splice } from '../JS/Array';
 import Symbol from '../JS/Symbol';
 
 /**
- * @typesign (a, b) -> 0 | -1 | 1;
+ * @typesign (a, b) -> -1 | 1 | 0;
  */
 function defaultComparator(a, b) {
-	if (a < b) { return -1; }
-	if (a > b) { return 1; }
-	return 0;
+	return a < b ? -1 : (a > b ? 1 : 0);
 }
 
 /**
