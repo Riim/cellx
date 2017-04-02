@@ -1,4 +1,5 @@
 import eslint from 'rollup-plugin-eslint';
+import babel from 'rollup-plugin-babel';
 
 export default {
 	entry: 'src/cellx.js',
@@ -9,6 +10,9 @@ export default {
 	dest: 'dist/cellx.js',
 
 	plugins: [
-		eslint()
+		eslint(),
+		babel({
+			exclude: 'node_modules/**'
+		})
 	]
 };

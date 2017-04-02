@@ -54,7 +54,7 @@ var ObservableList = EventEmitter.extend({
 
 		this.sorted = false;
 
-		if (opts && (opts.sorted || (opts.comparator && opts.sorted !== false))) {
+		if (opts && (opts.sorted || opts.comparator && opts.sorted !== false)) {
 			this.comparator = opts.comparator || defaultComparator;
 			this.sorted = true;
 		}
@@ -78,7 +78,7 @@ var ObservableList = EventEmitter.extend({
 			if (index < 0) {
 				throw new RangeError('Index out of valid range');
 			}
-		} else if (index >= (this.length + (allowedEndIndex ? 1 : 0))) {
+		} else if (index >= this.length + (allowedEndIndex ? 1 : 0)) {
 			throw new RangeError('Index out of valid range');
 		}
 

@@ -30,6 +30,15 @@ var pendingReactions = [];
 
 var afterReleaseCallbacks;
 
+var STATE_INITED = 0b10000000;
+var STATE_CURRENTLY_PULLING = 0b1000000;
+var STATE_ACTIVE = 0b100000;
+var STATE_HAS_FOLLOWERS = 0b10000;
+var STATE_PENDING = 0b1000;
+var STATE_FULFILLED = 0b100;
+var STATE_REJECTED = 0b10;
+var STATE_CAN_CANCEL_CHANGE = 0b1;
+
 function release() {
 	if (!releasePlanned) {
 		return;
@@ -142,7 +151,7 @@ function release() {
 }
 
 /**
- * @typesign (value);
+ * @typesign (cell: Cell, value);
  */
 function defaultPut(cell, value) {
 	cell.push(value);
@@ -354,11 +363,6 @@ var Cell = EventEmitter.extend({
 		this._selfErrorCell = null;
 		this._errorCell = null;
 
-		this._inited = false;
-		this._currentlyPulling = false;
-		this._active = false;
-		this._hasFollowers = false;
-
 		this._errorIndex = 0;
 		this._pushingIndex = 0;
 		this._version = 0;
@@ -377,19 +381,15 @@ var Cell = EventEmitter.extend({
 		this._level = 0;
 		this._levelInRelease = -1;
 
-		this._pending = false;
 		this._selfPendingStatusCell = null;
 		this._pendingStatusCell = null;
 
 		this._status = null;
 
-		this._fulfilled = false;
-		this._rejected = false;
-
 		this._changeEvent = null;
-		this._canCancelChange = true;
-
 		this._lastErrorEvent = null;
+
+		this._state = STATE_CAN_CANCEL_CHANGE;
 
 		if (opts) {
 			if (opts.onChange) {
@@ -425,7 +425,7 @@ var Cell = EventEmitter.extend({
 			EventEmitterProto.on.call(this, type, listener, arguments.length >= 3 ? context : this.owner);
 		}
 
-		this._hasFollowers = true;
+		this._state |= STATE_HAS_FOLLOWERS;
 
 		return this;
 	},
@@ -449,8 +449,11 @@ var Cell = EventEmitter.extend({
 			EventEmitterProto.off.call(this);
 		}
 
-		if (!this._slaves.length && !this._events.has('change') && !this._events.has('error') && this._hasFollowers) {
-			this._hasFollowers = false;
+		if (
+			!this._slaves.length && !this._events.has('change') && !this._events.has('error') &&
+				(this._state & STATE_HAS_FOLLOWERS)
+		) {
+			this._state ^= STATE_HAS_FOLLOWERS;
 
 			this._deactivate();
 
@@ -543,7 +546,7 @@ var Cell = EventEmitter.extend({
 		this._activate();
 
 		this._slaves.push(slave);
-		this._hasFollowers = true;
+		this._state |= STATE_HAS_FOLLOWERS;
 	},
 	/**
 	 * @typesign (slave: cellx.Cell);
@@ -552,7 +555,7 @@ var Cell = EventEmitter.extend({
 		this._slaves.splice(this._slaves.indexOf(slave), 1);
 
 		if (!this._slaves.length && !this._events.has('change') && !this._events.has('error')) {
-			this._hasFollowers = false;
+			this._state ^= STATE_HAS_FOLLOWERS;
 
 			this._deactivate();
 
@@ -566,7 +569,7 @@ var Cell = EventEmitter.extend({
 	 * @typesign ();
 	 */
 	_activate: function _activate() {
-		if (!this._pull || this._active || this._masters === null) {
+		if (!this._pull || (this._state & STATE_ACTIVE) || this._masters === null) {
 			return;
 		}
 
@@ -575,7 +578,7 @@ var Cell = EventEmitter.extend({
 		if (this._version < releaseVersion) {
 			var value = this._tryPull();
 
-			if (masters || this._masters || !this._inited) {
+			if (masters || this._masters || !(this._state & STATE_INITED)) {
 				if (value === error) {
 					this._fail(error.original, false);
 				} else {
@@ -593,14 +596,14 @@ var Cell = EventEmitter.extend({
 				masters[--i]._registerSlave(this);
 			} while (i);
 
-			this._active = true;
+			this._state |= STATE_ACTIVE;
 		}
 	},
 	/**
 	 * @typesign ();
 	 */
 	_deactivate: function _deactivate() {
-		if (!this._active) {
+		if (!(this._state & STATE_ACTIVE)) {
 			return;
 		}
 
@@ -615,7 +618,7 @@ var Cell = EventEmitter.extend({
 			this._levelInRelease = -1;
 		}
 
-		this._active = false;
+		this._state ^= STATE_ACTIVE;
 	},
 
 	/**
@@ -663,12 +666,12 @@ var Cell = EventEmitter.extend({
 			this._changeEvent = evt;
 
 			if (this._value === this._fixedValue) {
-				this._canCancelChange = false;
+				this._state &= ~STATE_CAN_CANCEL_CHANGE;
 			}
 		} else {
 			evt.prev = null;
 			this._changeEvent = evt;
-			this._canCancelChange = false;
+			this._state &= ~STATE_CAN_CANCEL_CHANGE;
 
 			this._addToRelease();
 		}
@@ -682,20 +685,20 @@ var Cell = EventEmitter.extend({
 			release();
 		}
 
-		if (this._pull && !this._active && this._version < releaseVersion && this._masters !== null) {
+		if (this._pull && !(this._state & STATE_ACTIVE) && this._version < releaseVersion && this._masters !== null) {
 			var oldMasters = this._masters;
 			var value = this._tryPull();
 			var masters = this._masters;
 
-			if (oldMasters || masters || !this._inited) {
-				if (masters && this._hasFollowers) {
+			if (oldMasters || masters || !(this._state & STATE_INITED)) {
+				if (masters && (this._state & STATE_HAS_FOLLOWERS)) {
 					var i = masters.length;
 
 					do {
 						masters[--i]._registerSlave(this);
 					} while (i);
 
-					this._active = true;
+					this._state |= STATE_ACTIVE;
 				}
 
 				if (value === error) {
@@ -739,7 +742,7 @@ var Cell = EventEmitter.extend({
 			release();
 		}
 
-		var hasFollowers = this._hasFollowers;
+		var hasFollowers = this._state & STATE_HAS_FOLLOWERS;
 
 		var oldMasters;
 		var oldLevel;
@@ -778,7 +781,11 @@ var Cell = EventEmitter.extend({
 				}
 			}
 
-			this._active = !!(masters && masters.length);
+			if (masters && masters.length) {
+				this._state |= STATE_ACTIVE;
+			} else {
+				this._state &= ~STATE_ACTIVE;
+			}
 
 			if (currentlyRelease && this._level > oldLevel) {
 				this._addToRelease();
@@ -798,25 +805,25 @@ var Cell = EventEmitter.extend({
 	 * @typesign () -> *;
 	 */
 	_tryPull: function _tryPull() {
-		if (this._currentlyPulling) {
+		if (this._state & STATE_CURRENTLY_PULLING) {
 			throw new TypeError('Circular pulling detected');
 		}
 
 		var pull = this._pull;
 
 		if (pull.length) {
-			this._pending = true;
+			this._state |= STATE_PENDING;
 			if (this._selfPendingStatusCell) {
 				this._selfPendingStatusCell.set(true);
 			}
 
-			this._fulfilled = this._rejected = false;
+			this._state &= ~(STATE_FULFILLED | STATE_REJECTED);
 		}
 
 		var prevCell = currentCell;
 		currentCell = this;
 
-		this._currentlyPulling = true;
+		this._state |= STATE_CURRENTLY_PULLING;
 		this._masters = null;
 		this._level = 0;
 
@@ -832,17 +839,17 @@ var Cell = EventEmitter.extend({
 
 			var pendingStatusCell = this._pendingStatusCell;
 
-			if (pendingStatusCell && pendingStatusCell._active) {
+			if (pendingStatusCell && (pendingStatusCell._state & STATE_ACTIVE)) {
 				pendingStatusCell.pull();
 			}
 
 			var errorCell = this._errorCell;
 
-			if (errorCell && errorCell._active) {
+			if (errorCell && (errorCell._state & STATE_ACTIVE)) {
 				errorCell.pull();
 			}
 
-			this._currentlyPulling = false;
+			this._state ^= STATE_CURRENTLY_PULLING;
 		}
 	},
 
@@ -912,7 +919,7 @@ var Cell = EventEmitter.extend({
 			var debugKey = this.debugKey;
 
 			this._selfPendingStatusCell = new Cell(
-				this._pending,
+				!!(this._state & STATE_PENDING),
 				debugKey ? { debugKey: debugKey + '._selfPendingStatusCell' } : null
 			);
 
@@ -973,12 +980,12 @@ var Cell = EventEmitter.extend({
 			value = this._merge(value, this._value);
 		}
 
-		this._pending = true;
+		this._state |= STATE_PENDING;
 		if (this._selfPendingStatusCell) {
 			this._selfPendingStatusCell.set(true);
 		}
 
-		this._fulfilled = this._rejected = false;
+		this._state &= ~(STATE_FULFILLED | STATE_REJECTED);
 
 		if (this._put.length >= 3) {
 			this._put.call(this.owner, this, value, this._value);
@@ -1001,11 +1008,11 @@ var Cell = EventEmitter.extend({
 	 * @typesign (value, external: boolean, pulling: boolean) -> boolean;
 	 */
 	_push: function _push(value, external, pulling) {
-		this._inited = true;
+		this._state |= STATE_INITED;
 
 		var oldValue = this._value;
 
-		if (external && currentlyRelease && this._hasFollowers) {
+		if (external && currentlyRelease && (this._state & STATE_HAS_FOLLOWERS)) {
 			if (is(value, oldValue)) {
 				this._setError(null);
 				this._fulfill(value);
@@ -1044,9 +1051,9 @@ var Cell = EventEmitter.extend({
 			value.on('change', this._onValueChange, this);
 		}
 
-		if (this._hasFollowers || transactionLevel) {
+		if ((this._state & STATE_HAS_FOLLOWERS) || transactionLevel) {
 			if (this._changeEvent) {
-				if (is(value, this._fixedValue) && this._canCancelChange) {
+				if (is(value, this._fixedValue) && (this._state & STATE_CAN_CANCEL_CHANGE)) {
 					this._levelInRelease = -1;
 					this._changeEvent = null;
 				} else {
@@ -1066,7 +1073,7 @@ var Cell = EventEmitter.extend({
 					value: value,
 					prev: null
 				};
-				this._canCancelChange = true;
+				this._state |= STATE_CAN_CANCEL_CHANGE;
 
 				this._addToRelease();
 			}
@@ -1092,8 +1099,8 @@ var Cell = EventEmitter.extend({
 	_fulfill: function _fulfill(value) {
 		this._resolvePending();
 
-		if (!this._fulfilled) {
-			this._fulfilled = true;
+		if (!(this._state & STATE_FULFILLED)) {
+			this._state |= STATE_FULFILLED;
 
 			if (this._onFulfilled) {
 				this._onFulfilled(value);
@@ -1177,8 +1184,8 @@ var Cell = EventEmitter.extend({
 	_reject: function _reject(err) {
 		this._resolvePending();
 
-		if (!this._rejected) {
-			this._rejected = true;
+		if (!(this._state & STATE_REJECTED)) {
+			this._state |= STATE_REJECTED;
 
 			if (this._onRejected) {
 				this._onRejected(err);
@@ -1190,8 +1197,8 @@ var Cell = EventEmitter.extend({
 	 * @typesign ();
 	 */
 	_resolvePending: function _resolvePending() {
-		if (this._pending) {
-			this._pending = false;
+		if (this._state & STATE_PENDING) {
+			this._state ^= STATE_PENDING;
 
 			if (this._selfPendingStatusCell) {
 				this._selfPendingStatusCell.set(false);
@@ -1207,10 +1214,10 @@ var Cell = EventEmitter.extend({
 			release();
 		}
 
-		if (!this._pull || this._fulfilled) {
+		if (!this._pull || (this._state & STATE_FULFILLED)) {
 			return Promise.resolve(this._get ? this._get(this._value) : this._value).then(onFulfilled);
 		}
-		if (this._rejected) {
+		if (this._state & STATE_REJECTED) {
 			return Promise.reject(this._error).catch(onRejected);
 		}
 
@@ -1228,7 +1235,7 @@ var Cell = EventEmitter.extend({
 			};
 		}).then(onFulfilled, onRejected);
 
-		if (!this._pending) {
+		if (!(this._state & STATE_PENDING)) {
 			this.pull();
 		}
 
@@ -1236,7 +1243,7 @@ var Cell = EventEmitter.extend({
 			cell._pendingStatusCell.on('change', function onPendingStatusCellChange() {
 				cell._pendingStatusCell.off('change', onPendingStatusCellChange);
 
-				if (!cell._fulfilled && !cell._rejected) {
+				if (!(cell._state & STATE_FULFILLED) && !(cell._state & STATE_REJECTED)) {
 					var err = cell.getError();
 
 					if (err) {
