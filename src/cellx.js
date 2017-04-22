@@ -75,7 +75,7 @@ function cellx(value, opts) {
 				return;
 			}
 
-			cell = new Cell(initialValue, assign({ owner: owner }, opts));
+			cell = new Cell(initialValue, assign({ owner }, opts));
 
 			owner[KEY_CELLS].set(cx, cell);
 		}
@@ -219,19 +219,19 @@ function define(obj, name, value) {
 
 cellx.define = define;
 
-cellx.JS = cellx.js = {
-	is: is,
-	Symbol: Symbol,
-	Map: Map
+cellx.JS = {
+	is,
+	Symbol,
+	Map
 };
 
-cellx.Utils = cellx.utils = {
-	logError: logError,
-	nextUID: nextUID,
-	mixin: mixin,
-	createClass: createClass,
-	nextTick: nextTick,
-	noop: noop
+cellx.Utils = {
+	logError,
+	nextUID,
+	mixin,
+	createClass,
+	nextTick,
+	noop
 };
 
 cellx.cellx = cellx;

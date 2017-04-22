@@ -10,7 +10,7 @@ import noop from './Utils/noop';
 var EventEmitterProto = EventEmitter.prototype;
 
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
-var KEY_INNER = EventEmitter.KEY_INNER;
+var KEY_WRAPPERS = Symbol('wrappers');
 
 var errorIndexCounter = 0;
 var pushingIndexCounter = 0;
@@ -220,6 +220,13 @@ var Cell = EventEmitter.extend({
 
 				config.asynchronous = cnfg.asynchronous;
 			}
+		},
+
+		/**
+		 * @type {boolean}
+		 */
+		get currentlyPulling() {
+			return !!currentCell;
 		},
 
 		/**
@@ -510,10 +517,16 @@ var Cell = EventEmitter.extend({
 	 * ) -> cellx.Cell;
 	 */
 	subscribe: function subscribe(listener, context) {
+		var wrappers = listener[KEY_WRAPPERS];
+
+		if (wrappers && wrappers.has(listener)) {
+			return this;
+		}
+
 		function wrapper(evt) {
 			return listener.call(this, evt.error || null, evt);
 		}
-		wrapper[KEY_INNER] = listener;
+		(wrappers || (listener[KEY_WRAPPERS] = new Map())).set(this, wrapper);
 
 		if (arguments.length < 2) {
 			context = this.owner;
@@ -534,9 +547,18 @@ var Cell = EventEmitter.extend({
 			context = this.owner;
 		}
 
+		var wrappers = listener[KEY_WRAPPERS];
+		var wrapper = wrappers && wrappers.get(this);
+
+		if (!wrapper) {
+			return this;
+		}
+
+		wrappers.delete(this);
+
 		return this
-			.off('change', listener, context)
-			.off('error', listener, context);
+			.off('change', wrapper, context)
+			.off('error', wrapper, context);
 	},
 
 	/**

@@ -1,9 +1,6 @@
 import ErrorLogger from './ErrorLogger';
 import Map from './JS/Map';
-import Symbol from './JS/Symbol';
 import createClass from './Utils/createClass';
-
-var KEY_INNER = Symbol('cellx.EventEmitter.inner');
 
 var IS_EVENT = {};
 
@@ -30,7 +27,7 @@ var IS_EVENT = {};
  */
 var EventEmitter = createClass({
 	Static: {
-		KEY_INNER: KEY_INNER
+		currentlySubscribing: false
 	},
 
 	constructor: function EventEmitter() {
@@ -142,14 +139,16 @@ var EventEmitter = createClass({
 		if (index != -1) {
 			var propName = type.slice(index + 1);
 
+			EventEmitter.currentlySubscribing = true;
 			(this['_' + propName] || (this[propName], this['_' + propName]))
 				.on(type.slice(0, index), listener, context);
+			EventEmitter.currentlySubscribing = false;
 		} else {
 			var events = this._events.get(type);
 			var evt = {
 				_isEvent: IS_EVENT,
-				listener: listener,
-				context: context
+				listener,
+				context
 			};
 
 			if (!events) {
@@ -189,14 +188,14 @@ var EventEmitter = createClass({
 			if (isEvent || events.length == 1) {
 				evt = isEvent ? events : events[0];
 
-				if ((evt.listener == listener || evt.listener[KEY_INNER] === listener) && evt.context === context) {
+				if (evt.listener == listener && evt.context === context) {
 					this._events.delete(type);
 				}
 			} else {
 				for (var i = events.length; i;) {
 					evt = events[--i];
 
-					if ((evt.listener == listener || evt.listener[KEY_INNER] === listener) && evt.context === context) {
+					if (evt.listener == listener && evt.context === context) {
 						events.splice(i, 1);
 						break;
 					}
@@ -210,22 +209,21 @@ var EventEmitter = createClass({
 	 *     type: string,
 	 *     listener: (evt: cellx~Event) -> ?boolean,
 	 *     context?
-	 * ) -> cellx.EventEmitter;
+	 * ) -> (evt: cellx~Event) -> ?boolean;
 	 */
 	once: function once(type, listener, context) {
 		if (arguments.length < 3) {
 			context = this;
 		}
 
-		function wrapper() {
+		function wrapper(evt) {
 			this._off(type, wrapper, context);
-			return listener.apply(this, arguments);
+			return listener.call(this, evt);
 		}
-		wrapper[KEY_INNER] = listener;
 
 		this._on(type, wrapper, context);
 
-		return this;
+		return wrapper;
 	},
 
 	/**

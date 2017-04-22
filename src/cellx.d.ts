@@ -39,7 +39,7 @@ declare namespace Cellx {
 	}
 
 	export class EventEmitter {
-		static KEY_INNER: symbol;
+		static currentlySubscribing: boolean;
 
 		protected _events: Map<string, Array<{ listener: IEventEmitterListener; context: any }>>;
 
@@ -56,7 +56,7 @@ declare namespace Cellx {
 		protected _on(type: string, listener: IEventEmitterListener, context: any): void;
 		protected _off(type: string, listener: IEventEmitterListener, context: any): void;
 
-		once(type: string, listener: IEventEmitterListener, context?: any): EventEmitter;
+		once(type: string, listener: IEventEmitterListener, context?: any): IEventEmitterListener;
 
 		emit(evt: IEventData): IEvent;
 		emit(type: string): IEvent;
@@ -186,6 +186,7 @@ declare namespace Cellx {
 
 	export class Cell<T> extends EventEmitter {
 		static configure(config: { asynchronous?: boolean }): void;
+		static readonly currentlyPulling: boolean;
 		static autorun(cb: () => void, context?: any): () => void;
 		static forceRelease(): void;
 		static transaction(cb: () => void): void;
