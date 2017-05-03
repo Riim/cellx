@@ -5,10 +5,6 @@ import { Map } from 'es6-collections';
 import { Promise } from 'es6-promise';
 
 declare namespace Cellx {
-	interface IIterator<T> {
-		next: () => { value: T; done: boolean }
-	}
-
 	interface IComparator<T> {
 		(a: T, b: T): number;
 	}
@@ -41,7 +37,7 @@ declare namespace Cellx {
 	export class EventEmitter {
 		static currentlySubscribing: boolean;
 
-		protected _events: Map<string, Array<{ listener: IEventEmitterListener; context: any }>>;
+		_events: Map<string, Array<{ listener: IEventEmitterListener; context: any }>>;
 
 		getEvents(): { [type: string]: Array<{ listener: (evt: IEvent) => boolean | void; context: any }> };
 		getEvents(type: string): Array<{ listener: (evt: IEvent) => boolean | void; context: any }>;
@@ -75,7 +71,7 @@ declare namespace Cellx {
 		adoptsValueChanges?: boolean;
 	}
 
-	export class ObservableMap<K, V> extends EventEmitter implements IObservableCollection {
+	export class ObservableMap<K = any, V = any> extends EventEmitter implements IObservableCollection {
 		size: number;
 		adoptsValueChanges: boolean;
 
@@ -90,9 +86,9 @@ declare namespace Cellx {
 		clear(): ObservableMap<K, V>;
 
 		forEach(cb: (value: V, key: K, map: ObservableMap<K, V>) => void, context?: any): void;
-		keys(): IIterator<K>;
-		values(): IIterator<V>;
-		entries(): IIterator<[K, V]>;
+		keys(): Iterator<K>;
+		values(): Iterator<V>;
+		entries(): Iterator<[K, V]>;
 
 		clone(): ObservableMap<K, V>;
 	}
@@ -105,7 +101,7 @@ declare namespace Cellx {
 		sorted?: boolean;
 	}
 
-	export class ObservableList<T> extends EventEmitter implements IObservableCollection {
+	export class ObservableList<T = any> extends EventEmitter implements IObservableCollection {
 		length: number;
 		adoptsValueChanges: boolean;
 		comparator: IComparator<T>;
@@ -184,7 +180,7 @@ declare namespace Cellx {
 
 	type ICellEvent = ICellChangeEvent | ICellErrorEvent;
 
-	export class Cell<T> extends EventEmitter {
+	export class Cell<T = any> extends EventEmitter {
 		static configure(config: { asynchronous?: boolean }): void;
 		static readonly currentlyPulling: boolean;
 		static autorun(cb: () => void, context?: any): () => void;
@@ -224,11 +220,17 @@ declare namespace Cellx {
 	export let KEY_UID: symbol;
 	export let KEY_CELLS: symbol;
 
-	export function map<K, V>(entries?: ObservableMapEntries<K, V>, opts?: IObservableMapOptions): ObservableMap<K, V>;
-	export function map<K, V>(entries?: ObservableMapEntries<K, V>, adoptsValueChanges?: boolean): ObservableMap<K, V>;
+	export function map<K = any, V = any>(
+		entries?: ObservableMapEntries<K, V>,
+		opts?: IObservableMapOptions
+	): ObservableMap<K, V>;
+	export function map<K = any, V = any>(
+		entries?: ObservableMapEntries<K, V>,
+		adoptsValueChanges?: boolean
+	): ObservableMap<K, V>;
 
-	export function list<T>(items?: ObservableListItems<T>, opts?: IObservableListOptions<T>): ObservableList<T>;
-	export function list<T>(items?: ObservableListItems<T>, adoptsValueChanges?: boolean): ObservableList<T>;
+	export function list<T = any>(items?: ObservableListItems<T>, opts?: IObservableListOptions<T>): ObservableList<T>;
+	export function list<T = any>(items?: ObservableListItems<T>, adoptsValueChanges?: boolean): ObservableList<T>;
 
 	export function defineObservableProperty(obj: EventEmitter, name: string, value: any): EventEmitter;
 	export function defineObservableProperties(obj: EventEmitter, props: { [key: string]: any }): EventEmitter;
@@ -273,11 +275,11 @@ declare namespace Cellx {
 		(method: 'dispose', zeroArg: any): Cell<T>;
 	}
 
-	export function cellx<T>(value?: T, opts?: ICellOptions<T>): ICellx<T>;
-	export function cellx<T>(pull: ICellPull<T>, opts?: ICellOptions<T>): ICellx<T>;
+	export function cellx<T = any>(value?: T, opts?: ICellOptions<T>): ICellx<T>;
+	export function cellx<T = any>(pull: ICellPull<T>, opts?: ICellOptions<T>): ICellx<T>;
 }
 
-declare function Cellx<T>(value?: T, opts?: Cellx.ICellOptions<T>): Cellx.ICellx<T>;
-declare function Cellx<T>(pull: Cellx.ICellPull<T>, opts?: Cellx.ICellOptions<T>): Cellx.ICellx<T>;
+declare function Cellx<T = any>(value?: T, opts?: Cellx.ICellOptions<T>): Cellx.ICellx<T>;
+declare function Cellx<T = any>(pull: Cellx.ICellPull<T>, opts?: Cellx.ICellOptions<T>): Cellx.ICellx<T>;
 
 export = Cellx;

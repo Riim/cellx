@@ -1814,7 +1814,6 @@ function release() {
 			cell.pull();
 
 			level = cell._level;
-			changeEvent = cell._changeEvent;
 
 			if (level > releasePlanIndex) {
 				if (!queue.length) {
@@ -1823,6 +1822,8 @@ function release() {
 
 				continue;
 			}
+
+			changeEvent = cell._changeEvent;
 		}
 
 		cell._levelInRelease = -1;

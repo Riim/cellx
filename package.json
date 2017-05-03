@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.7.4",
+  "version": "1.7.7",
   "description": "",
   "main": "dist/cellx.js",
   "typings": "src/cellx.d.ts",
@@ -34,7 +34,7 @@
     "gulp-rename": "^1.2.2",
     "gulp-sizereport": "^1.2.0",
     "gulp-uglify": "^2.1.2",
-    "karma": "^1.6.0",
+    "karma": "^1.7.0",
     "karma-babel-preprocessor": "^6.0.1",
     "karma-chai": "^0.1.0",
     "karma-coverage": "^1.1.1",
@@ -42,14 +42,15 @@
     "karma-mocha-reporter": "^2.2.3",
     "karma-phantomjs-launcher": "^1.0.4",
     "karma-sinon": "^1.0.5",
-    "mocha": "^3.2.0",
+    "mocha": "^3.4.1",
     "pump": "^1.0.2",
     "require-dir": "^0.3.1",
     "rollup": "^0.41.6",
     "rollup-plugin-babel": "^2.7.1",
     "rollup-plugin-eslint": "^3.0.0",
     "run-sequence": "^1.2.2",
-    "sinon": "^2.1.0",
-    "yargs": "^7.1.0"
+    "sinon": "^2.2.0",
+    "typescript": "^2.3.2",
+    "yargs": "^8.0.1"
   }
 }
