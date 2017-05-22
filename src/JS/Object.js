@@ -7,5 +7,3 @@ export var is = Object.is || function is(a, b) {
 	}
 	return a === b || a != a && b != b;
 };
-
-export var hasOwn = Object.prototype.hasOwnProperty;

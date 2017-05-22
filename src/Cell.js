@@ -1,12 +1,13 @@
 import ErrorLogger from './ErrorLogger';
 import EventEmitter from './EventEmitter';
 import { is } from './JS/Object';
-import { slice } from './JS/Array';
 import Map from './JS/Map';
 import Symbol from './JS/Symbol';
+import mixin from './Utils/mixin';
 import nextTick from './Utils/nextTick';
 import noop from './Utils/noop';
 
+var slice = Array.prototype.slice;
 var EventEmitterProto = EventEmitter.prototype;
 
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
@@ -208,206 +209,210 @@ var config = {
  *     onError?: (evt: cellx~Event) -> ?boolean
  * }) -> cellx.Cell;
  */
-var Cell = EventEmitter.extend({
-	Static: {
-		/**
-		 * @typesign (cnfg: { asynchronous?: boolean });
-		 */
-		configure: function configure(cnfg) {
-			if (cnfg.asynchronous !== undefined) {
-				if (releasePlanned) {
-					release();
-				}
+export default function Cell(value, opts) {
+	EventEmitter.call(this);
 
-				config.asynchronous = cnfg.asynchronous;
-			}
-		},
+	this.debugKey = opts && opts.debugKey;
 
-		/**
-		 * @type {boolean}
-		 */
-		get currentlyPulling() {
-			return !!currentCell;
-		},
+	this.owner = opts && opts.owner || this;
 
-		/**
-		 * @typesign (cb: (), context?) -> ();
-		 */
-		autorun: function autorun(cb, context) {
-			var disposer;
+	this._pull = typeof value == 'function' ? value : null;
+	this._get = opts && opts.get || null;
 
-			new Cell(function() {
-				var cell = this;
+	this._validate = opts && opts.validate || null;
+	this._merge = opts && opts.merge || null;
+	this._put = opts && opts.put || defaultPut;
 
-				if (!disposer) {
-					disposer = function disposer() {
-						cell.dispose();
-					};
-				}
+	this._onFulfilled = this._onRejected = null;
 
-				if (transactionLevel) {
-					var index = pendingReactions.indexOf(this);
+	this._reap = opts && opts.reap || null;
 
-					if (index != -1) {
-						pendingReactions.splice(index, 1);
-					}
+	if (this._pull) {
+		this._fixedValue = this._value = undefined;
+	} else {
+		if (this._validate) {
+			this._validate(value, undefined);
+		}
+		if (this._merge) {
+			value = this._merge(value, undefined);
+		}
 
-					pendingReactions.push(this);
-				} else {
-					cb.call(context, disposer);
-				}
-			}, { onChange: noop });
+		this._fixedValue = this._value = value;
 
-			return disposer;
-		},
+		if (value instanceof EventEmitter) {
+			value.on('change', this._onValueChange, this);
+		}
+	}
 
-		/**
-		 * @typesign ();
-		 */
-		forceRelease: function forceRelease() {
+	this._error = null;
+	this._selfErrorCell = null;
+	this._errorCell = null;
+
+	this._errorIndex = 0;
+	this._pushingIndex = 0;
+	this._version = 0;
+
+	/**
+	 * Ведущие ячейки.
+	 * @type {?Array<cellx.Cell>}
+	 */
+	this._masters = undefined;
+	/**
+	 * Ведомые ячейки.
+	 * @type {Array<cellx.Cell>}
+	 */
+	this._slaves = [];
+
+	this._level = 0;
+	this._levelInRelease = -1;
+
+	this._selfPendingStatusCell = null;
+	this._pendingStatusCell = null;
+
+	this._status = null;
+
+	this._changeEvent = null;
+	this._lastErrorEvent = null;
+
+	this._state = STATE_CAN_CANCEL_CHANGE;
+
+	if (opts) {
+		if (opts.onChange) {
+			this.on('change', opts.onChange);
+		}
+		if (opts.onError) {
+			this.on('error', opts.onError);
+		}
+	}
+}
+
+mixin(Cell, {
+	/**
+	 * @typesign (cnfg: { asynchronous?: boolean });
+	 */
+	configure: function configure(cnfg) {
+		if (cnfg.asynchronous !== undefined) {
 			if (releasePlanned) {
 				release();
 			}
-		},
 
-		/**
-		 * @typesign (cb: ());
-		 */
-		transaction: function transaction(cb) {
-			if (!transactionLevel++ && releasePlanned) {
+			config.asynchronous = cnfg.asynchronous;
+		}
+	},
+
+	/**
+	 * @type {boolean}
+	 */
+	get currentlyPulling() {
+		return !!currentCell;
+	},
+
+	/**
+	 * @typesign (cb: (), context?) -> ();
+	 */
+	autorun: function autorun(cb, context) {
+		var disposer;
+
+		new Cell(function() {
+			var cell = this;
+
+			if (!disposer) {
+				disposer = function disposer() {
+					cell.dispose();
+				};
+			}
+
+			if (transactionLevel) {
+				var index = pendingReactions.indexOf(this);
+
+				if (index != -1) {
+					pendingReactions.splice(index, 1);
+				}
+
+				pendingReactions.push(this);
+			} else {
+				cb.call(context, disposer);
+			}
+		}, { onChange: noop });
+
+		return disposer;
+	},
+
+	/**
+	 * @typesign ();
+	 */
+	forceRelease: function forceRelease() {
+		if (releasePlanned) {
+			release();
+		}
+	},
+
+	/**
+	 * @typesign (cb: ());
+	 */
+	transaction: function transaction(cb) {
+		if (!transactionLevel++ && releasePlanned) {
+			release();
+		}
+
+		try {
+			cb();
+		} catch (err) {
+			ErrorLogger.log(err);
+			transactionFailure = true;
+		}
+
+		if (transactionFailure) {
+			for (var iterator = releasePlan.values(), step; !(step = iterator.next()).done;) {
+				var queue = step.value;
+
+				for (var i = queue.length; i;) {
+					var cell = queue[--i];
+					cell._value = cell._fixedValue;
+					cell._levelInRelease = -1;
+					cell._changeEvent = null;
+				}
+			}
+
+			releasePlan.clear();
+			releasePlanIndex = MAX_SAFE_INTEGER;
+			releasePlanToIndex = -1;
+			releasePlanned = false;
+			pendingReactions.length = 0;
+		}
+
+		if (!--transactionLevel && !transactionFailure) {
+			for (var i = 0, l = pendingReactions.length; i < l; i++) {
+				var reaction = pendingReactions[i];
+
+				if (reaction instanceof Cell) {
+					reaction.pull();
+				} else {
+					EventEmitterProto._handleEvent.call(reaction[1], reaction[0]);
+				}
+			}
+
+			transactionFailure = false;
+			pendingReactions.length = 0;
+
+			if (releasePlanned) {
 				release();
 			}
-
-			try {
-				cb();
-			} catch (err) {
-				ErrorLogger.log(err);
-				transactionFailure = true;
-			}
-
-			if (transactionFailure) {
-				for (var iterator = releasePlan.values(), step; !(step = iterator.next()).done;) {
-					var queue = step.value;
-
-					for (var i = queue.length; i;) {
-						var cell = queue[--i];
-						cell._value = cell._fixedValue;
-						cell._levelInRelease = -1;
-						cell._changeEvent = null;
-					}
-				}
-
-				releasePlan.clear();
-				releasePlanIndex = MAX_SAFE_INTEGER;
-				releasePlanToIndex = -1;
-				releasePlanned = false;
-				pendingReactions.length = 0;
-			}
-
-			if (!--transactionLevel && !transactionFailure) {
-				for (var i = 0, l = pendingReactions.length; i < l; i++) {
-					var reaction = pendingReactions[i];
-
-					if (reaction instanceof Cell) {
-						reaction.pull();
-					} else {
-						EventEmitterProto._handleEvent.call(reaction[1], reaction[0]);
-					}
-				}
-
-				transactionFailure = false;
-				pendingReactions.length = 0;
-
-				if (releasePlanned) {
-					release();
-				}
-			}
-		},
-
-		/**
-		 * @typesign (cb: ());
-		 */
-		afterRelease: function afterRelease(cb) {
-			(afterReleaseCallbacks || (afterReleaseCallbacks = [])).push(cb);
 		}
 	},
 
-	constructor: function Cell(value, opts) {
-		EventEmitter.call(this);
+	/**
+	 * @typesign (cb: ());
+	 */
+	afterRelease: function afterRelease(cb) {
+		(afterReleaseCallbacks || (afterReleaseCallbacks = [])).push(cb);
+	}
+});
 
-		this.debugKey = opts && opts.debugKey;
+Cell.prototype = {
+	__proto__: EventEmitter.prototype,
 
-		this.owner = opts && opts.owner || this;
-
-		this._pull = typeof value == 'function' ? value : null;
-		this._get = opts && opts.get || null;
-
-		this._validate = opts && opts.validate || null;
-		this._merge = opts && opts.merge || null;
-		this._put = opts && opts.put || defaultPut;
-
-		this._onFulfilled = this._onRejected = null;
-
-		this._reap = opts && opts.reap || null;
-
-		if (this._pull) {
-			this._fixedValue = this._value = undefined;
-		} else {
-			if (this._validate) {
-				this._validate(value, undefined);
-			}
-			if (this._merge) {
-				value = this._merge(value, undefined);
-			}
-
-			this._fixedValue = this._value = value;
-
-			if (value instanceof EventEmitter) {
-				value.on('change', this._onValueChange, this);
-			}
-		}
-
-		this._error = null;
-		this._selfErrorCell = null;
-		this._errorCell = null;
-
-		this._errorIndex = 0;
-		this._pushingIndex = 0;
-		this._version = 0;
-
-		/**
-		 * Ведущие ячейки.
-		 * @type {?Array<cellx.Cell>}
-		 */
-		this._masters = undefined;
-		/**
-		 * Ведомые ячейки.
-		 * @type {Array<cellx.Cell>}
-		 */
-		this._slaves = [];
-
-		this._level = 0;
-		this._levelInRelease = -1;
-
-		this._selfPendingStatusCell = null;
-		this._pendingStatusCell = null;
-
-		this._status = null;
-
-		this._changeEvent = null;
-		this._lastErrorEvent = null;
-
-		this._state = STATE_CAN_CANCEL_CHANGE;
-
-		if (opts) {
-			if (opts.onChange) {
-				this.on('change', opts.onChange);
-			}
-			if (opts.onError) {
-				this.on('error', opts.onError);
-			}
-		}
-	},
+	constructor: Cell,
 
 	_handleEvent: function _handleEvent(evt) {
 		if (transactionLevel) {
@@ -1320,10 +1325,8 @@ var Cell = EventEmitter.extend({
 	dispose: function dispose() {
 		return this.reap();
 	}
-});
+};
 
 Cell.prototype[Symbol.iterator] = function() {
 	return this._value[Symbol.iterator]();
 };
-
-export default Cell;

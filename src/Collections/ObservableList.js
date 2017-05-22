@@ -1,8 +1,11 @@
 import EventEmitter from '../EventEmitter';
 import ObservableCollectionMixin from './ObservableCollectionMixin';
 import { is } from '../JS/Object';
-import { push, splice } from '../JS/Array';
 import Symbol from '../JS/Symbol';
+import mixin from '../Utils/mixin';
+
+var push = Array.prototype.push;
+var splice = Array.prototype.splice;
 
 /**
  * @typesign (a, b) -> -1 | 1 | 0;
@@ -27,42 +30,42 @@ function defaultComparator(a, b) {
  *     adoptsValueChanges?: boolean
  * ) -> cellx.ObservableList;
  */
-var ObservableList = EventEmitter.extend({
-	Implements: [ObservableCollectionMixin],
+export default function ObservableList(items, opts) {
+	EventEmitter.call(this);
+	ObservableCollectionMixin.call(this);
 
-	constructor: function ObservableList(items, opts) {
-		EventEmitter.call(this);
-		ObservableCollectionMixin.call(this);
+	if (typeof opts == 'boolean') {
+		opts = { adoptsValueChanges: opts };
+	}
 
-		if (typeof opts == 'boolean') {
-			opts = { adoptsValueChanges: opts };
-		}
+	this._items = [];
 
-		this._items = [];
+	this.length = 0;
 
-		this.length = 0;
+	/**
+	 * @type {boolean}
+	 */
+	this.adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
 
-		/**
-		 * @type {boolean}
-		 */
-		this.adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
+	/**
+	 * @type {?(a, b) -> int}
+	 */
+	this.comparator = null;
 
-		/**
-		 * @type {?(a, b) -> int}
-		 */
-		this.comparator = null;
+	this.sorted = false;
 
-		this.sorted = false;
+	if (opts && (opts.sorted || opts.comparator && opts.sorted !== false)) {
+		this.comparator = opts.comparator || defaultComparator;
+		this.sorted = true;
+	}
 
-		if (opts && (opts.sorted || opts.comparator && opts.sorted !== false)) {
-			this.comparator = opts.comparator || defaultComparator;
-			this.sorted = true;
-		}
+	if (items) {
+		this._addRange(items);
+	}
+}
 
-		if (items) {
-			this._addRange(items);
-		}
-	},
+ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, ObservableCollectionMixin.prototype, {
+	constructor: ObservableList,
 
 	/**
 	 * @typesign (index: ?int, allowedEndIndex?: boolean) -> ?uint;
@@ -692,5 +695,3 @@ var ObservableList = EventEmitter.extend({
 });
 
 ObservableList.prototype[Symbol.iterator] = ObservableList.prototype.values;
-
-export default ObservableList;

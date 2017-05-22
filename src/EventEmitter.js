@@ -1,6 +1,5 @@
 import ErrorLogger from './ErrorLogger';
 import Map from './JS/Map';
-import createClass from './Utils/createClass';
 
 var IS_EVENT = {};
 
@@ -25,17 +24,17 @@ var IS_EVENT = {};
  * @extends {Object}
  * @typesign new EventEmitter() -> cellx.EventEmitter;
  */
-var EventEmitter = createClass({
-	Static: {
-		currentlySubscribing: false
-	},
+export default function EventEmitter() {
+	/**
+	 * @type {{ [type: string]: cellx~EmitterEvent | Array<cellx~EmitterEvent> }}
+	 */
+	this._events = new Map();
+}
 
-	constructor: function EventEmitter() {
-		/**
-		 * @type {{ [type: string]: cellx~EmitterEvent | Array<cellx~EmitterEvent> }}
-		 */
-		this._events = new Map();
-	},
+EventEmitter.currentlySubscribing = false;
+
+EventEmitter.prototype = {
+	constructor: EventEmitter,
 
 	/**
 	 * @typesign () -> { [type: string]: Array<cellx~EmitterEvent> };
@@ -333,6 +332,4 @@ var EventEmitter = createClass({
 	_logError: function _logError() {
 		ErrorLogger.log.apply(ErrorLogger, arguments);
 	}
-});
-
-export default EventEmitter;
+};

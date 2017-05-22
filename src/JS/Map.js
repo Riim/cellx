@@ -1,9 +1,9 @@
 import { UID as KEY_UID } from '../keys';
 import global from './global';
-import { hasOwn } from './Object';
 import Symbol from './Symbol';
 import nextUID from '../Utils/nextUID';
-import createClass from '../Utils/createClass';
+
+var hasOwn = Object.prototype.hasOwnProperty;
 
 var Map = global.Map;
 
@@ -12,22 +12,24 @@ if (!Map || Map.toString().indexOf('[native code]') == -1) {
 		value: undefined
 	};
 
-	Map = createClass({
-		constructor: function Map(entries) {
-			this._entries = Object.create(null);
-			this._objectStamps = {};
+	Map = function Map(entries) {
+		this._entries = Object.create(null);
+		this._objectStamps = {};
 
-			this._first = null;
-			this._last = null;
+		this._first = null;
+		this._last = null;
 
-			this.size = 0;
+		this.size = 0;
 
-			if (entries) {
-				for (var i = 0, l = entries.length; i < l; i++) {
-					this.set(entries[i][0], entries[i][1]);
-				}
+		if (entries) {
+			for (var i = 0, l = entries.length; i < l; i++) {
+				this.set(entries[i][0], entries[i][1]);
 			}
-		},
+		}
+	};
+
+	Map.prototype = {
+		constructor: Map,
 
 		has: function has(key) {
 			return !!this._entries[this._getValueStamp(key)];
@@ -180,7 +182,7 @@ if (!Map || Map.toString().indexOf('[native code]') == -1) {
 		toString: function toString() {
 			return '[object Map]';
 		}
-	});
+	};
 
 	[
 		['keys', function keys(entry) {

@@ -6,16 +6,17 @@ import ObservableList from './Collections/ObservableList';
 import Cell from './Cell';
 import { UID as KEY_UID, CELLS as KEY_CELLS } from './keys';
 import global from './JS/global';
-import { is, hasOwn } from './JS/Object';
-import { slice } from './JS/Array';
+import { is } from './JS/Object';
 import Map from './JS/Map';
 import Symbol from './JS/Symbol';
 import logError from './Utils/logError';
 import nextUID from './Utils/nextUID';
 import mixin from './Utils/mixin';
-import createClass from './Utils/createClass';
 import nextTick from './Utils/nextTick';
 import noop from './Utils/noop';
+
+var hasOwn = Object.prototype.hasOwnProperty;
+var slice = Array.prototype.slice;
 
 ErrorLogger.setHandler(logError);
 
@@ -229,7 +230,6 @@ cellx.Utils = {
 	logError,
 	nextUID,
 	mixin,
-	createClass,
 	nextTick,
 	noop
 };

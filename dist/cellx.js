@@ -48,120 +48,7 @@ var CELLS = Symbol$1('cellx.cells');
 
 var global$1 = Function('return this;')();
 
-/**
- * @typesign (a, b) -> boolean;
- */
-var is = Object.is || function is(a, b) {
-	if (a === 0 && b === 0) {
-		return 1 / a == 1 / b;
-	}
-	return a === b || a != a && b != b;
-};
-
-var hasOwn = Object.prototype.hasOwnProperty;
-
-/**
- * @typesign (target: Object, source: Object) -> Object;
- */
-function mixin(target, source) {
-	var names = Object.getOwnPropertyNames(source);
-
-	for (var i = 0, l = names.length; i < l; i++) {
-		var name = names[i];
-		Object.defineProperty(target, name, Object.getOwnPropertyDescriptor(source, name));
-	}
-
-	return target;
-}
-
-var extend;
-
-/**
- * @typesign (description: {
- *     Extends?: Function,
- *     Implements?: Array<Object | Function>,
- *     Static?: Object,
- *     constructor?: Function,
- *     [key: string]
- * }) -> Function;
- */
-function createClass(description) {
-	var parent;
-
-	if (description.Extends) {
-		parent = description.Extends;
-		delete description.Extends;
-	} else {
-		parent = Object;
-	}
-
-	var constr;
-
-	if (hasOwn.call(description, 'constructor')) {
-		constr = description.constructor;
-		delete description.constructor;
-	} else {
-		constr = parent == Object ? function () {} : function () {
-			return parent.apply(this, arguments);
-		};
-	}
-
-	var proto = constr.prototype = Object.create(parent.prototype);
-
-	if (description.Implements) {
-		description.Implements.forEach((function (implementation) {
-			if (typeof implementation == 'function') {
-				Object.keys(implementation).forEach((function (name) {
-					Object.defineProperty(constr, name, Object.getOwnPropertyDescriptor(implementation, name));
-				}));
-
-				mixin(proto, implementation.prototype);
-			} else {
-				mixin(proto, implementation);
-			}
-		}));
-
-		delete description.Implements;
-	}
-
-	Object.keys(parent).forEach((function (name) {
-		Object.defineProperty(constr, name, Object.getOwnPropertyDescriptor(parent, name));
-	}));
-
-	if (description.Static) {
-		mixin(constr, description.Static);
-		delete description.Static;
-	}
-
-	if (constr.extend === undefined) {
-		constr.extend = extend;
-	}
-
-	mixin(proto, description);
-
-	Object.defineProperty(proto, 'constructor', {
-		configurable: true,
-		writable: true,
-		value: constr
-	});
-
-	return constr;
-}
-
-/**
- * @this {Function}
- *
- * @typesign (description: {
- *     Implements?: Array<Object | Function>,
- *     Static?: Object,
- *     constructor?: Function,
- *     [key: string]
- * }) -> Function;
- */
-extend = function extend(description) {
-	description.Extends = this;
-	return createClass(description);
-};
+var hasOwn$1 = Object.prototype.hasOwnProperty;
 
 var Map = global$1.Map;
 
@@ -170,22 +57,24 @@ if (!Map || Map.toString().indexOf('[native code]') == -1) {
 		value: undefined
 	};
 
-	Map = createClass({
-		constructor: function Map(entries) {
-			this._entries = Object.create(null);
-			this._objectStamps = {};
+	Map = function Map(entries) {
+		this._entries = Object.create(null);
+		this._objectStamps = {};
 
-			this._first = null;
-			this._last = null;
+		this._first = null;
+		this._last = null;
 
-			this.size = 0;
+		this.size = 0;
 
-			if (entries) {
-				for (var i = 0, l = entries.length; i < l; i++) {
-					this.set(entries[i][0], entries[i][1]);
-				}
+		if (entries) {
+			for (var i = 0, l = entries.length; i < l; i++) {
+				this.set(entries[i][0], entries[i][1]);
 			}
-		},
+		}
+	};
+
+	Map.prototype = {
+		constructor: Map,
 
 		has: function has(key) {
 			return !!this._entries[this._getValueStamp(key)];
@@ -303,13 +192,13 @@ if (!Map || Map.toString().indexOf('[native code]') == -1) {
 		},
 
 		_getObjectStamp: function _getObjectStamp(obj) {
-			if (!hasOwn.call(obj, UID)) {
+			if (!hasOwn$1.call(obj, UID)) {
 				if (!Object.isExtensible(obj)) {
 					var stamps = this._objectStamps;
 					var stamp;
 
 					for (stamp in stamps) {
-						if (hasOwn.call(stamps, stamp) && stamps[stamp] == obj) {
+						if (hasOwn$1.call(stamps, stamp) && stamps[stamp] == obj) {
 							return stamp;
 						}
 					}
@@ -343,7 +232,7 @@ if (!Map || Map.toString().indexOf('[native code]') == -1) {
 		toString: function toString() {
 			return '[object Map]';
 		}
-	});
+	};
 
 	[['keys', function keys(entry) {
 		return entry.key;
@@ -420,17 +309,17 @@ var IS_EVENT = {};
  * @extends {Object}
  * @typesign new EventEmitter() -> cellx.EventEmitter;
  */
-var EventEmitter = createClass({
-	Static: {
-		currentlySubscribing: false
-	},
+function EventEmitter() {
+	/**
+  * @type {{ [type: string]: cellx~EmitterEvent | Array<cellx~EmitterEvent> }}
+  */
+	this._events = new Map$1();
+}
 
-	constructor: function EventEmitter() {
-		/**
-   * @type {{ [type: string]: cellx~EmitterEvent | Array<cellx~EmitterEvent> }}
-   */
-		this._events = new Map$1();
-	},
+EventEmitter.currentlySubscribing = false;
+
+EventEmitter.prototype = {
+	constructor: EventEmitter,
 
 	/**
   * @typesign () -> { [type: string]: Array<cellx~EmitterEvent> };
@@ -726,16 +615,16 @@ var EventEmitter = createClass({
 	_logError: function _logError() {
 		ErrorLogger.log.apply(ErrorLogger, arguments);
 	}
-});
+};
 
-var ObservableCollectionMixin = EventEmitter.extend({
-	constructor: function ObservableCollectionMixin() {
-		/**
-   * @type {Map<*, uint>}
-   */
-		this._valueCounts = new Map$1();
-	},
+function ObservableCollectionMixin() {
+	/**
+  * @type {Map<*, uint>}
+  */
+	this._valueCounts = new Map$1();
+}
 
+ObservableCollectionMixin.prototype = {
 	/**
   * @typesign (evt: cellx~Event);
   */
@@ -778,7 +667,39 @@ var ObservableCollectionMixin = EventEmitter.extend({
 			}
 		}
 	}
-});
+};
+
+/**
+ * @typesign (a, b) -> boolean;
+ */
+var is = Object.is || function is(a, b) {
+	if (a === 0 && b === 0) {
+		return 1 / a == 1 / b;
+	}
+	return a === b || a != a && b != b;
+};
+
+/**
+ * @typesign (target: Object, source: Object) -> Object;
+ */
+function mixin(target, source) {
+	var names = Object.getOwnPropertyNames(source);
+
+	for (var i = 0, l = names.length; i < l; i++) {
+		var name = names[i];
+		Object.defineProperty(target, name, Object.getOwnPropertyDescriptor(source, name));
+	}
+
+	if (arguments.length > 2) {
+		var i = 2;
+
+		do {
+			mixin(target, arguments[i]);
+		} while (++i < arguments.length);
+	}
+
+	return target;
+}
 
 /**
  * @class cellx.ObservableMap
@@ -794,51 +715,51 @@ var ObservableCollectionMixin = EventEmitter.extend({
  *     adoptsValueChanges?: boolean
  * ) -> cellx.ObservableMap;
  */
-var ObservableMap = EventEmitter.extend({
-	Implements: [ObservableCollectionMixin],
+function ObservableMap(entries, opts) {
+	EventEmitter.call(this);
+	ObservableCollectionMixin.call(this);
 
-	constructor: function ObservableMap(entries, opts) {
-		EventEmitter.call(this);
-		ObservableCollectionMixin.call(this);
+	if (typeof opts == 'boolean') {
+		opts = { adoptsValueChanges: opts };
+	}
 
-		if (typeof opts == 'boolean') {
-			opts = { adoptsValueChanges: opts };
-		}
+	this._entries = new Map$1();
 
-		this._entries = new Map$1();
+	this.size = 0;
 
-		this.size = 0;
+	/**
+  * @type {boolean}
+  */
+	this.adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
 
-		/**
-   * @type {boolean}
-   */
-		this.adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
+	if (entries) {
+		var mapEntries = this._entries;
 
-		if (entries) {
-			var mapEntries = this._entries;
+		if (entries instanceof ObservableMap || entries instanceof Map$1) {
+			entries._entries.forEach((function (value, key) {
+				this._registerValue(value);
+				mapEntries.set(key, value);
+			}), this);
+		} else if (Array.isArray(entries)) {
+			for (var i = 0, l = entries.length; i < l; i++) {
+				var entry = entries[i];
 
-			if (entries instanceof ObservableMap || entries instanceof Map$1) {
-				entries._entries.forEach((function (value, key) {
-					this._registerValue(value);
-					mapEntries.set(key, value);
-				}), this);
-			} else if (Array.isArray(entries)) {
-				for (var i = 0, l = entries.length; i < l; i++) {
-					var entry = entries[i];
-
-					this._registerValue(entry[1]);
-					mapEntries.set(entry[0], entry[1]);
-				}
-			} else {
-				for (var key in entries) {
-					this._registerValue(entries[key]);
-					mapEntries.set(key, entries[key]);
-				}
+				this._registerValue(entry[1]);
+				mapEntries.set(entry[0], entry[1]);
 			}
-
-			this.size = mapEntries.size;
+		} else {
+			for (var key in entries) {
+				this._registerValue(entries[key]);
+				mapEntries.set(key, entries[key]);
+			}
 		}
-	},
+
+		this.size = mapEntries.size;
+	}
+}
+
+ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype }, ObservableCollectionMixin.prototype, {
+	constructor: ObservableMap,
 
 	/**
   * @typesign (key) -> boolean;
@@ -998,10 +919,8 @@ var ObservableMap = EventEmitter.extend({
 
 ObservableMap.prototype[Symbol$1.iterator] = ObservableMap.prototype.entries;
 
-var slice = Array.prototype.slice;
 var push = Array.prototype.push;
 var splice = Array.prototype.splice;
-var map$1 = Array.prototype.map;
 
 /**
  * @typesign (a, b) -> -1 | 1 | 0;
@@ -1026,42 +945,42 @@ function defaultComparator(a, b) {
  *     adoptsValueChanges?: boolean
  * ) -> cellx.ObservableList;
  */
-var ObservableList = EventEmitter.extend({
-	Implements: [ObservableCollectionMixin],
+function ObservableList(items, opts) {
+	EventEmitter.call(this);
+	ObservableCollectionMixin.call(this);
 
-	constructor: function ObservableList(items, opts) {
-		EventEmitter.call(this);
-		ObservableCollectionMixin.call(this);
+	if (typeof opts == 'boolean') {
+		opts = { adoptsValueChanges: opts };
+	}
 
-		if (typeof opts == 'boolean') {
-			opts = { adoptsValueChanges: opts };
-		}
+	this._items = [];
 
-		this._items = [];
+	this.length = 0;
 
-		this.length = 0;
+	/**
+  * @type {boolean}
+  */
+	this.adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
 
-		/**
-   * @type {boolean}
-   */
-		this.adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
+	/**
+  * @type {?(a, b) -> int}
+  */
+	this.comparator = null;
 
-		/**
-   * @type {?(a, b) -> int}
-   */
-		this.comparator = null;
+	this.sorted = false;
 
-		this.sorted = false;
+	if (opts && (opts.sorted || opts.comparator && opts.sorted !== false)) {
+		this.comparator = opts.comparator || defaultComparator;
+		this.sorted = true;
+	}
 
-		if (opts && (opts.sorted || opts.comparator && opts.sorted !== false)) {
-			this.comparator = opts.comparator || defaultComparator;
-			this.sorted = true;
-		}
+	if (items) {
+		this._addRange(items);
+	}
+}
 
-		if (items) {
-			this._addRange(items);
-		}
-	},
+ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, ObservableCollectionMixin.prototype, {
+	constructor: ObservableList,
 
 	/**
   * @typesign (index: ?int, allowedEndIndex?: boolean) -> ?uint;
@@ -1741,6 +1660,7 @@ var nextTick$1 = nextTick;
 
 function noop() {}
 
+var slice$1 = Array.prototype.slice;
 var EventEmitterProto = EventEmitter.prototype;
 
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
@@ -1942,206 +1862,210 @@ var config = {
  *     onError?: (evt: cellx~Event) -> ?boolean
  * }) -> cellx.Cell;
  */
-var Cell = EventEmitter.extend({
-	Static: {
-		/**
-   * @typesign (cnfg: { asynchronous?: boolean });
-   */
-		configure: function configure(cnfg) {
-			if (cnfg.asynchronous !== undefined) {
-				if (releasePlanned) {
-					release();
-				}
+function Cell(value, opts) {
+	EventEmitter.call(this);
 
-				config.asynchronous = cnfg.asynchronous;
-			}
-		},
+	this.debugKey = opts && opts.debugKey;
 
-		/**
-   * @type {boolean}
-   */
-		get currentlyPulling() {
-			return !!currentCell;
-		},
+	this.owner = opts && opts.owner || this;
 
-		/**
-   * @typesign (cb: (), context?) -> ();
-   */
-		autorun: function autorun(cb, context) {
-			var disposer;
+	this._pull = typeof value == 'function' ? value : null;
+	this._get = opts && opts.get || null;
 
-			new Cell(function () {
-				var cell = this;
+	this._validate = opts && opts.validate || null;
+	this._merge = opts && opts.merge || null;
+	this._put = opts && opts.put || defaultPut;
 
-				if (!disposer) {
-					disposer = function disposer() {
-						cell.dispose();
-					};
-				}
+	this._onFulfilled = this._onRejected = null;
 
-				if (transactionLevel) {
-					var index = pendingReactions.indexOf(this);
+	this._reap = opts && opts.reap || null;
 
-					if (index != -1) {
-						pendingReactions.splice(index, 1);
-					}
+	if (this._pull) {
+		this._fixedValue = this._value = undefined;
+	} else {
+		if (this._validate) {
+			this._validate(value, undefined);
+		}
+		if (this._merge) {
+			value = this._merge(value, undefined);
+		}
 
-					pendingReactions.push(this);
-				} else {
-					cb.call(context, disposer);
-				}
-			}, { onChange: noop });
+		this._fixedValue = this._value = value;
 
-			return disposer;
-		},
+		if (value instanceof EventEmitter) {
+			value.on('change', this._onValueChange, this);
+		}
+	}
 
-		/**
-   * @typesign ();
-   */
-		forceRelease: function forceRelease() {
+	this._error = null;
+	this._selfErrorCell = null;
+	this._errorCell = null;
+
+	this._errorIndex = 0;
+	this._pushingIndex = 0;
+	this._version = 0;
+
+	/**
+  * Ведущие ячейки.
+  * @type {?Array<cellx.Cell>}
+  */
+	this._masters = undefined;
+	/**
+  * Ведомые ячейки.
+  * @type {Array<cellx.Cell>}
+  */
+	this._slaves = [];
+
+	this._level = 0;
+	this._levelInRelease = -1;
+
+	this._selfPendingStatusCell = null;
+	this._pendingStatusCell = null;
+
+	this._status = null;
+
+	this._changeEvent = null;
+	this._lastErrorEvent = null;
+
+	this._state = STATE_CAN_CANCEL_CHANGE;
+
+	if (opts) {
+		if (opts.onChange) {
+			this.on('change', opts.onChange);
+		}
+		if (opts.onError) {
+			this.on('error', opts.onError);
+		}
+	}
+}
+
+mixin(Cell, {
+	/**
+  * @typesign (cnfg: { asynchronous?: boolean });
+  */
+	configure: function configure(cnfg) {
+		if (cnfg.asynchronous !== undefined) {
 			if (releasePlanned) {
 				release();
 			}
-		},
 
-		/**
-   * @typesign (cb: ());
-   */
-		transaction: function transaction(cb) {
-			if (!transactionLevel++ && releasePlanned) {
+			config.asynchronous = cnfg.asynchronous;
+		}
+	},
+
+	/**
+  * @type {boolean}
+  */
+	get currentlyPulling() {
+		return !!currentCell;
+	},
+
+	/**
+  * @typesign (cb: (), context?) -> ();
+  */
+	autorun: function autorun(cb, context) {
+		var disposer;
+
+		new Cell(function () {
+			var cell = this;
+
+			if (!disposer) {
+				disposer = function disposer() {
+					cell.dispose();
+				};
+			}
+
+			if (transactionLevel) {
+				var index = pendingReactions.indexOf(this);
+
+				if (index != -1) {
+					pendingReactions.splice(index, 1);
+				}
+
+				pendingReactions.push(this);
+			} else {
+				cb.call(context, disposer);
+			}
+		}, { onChange: noop });
+
+		return disposer;
+	},
+
+	/**
+  * @typesign ();
+  */
+	forceRelease: function forceRelease() {
+		if (releasePlanned) {
+			release();
+		}
+	},
+
+	/**
+  * @typesign (cb: ());
+  */
+	transaction: function transaction(cb) {
+		if (!transactionLevel++ && releasePlanned) {
+			release();
+		}
+
+		try {
+			cb();
+		} catch (err) {
+			ErrorLogger.log(err);
+			transactionFailure = true;
+		}
+
+		if (transactionFailure) {
+			for (var iterator = releasePlan.values(), step; !(step = iterator.next()).done;) {
+				var queue = step.value;
+
+				for (var i = queue.length; i;) {
+					var cell = queue[--i];
+					cell._value = cell._fixedValue;
+					cell._levelInRelease = -1;
+					cell._changeEvent = null;
+				}
+			}
+
+			releasePlan.clear();
+			releasePlanIndex = MAX_SAFE_INTEGER;
+			releasePlanToIndex = -1;
+			releasePlanned = false;
+			pendingReactions.length = 0;
+		}
+
+		if (! --transactionLevel && !transactionFailure) {
+			for (var i = 0, l = pendingReactions.length; i < l; i++) {
+				var reaction = pendingReactions[i];
+
+				if (reaction instanceof Cell) {
+					reaction.pull();
+				} else {
+					EventEmitterProto._handleEvent.call(reaction[1], reaction[0]);
+				}
+			}
+
+			transactionFailure = false;
+			pendingReactions.length = 0;
+
+			if (releasePlanned) {
 				release();
 			}
-
-			try {
-				cb();
-			} catch (err) {
-				ErrorLogger.log(err);
-				transactionFailure = true;
-			}
-
-			if (transactionFailure) {
-				for (var iterator = releasePlan.values(), step; !(step = iterator.next()).done;) {
-					var queue = step.value;
-
-					for (var i = queue.length; i;) {
-						var cell = queue[--i];
-						cell._value = cell._fixedValue;
-						cell._levelInRelease = -1;
-						cell._changeEvent = null;
-					}
-				}
-
-				releasePlan.clear();
-				releasePlanIndex = MAX_SAFE_INTEGER;
-				releasePlanToIndex = -1;
-				releasePlanned = false;
-				pendingReactions.length = 0;
-			}
-
-			if (! --transactionLevel && !transactionFailure) {
-				for (var i = 0, l = pendingReactions.length; i < l; i++) {
-					var reaction = pendingReactions[i];
-
-					if (reaction instanceof Cell) {
-						reaction.pull();
-					} else {
-						EventEmitterProto._handleEvent.call(reaction[1], reaction[0]);
-					}
-				}
-
-				transactionFailure = false;
-				pendingReactions.length = 0;
-
-				if (releasePlanned) {
-					release();
-				}
-			}
-		},
-
-		/**
-   * @typesign (cb: ());
-   */
-		afterRelease: function afterRelease(cb) {
-			(afterReleaseCallbacks || (afterReleaseCallbacks = [])).push(cb);
 		}
 	},
 
-	constructor: function Cell(value, opts) {
-		EventEmitter.call(this);
+	/**
+  * @typesign (cb: ());
+  */
+	afterRelease: function afterRelease(cb) {
+		(afterReleaseCallbacks || (afterReleaseCallbacks = [])).push(cb);
+	}
+});
 
-		this.debugKey = opts && opts.debugKey;
+Cell.prototype = {
+	__proto__: EventEmitter.prototype,
 
-		this.owner = opts && opts.owner || this;
-
-		this._pull = typeof value == 'function' ? value : null;
-		this._get = opts && opts.get || null;
-
-		this._validate = opts && opts.validate || null;
-		this._merge = opts && opts.merge || null;
-		this._put = opts && opts.put || defaultPut;
-
-		this._onFulfilled = this._onRejected = null;
-
-		this._reap = opts && opts.reap || null;
-
-		if (this._pull) {
-			this._fixedValue = this._value = undefined;
-		} else {
-			if (this._validate) {
-				this._validate(value, undefined);
-			}
-			if (this._merge) {
-				value = this._merge(value, undefined);
-			}
-
-			this._fixedValue = this._value = value;
-
-			if (value instanceof EventEmitter) {
-				value.on('change', this._onValueChange, this);
-			}
-		}
-
-		this._error = null;
-		this._selfErrorCell = null;
-		this._errorCell = null;
-
-		this._errorIndex = 0;
-		this._pushingIndex = 0;
-		this._version = 0;
-
-		/**
-   * Ведущие ячейки.
-   * @type {?Array<cellx.Cell>}
-   */
-		this._masters = undefined;
-		/**
-   * Ведомые ячейки.
-   * @type {Array<cellx.Cell>}
-   */
-		this._slaves = [];
-
-		this._level = 0;
-		this._levelInRelease = -1;
-
-		this._selfPendingStatusCell = null;
-		this._pendingStatusCell = null;
-
-		this._status = null;
-
-		this._changeEvent = null;
-		this._lastErrorEvent = null;
-
-		this._state = STATE_CAN_CANCEL_CHANGE;
-
-		if (opts) {
-			if (opts.onChange) {
-				this.on('change', opts.onChange);
-			}
-			if (opts.onError) {
-				this.on('error', opts.onError);
-			}
-		}
-	},
+	constructor: Cell,
 
 	_handleEvent: function _handleEvent(evt) {
 		if (transactionLevel) {
@@ -2746,7 +2670,7 @@ var Cell = EventEmitter.extend({
 	/**
   * @typesign (value) -> cellx.Cell;
   */
-	push: function push$$1(value) {
+	push: function push(value) {
 		this._push(value, true, false);
 		return this;
 	},
@@ -3016,7 +2940,7 @@ var Cell = EventEmitter.extend({
   * @override
   */
 	_logError: function _logError() {
-		var msg = slice.call(arguments);
+		var msg = slice$1.call(arguments);
 
 		if (this.debugKey) {
 			msg.unshift('[' + this.debugKey + ']');
@@ -3044,11 +2968,13 @@ var Cell = EventEmitter.extend({
 	dispose: function dispose() {
 		return this.reap();
 	}
-});
+};
 
 Cell.prototype[Symbol$1.iterator] = function () {
 	return this._value[Symbol$1.iterator]();
 };
+
+var map$1 = Array.prototype.map;
 
 /**
  * @typesign (...msg);
@@ -3060,6 +2986,9 @@ function logError() {
 		return arg === Object(arg) && arg.stack || arg;
 	})).join(' '));
 }
+
+var hasOwn = Object.prototype.hasOwnProperty;
+var slice = Array.prototype.slice;
 
 ErrorLogger.setHandler(logError);
 
@@ -3193,11 +3122,11 @@ cellx.KEY_CELLS = CELLS;
  *     adoptsValueChanges?: boolean
  * ) -> cellx.ObservableMap;
  */
-function map$$1(entries, opts) {
+function map(entries, opts) {
 	return new ObservableMap(entries, opts);
 }
 
-cellx.map = map$$1;
+cellx.map = map;
 
 /**
  * @typesign (items?: Array | cellx.ObservableList, opts?: {
@@ -3279,7 +3208,6 @@ cellx.Utils = {
 	logError: logError,
 	nextUID: nextUID,
 	mixin: mixin,
-	createClass: createClass,
 	nextTick: nextTick$1,
 	noop: noop
 };

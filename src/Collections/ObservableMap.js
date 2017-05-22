@@ -3,6 +3,7 @@ import ObservableCollectionMixin from './ObservableCollectionMixin';
 import { is } from '../JS/Object';
 import Map from '../JS/Map';
 import Symbol from '../JS/Symbol';
+import mixin from '../Utils/mixin';
 
 /**
  * @class cellx.ObservableMap
@@ -18,51 +19,51 @@ import Symbol from '../JS/Symbol';
  *     adoptsValueChanges?: boolean
  * ) -> cellx.ObservableMap;
  */
-var ObservableMap = EventEmitter.extend({
-	Implements: [ObservableCollectionMixin],
+export default function ObservableMap(entries, opts) {
+	EventEmitter.call(this);
+	ObservableCollectionMixin.call(this);
 
-	constructor: function ObservableMap(entries, opts) {
-		EventEmitter.call(this);
-		ObservableCollectionMixin.call(this);
+	if (typeof opts == 'boolean') {
+		opts = { adoptsValueChanges: opts };
+	}
 
-		if (typeof opts == 'boolean') {
-			opts = { adoptsValueChanges: opts };
-		}
+	this._entries = new Map();
 
-		this._entries = new Map();
+	this.size = 0;
 
-		this.size = 0;
+	/**
+	 * @type {boolean}
+	 */
+	this.adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
 
-		/**
-		 * @type {boolean}
-		 */
-		this.adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
+	if (entries) {
+		var mapEntries = this._entries;
 
-		if (entries) {
-			var mapEntries = this._entries;
+		if (entries instanceof ObservableMap || entries instanceof Map) {
+			entries._entries.forEach(function(value, key) {
+				this._registerValue(value);
+				mapEntries.set(key, value);
+			}, this);
+		} else if (Array.isArray(entries)) {
+			for (var i = 0, l = entries.length; i < l; i++) {
+				var entry = entries[i];
 
-			if (entries instanceof ObservableMap || entries instanceof Map) {
-				entries._entries.forEach(function(value, key) {
-					this._registerValue(value);
-					mapEntries.set(key, value);
-				}, this);
-			} else if (Array.isArray(entries)) {
-				for (var i = 0, l = entries.length; i < l; i++) {
-					var entry = entries[i];
-
-					this._registerValue(entry[1]);
-					mapEntries.set(entry[0], entry[1]);
-				}
-			} else {
-				for (var key in entries) {
-					this._registerValue(entries[key]);
-					mapEntries.set(key, entries[key]);
-				}
+				this._registerValue(entry[1]);
+				mapEntries.set(entry[0], entry[1]);
 			}
-
-			this.size = mapEntries.size;
+		} else {
+			for (var key in entries) {
+				this._registerValue(entries[key]);
+				mapEntries.set(key, entries[key]);
+			}
 		}
-	},
+
+		this.size = mapEntries.size;
+	}
+}
+
+ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype }, ObservableCollectionMixin.prototype, {
+	constructor: ObservableMap,
 
 	/**
 	 * @typesign (key) -> boolean;
@@ -221,5 +222,3 @@ var ObservableMap = EventEmitter.extend({
 });
 
 ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;
-
-export default ObservableMap;

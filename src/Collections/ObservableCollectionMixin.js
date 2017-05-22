@@ -1,14 +1,14 @@
 import EventEmitter from '../EventEmitter';
 import Map from '../JS/Map';
 
-var ObservableCollectionMixin = EventEmitter.extend({
-	constructor: function ObservableCollectionMixin() {
-		/**
-		 * @type {Map<*, uint>}
-		 */
-		this._valueCounts = new Map();
-	},
+export default function ObservableCollectionMixin() {
+	/**
+	 * @type {Map<*, uint>}
+	 */
+	this._valueCounts = new Map();
+}
 
+ObservableCollectionMixin.prototype = {
 	/**
 	 * @typesign (evt: cellx~Event);
 	 */
@@ -51,6 +51,4 @@ var ObservableCollectionMixin = EventEmitter.extend({
 			}
 		}
 	}
-});
-
-export default ObservableCollectionMixin;
+};

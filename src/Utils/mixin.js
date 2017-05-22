@@ -9,6 +9,14 @@ function mixin(target, source) {
 		Object.defineProperty(target, name, Object.getOwnPropertyDescriptor(source, name));
 	}
 
+	if (arguments.length > 2) {
+		var i = 2;
+
+		do {
+			mixin(target, arguments[i]);
+		} while (++i < arguments.length);
+	}
+
 	return target;
 }
 
