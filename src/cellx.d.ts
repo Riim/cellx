@@ -246,7 +246,7 @@ declare namespace Cellx {
 	export namespace Utils {
 		function logError(...msg: Array<any>): void;
 		function nextUID(): string;
-		function mixin(target: Object, source: Object): Object;
+		function mixin(target: Object, ...sources: Array<Object>): Object;
 		function nextTick(cb: () => void): void;
 	}
 

@@ -1,5 +1,5 @@
 /**
- * @typesign (target: Object, source: Object) -> Object;
+ * @typesign (target: Object, ...sources: Array<Object>) -> Object;
  */
 function mixin(target, source) {
 	var names = Object.getOwnPropertyNames(source);
