@@ -136,13 +136,15 @@ declare namespace Cellx {
 		forEach(cb: (item: T, index: number, list: ObservableList<T>) => void, context?: any): void;
 		map(cb: (item: T, index: number, list: ObservableList<T>) => any, context?: any): Array<any>;
 		filter(cb: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): Array<T>;
-		find(cb: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): T;
+		find(cb: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): T | undefined;
 		findIndex(cb: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): number;
 		every(cb: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): boolean;
 		some(cb: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): boolean;
 		reduce(cb: (accumulator: any, item: T, index: number, list: ObservableList<T>) => any, initialValue?: any): any;
-		reduceRight(cb: (accumulator: any, item: T, index: number, list: ObservableList<T>) => any,
-			initialValue?: any): any;
+		reduceRight(
+			cb: (accumulator: any, item: T, index: number, list: ObservableList<T>) => any,
+			initialValue?: any
+		): any;
 
 		clone(): ObservableList<T>;
 
