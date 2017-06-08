@@ -1,9 +1,3 @@
-/// <reference path="../typings/es6-collections/es6-collections.d.ts"/>
-/// <reference path="../typings/es6-promise/main.d.ts"/>
-
-import { Map } from 'es6-collections';
-import { Promise } from 'es6-promise';
-
 declare namespace Cellx {
 	interface IComparator<T> {
 		(a: T, b: T): number;
