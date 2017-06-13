@@ -69,8 +69,8 @@ declare namespace Cellx {
 		size: number;
 		adoptsValueChanges: boolean;
 
-		constructor(entries?: ObservableMapEntries<K, V>, opts?: IObservableMapOptions);
-		constructor(entries?: ObservableMapEntries<K, V>, adoptsValueChanges?: boolean);
+		constructor(entries?: ObservableMapEntries<K, V> | null, opts?: IObservableMapOptions);
+		constructor(entries?: ObservableMapEntries<K, V> | null, adoptsValueChanges?: boolean);
 
 		has(key: K): boolean;
 		contains(value: V): boolean;
@@ -101,8 +101,8 @@ declare namespace Cellx {
 		comparator: IComparator<T>;
 		sorted: boolean;
 
-		constructor(items?: ObservableListItems<T>, opts?: IObservableListOptions<T>);
-		constructor(items?: ObservableListItems<T>, adoptsValueChanges?: boolean);
+		constructor(items?: ObservableListItems<T> | null, opts?: IObservableListOptions<T>);
+		constructor(items?: ObservableListItems<T> | null, adoptsValueChanges?: boolean);
 
 		contains(value: T): boolean;
 		indexOf(value: T, fromIndex?: number): number;
@@ -217,16 +217,22 @@ declare namespace Cellx {
 	export let KEY_CELLS: symbol;
 
 	export function map<K = any, V = any>(
-		entries?: ObservableMapEntries<K, V>,
+		entries?: ObservableMapEntries<K, V> | null,
 		opts?: IObservableMapOptions
 	): ObservableMap<K, V>;
 	export function map<K = any, V = any>(
-		entries?: ObservableMapEntries<K, V>,
+		entries?: ObservableMapEntries<K, V> | null,
 		adoptsValueChanges?: boolean
 	): ObservableMap<K, V>;
 
-	export function list<T = any>(items?: ObservableListItems<T>, opts?: IObservableListOptions<T>): ObservableList<T>;
-	export function list<T = any>(items?: ObservableListItems<T>, adoptsValueChanges?: boolean): ObservableList<T>;
+	export function list<T = any>(
+		items?: ObservableListItems<T> | null,
+		opts?: IObservableListOptions<T>
+	): ObservableList<T>;
+	export function list<T = any>(
+		items?: ObservableListItems<T> | null,
+		adoptsValueChanges?: boolean
+	): ObservableList<T>;
 
 	export function defineObservableProperty(obj: EventEmitter, name: string, value: any): EventEmitter;
 	export function defineObservableProperties(obj: EventEmitter, props: { [key: string]: any }): EventEmitter;
