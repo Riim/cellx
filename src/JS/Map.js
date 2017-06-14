@@ -7,7 +7,7 @@ var hasOwn = Object.prototype.hasOwnProperty;
 
 var Map = global.Map;
 
-if (!Map || Map.toString().indexOf('[native code]') == -1) {
+if (!Map || Map.toString().indexOf('[native code]') == -1 || !new Map([[1, 1]]).size) {
 	var entryStub = {
 		value: undefined
 	};
