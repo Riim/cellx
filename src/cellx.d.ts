@@ -36,12 +36,12 @@ declare namespace Cellx {
 		getEvents(): { [type: string]: Array<{ listener: (evt: IEvent) => boolean | void; context: any }> };
 		getEvents(type: string): Array<{ listener: (evt: IEvent) => boolean | void; context: any }>;
 
-		on(type: string, listener: IEventEmitterListener, context?: any): EventEmitter;
-		on(listeners: { [key: string]: IEventEmitterListener }, context?: any): EventEmitter;
+		on(type: string, listener: IEventEmitterListener, context?: any): this;
+		on(listeners: { [key: string]: IEventEmitterListener }, context?: any): this;
 
-		off(type: string, listener: IEventEmitterListener, context?: any): EventEmitter;
-		off(listeners: { [key: string]: IEventEmitterListener }, context?: any): EventEmitter;
-		off(): EventEmitter;
+		off(type: string, listener: IEventEmitterListener, context?: any): this;
+		off(listeners: { [key: string]: IEventEmitterListener }, context?: any): this;
+		off(): this;
 
 		protected _on(type: string, listener: IEventEmitterListener, context: any): void;
 		protected _off(type: string, listener: IEventEmitterListener, context: any): void;
@@ -75,16 +75,16 @@ declare namespace Cellx {
 		has(key: K): boolean;
 		contains(value: V): boolean;
 		get(key: K): V;
-		set(key: K, value: V): ObservableMap<K, V>;
+		set(key: K, value: V): this;
 		delete(key: K): boolean;
-		clear(): ObservableMap<K, V>;
+		clear(): this;
 
 		forEach(cb: (value: V, key: K, map: ObservableMap<K, V>) => void, context?: any): void;
 		keys(): Iterator<K>;
 		values(): Iterator<V>;
 		entries(): Iterator<[K, V]>;
 
-		clone(): ObservableMap<K, V>;
+		clone(): this;
 	}
 
 	type ObservableListItems<T> = Array<T> | ObservableList<T>;
@@ -110,20 +110,20 @@ declare namespace Cellx {
 
 		get(index: number): T;
 		getRange(index: number, count?: number): Array<T>;
-		set(index: number, value: T): ObservableList<T>;
-		setRange(index: number, values: Array<T> | ObservableList<T>): ObservableList<T>;
-		add(value: T): ObservableList<T>;
-		addRange(values: Array<T> | ObservableList<T>): ObservableList<T>;
+		set(index: number, value: T): this;
+		setRange(index: number, values: Array<T> | ObservableList<T>): this;
+		add(value: T): this;
+		addRange(values: Array<T> | ObservableList<T>): this;
 		protected _addRange(values: Array<T> | ObservableList<T>): void;
-		insert(index: number, value: T): ObservableList<T>;
-		insertRange(index: number, values: Array<T> | ObservableList<T>): ObservableList<T>;
+		insert(index: number, value: T): this;
+		insertRange(index: number, values: Array<T> | ObservableList<T>): this;
 		remove(value: T, fromIndex?: number): boolean;
 		removeAll(value: T, fromIndex?: number): boolean;
 		removeEach(values: Array<T> | ObservableList<T>, fromIndex?: number): boolean;
 		removeAllEach(values: Array<T> | ObservableList<T>, fromIndex?: number): boolean;
 		removeAt(index: number): T;
 		removeRange(index: number, count?: number): Array<T>;
-		clear(): ObservableList<T>;
+		clear(): this;
 
 		join(separator?: string): string;
 
@@ -140,7 +140,7 @@ declare namespace Cellx {
 			initialValue?: any
 		): any;
 
-		clone(): ObservableList<T>;
+		clone(): this;
 
 		toArray(): Array<T>;
 		toString(): string;
@@ -153,7 +153,7 @@ declare namespace Cellx {
 	interface ICellOptions<T> {
 		debugKey?: string;
 		owner?: Object;
-		get?: (value: any) => T,
+		get?: (value: any) => T;
 		validate?: (value: T, oldValue: any) => void;
 		merge?: (value: T, oldValue: any) => any;
 		put?: (cell: Cell<T>, value: any, oldValue: any) => void;
@@ -190,25 +190,25 @@ declare namespace Cellx {
 		constructor(value?: T, opts?: ICellOptions<T>);
 		constructor(pull: ICellPull<T>, opts?: ICellOptions<T>);
 
-		addChangeListener(listener: IEventEmitterListener, context?: any): Cell<T>;
-		removeChangeListener(listener: IEventEmitterListener, context?: any): Cell<T>;
-		addErrorListener(listener: IEventEmitterListener, context?: any): Cell<T>;
-		removeErrorListener(listener: IEventEmitterListener, context?: any): Cell<T>;
-		subscribe(listener: (err: Error | void, evt: ICellEvent) => boolean | void, context?: any): Cell<T>;
-		unsubscribe(listener: (err: Error | void, evt: ICellEvent) => boolean | void, context?: any): Cell<T>;
+		addChangeListener(listener: IEventEmitterListener, context?: any): this;
+		removeChangeListener(listener: IEventEmitterListener, context?: any): this;
+		addErrorListener(listener: IEventEmitterListener, context?: any): this;
+		removeErrorListener(listener: IEventEmitterListener, context?: any): this;
+		subscribe(listener: (err: Error | void, evt: ICellEvent) => boolean | void, context?: any): this;
+		unsubscribe(listener: (err: Error | void, evt: ICellEvent) => boolean | void, context?: any): this;
 
 		get(): T;
 		pull(): boolean;
 		getError(): Error;
-		set(value: T): Cell<T>;
-		push(value: any): Cell<T>;
-		fail(err: any): Cell<T>;
+		set(value: T): this;
+		push(value: any): this;
+		fail(err: any): this;
 
 		isPending(): boolean;
 		then(onFulfilled: (value: T) => any, onRejected?: (err: any) => any): Promise<any>;
 		catch(onRejected: (err: any) => any): Promise<any>;
 
-		dispose(): Cell<T>;
+		dispose(): this;
 	}
 
 	export function autorun(cb: () => void, context?: any): () => void;
