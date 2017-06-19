@@ -139,7 +139,7 @@ EventEmitter.prototype = {
 			var propName = type.slice(index + 1);
 
 			EventEmitter.currentlySubscribing = true;
-			(this['_' + propName] || (this[propName], this['_' + propName]))
+			(this[propName + 'Cell'] || (this[propName], this[propName + 'Cell']))
 				.on(type.slice(0, index), listener, context);
 			EventEmitter.currentlySubscribing = false;
 		} else {
@@ -172,7 +172,7 @@ EventEmitter.prototype = {
 		if (index != -1) {
 			var propName = type.slice(index + 1);
 
-			(this['_' + propName] || (this[propName], this['_' + propName]))
+			(this[propName + 'Cell'] || (this[propName], this[propName + 'Cell']))
 				.off(type.slice(0, index), listener, context);
 		} else {
 			var events = this._events.get(type);

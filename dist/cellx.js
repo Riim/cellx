@@ -424,7 +424,7 @@ EventEmitter.prototype = {
 			var propName = type.slice(index + 1);
 
 			EventEmitter.currentlySubscribing = true;
-			(this['_' + propName] || (this[propName], this['_' + propName])).on(type.slice(0, index), listener, context);
+			(this[propName + 'Cell'] || (this[propName], this[propName + 'Cell'])).on(type.slice(0, index), listener, context);
 			EventEmitter.currentlySubscribing = false;
 		} else {
 			var events = this._events.get(type);
@@ -456,7 +456,7 @@ EventEmitter.prototype = {
 		if (index != -1) {
 			var propName = type.slice(index + 1);
 
-			(this['_' + propName] || (this[propName], this['_' + propName])).off(type.slice(0, index), listener, context);
+			(this[propName + 'Cell'] || (this[propName], this[propName + 'Cell'])).off(type.slice(0, index), listener, context);
 		} else {
 			var events = this._events.get(type);
 
@@ -3147,20 +3147,20 @@ cellx.list = list;
  * @typesign (obj: cellx.EventEmitter, name: string, value) -> cellx.EventEmitter;
  */
 function defineObservableProperty(obj, name, value) {
-	var privateName = '_' + name;
+	var cellName = name + 'Cell';
 
-	obj[privateName] = value instanceof Cell ? value : new Cell(value, { owner: obj });
+	obj[cellName] = value instanceof Cell ? value : new Cell(value, { owner: obj });
 
 	Object.defineProperty(obj, name, {
 		configurable: true,
 		enumerable: true,
 
 		get: function () {
-			return this[privateName].get();
+			return this[cellName].get();
 		},
 
 		set: function (value) {
-			this[privateName].set(value);
+			this[cellName].set(value);
 		}
 	});
 
