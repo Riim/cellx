@@ -128,7 +128,7 @@ declare namespace Cellx {
 		join(separator?: string): string;
 
 		forEach(cb: (item: T, index: number, list: ObservableList<T>) => void, context?: any): void;
-		map(cb: (item: T, index: number, list: ObservableList<T>) => any, context?: any): Array<any>;
+		map<R = any>(cb: (item: T, index: number, list: ObservableList<T>) => any, context?: any): Array<R>;
 		filter(cb: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): Array<T>;
 		find(cb: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): T | undefined;
 		findIndex(cb: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): number;
@@ -205,8 +205,8 @@ declare namespace Cellx {
 		fail(err: any): this;
 
 		isPending(): boolean;
-		then(onFulfilled: (value: T) => any, onRejected?: (err: any) => any): Promise<any>;
-		catch(onRejected: (err: any) => any): Promise<any>;
+		then<R = any>(onFulfilled: (value: T) => any, onRejected?: (err: any) => any): Promise<R>;
+		catch<R = any>(onRejected: (err: any) => any): Promise<R>;
 
 		dispose(): this;
 	}
