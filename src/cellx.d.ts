@@ -16,8 +16,8 @@ declare namespace Cellx {
 		[key: string]: any;
 	}
 
-	interface IEvent {
-		target: EventEmitter;
+	interface IEvent<T extends EventEmitter = EventEmitter> {
+		target: T;
 		type: string;
 		bubbles?: boolean;
 		isPropagationStopped?: boolean;
@@ -162,14 +162,14 @@ declare namespace Cellx {
 		onError?: IEventEmitterListener;
 	}
 
-	interface ICellChangeEvent extends IEvent {
+	interface ICellChangeEvent extends IEvent<Cell> {
 		type: 'change';
 		oldValue: any;
 		value: any;
 		prev: ICellChangeEvent;
 	}
 
-	interface ICellErrorEvent extends IEvent {
+	interface ICellErrorEvent extends IEvent<Cell> {
 		type: 'error';
 		error: any;
 	}
