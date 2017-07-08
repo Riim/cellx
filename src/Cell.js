@@ -1,7 +1,7 @@
 import ErrorLogger from './ErrorLogger';
 import EventEmitter from './EventEmitter';
-import { is } from './JS/Object';
 import Map from './JS/Map';
+import { is } from './JS/Object';
 import Symbol from './JS/Symbol';
 import mixin from './Utils/mixin';
 import nextTick from './Utils/nextTick';

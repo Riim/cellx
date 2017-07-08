@@ -1,7 +1,7 @@
 import { UID as KEY_UID } from '../keys';
+import nextUID from '../Utils/nextUID';
 import global from './global';
 import Symbol from './Symbol';
-import nextUID from '../Utils/nextUID';
 
 var hasOwn = Object.prototype.hasOwnProperty;
 

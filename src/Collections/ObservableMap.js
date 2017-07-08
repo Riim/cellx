@@ -1,9 +1,9 @@
 import EventEmitter from '../EventEmitter';
-import ObservableCollectionMixin from './ObservableCollectionMixin';
-import { is } from '../JS/Object';
 import Map from '../JS/Map';
+import { is } from '../JS/Object';
 import Symbol from '../JS/Symbol';
 import mixin from '../Utils/mixin';
+import ObservableCollectionMixin from './ObservableCollectionMixin';
 
 /**
  * @class cellx.ObservableMap

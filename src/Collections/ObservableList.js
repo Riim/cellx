@@ -1,8 +1,8 @@
 import EventEmitter from '../EventEmitter';
-import ObservableCollectionMixin from './ObservableCollectionMixin';
 import { is } from '../JS/Object';
 import Symbol from '../JS/Symbol';
 import mixin from '../Utils/mixin';
+import ObservableCollectionMixin from './ObservableCollectionMixin';
 
 var push = Array.prototype.push;
 var splice = Array.prototype.splice;
