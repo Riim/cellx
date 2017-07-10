@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.7.19",
+  "version": "1.7.20",
   "description": "",
   "main": "dist/cellx.js",
   "typings": "src/cellx.d.ts",
@@ -45,11 +45,11 @@
     "mocha": "^3.4.2",
     "pump": "^1.0.2",
     "require-dir": "^0.3.2",
-    "rollup": "^0.43.0",
+    "rollup": "^0.45.0",
     "rollup-plugin-babel": "^2.7.1",
     "rollup-plugin-eslint": "^4.0.0",
     "run-sequence": "^2.0.0",
-    "sinon": "^2.3.6",
+    "sinon": "^2.3.7",
     "typescript": "^2.4.1",
     "yargs": "^8.0.2"
   }

@@ -167,11 +167,11 @@ if (!Map || Map.toString().indexOf('[native code]') == -1 || !new Map([[1, 1]]).
 			return obj[KEY_UID];
 		},
 
-		forEach: function forEach(cb, context) {
+		forEach: function forEach(callback, context) {
 			var entry = this._first;
 
 			while (entry) {
-				cb.call(context, entry.value, entry.key, this);
+				callback.call(context, entry.value, entry.key, this);
 
 				do {
 					entry = entry.next;

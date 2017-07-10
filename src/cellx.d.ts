@@ -79,7 +79,7 @@ declare namespace Cellx {
 		delete(key: K): boolean;
 		clear(): this;
 
-		forEach(cb: (value: V, key: K, map: ObservableMap<K, V>) => void, context?: any): void;
+		forEach(callback: (value: V, key: K, map: ObservableMap<K, V>) => void, context?: any): void;
 		keys(): Iterator<K>;
 		values(): Iterator<V>;
 		entries(): Iterator<[K, V]>;
@@ -127,16 +127,22 @@ declare namespace Cellx {
 
 		join(separator?: string): string;
 
-		forEach(cb: (item: T, index: number, list: ObservableList<T>) => void, context?: any): void;
-		map<R = any>(cb: (item: T, index: number, list: ObservableList<T>) => any, context?: any): Array<R>;
-		filter(cb: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): Array<T>;
-		find(cb: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): T | undefined;
-		findIndex(cb: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): number;
-		every(cb: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): boolean;
-		some(cb: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): boolean;
-		reduce(cb: (accumulator: any, item: T, index: number, list: ObservableList<T>) => any, initialValue?: any): any;
+		forEach(callback: (item: T, index: number, list: ObservableList<T>) => void, context?: any): void;
+		map<R = any>(callback: (item: T, index: number, list: ObservableList<T>) => any, context?: any): Array<R>;
+		filter(callback: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): Array<T>;
+		find(
+			callback: (item: T, index: number, list: ObservableList<T>) => boolean | void,
+			context?: any
+		): T | undefined;
+		findIndex(callback: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): number;
+		every(callback: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): boolean;
+		some(callback: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): boolean;
+		reduce(
+			callback: (accumulator: any, item: T, index: number, list: ObservableList<T>) => any,
+			initialValue?: any
+		): any;
 		reduceRight(
-			cb: (accumulator: any, item: T, index: number, list: ObservableList<T>) => any,
+			callback: (accumulator: any, item: T, index: number, list: ObservableList<T>) => any,
 			initialValue?: any
 		): any;
 
@@ -152,7 +158,7 @@ declare namespace Cellx {
 
 	interface ICellOptions<T> {
 		debugKey?: string;
-		owner?: Object;
+		owner?: object;
 		get?: (value: any) => T;
 		validate?: (value: T, oldValue: any) => void;
 		merge?: (value: T, oldValue: any) => any;
@@ -179,13 +185,13 @@ declare namespace Cellx {
 	export class Cell<T = any> extends EventEmitter {
 		static configure(config: { asynchronous?: boolean }): void;
 		static readonly currentlyPulling: boolean;
-		static autorun(cb: () => void, context?: any): () => void;
+		static autorun(callback: () => void, context?: any): () => void;
 		static forceRelease(): void;
-		static transaction(cb: () => void): void;
-		static afterRelease(cb: () => void): void;
+		static transaction(callback: () => void): void;
+		static afterRelease(callback: () => void): void;
 
 		debugKey: string;
-		owner: Object;
+		owner: object;
 
 		constructor(value?: T, opts?: ICellOptions<T>);
 		constructor(pull: ICellPull<T>, opts?: ICellOptions<T>);
@@ -211,7 +217,7 @@ declare namespace Cellx {
 		dispose(): this;
 	}
 
-	export function autorun(cb: () => void, context?: any): () => void;
+	export function autorun(callback: () => void, context?: any): () => void;
 
 	export let KEY_UID: symbol;
 	export let KEY_CELLS: symbol;
@@ -248,8 +254,8 @@ declare namespace Cellx {
 	export namespace Utils {
 		function logError(...msg: Array<any>): void;
 		function nextUID(): string;
-		function mixin(target: Object, ...sources: Array<Object>): Object;
-		function nextTick(cb: () => void): void;
+		function mixin(target: object, ...sources: Array<object>): object;
+		function nextTick(callback: () => void): void;
 	}
 
 	interface ICellx<T> {

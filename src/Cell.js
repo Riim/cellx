@@ -308,9 +308,9 @@ mixin(Cell, {
 	},
 
 	/**
-	 * @typesign (cb: (), context?) -> ();
+	 * @typesign (callback: (), context?) -> ();
 	 */
-	autorun: function autorun(cb, context) {
+	autorun: function autorun(callback, context) {
 		var disposer;
 
 		new Cell(function() {
@@ -331,7 +331,7 @@ mixin(Cell, {
 
 				pendingReactions.push(this);
 			} else {
-				cb.call(context, disposer);
+				callback.call(context, disposer);
 			}
 		}, { onChange: noop });
 
@@ -348,15 +348,15 @@ mixin(Cell, {
 	},
 
 	/**
-	 * @typesign (cb: ());
+	 * @typesign (callback: ());
 	 */
-	transaction: function transaction(cb) {
+	transaction: function transaction(callback) {
 		if (!transactionLevel++ && releasePlanned) {
 			release();
 		}
 
 		try {
-			cb();
+			callback();
 		} catch (err) {
 			ErrorLogger.log(err);
 			transactionFailure = true;
@@ -402,10 +402,10 @@ mixin(Cell, {
 	},
 
 	/**
-	 * @typesign (cb: ());
+	 * @typesign (callback: ());
 	 */
-	afterRelease: function afterRelease(cb) {
-		(afterReleaseCallbacks || (afterReleaseCallbacks = [])).push(cb);
+	afterRelease: function afterRelease(callback) {
+		(afterReleaseCallbacks || (afterReleaseCallbacks = [])).push(callback);
 	}
 });
 

@@ -2,7 +2,7 @@ import ErrorLogger from '../ErrorLogger';
 import global from '../JS/global';
 
 /**
- * @typesign (cb: ());
+ * @typesign (callback: ());
  */
 var nextTick;
 
@@ -10,15 +10,15 @@ var nextTick;
 if (global.process && process.toString() == '[object process]' && process.nextTick) {
 	nextTick = process.nextTick;
 } else if (global.setImmediate) {
-	nextTick = function nextTick(cb) {
-		setImmediate(cb);
+	nextTick = function nextTick(callback) {
+		setImmediate(callback);
 	};
 } else if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
 	var prm = Promise.resolve();
 
-	nextTick = function nextTick(cb) {
+	nextTick = function nextTick(callback) {
 		prm.then(function() {
-			cb();
+			callback();
 		});
 	};
 } else {
@@ -40,11 +40,11 @@ if (global.process && process.toString() == '[object process]' && process.nextTi
 		}
 	});
 
-	nextTick = function nextTick(cb) {
+	nextTick = function nextTick(callback) {
 		if (queue) {
-			queue.push(cb);
+			queue.push(callback);
 		} else {
-			queue = [cb];
+			queue = [callback];
 			postMessage('__tic__', '*');
 		}
 	};

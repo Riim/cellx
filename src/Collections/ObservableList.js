@@ -517,7 +517,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Observab
 
 	/**
 	 * @typesign (
-	 *     cb: (item, index: uint, list: cellx.ObservableList),
+	 *     callback: (item, index: uint, list: cellx.ObservableList),
 	 *     context?
 	 * );
 	 */
@@ -525,7 +525,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Observab
 
 	/**
 	 * @typesign (
-	 *     cb: (item, index: uint, list: cellx.ObservableList) -> *,
+	 *     callback: (item, index: uint, list: cellx.ObservableList) -> *,
 	 *     context?
 	 * ) -> Array;
 	 */
@@ -533,7 +533,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Observab
 
 	/**
 	 * @typesign (
-	 *     cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean,
+	 *     callback: (item, index: uint, list: cellx.ObservableList) -> ?boolean,
 	 *     context?
 	 * ) -> Array;
 	 */
@@ -541,17 +541,17 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Observab
 
 	/**
 	 * @typesign (
-	 *     cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean,
+	 *     callback: (item, index: uint, list: cellx.ObservableList) -> ?boolean,
 	 *     context?
 	 * ) -> *;
 	 */
-	find: function(cb, context) {
+	find: function(callback, context) {
 		var items = this._items;
 
 		for (var i = 0, l = items.length; i < l; i++) {
 			var item = items[i];
 
-			if (cb.call(context, item, i, this)) {
+			if (callback.call(context, item, i, this)) {
 				return item;
 			}
 		}
@@ -559,15 +559,15 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Observab
 
 	/**
 	 * @typesign (
-	 *     cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean,
+	 *     callback: (item, index: uint, list: cellx.ObservableList) -> ?boolean,
 	 *     context?
 	 * ) -> int;
 	 */
-	findIndex: function(cb, context) {
+	findIndex: function(callback, context) {
 		var items = this._items;
 
 		for (var i = 0, l = items.length; i < l; i++) {
-			if (cb.call(context, items[i], i, this)) {
+			if (callback.call(context, items[i], i, this)) {
 				return i;
 			}
 		}
@@ -577,7 +577,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Observab
 
 	/**
 	 * @typesign (
-	 *     cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean,
+	 *     callback: (item, index: uint, list: cellx.ObservableList) -> ?boolean,
 	 *     context?
 	 * ) -> boolean;
 	 */
@@ -585,7 +585,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Observab
 
 	/**
 	 * @typesign (
-	 *     cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean,
+	 *     callback: (item, index: uint, list: cellx.ObservableList) -> ?boolean,
 	 *     context?
 	 * ) -> boolean;
 	 */
@@ -593,7 +593,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Observab
 
 	/**
 	 * @typesign (
-	 *     cb: (accumulator, item, index: uint, list: cellx.ObservableList) -> *,
+	 *     callback: (accumulator, item, index: uint, list: cellx.ObservableList) -> *,
 	 *     initialValue?
 	 * ) -> *;
 	 */
@@ -601,7 +601,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Observab
 
 	/**
 	 * @typesign (
-	 *     cb: (accumulator, item, index: uint, list: cellx.ObservableList) -> *,
+	 *     callback: (accumulator, item, index: uint, list: cellx.ObservableList) -> *,
 	 *     initialValue?
 	 * ) -> *;
 	 */
@@ -634,20 +634,20 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Observab
 });
 
 ['forEach', 'map', 'filter', 'every', 'some'].forEach(function(name) {
-	ObservableList.prototype[name] = function(cb, context) {
+	ObservableList.prototype[name] = function(callback, context) {
 		return this._items[name](function(item, index) {
-			return cb.call(context, item, index, this);
+			return callback.call(context, item, index, this);
 		}, this);
 	};
 });
 
 ['reduce', 'reduceRight'].forEach(function(name) {
-	ObservableList.prototype[name] = function(cb, initialValue) {
+	ObservableList.prototype[name] = function(callback, initialValue) {
 		var items = this._items;
 		var list = this;
 
 		function wrapper(accumulator, item, index) {
-			return cb(accumulator, item, index, list);
+			return callback(accumulator, item, index, list);
 		}
 
 		return arguments.length >= 2 ? items[name](wrapper, initialValue) : items[name](wrapper);

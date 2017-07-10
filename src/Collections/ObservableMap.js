@@ -180,13 +180,13 @@ ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype }, Observabl
 
 	/**
 	 * @typesign (
-	 *     cb: (value, key, map: cellx.ObservableMap),
+	 *     callback: (value, key, map: cellx.ObservableMap),
 	 *     context?
 	 * );
 	 */
-	forEach: function forEach(cb, context) {
+	forEach: function forEach(callback, context) {
 		this._entries.forEach(function(value, key) {
-			cb.call(context, value, key, this);
+			callback.call(context, value, key, this);
 		}, this);
 	},
 
