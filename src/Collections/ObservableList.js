@@ -68,9 +68,9 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Observab
 	constructor: ObservableList,
 
 	/**
-	 * @typesign (index: ?int, allowedEndIndex?: boolean) -> ?uint;
+	 * @typesign (index: ?int, allowEndIndex?: boolean) -> ?uint;
 	 */
-	_validateIndex: function _validateIndex(index, allowedEndIndex) {
+	_validateIndex: function _validateIndex(index, allowEndIndex) {
 		if (index === undefined) {
 			return index;
 		}
@@ -81,7 +81,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Observab
 			if (index < 0) {
 				throw new RangeError('Index out of valid range');
 			}
-		} else if (index >= this.length + (allowedEndIndex ? 1 : 0)) {
+		} else if (index >= this.length + (allowEndIndex ? 1 : 0)) {
 			throw new RangeError('Index out of valid range');
 		}
 

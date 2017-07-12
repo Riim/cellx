@@ -74,7 +74,7 @@ declare namespace Cellx {
 
 		has(key: K): boolean;
 		contains(value: V): boolean;
-		get(key: K): V;
+		get(key: K): V | undefined;
 		set(key: K, value: V): this;
 		delete(key: K): boolean;
 		clear(): this;
@@ -108,7 +108,7 @@ declare namespace Cellx {
 		indexOf(value: T, fromIndex?: number): number;
 		lastIndexOf(value: T, fromIndex?: number): number;
 
-		get(index: number): T;
+		get(index: number): T | undefined;
 		getRange(index: number, count?: number): Array<T>;
 		set(index: number, value: T): this;
 		setRange(index: number, values: Array<T> | ObservableList<T>): this;
