@@ -209,7 +209,7 @@ cellx.defineObservableProperties = defineObservableProperties;
  * @typesign (obj: cellx.EventEmitter, props: Object) -> cellx.EventEmitter;
  */
 function define(obj, name, value) {
-	if (arguments.length == 3) {
+	if (typeof name == 'string') {
 		defineObservableProperty(obj, name, value);
 	} else {
 		defineObservableProperties(obj, name);

@@ -76,7 +76,7 @@ EventEmitter.prototype = {
 	 */
 	on: function on(type, listener, context) {
 		if (typeof type == 'object') {
-			context = arguments.length >= 2 ? listener : this;
+			context = listener !== undefined ? listener : this;
 
 			var listeners = type;
 
@@ -84,7 +84,7 @@ EventEmitter.prototype = {
 				this._on(type, listeners[type], context);
 			}
 		} else {
-			this._on(type, listener, arguments.length >= 3 ? context : this);
+			this._on(type, listener, context !== undefined ? context : this);
 		}
 
 		return this;
@@ -104,11 +104,9 @@ EventEmitter.prototype = {
 	 * @typesign () -> cellx.EventEmitter;
 	 */
 	off: function off(type, listener, context) {
-		var argCount = arguments.length;
-
-		if (argCount) {
+		if (type) {
 			if (typeof type == 'object') {
-				context = argCount >= 2 ? listener : this;
+				context = listener !== undefined ? listener : this;
 
 				var listeners = type;
 
@@ -116,7 +114,7 @@ EventEmitter.prototype = {
 					this._off(type, listeners[type], context);
 				}
 			} else {
-				this._off(type, listener, argCount >= 3 ? context : this);
+				this._off(type, listener, context !== undefined ? context : this);
 			}
 		} else {
 			this._events.clear();
@@ -211,7 +209,7 @@ EventEmitter.prototype = {
 	 * ) -> (evt: cellx~Event) -> ?boolean;
 	 */
 	once: function once(type, listener, context) {
-		if (arguments.length < 3) {
+		if (context === undefined) {
 			context = this;
 		}
 

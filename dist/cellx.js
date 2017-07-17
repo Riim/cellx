@@ -361,7 +361,7 @@ EventEmitter.prototype = {
   */
 	on: function on(type, listener, context) {
 		if (typeof type == 'object') {
-			context = arguments.length >= 2 ? listener : this;
+			context = listener !== undefined ? listener : this;
 
 			var listeners = type;
 
@@ -369,7 +369,7 @@ EventEmitter.prototype = {
 				this._on(type, listeners[type], context);
 			}
 		} else {
-			this._on(type, listener, arguments.length >= 3 ? context : this);
+			this._on(type, listener, context !== undefined ? context : this);
 		}
 
 		return this;
@@ -389,11 +389,9 @@ EventEmitter.prototype = {
   * @typesign () -> cellx.EventEmitter;
   */
 	off: function off(type, listener, context) {
-		var argCount = arguments.length;
-
-		if (argCount) {
+		if (type) {
 			if (typeof type == 'object') {
-				context = argCount >= 2 ? listener : this;
+				context = listener !== undefined ? listener : this;
 
 				var listeners = type;
 
@@ -401,7 +399,7 @@ EventEmitter.prototype = {
 					this._off(type, listeners[type], context);
 				}
 			} else {
-				this._off(type, listener, argCount >= 3 ? context : this);
+				this._off(type, listener, context !== undefined ? context : this);
 			}
 		} else {
 			this._events.clear();
@@ -494,7 +492,7 @@ EventEmitter.prototype = {
   * ) -> (evt: cellx~Event) -> ?boolean;
   */
 	once: function once(type, listener, context) {
-		if (arguments.length < 3) {
+		if (context === undefined) {
 			context = this;
 		}
 
@@ -1128,9 +1126,9 @@ Cell.prototype = {
 		this._activate();
 
 		if (typeof type == 'object') {
-			EventEmitterProto.on.call(this, type, arguments.length >= 2 ? listener : this.owner);
+			EventEmitterProto.on.call(this, type, listener !== undefined ? listener : this.owner);
 		} else {
-			EventEmitterProto.on.call(this, type, listener, arguments.length >= 3 ? context : this.owner);
+			EventEmitterProto.on.call(this, type, listener, context !== undefined ? context : this.owner);
 		}
 
 		this._state |= STATE_HAS_FOLLOWERS;
@@ -1145,13 +1143,11 @@ Cell.prototype = {
 			release();
 		}
 
-		var argCount = arguments.length;
-
-		if (argCount) {
+		if (type) {
 			if (typeof type == 'object') {
-				EventEmitterProto.off.call(this, type, argCount >= 2 ? listener : this.owner);
+				EventEmitterProto.off.call(this, type, listener !== undefined ? listener : this.owner);
 			} else {
-				EventEmitterProto.off.call(this, type, listener, argCount >= 3 ? context : this.owner);
+				EventEmitterProto.off.call(this, type, listener, context !== undefined ? context : this.owner);
 			}
 		} else {
 			EventEmitterProto.off.call(this);
@@ -1177,7 +1173,7 @@ Cell.prototype = {
   * ) -> cellx.Cell;
   */
 	addChangeListener: function addChangeListener(listener, context) {
-		return this.on('change', listener, arguments.length >= 2 ? context : this.owner);
+		return this.on('change', listener, context !== undefined ? context : this.owner);
 	},
 	/**
   * @typesign (
@@ -1186,7 +1182,7 @@ Cell.prototype = {
   * ) -> cellx.Cell;
   */
 	removeChangeListener: function removeChangeListener(listener, context) {
-		return this.off('change', listener, arguments.length >= 2 ? context : this.owner);
+		return this.off('change', listener, context !== undefined ? context : this.owner);
 	},
 
 	/**
@@ -1196,7 +1192,7 @@ Cell.prototype = {
   * ) -> cellx.Cell;
   */
 	addErrorListener: function addErrorListener(listener, context) {
-		return this.on('error', listener, arguments.length >= 2 ? context : this.owner);
+		return this.on('error', listener, context !== undefined ? context : this.owner);
 	},
 	/**
   * @typesign (
@@ -1205,7 +1201,7 @@ Cell.prototype = {
   * ) -> cellx.Cell;
   */
 	removeErrorListener: function removeErrorListener(listener, context) {
-		return this.off('error', listener, arguments.length >= 2 ? context : this.owner);
+		return this.off('error', listener, context !== undefined ? context : this.owner);
 	},
 
 	/**
@@ -1226,7 +1222,7 @@ Cell.prototype = {
 		}
 		(wrappers || (listener[KEY_WRAPPERS] = new Map$1())).set(this, wrapper);
 
-		if (arguments.length < 2) {
+		if (context === undefined) {
 			context = this.owner;
 		}
 
@@ -1239,10 +1235,6 @@ Cell.prototype = {
   * ) -> cellx.Cell;
   */
 	unsubscribe: function unsubscribe(listener, context) {
-		if (arguments.length < 2) {
-			context = this.owner;
-		}
-
 		var wrappers = listener[KEY_WRAPPERS];
 		var wrapper = wrappers && wrappers.get(this);
 
@@ -1251,6 +1243,10 @@ Cell.prototype = {
 		}
 
 		wrappers.delete(this);
+
+		if (context === undefined) {
+			context = this.owner;
+		}
 
 		return this.off('change', wrapper, context).off('error', wrapper, context);
 	},
@@ -3187,7 +3183,7 @@ cellx.defineObservableProperties = defineObservableProperties;
  * @typesign (obj: cellx.EventEmitter, props: Object) -> cellx.EventEmitter;
  */
 function define(obj, name, value) {
-	if (arguments.length == 3) {
+	if (typeof name == 'string') {
 		defineObservableProperty(obj, name, value);
 	} else {
 		defineObservableProperties(obj, name);
