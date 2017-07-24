@@ -31,7 +31,7 @@ declare namespace Cellx {
 	export class EventEmitter {
 		static currentlySubscribing: boolean;
 
-		_events: Map<string, Array<{ listener: IEventEmitterListener; context: any }>>;
+		protected _events: Map<string, Array<{ listener: IEventEmitterListener; context: any }>>;
 
 		getEvents(): { [type: string]: Array<{ listener: (evt: IEvent) => boolean | void; context: any }> };
 		getEvents(type: string): Array<{ listener: (evt: IEvent) => boolean | void; context: any }>;
@@ -56,19 +56,16 @@ declare namespace Cellx {
 		protected _logError(...msg: Array<any>): void;
 	}
 
-	interface IObservableCollection extends EventEmitter {
-	}
-
 	type ObservableMapEntries<K, V> = Array<[K, V]> | { [key: string]: V } | Map<K, V> | ObservableMap<K, V>;
 
 	interface IObservableMapOptions {
 		adoptsValueChanges?: boolean;
 	}
 
-	export class ObservableMap<K = any, V = any> extends EventEmitter implements IObservableCollection {
-		size: number;
-		adoptsValueChanges: boolean;
-		get isFrozen(): boolean;
+	export class ObservableMap<K = any, V = any> extends EventEmitter {
+		readonly size: number;
+		readonly adoptsValueChanges: boolean;
+		readonly isFrozen: boolean;
 
 		constructor(entries?: ObservableMapEntries<K, V> | null, opts?: IObservableMapOptions);
 		constructor(entries?: ObservableMapEntries<K, V> | null, adoptsValueChanges?: boolean);
@@ -99,12 +96,12 @@ declare namespace Cellx {
 		sorted?: boolean;
 	}
 
-	export class ObservableList<T = any> extends EventEmitter implements IObservableCollection {
-		length: number;
-		adoptsValueChanges: boolean;
-		comparator: IComparator<T>;
-		sorted: boolean;
-		get isFrozen(): boolean;
+	export class ObservableList<T = any> extends EventEmitter {
+		readonly length: number;
+		readonly adoptsValueChanges: boolean;
+		readonly comparator: IComparator<T>;
+		readonly sorted: boolean;
+		readonly isFrozen: boolean;
 
 		constructor(items?: ObservableListItems<T> | null, opts?: IObservableListOptions<T>);
 		constructor(items?: ObservableListItems<T> | null, adoptsValueChanges?: boolean);
@@ -198,8 +195,8 @@ declare namespace Cellx {
 		static transaction(callback: () => void): void;
 		static afterRelease(callback: () => void): void;
 
-		debugKey: string;
-		owner: object;
+		readonly debugKey: string;
+		readonly owner: object;
 
 		constructor(value?: T, opts?: ICellOptions<T>);
 		constructor(pull: ICellPull<T>, opts?: ICellOptions<T>);
