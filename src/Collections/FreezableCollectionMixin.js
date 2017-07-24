@@ -1,11 +1,11 @@
-export default function FreezableMixin() {
+export default function FreezableCollectionMixin() {
 	/**
 	 * @type {boolean}
 	 */
 	this._isFrozen = false;
 }
 
-FreezableMixin.prototype = {
+FreezableCollectionMixin.prototype = {
 	/**
 	 * @type {boolean}
 	 */
@@ -14,7 +14,7 @@ FreezableMixin.prototype = {
 	},
 
 	/**
-	 * @typesign () -> cellx.ObservableList;
+	 * @typesign () -> this;
 	 */
 	freeze: function freeze() {
 		this._isFrozen = true;
@@ -22,7 +22,7 @@ FreezableMixin.prototype = {
 	},
 
 	/**
-	 * @typesign () -> cellx.ObservableList;
+	 * @typesign () -> this;
 	 */
 	unfreeze: function unfreeze() {
 		this._isFrozen = false;
@@ -34,7 +34,7 @@ FreezableMixin.prototype = {
 	 */
 	_throwIfFrozen: function _throwIfFrozen(msg) {
 		if (this._isFrozen) {
-			throw new TypeError(msg || 'Frozen list cannot be mutated');
+			throw new TypeError(msg || 'Frozen collection cannot be mutated');
 		}
 	}
 };

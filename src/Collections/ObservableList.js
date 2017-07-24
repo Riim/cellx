@@ -2,7 +2,7 @@ import EventEmitter from '../EventEmitter';
 import { is } from '../JS/Object';
 import Symbol from '../JS/Symbol';
 import mixin from '../Utils/mixin';
-import FreezableMixin from './FreezableMixin';
+import FreezableCollectionMixin from './FreezableCollectionMixin';
 import ObservableCollectionMixin from './ObservableCollectionMixin';
 
 var push = Array.prototype.push;
@@ -18,7 +18,7 @@ function defaultComparator(a, b) {
 /**
  * @class cellx.ObservableList
  * @extends {cellx.EventEmitter}
- * @implements {cellx.FreezableMixin}
+ * @implements {cellx.FreezableCollectionMixin}
  * @implements {cellx.ObservableCollectionMixin}
  *
  * @typesign new ObservableList(items?: Array | cellx.ObservableList, opts?: {
@@ -34,7 +34,7 @@ function defaultComparator(a, b) {
  */
 export default function ObservableList(items, opts) {
 	EventEmitter.call(this);
-	FreezableMixin.call(this);
+	FreezableCollectionMixin.call(this);
 	ObservableCollectionMixin.call(this);
 
 	if (typeof opts == 'boolean') {
@@ -68,7 +68,7 @@ export default function ObservableList(items, opts) {
 }
 
 ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
-		FreezableMixin.prototype,
+		FreezableCollectionMixin.prototype,
 		ObservableCollectionMixin.prototype, {
 	constructor: ObservableList,
 
@@ -127,8 +127,6 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 			throw new TypeError('Cannot set to sorted list');
 		}
 
-		this._throwIfFrozen();
-
 		index = this._validateIndex(index, true);
 
 		var items = this._items;
@@ -136,6 +134,8 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 		if (is(value, items[index])) {
 			return this;
 		}
+
+		this._throwIfFrozen();
 
 		this._unregisterValue(items[index]);
 		this._registerValue(value);
@@ -153,8 +153,6 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 		if (this.sorted) {
 			throw new TypeError('Cannot set to sorted list');
 		}
-
-		this._throwIfFrozen();
 
 		index = this._validateIndex(index, true);
 
@@ -179,6 +177,10 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 			var value = values[--i - index];
 
 			if (!is(value, items[i])) {
+				if (!changed) {
+					this._throwIfFrozen();
+				}
+
 				this._unregisterValue(items[i]);
 				this._registerValue(value);
 				items[i] = value;
@@ -217,9 +219,9 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 	 * @typesign (values: Array | cellx.ObservableList) -> cellx.ObservableList;
 	 */
 	addRange: function addRange(values) {
-		this._throwIfFrozen();
-
 		if (values.length) {
+			this._throwIfFrozen();
+
 			this._addRange(values);
 			this.emit('change');
 		}
@@ -258,9 +260,9 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 			throw new TypeError('Cannot insert to sorted list');
 		}
 
-		this._throwIfFrozen();
-
 		index = this._validateIndex(index, true);
+
+		this._throwIfFrozen();
 
 		this._registerValue(value);
 		this._items.splice(index, 0, value);
@@ -279,8 +281,6 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 			throw new TypeError('Cannot insert to sorted list');
 		}
 
-		this._throwIfFrozen();
-
 		index = this._validateIndex(index, true);
 
 		if (values instanceof ObservableList) {
@@ -292,6 +292,8 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 		if (!valueCount) {
 			return this;
 		}
+
+		this._throwIfFrozen();
 
 		for (var i = valueCount; i;) {
 			this._registerValue(values[--i]);
@@ -309,13 +311,13 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 	 * @typesign (value, fromIndex?: int) -> boolean;
 	 */
 	remove: function remove(value, fromIndex) {
-		this._throwIfFrozen();
-
 		var index = this._items.indexOf(value, this._validateIndex(fromIndex, true));
 
 		if (index == -1) {
 			return false;
 		}
+
+		this._throwIfFrozen();
 
 		this._unregisterValue(value);
 		this._items.splice(index, 1);
@@ -330,13 +332,15 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 	 * @typesign (value, fromIndex?: int) -> boolean;
 	 */
 	removeAll: function removeAll(value, fromIndex) {
-		this._throwIfFrozen();
-
 		var index = this._validateIndex(fromIndex, true);
 		var items = this._items;
 		var changed = false;
 
 		while ((index = items.indexOf(value, index)) != -1) {
+			if (!changed) {
+				this._throwIfFrozen();
+			}
+
 			this._unregisterValue(value);
 			items.splice(index, 1);
 			changed = true;
@@ -354,8 +358,6 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 	 * @typesign (values: Array | cellx.ObservableList, fromIndex?: int) -> boolean;
 	 */
 	removeEach: function removeEach(values, fromIndex) {
-		this._throwIfFrozen();
-
 		fromIndex = this._validateIndex(fromIndex, true);
 
 		if (values instanceof ObservableList) {
@@ -370,6 +372,10 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 			var index = items.indexOf(value, fromIndex);
 
 			if (index != -1) {
+				if (!changed) {
+					this._throwIfFrozen();
+				}
+
 				this._unregisterValue(value);
 				items.splice(index, 1);
 				changed = true;
@@ -388,8 +394,6 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 	 * @typesign (values: Array | cellx.ObservableList, fromIndex?: int) -> boolean;
 	 */
 	removeAllEach: function removeAllEach(values, fromIndex) {
-		this._throwIfFrozen();
-
 		fromIndex = this._validateIndex(fromIndex, true);
 
 		if (values instanceof ObservableList) {
@@ -403,6 +407,10 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 			var value = values[i];
 
 			for (var index = fromIndex; (index = items.indexOf(value, index)) != -1;) {
+				if (!changed) {
+					this._throwIfFrozen();
+				}
+
 				this._unregisterValue(value);
 				items.splice(index, 1);
 				changed = true;
@@ -421,9 +429,10 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 	 * @typesign (index: int) -> *;
 	 */
 	removeAt: function removeAt(index) {
+		var value = this._items.splice(this._validateIndex(index), 1)[0];
+
 		this._throwIfFrozen();
 
-		var value = this._items.splice(this._validateIndex(index), 1)[0];
 		this._unregisterValue(value);
 		this.length--;
 
@@ -436,8 +445,6 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 	 * @typesign (index: int, count?: uint) -> Array;
 	 */
 	removeRange: function removeRange(index, count) {
-		this._throwIfFrozen();
-
 		index = this._validateIndex(index, true);
 
 		var items = this._items;
@@ -451,6 +458,8 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 		if (!count) {
 			return [];
 		}
+
+		this._throwIfFrozen();
 
 		for (var i = index + count; i > index;) {
 			this._unregisterValue(items[--i]);
@@ -467,11 +476,11 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 	 * @typesign () -> cellx.ObservableList;
 	 */
 	clear: function clear() {
-		this._throwIfFrozen();
-
 		if (!this.length) {
 			return this;
 		}
+
+		this._throwIfFrozen();
 
 		if (this.adoptsValueChanges) {
 			this._valueCounts.forEach(function(value) {

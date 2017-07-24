@@ -3,13 +3,13 @@ import Map from '../JS/Map';
 import { is } from '../JS/Object';
 import Symbol from '../JS/Symbol';
 import mixin from '../Utils/mixin';
-import FreezableMixin from './FreezableMixin';
+import FreezableCollectionMixin from './FreezableCollectionMixin';
 import ObservableCollectionMixin from './ObservableCollectionMixin';
 
 /**
  * @class cellx.ObservableMap
  * @extends {cellx.EventEmitter}
- * @implements {cellx.FreezableMixin}
+ * @implements {cellx.FreezableCollectionMixin}
  * @implements {cellx.ObservableCollectionMixin}
  *
  * @typesign new ObservableMap(entries?: Object | cellx.ObservableMap | Map | Array<{ 0, 1 }>, opts?: {
@@ -23,7 +23,7 @@ import ObservableCollectionMixin from './ObservableCollectionMixin';
  */
 export default function ObservableMap(entries, opts) {
 	EventEmitter.call(this);
-	FreezableMixin.call(this);
+	FreezableCollectionMixin.call(this);
 	ObservableCollectionMixin.call(this);
 
 	if (typeof opts == 'boolean') {
@@ -66,7 +66,7 @@ export default function ObservableMap(entries, opts) {
 }
 
 ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype },
-		FreezableMixin.prototype,
+		FreezableCollectionMixin.prototype,
 		ObservableCollectionMixin.prototype, {
 	constructor: ObservableMap,
 
@@ -95,8 +95,6 @@ ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype },
 	 * @typesign (key, value) -> cellx.ObservableMap;
 	 */
 	set: function set(key, value) {
-		this._throwIfFrozen();
-
 		var entries = this._entries;
 		var hasKey = entries.has(key);
 		var oldValue;
@@ -108,7 +106,11 @@ ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype },
 				return this;
 			}
 
+			this._throwIfFrozen();
+
 			this._unregisterValue(oldValue);
+		} else {
+			this._throwIfFrozen();
 		}
 
 		this._registerValue(value);
@@ -133,13 +135,13 @@ ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype },
 	 * @typesign (key) -> boolean;
 	 */
 	delete: function delete_(key) {
-		this._throwIfFrozen();
-
 		var entries = this._entries;
 
 		if (!entries.has(key)) {
 			return false;
 		}
+
+		this._throwIfFrozen();
 
 		var value = entries.get(key);
 
@@ -162,11 +164,11 @@ ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype },
 	 * @typesign () -> cellx.ObservableMap;
 	 */
 	clear: function clear() {
-		this._throwIfFrozen();
-
 		if (!this.size) {
 			return this;
 		}
+
+		this._throwIfFrozen();
 
 		if (this.adoptsValueChanges) {
 			this._valueCounts.forEach(function(value) {
