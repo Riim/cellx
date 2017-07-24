@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.7.22",
+  "version": "1.7.23",
   "description": "",
   "main": "dist/cellx.js",
   "typings": "src/cellx.d.ts",
@@ -8,7 +8,7 @@
     "test": "tests"
   },
   "scripts": {
-    "build": "node_modules/.bin/rollup -c && node_modules/.bin/gulp",
+    "build": "rm -rf dist && node_modules/.bin/rollup -c && node_modules/.bin/gulp",
     "test": "rm -rf coverage && node_modules/karma/bin/karma start",
     "test-debug": "rm -rf coverage && node_modules/karma/bin/karma start --debug",
     "coveralls": "cat coverage/lcov.info | node_modules/.bin/coveralls"
@@ -50,7 +50,7 @@
     "rollup-plugin-eslint": "^4.0.0",
     "run-sequence": "^2.0.0",
     "sinon": "^2.3.8",
-    "typescript": "^2.4.1",
+    "typescript": "^2.4.2",
     "yargs": "^8.0.2"
   }
 }

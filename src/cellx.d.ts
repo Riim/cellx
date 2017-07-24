@@ -68,9 +68,13 @@ declare namespace Cellx {
 	export class ObservableMap<K = any, V = any> extends EventEmitter implements IObservableCollection {
 		size: number;
 		adoptsValueChanges: boolean;
+		get isFrozen(): boolean;
 
 		constructor(entries?: ObservableMapEntries<K, V> | null, opts?: IObservableMapOptions);
 		constructor(entries?: ObservableMapEntries<K, V> | null, adoptsValueChanges?: boolean);
+
+		freeze(): this;
+		unfreeze(): this;
 
 		has(key: K): boolean;
 		contains(value: V): boolean;
@@ -100,9 +104,13 @@ declare namespace Cellx {
 		adoptsValueChanges: boolean;
 		comparator: IComparator<T>;
 		sorted: boolean;
+		get isFrozen(): boolean;
 
 		constructor(items?: ObservableListItems<T> | null, opts?: IObservableListOptions<T>);
 		constructor(items?: ObservableListItems<T> | null, adoptsValueChanges?: boolean);
+
+		freeze(): this;
+		unfreeze(): this;
 
 		contains(value: T): boolean;
 		indexOf(value: T, fromIndex?: number): number;

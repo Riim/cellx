@@ -115,6 +115,22 @@ if (!Map || Map.toString().indexOf('[native code]') == -1 || !new Map([[1, 1]]).
 			this.size = 0;
 		},
 
+		forEach: function forEach(callback, context) {
+			var entry = this._first;
+
+			while (entry) {
+				callback.call(context, entry.value, entry.key, this);
+
+				do {
+					entry = entry.next;
+				} while (entry && !this._entries[entry.keyStamp]);
+			}
+		},
+
+		toString: function toString() {
+			return '[object Map]';
+		},
+
 		_getValueStamp: function _getValueStamp(value) {
 			switch (typeof value) {
 				case 'undefined': {
@@ -165,22 +181,6 @@ if (!Map || Map.toString().indexOf('[native code]') == -1 || !new Map([[1, 1]]).
 			}
 
 			return obj[KEY_UID];
-		},
-
-		forEach: function forEach(callback, context) {
-			var entry = this._first;
-
-			while (entry) {
-				callback.call(context, entry.value, entry.key, this);
-
-				do {
-					entry = entry.next;
-				} while (entry && !this._entries[entry.keyStamp]);
-			}
-		},
-
-		toString: function toString() {
-			return '[object Map]';
 		}
 	};
 
