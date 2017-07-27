@@ -156,10 +156,6 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 
 		index = this._validateIndex(index, true);
 
-		if (values instanceof ObservableList) {
-			values = values._items;
-		}
-
 		var valueCount = values.length;
 
 		if (!valueCount) {
@@ -168,6 +164,10 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 
 		if (index + valueCount > this.length) {
 			throw new RangeError('Sum of "index" and "values.length" out of valid range');
+		}
+
+		if (values instanceof ObservableList) {
+			values = values._items.slice();
 		}
 
 		var items = this._items;
@@ -234,7 +234,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 	 */
 	_addRange: function _addRange(values) {
 		if (values instanceof ObservableList) {
-			values = values._items;
+			values = values._items.slice();
 		}
 
 		if (this.sorted) {
@@ -283,10 +283,6 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 
 		index = this._validateIndex(index, true);
 
-		if (values instanceof ObservableList) {
-			values = values._items;
-		}
-
 		var valueCount = values.length;
 
 		if (!valueCount) {
@@ -294,6 +290,10 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 		}
 
 		this._throwIfFrozen();
+
+		if (values instanceof ObservableList) {
+			values = values._items;
+		}
 
 		for (var i = valueCount; i;) {
 			this._registerValue(values[--i]);
@@ -361,7 +361,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 		fromIndex = this._validateIndex(fromIndex, true);
 
 		if (values instanceof ObservableList) {
-			values = values._items;
+			values = values._items.slice();
 		}
 
 		var items = this._items;
@@ -397,7 +397,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 		fromIndex = this._validateIndex(fromIndex, true);
 
 		if (values instanceof ObservableList) {
-			values = values._items;
+			values = values._items.slice();
 		}
 
 		var items = this._items;

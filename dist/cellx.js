@@ -2254,10 +2254,6 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Freezabl
 
 		index = this._validateIndex(index, true);
 
-		if (values instanceof ObservableList) {
-			values = values._items;
-		}
-
 		var valueCount = values.length;
 
 		if (!valueCount) {
@@ -2266,6 +2262,10 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Freezabl
 
 		if (index + valueCount > this.length) {
 			throw new RangeError('Sum of "index" and "values.length" out of valid range');
+		}
+
+		if (values instanceof ObservableList) {
+			values = values._items.slice();
 		}
 
 		var items = this._items;
@@ -2332,7 +2332,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Freezabl
   */
 	_addRange: function _addRange(values) {
 		if (values instanceof ObservableList) {
-			values = values._items;
+			values = values._items.slice();
 		}
 
 		if (this.sorted) {
@@ -2381,10 +2381,6 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Freezabl
 
 		index = this._validateIndex(index, true);
 
-		if (values instanceof ObservableList) {
-			values = values._items;
-		}
-
 		var valueCount = values.length;
 
 		if (!valueCount) {
@@ -2392,6 +2388,10 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Freezabl
 		}
 
 		this._throwIfFrozen();
+
+		if (values instanceof ObservableList) {
+			values = values._items;
+		}
 
 		for (var i = valueCount; i;) {
 			this._registerValue(values[--i]);
@@ -2459,7 +2459,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Freezabl
 		fromIndex = this._validateIndex(fromIndex, true);
 
 		if (values instanceof ObservableList) {
-			values = values._items;
+			values = values._items.slice();
 		}
 
 		var items = this._items;
@@ -2495,7 +2495,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Freezabl
 		fromIndex = this._validateIndex(fromIndex, true);
 
 		if (values instanceof ObservableList) {
-			values = values._items;
+			values = values._items.slice();
 		}
 
 		var items = this._items;
