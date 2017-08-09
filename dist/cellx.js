@@ -3233,7 +3233,12 @@ cellx.list = list;
 function defineObservableProperty(obj, name, value) {
 	var cellName = name + 'Cell';
 
-	obj[cellName] = value instanceof Cell ? value : new Cell(value, { context: obj });
+	Object.defineProperty(obj, cellName, {
+		configurable: true,
+		enumerable: false,
+		writable: true,
+		value: value instanceof Cell ? value : new Cell(value, { context: obj })
+	});
 
 	Object.defineProperty(obj, name, {
 		configurable: true,
