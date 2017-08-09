@@ -31,7 +31,7 @@ var assign = Object.assign || function(target, source) {
 /**
  * @typesign (value?, opts?: {
  *     debugKey?: string,
- *     owner?: Object,
+ *     context?: Object,
  *     validate?: (value, oldValue),
  *     merge: (value, oldValue) -> *,
  *     put?: (cell: Cell, value, oldValue),
@@ -42,7 +42,7 @@ var assign = Object.assign || function(target, source) {
  *
  * @typesign (pull: (cell: Cell, next) -> *, opts?: {
  *     debugKey?: string,
- *     owner?: Object,
+ *     context?: Object,
  *     validate?: (value, oldValue),
  *     merge: (value, oldValue) -> *,
  *     put?: (cell: Cell, value, oldValue),
@@ -51,7 +51,7 @@ var assign = Object.assign || function(target, source) {
  *     onError?: (evt: cellx~Event) -> ?boolean
  * }) -> cellx;
  */
-function cellx(value, opts) {
+export default function cellx(value, opts) {
 	if (!opts) {
 		opts = {};
 	}
@@ -59,26 +59,26 @@ function cellx(value, opts) {
 	var initialValue = value;
 
 	function cx(value) {
-		var owner = this;
+		var context = this;
 
-		if (!owner || owner == global) {
-			owner = cx;
+		if (!context || context == global) {
+			context = cx;
 		}
 
-		if (!hasOwn.call(owner, KEY_CELLS)) {
-			Object.defineProperty(owner, KEY_CELLS, { value: new Map() });
+		if (!hasOwn.call(context, KEY_CELLS)) {
+			Object.defineProperty(context, KEY_CELLS, { value: new Map() });
 		}
 
-		var cell = owner[KEY_CELLS].get(cx);
+		var cell = context[KEY_CELLS].get(cx);
 
 		if (!cell) {
 			if (value === 'dispose' && arguments.length >= 2) {
 				return;
 			}
 
-			cell = new Cell(initialValue, assign({ owner }, opts));
+			cell = new Cell(initialValue, assign({ context }, opts));
 
-			owner[KEY_CELLS].set(cx, cell);
+			context[KEY_CELLS].set(cx, cell);
 		}
 
 		switch (arguments.length) {
@@ -94,7 +94,7 @@ function cellx(value, opts) {
 
 				switch (method) {
 					case 'bind': {
-						cx = cx.bind(owner);
+						cx = cx.bind(context);
 						cx.constructor = cellx;
 						return cx;
 					}
@@ -112,7 +112,7 @@ function cellx(value, opts) {
 	cx.constructor = cellx;
 
 	if (opts.onChange || opts.onError) {
-		cx.call(opts.owner || global);
+		cx.call(opts.context || global);
 	}
 
 	return cx;
@@ -171,7 +171,7 @@ cellx.list = list;
 function defineObservableProperty(obj, name, value) {
 	var cellName = name + 'Cell';
 
-	obj[cellName] = value instanceof Cell ? value : new Cell(value, { owner: obj });
+	obj[cellName] = value instanceof Cell ? value : new Cell(value, { context: obj });
 
 	Object.defineProperty(obj, name, {
 		configurable: true,
@@ -236,7 +236,5 @@ cellx.Utils = {
 
 cellx.cellx = cellx;
 
-cellx.__esModule = true;
 cellx.default = cellx;
-
-export default cellx;
+cellx.__esModule = true;

@@ -31,14 +31,14 @@ var pendingReactions = [];
 
 var afterReleaseCallbacks;
 
-var STATE_INITED = 0b10000000;
-var STATE_CURRENTLY_PULLING = 0b1000000;
-var STATE_ACTIVE = 0b100000;
-var STATE_HAS_FOLLOWERS = 0b10000;
-var STATE_PENDING = 0b1000;
-var STATE_FULFILLED = 0b100;
-var STATE_REJECTED = 0b10;
-var STATE_CAN_CANCEL_CHANGE = 0b1;
+var STATE_INITED = 1 << 7;
+var STATE_CURRENTLY_PULLING = 1 << 6;
+var STATE_ACTIVE = 1 << 5;
+var STATE_HAS_FOLLOWERS = 1 << 4;
+var STATE_PENDING = 1 << 3;
+var STATE_FULFILLED = 1 << 2;
+var STATE_REJECTED = 1 << 1;
+var STATE_CAN_CANCEL_CHANGE = 1;
 
 function release() {
 	if (!releasePlanned) {
@@ -187,7 +187,7 @@ var config = {
  *
  * @typesign new Cell(value?, opts?: {
  *     debugKey?: string,
- *     owner?: Object,
+ *     context?: Object,
  *     get?: (value) -> *,
  *     validate?: (value, oldValue),
  *     merge: (value, oldValue) -> *,
@@ -199,7 +199,7 @@ var config = {
  *
  * @typesign new Cell(pull: (cell: Cell, next) -> *, opts?: {
  *     debugKey?: string,
- *     owner?: Object,
+ *     context?: Object,
  *     get?: (value) -> *,
  *     validate?: (value, oldValue),
  *     merge: (value, oldValue) -> *,
@@ -214,7 +214,7 @@ export default function Cell(value, opts) {
 
 	this.debugKey = opts && opts.debugKey;
 
-	this.owner = opts && opts.owner || this;
+	this.context = opts && (opts.context || opts.owner) || this;
 
 	this._pull = typeof value == 'function' ? value : null;
 	this._get = opts && opts.get || null;
@@ -433,9 +433,9 @@ Cell.prototype = {
 		this._activate();
 
 		if (typeof type == 'object') {
-			EventEmitterProto.on.call(this, type, listener !== undefined ? listener : this.owner);
+			EventEmitterProto.on.call(this, type, listener !== undefined ? listener : this.context);
 		} else {
-			EventEmitterProto.on.call(this, type, listener, context !== undefined ? context : this.owner);
+			EventEmitterProto.on.call(this, type, listener, context !== undefined ? context : this.context);
 		}
 
 		this._state |= STATE_HAS_FOLLOWERS;
@@ -452,9 +452,9 @@ Cell.prototype = {
 
 		if (type) {
 			if (typeof type == 'object') {
-				EventEmitterProto.off.call(this, type, listener !== undefined ? listener : this.owner);
+				EventEmitterProto.off.call(this, type, listener !== undefined ? listener : this.context);
 			} else {
-				EventEmitterProto.off.call(this, type, listener, context !== undefined ? context : this.owner);
+				EventEmitterProto.off.call(this, type, listener, context !== undefined ? context : this.context);
 			}
 		} else {
 			EventEmitterProto.off.call(this);
@@ -469,7 +469,7 @@ Cell.prototype = {
 			this._deactivate();
 
 			if (this._reap) {
-				this._reap.call(this.owner);
+				this._reap.call(this.context);
 			}
 		}
 
@@ -483,7 +483,7 @@ Cell.prototype = {
 	 * ) -> cellx.Cell;
 	 */
 	addChangeListener: function addChangeListener(listener, context) {
-		return this.on('change', listener, context !== undefined ? context : this.owner);
+		return this.on('change', listener, context !== undefined ? context : this.context);
 	},
 	/**
 	 * @typesign (
@@ -492,7 +492,7 @@ Cell.prototype = {
 	 * ) -> cellx.Cell;
 	 */
 	removeChangeListener: function removeChangeListener(listener, context) {
-		return this.off('change', listener, context !== undefined ? context : this.owner);
+		return this.off('change', listener, context !== undefined ? context : this.context);
 	},
 
 	/**
@@ -502,7 +502,7 @@ Cell.prototype = {
 	 * ) -> cellx.Cell;
 	 */
 	addErrorListener: function addErrorListener(listener, context) {
-		return this.on('error', listener, context !== undefined ? context : this.owner);
+		return this.on('error', listener, context !== undefined ? context : this.context);
 	},
 	/**
 	 * @typesign (
@@ -511,7 +511,7 @@ Cell.prototype = {
 	 * ) -> cellx.Cell;
 	 */
 	removeErrorListener: function removeErrorListener(listener, context) {
-		return this.off('error', listener, context !== undefined ? context : this.owner);
+		return this.off('error', listener, context !== undefined ? context : this.context);
 	},
 
 	/**
@@ -533,7 +533,7 @@ Cell.prototype = {
 		(wrappers || (listener[KEY_WRAPPERS] = new Map())).set(this, wrapper);
 
 		if (context === undefined) {
-			context = this.owner;
+			context = this.context;
 		}
 
 		return this
@@ -557,7 +557,7 @@ Cell.prototype = {
 		wrappers.delete(this);
 
 		if (context === undefined) {
-			context = this.owner;
+			context = this.context;
 		}
 
 		return this
@@ -586,7 +586,7 @@ Cell.prototype = {
 			this._deactivate();
 
 			if (this._reap) {
-				this._reap.call(this.owner);
+				this._reap.call(this.context);
 			}
 		}
 	},
@@ -854,7 +854,7 @@ Cell.prototype = {
 		this._level = 0;
 
 		try {
-			return pull.length ? pull.call(this.owner, this, this._value) : pull.call(this.owner);
+			return pull.length ? pull.call(this.context, this, this._value) : pull.call(this.context);
 		} catch (err) {
 			error.original = err;
 			return error;
@@ -929,7 +929,7 @@ Cell.prototype = {
 				}
 
 				return err;
-			}, debugKey ? { debugKey: debugKey + '._errorCell', owner: this } : { owner: this });
+			}, debugKey ? { debugKey: debugKey + '._errorCell', context: this } : { context: this });
 		}
 
 		return errorCell.get();
@@ -969,7 +969,7 @@ Cell.prototype = {
 				}
 
 				return false;
-			}, debugKey ? { debugKey: debugKey + '._pendingStatusCell', owner: this } : { owner: this });
+			}, debugKey ? { debugKey: debugKey + '._pendingStatusCell', context: this } : { context: this });
 		}
 
 		return pendingStatusCell.get();
@@ -1014,9 +1014,9 @@ Cell.prototype = {
 		this._state &= ~(STATE_FULFILLED | STATE_REJECTED);
 
 		if (this._put.length >= 3) {
-			this._put.call(this.owner, this, value, this._value);
+			this._put.call(this.context, this, value, this._value);
 		} else {
-			this._put.call(this.owner, this, value);
+			this._put.call(this.context, this, value);
 		}
 
 		return this;

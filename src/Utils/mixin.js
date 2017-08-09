@@ -1,7 +1,7 @@
 /**
  * @typesign (target: Object, ...sources: Array<Object>) -> Object;
  */
-function mixin(target, source) {
+export default function mixin(target, source) {
 	var names = Object.getOwnPropertyNames(source);
 
 	for (var i = 0, l = names.length; i < l; i++) {
@@ -19,5 +19,3 @@ function mixin(target, source) {
 
 	return target;
 }
-
-export default mixin;

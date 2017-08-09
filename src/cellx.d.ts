@@ -163,7 +163,8 @@ declare namespace Cellx {
 
 	interface ICellOptions<T> {
 		debugKey?: string;
-		owner?: object;
+		context?: object;
+		owner?: object; // deprecated
 		get?: (value: any) => T;
 		validate?: (value: T, oldValue: any) => void;
 		merge?: (value: T, oldValue: any) => any;
@@ -196,7 +197,8 @@ declare namespace Cellx {
 		static afterRelease(callback: () => void): void;
 
 		readonly debugKey: string;
-		readonly owner: object;
+
+		readonly context: object;
 
 		constructor(value?: T, opts?: ICellOptions<T>);
 		constructor(pull: ICellPull<T>, opts?: ICellOptions<T>);

@@ -1,6 +1,5 @@
 {
 	"plugins": [
-		"transform-es2015-shorthand-properties",
-		"transform-es2015-literals"
+		"transform-es2015-shorthand-properties"
 	]
 }
