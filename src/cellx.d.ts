@@ -226,8 +226,10 @@ declare namespace Cellx {
 
 	export function autorun(callback: () => void, context?: any): () => void;
 
-	export let KEY_UID: symbol;
-	export let KEY_CELLS: symbol;
+	export function transact(callback: () => void): void;
+	export function transaction(callback: () => void): void;
+
+	export let KEY_CELL_MAP: symbol;
 
 	export function map<K = any, V = any>(
 		entries?: ObservableMapEntries<K, V> | null,

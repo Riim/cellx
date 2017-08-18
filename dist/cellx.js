@@ -2796,8 +2796,7 @@ ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype }, Freezable
 
 ObservableMap.prototype[_riim_symbolPolyfill.Symbol.iterator] = ObservableMap.prototype.entries;
 
-var UID = _riim_symbolPolyfill.Symbol('cellx.uid');
-var CELLS = _riim_symbolPolyfill.Symbol('cellx.cells');
+var KEY_CELL_MAP = _riim_symbolPolyfill.Symbol('cellx.cellMap');
 
 var map$1 = Array.prototype.map;
 
@@ -2871,11 +2870,11 @@ function cellx(value, opts) {
 			context = cx;
 		}
 
-		if (!hasOwn.call(context, CELLS)) {
-			Object.defineProperty(context, CELLS, { value: new _riim_mapSetPolyfill.Map() });
+		if (!hasOwn.call(context, KEY_CELL_MAP)) {
+			Object.defineProperty(context, KEY_CELL_MAP, { value: new _riim_mapSetPolyfill.Map() });
 		}
 
-		var cell = context[CELLS].get(cx);
+		var cell = context[KEY_CELL_MAP].get(cx);
 
 		if (!cell) {
 			if (value === 'dispose' && arguments.length >= 2) {
@@ -2884,7 +2883,7 @@ function cellx(value, opts) {
 
 			cell = new Cell(initialValue, assign({ context: context }, opts));
 
-			context[CELLS].set(cx, cell);
+			context[KEY_CELL_MAP].set(cx, cell);
 		}
 
 		switch (arguments.length) {
@@ -2942,8 +2941,7 @@ cellx.ObservableList = ObservableList;
 cellx.Cell = Cell;
 cellx.autorun = Cell.autorun;
 cellx.transact = cellx.transaction = Cell.transaction;
-cellx.KEY_UID = UID;
-cellx.KEY_CELLS = CELLS;
+cellx.KEY_CELL_MAP = KEY_CELL_MAP;
 
 /**
  * @typesign (

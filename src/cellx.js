@@ -6,7 +6,7 @@ import ObservableMap from './Collections/ObservableMap';
 import ErrorLogger from './ErrorLogger';
 import EventEmitter from './EventEmitter';
 import global from './global';
-import { CELLS as KEY_CELLS, UID as KEY_UID } from './keys';
+import { KEY_CELL_MAP } from './keys';
 import logError from './Utils/logError';
 import is from './Utils/is';
 import mixin from './Utils/mixin';
@@ -64,11 +64,11 @@ export default function cellx(value, opts) {
 			context = cx;
 		}
 
-		if (!hasOwn.call(context, KEY_CELLS)) {
-			Object.defineProperty(context, KEY_CELLS, { value: new Map() });
+		if (!hasOwn.call(context, KEY_CELL_MAP)) {
+			Object.defineProperty(context, KEY_CELL_MAP, { value: new Map() });
 		}
 
-		var cell = context[KEY_CELLS].get(cx);
+		var cell = context[KEY_CELL_MAP].get(cx);
 
 		if (!cell) {
 			if (value === 'dispose' && arguments.length >= 2) {
@@ -77,7 +77,7 @@ export default function cellx(value, opts) {
 
 			cell = new Cell(initialValue, assign({ context }, opts));
 
-			context[KEY_CELLS].set(cx, cell);
+			context[KEY_CELL_MAP].set(cx, cell);
 		}
 
 		switch (arguments.length) {
@@ -129,8 +129,7 @@ cellx.ObservableList = ObservableList;
 cellx.Cell = Cell;
 cellx.autorun = Cell.autorun;
 cellx.transact = cellx.transaction = Cell.transaction;
-cellx.KEY_UID = KEY_UID;
-cellx.KEY_CELLS = KEY_CELLS;
+cellx.KEY_CELL_MAP = KEY_CELL_MAP;
 
 /**
  * @typesign (
