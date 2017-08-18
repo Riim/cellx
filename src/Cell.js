@@ -1,8 +1,8 @@
+import { Symbol } from '@riim/symbol-polyfill';
+import { Map } from '@riim/map-set-polyfill';
 import ErrorLogger from './ErrorLogger';
 import EventEmitter from './EventEmitter';
-import Map from './JS/Map';
-import { is } from './JS/Object';
-import Symbol from './JS/Symbol';
+import is from './Utils/is';
 import mixin from './Utils/mixin';
 import nextTick from './Utils/nextTick';
 import noop from './Utils/noop';

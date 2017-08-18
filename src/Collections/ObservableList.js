@@ -1,6 +1,6 @@
+import { Symbol } from '@riim/symbol-polyfill';
 import EventEmitter from '../EventEmitter';
-import { is } from '../JS/Object';
-import Symbol from '../JS/Symbol';
+import is from '../Utils/is';
 import mixin from '../Utils/mixin';
 import FreezableCollectionMixin from './FreezableCollectionMixin';
 import ObservableCollectionMixin from './ObservableCollectionMixin';

@@ -1,8 +1,8 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-	typeof define === 'function' && define.amd ? define(factory) :
-	(global.cellx = factory());
-}(this, (function () { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('@riim/map-set-polyfill'), require('@riim/symbol-polyfill')) :
+	typeof define === 'function' && define.amd ? define(['@riim/map-set-polyfill', '@riim/symbol-polyfill'], factory) :
+	(global.cellx = factory(global._riim_mapSetPolyfill,global._riim_symbolPolyfill));
+}(this, (function (_riim_mapSetPolyfill,_riim_symbolPolyfill) { 'use strict';
 
 var ErrorLogger = {
 	_handler: null,
@@ -21,270 +21,6 @@ var ErrorLogger = {
 		this._handler.apply(this, arguments);
 	}
 };
-
-var uidCounter = 0;
-
-/**
- * @typesign () -> string;
- */
-function nextUID() {
-  return String(++uidCounter);
-}
-
-var Symbol = Function('return this;')().Symbol;
-
-if (!Symbol) {
-	Symbol = function Symbol(key) {
-		return '__' + key + '_' + Math.floor(Math.random() * 1e9) + '_' + nextUID() + '__';
-	};
-
-	Symbol.iterator = Symbol('Symbol.iterator');
-}
-
-var Symbol$1 = Symbol;
-
-var UID = Symbol$1('cellx.uid');
-var CELLS = Symbol$1('cellx.cells');
-
-var global$1 = Function('return this;')();
-
-var hasOwn$1 = Object.prototype.hasOwnProperty;
-
-var Map = global$1.Map;
-
-if (!Map || Map.toString().indexOf('[native code]') == -1 || !new Map([[1, 1]]).size) {
-	var entryStub = {
-		value: undefined
-	};
-
-	Map = function Map(entries) {
-		this._entries = Object.create(null);
-		this._objectStamps = {};
-
-		this._first = null;
-		this._last = null;
-
-		this.size = 0;
-
-		if (entries) {
-			for (var i = 0, l = entries.length; i < l; i++) {
-				this.set(entries[i][0], entries[i][1]);
-			}
-		}
-	};
-
-	Map.prototype = {
-		constructor: Map,
-
-		has: function has(key) {
-			return !!this._entries[this._getValueStamp(key)];
-		},
-
-		get: function get(key) {
-			return (this._entries[this._getValueStamp(key)] || entryStub).value;
-		},
-
-		set: function set(key, value) {
-			var entries = this._entries;
-			var keyStamp = this._getValueStamp(key);
-
-			if (entries[keyStamp]) {
-				entries[keyStamp].value = value;
-			} else {
-				var entry = entries[keyStamp] = {
-					key: key,
-					keyStamp: keyStamp,
-					value: value,
-					prev: this._last,
-					next: null
-				};
-
-				if (this.size++) {
-					this._last.next = entry;
-				} else {
-					this._first = entry;
-				}
-
-				this._last = entry;
-			}
-
-			return this;
-		},
-
-		delete: function delete_(key) {
-			var keyStamp = this._getValueStamp(key);
-			var entry = this._entries[keyStamp];
-
-			if (!entry) {
-				return false;
-			}
-
-			if (--this.size) {
-				var prev = entry.prev;
-				var next = entry.next;
-
-				if (prev) {
-					prev.next = next;
-				} else {
-					this._first = next;
-				}
-
-				if (next) {
-					next.prev = prev;
-				} else {
-					this._last = prev;
-				}
-			} else {
-				this._first = null;
-				this._last = null;
-			}
-
-			delete this._entries[keyStamp];
-			delete this._objectStamps[keyStamp];
-
-			return true;
-		},
-
-		clear: function clear() {
-			var entries = this._entries;
-
-			for (var stamp in entries) {
-				delete entries[stamp];
-			}
-
-			this._objectStamps = {};
-
-			this._first = null;
-			this._last = null;
-
-			this.size = 0;
-		},
-
-		forEach: function forEach(callback, context) {
-			var entry = this._first;
-
-			while (entry) {
-				callback.call(context, entry.value, entry.key, this);
-
-				do {
-					entry = entry.next;
-				} while (entry && !this._entries[entry.keyStamp]);
-			}
-		},
-
-		toString: function toString() {
-			return '[object Map]';
-		},
-
-		_getValueStamp: function _getValueStamp(value) {
-			switch (typeof value) {
-				case 'undefined':
-					{
-						return 'undefined';
-					}
-				case 'object':
-					{
-						if (value === null) {
-							return 'null';
-						}
-
-						break;
-					}
-				case 'boolean':
-					{
-						return '?' + value;
-					}
-				case 'number':
-					{
-						return '+' + value;
-					}
-				case 'string':
-					{
-						return ',' + value;
-					}
-			}
-
-			return this._getObjectStamp(value);
-		},
-
-		_getObjectStamp: function _getObjectStamp(obj) {
-			if (!hasOwn$1.call(obj, UID)) {
-				if (!Object.isExtensible(obj)) {
-					var stamps = this._objectStamps;
-					var stamp;
-
-					for (stamp in stamps) {
-						if (hasOwn$1.call(stamps, stamp) && stamps[stamp] == obj) {
-							return stamp;
-						}
-					}
-
-					stamp = nextUID();
-					stamps[stamp] = obj;
-
-					return stamp;
-				}
-
-				Object.defineProperty(obj, UID, {
-					value: nextUID()
-				});
-			}
-
-			return obj[UID];
-		}
-	};
-
-	[['keys', function keys(entry) {
-		return entry.key;
-	}], ['values', function values(entry) {
-		return entry.value;
-	}], ['entries', function entries(entry) {
-		return [entry.key, entry.value];
-	}]].forEach((function (settings) {
-		var getStepValue = settings[1];
-
-		Map.prototype[settings[0]] = function () {
-			var entries = this._entries;
-			var entry;
-			var done = false;
-			var map = this;
-
-			return {
-				next: function () {
-					if (!done) {
-						if (entry) {
-							do {
-								entry = entry.next;
-							} while (entry && !entries[entry.keyStamp]);
-						} else {
-							entry = map._first;
-						}
-
-						if (entry) {
-							return {
-								value: getStepValue(entry),
-								done: false
-							};
-						}
-
-						done = true;
-					}
-
-					return {
-						value: undefined,
-						done: true
-					};
-				}
-			};
-		};
-	}));
-}
-
-if (!Map.prototype[Symbol$1.iterator]) {
-	Map.prototype[Symbol$1.iterator] = Map.prototype.entries;
-}
-
-var Map$1 = Map;
 
 var IS_EVENT = {};
 
@@ -313,7 +49,7 @@ function EventEmitter() {
 	/**
   * @type {{ [type: string]: cellx~EmitterEvent | Array<cellx~EmitterEvent> }}
   */
-	this._events = new Map$1();
+	this._events = new _riim_mapSetPolyfill.Map();
 }
 
 EventEmitter.currentlySubscribing = false;
@@ -647,19 +383,21 @@ function mixin(target, source) {
 	return target;
 }
 
+var global = Function('return this;')();
+
 /**
  * @typesign (callback: ());
  */
 var nextTick;
 
 /* istanbul ignore next */
-if (global$1.process && process.toString() == '[object process]' && process.nextTick) {
+if (global.process && process.toString() == '[object process]' && process.nextTick) {
 	nextTick = process.nextTick;
-} else if (global$1.setImmediate) {
+} else if (global.setImmediate) {
 	nextTick = function nextTick(callback) {
 		setImmediate(callback);
 	};
-} else if (global$1.Promise && Promise.toString().indexOf('[native code]') != -1) {
+} else if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
 	var prm = Promise.resolve();
 
 	nextTick = function nextTick(callback) {
@@ -670,7 +408,7 @@ if (global$1.process && process.toString() == '[object process]' && process.next
 } else {
 	var queue;
 
-	global$1.addEventListener('message', (function () {
+	global.addEventListener('message', (function () {
 		if (queue) {
 			var track = queue;
 
@@ -704,12 +442,12 @@ var slice$1 = Array.prototype.slice;
 var EventEmitterProto = EventEmitter.prototype;
 
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
-var KEY_WRAPPERS = Symbol$1('wrappers');
+var KEY_WRAPPERS = _riim_symbolPolyfill.Symbol('wrappers');
 
 var errorIndexCounter = 0;
 var pushingIndexCounter = 0;
 
-var releasePlan = new Map$1();
+var releasePlan = new _riim_mapSetPolyfill.Map();
 var releasePlanIndex = MAX_SAFE_INTEGER;
 var releasePlanToIndex = -1;
 var releasePlanned = false;
@@ -1220,7 +958,7 @@ Cell.prototype = {
 		function wrapper(evt) {
 			return listener.call(this, evt.error || null, evt);
 		}
-		(wrappers || (listener[KEY_WRAPPERS] = new Map$1())).set(this, wrapper);
+		(wrappers || (listener[KEY_WRAPPERS] = new _riim_mapSetPolyfill.Map())).set(this, wrapper);
 
 		if (context === undefined) {
 			context = this.context;
@@ -2008,15 +1746,15 @@ Cell.prototype = {
 	}
 };
 
-Cell.prototype[Symbol$1.iterator] = function () {
-	return this._value[Symbol$1.iterator]();
+Cell.prototype[_riim_symbolPolyfill.Symbol.iterator] = function () {
+	return this._value[_riim_symbolPolyfill.Symbol.iterator]();
 };
 
 function ObservableCollectionMixin() {
 	/**
   * @type {Map<*, uint>}
   */
-	this._valueCounts = new Map$1();
+	this._valueCounts = new _riim_mapSetPolyfill.Map();
 }
 
 ObservableCollectionMixin.prototype = {
@@ -2828,7 +2566,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Freezabl
 	};
 }));
 
-ObservableList.prototype[Symbol$1.iterator] = ObservableList.prototype.values;
+ObservableList.prototype[_riim_symbolPolyfill.Symbol.iterator] = ObservableList.prototype.values;
 
 /**
  * @class cellx.ObservableMap
@@ -2854,7 +2592,7 @@ function ObservableMap(entries, opts) {
 		opts = { adoptsValueChanges: opts };
 	}
 
-	this._entries = new Map$1();
+	this._entries = new _riim_mapSetPolyfill.Map();
 
 	this.size = 0;
 
@@ -2866,7 +2604,7 @@ function ObservableMap(entries, opts) {
 	if (entries) {
 		var mapEntries = this._entries;
 
-		if (entries instanceof ObservableMap || entries instanceof Map$1) {
+		if (entries instanceof ObservableMap || entries instanceof _riim_mapSetPolyfill.Map) {
 			entries._entries.forEach((function (value, key) {
 				this._registerValue(value);
 				mapEntries.set(key, value);
@@ -3056,7 +2794,10 @@ ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype }, Freezable
 	}
 });
 
-ObservableMap.prototype[Symbol$1.iterator] = ObservableMap.prototype.entries;
+ObservableMap.prototype[_riim_symbolPolyfill.Symbol.iterator] = ObservableMap.prototype.entries;
+
+var UID = _riim_symbolPolyfill.Symbol('cellx.uid');
+var CELLS = _riim_symbolPolyfill.Symbol('cellx.cells');
 
 var map$1 = Array.prototype.map;
 
@@ -3064,11 +2805,20 @@ var map$1 = Array.prototype.map;
  * @typesign (...msg);
  */
 function logError() {
-	var console = global$1.console;
+	var console = global.console;
 
-	(console && console.error || noop).call(console || global$1, map$1.call(arguments, (function (arg) {
+	(console && console.error || noop).call(console || global, map$1.call(arguments, (function (arg) {
 		return arg === Object(arg) && arg.stack || arg;
 	})).join(' '));
+}
+
+var uidCounter = 0;
+
+/**
+ * @typesign () -> string;
+ */
+function nextUID() {
+  return String(++uidCounter);
 }
 
 var hasOwn = Object.prototype.hasOwnProperty;
@@ -3117,12 +2867,12 @@ function cellx(value, opts) {
 	function cx(value) {
 		var context = this;
 
-		if (!context || context == global$1) {
+		if (!context || context == global) {
 			context = cx;
 		}
 
 		if (!hasOwn.call(context, CELLS)) {
-			Object.defineProperty(context, CELLS, { value: new Map$1() });
+			Object.defineProperty(context, CELLS, { value: new _riim_mapSetPolyfill.Map() });
 		}
 
 		var cell = context[CELLS].get(cx);
@@ -3174,7 +2924,7 @@ function cellx(value, opts) {
 	cx.constructor = cellx;
 
 	if (opts.onChange || opts.onError) {
-		cx.call(opts.context || global$1);
+		cx.call(opts.context || global);
 	}
 
 	return cx;
@@ -3287,15 +3037,10 @@ function define(obj, name, value) {
 
 cellx.define = define;
 
-cellx.JS = {
-	is: is,
-	Symbol: Symbol$1,
-	Map: Map$1
-};
-
 cellx.Utils = {
 	logError: logError,
 	nextUID: nextUID,
+	is: is,
 	mixin: mixin,
 	nextTick: nextTick$1,
 	noop: noop

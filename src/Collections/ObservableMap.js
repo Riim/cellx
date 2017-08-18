@@ -1,7 +1,7 @@
+import { Symbol } from '@riim/symbol-polyfill';
+import { Map } from '@riim/map-set-polyfill';
 import EventEmitter from '../EventEmitter';
-import Map from '../JS/Map';
-import { is } from '../JS/Object';
-import Symbol from '../JS/Symbol';
+import is from '../Utils/is';
 import mixin from '../Utils/mixin';
 import FreezableCollectionMixin from './FreezableCollectionMixin';
 import ObservableCollectionMixin from './ObservableCollectionMixin';

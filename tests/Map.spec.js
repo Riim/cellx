@@ -1,7 +1,5 @@
 describe('cellx', function() {
 
-	let Map = cellx.JS.Map;
-
 	it('должна позволять использовать замороженный объект как ключ', function() {
 		let obj = Object.freeze({});
 

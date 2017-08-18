@@ -1,4 +1,4 @@
-import global from '../JS/global';
+import global from '../global';
 import noop from './noop';
 
 var map = Array.prototype.map;

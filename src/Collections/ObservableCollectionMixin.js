@@ -1,5 +1,5 @@
+import { Map } from '@riim/map-set-polyfill';
 import EventEmitter from '../EventEmitter';
-import Map from '../JS/Map';
 
 export default function ObservableCollectionMixin() {
 	/**

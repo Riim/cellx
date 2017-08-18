@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.7.29",
+  "version": "1.7.30",
   "description": "",
   "main": "dist/cellx.js",
   "typings": "src/cellx.d.ts",
@@ -44,12 +44,16 @@
     "mocha": "^3.5.0",
     "pump": "^1.0.2",
     "require-dir": "^0.3.2",
-    "rollup": "^0.45.2",
-    "rollup-plugin-babel": "^3.0.0",
+    "rollup": "^0.47.6",
+    "rollup-plugin-babel": "^3.0.2",
     "rollup-plugin-eslint": "^4.0.0",
     "run-sequence": "^2.1.0",
-    "sinon": "^3.1.0",
-    "typescript": "^2.4.2",
+    "sinon": "^3.2.1",
+    "typescript": "^2.5.0",
     "yargs": "^8.0.2"
+  },
+  "dependencies": {
+    "@riim/map-set-polyfill": "^0.1.1",
+    "@riim/symbol-polyfill": "^0.2.0"
   }
 }

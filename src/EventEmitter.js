@@ -1,5 +1,5 @@
+import { Map } from '@riim/map-set-polyfill';
 import ErrorLogger from './ErrorLogger';
-import Map from './JS/Map';
 
 var IS_EVENT = {};
 

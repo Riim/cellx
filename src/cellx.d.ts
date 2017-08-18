@@ -252,15 +252,10 @@ declare namespace Cellx {
 	export function define(obj: EventEmitter, name: string, value: any): EventEmitter;
 	export function define(obj: EventEmitter, props: { [key: string]: any }): EventEmitter;
 
-	export namespace JS {
-		function is(a: any, b: any): boolean;
-		function Symbol(key: string): symbol;
-		let Map: MapConstructor;
-	}
-
 	export namespace Utils {
 		function logError(...msg: Array<any>): void;
 		function nextUID(): string;
+		function is(a: any, b: any): boolean;
 		function mixin(target: object, ...sources: Array<object>): object;
 		function nextTick(callback: () => void): void;
 	}

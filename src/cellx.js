@@ -1,15 +1,14 @@
+import { Map } from '@riim/map-set-polyfill';
 import Cell from './Cell';
 import ObservableCollectionMixin from './Collections/ObservableCollectionMixin';
 import ObservableList from './Collections/ObservableList';
 import ObservableMap from './Collections/ObservableMap';
 import ErrorLogger from './ErrorLogger';
 import EventEmitter from './EventEmitter';
-import global from './JS/global';
-import Map from './JS/Map';
-import { is } from './JS/Object';
-import Symbol from './JS/Symbol';
+import global from './global';
 import { CELLS as KEY_CELLS, UID as KEY_UID } from './keys';
 import logError from './Utils/logError';
+import is from './Utils/is';
 import mixin from './Utils/mixin';
 import nextTick from './Utils/nextTick';
 import nextUID from './Utils/nextUID';
@@ -225,15 +224,10 @@ function define(obj, name, value) {
 
 cellx.define = define;
 
-cellx.JS = {
-	is,
-	Symbol,
-	Map
-};
-
 cellx.Utils = {
 	logError,
 	nextUID,
+	is,
 	mixin,
 	nextTick,
 	noop

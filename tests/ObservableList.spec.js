@@ -1,9 +1,5 @@
 describe('ObservableList', function() {
 
-	if (!window.Symbol) {
-		window.Symbol = cellx.JS.Symbol;
-	}
-
 	it('#sorted', function() {
 		let list = new cellx.ObservableList([4, 3, 1, 5, 2], {
 			sorted: true

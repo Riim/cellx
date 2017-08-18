@@ -1,9 +1,5 @@
 describe('ObservableMap', function() {
 
-	if (!window.Symbol) {
-		window.Symbol = cellx.JS.Symbol;
-	}
-
 	it('#has()', function() {
 		let map = new cellx.ObservableMap({
 			foo: 1,

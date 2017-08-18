@@ -16,6 +16,9 @@ module.exports = function(config) {
 		frameworks: ['mocha', 'chai', 'sinon'],
 
 		files: [
+			'node_modules/@riim/symbol-polyfill/index.js',
+			'node_modules/@riim/map-set-polyfill/index.js',
+			'tests/preparation.js',
 			'tests/es6-promise.js',
 			'dist/cellx.js',
 			'tests/*.spec.js'
