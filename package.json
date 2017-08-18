@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.7.30",
+  "version": "1.7.32",
   "description": "",
   "main": "dist/cellx.js",
   "typings": "src/cellx.d.ts",
@@ -53,7 +53,7 @@
     "yargs": "^8.0.2"
   },
   "dependencies": {
-    "@riim/map-set-polyfill": "^0.1.1",
-    "@riim/symbol-polyfill": "^0.2.0"
+    "@riim/map-set-polyfill": "^1.0.0",
+    "@riim/symbol-polyfill": "^1.0.0"
   }
 }
