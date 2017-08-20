@@ -258,7 +258,7 @@ declare namespace Cellx {
 		function logError(...msg: Array<any>): void;
 		function nextUID(): string;
 		function is(a: any, b: any): boolean;
-		function mixin(target: object, ...sources: Array<object>): object;
+		function mixin(target: object, sources: Array<object> | object, skipProperties?: Array<string>): object;
 		function nextTick(callback: () => void): void;
 	}
 

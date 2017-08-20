@@ -67,7 +67,7 @@ export default function ObservableList(items, opts) {
 	}
 }
 
-ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
+ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 		FreezableCollectionMixin.prototype,
 		ObservableCollectionMixin.prototype, {
 	constructor: ObservableList,
@@ -671,7 +671,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype },
 
 		items.splice(low, 0, value);
 	}
-});
+}]);
 
 ['forEach', 'map', 'filter', 'every', 'some'].forEach(function(name) {
 	ObservableList.prototype[name] = function(callback, context) {

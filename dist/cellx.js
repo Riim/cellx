@@ -1,8 +1,8 @@
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('@riim/map-set-polyfill'), require('@riim/symbol-polyfill')) :
 	typeof define === 'function' && define.amd ? define(['@riim/map-set-polyfill', '@riim/symbol-polyfill'], factory) :
-	(global.cellx = factory(global._riim_mapSetPolyfill,global._riim_symbolPolyfill));
-}(this, (function (_riim_mapSetPolyfill,_riim_symbolPolyfill) { 'use strict';
+	(global.cellx = factory(global.mapSetPolyfill,global.symbolPolyfill));
+}(this, (function (mapSetPolyfill,symbolPolyfill) { 'use strict';
 
 var ErrorLogger = {
 	_handler: null,
@@ -49,7 +49,7 @@ function EventEmitter() {
 	/**
   * @type {{ [type: string]: cellx~EmitterEvent | Array<cellx~EmitterEvent> }}
   */
-	this._events = new _riim_mapSetPolyfill.Map();
+	this._events = new mapSetPolyfill.Map();
 }
 
 EventEmitter.currentlySubscribing = false;
@@ -362,22 +362,26 @@ var is = Object.is || function is(a, b) {
 };
 
 /**
- * @typesign (target: Object, ...sources: Array<Object>) -> Object;
+ * @typesign (target: Object, sources: Array<Object> | Object, skipProperties?: Array<string>) -> Object;
  */
-function mixin(target, source) {
-	var names = Object.getOwnPropertyNames(source);
-
-	for (var i = 0, l = names.length; i < l; i++) {
-		var name = names[i];
-		Object.defineProperty(target, name, Object.getOwnPropertyDescriptor(source, name));
+function mixin(target, sources, skipProperties) {
+	if (!Array.isArray(sources)) {
+		sources = [sources];
 	}
 
-	if (arguments.length > 2) {
-		var i = 2;
+	for (var i = 0, l = sources.length; i < l; i++) {
+		var source = sources[i];
+		var names = Object.getOwnPropertyNames(source);
 
-		do {
-			mixin(target, arguments[i]);
-		} while (++i < arguments.length);
+		for (var j = 0, m = names.length; j < m; j++) {
+			var name = names[j];
+
+			if (skipProperties && skipProperties.indexOf(name) != -1) {
+				continue;
+			}
+
+			Object.defineProperty(target, name, Object.getOwnPropertyDescriptor(source, name));
+		}
 	}
 
 	return target;
@@ -442,12 +446,12 @@ var slice$1 = Array.prototype.slice;
 var EventEmitterProto = EventEmitter.prototype;
 
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
-var KEY_WRAPPERS = _riim_symbolPolyfill.Symbol('wrappers');
+var KEY_WRAPPERS = symbolPolyfill.Symbol('wrappers');
 
 var errorIndexCounter = 0;
 var pushingIndexCounter = 0;
 
-var releasePlan = new _riim_mapSetPolyfill.Map();
+var releasePlan = new mapSetPolyfill.Map();
 var releasePlanIndex = MAX_SAFE_INTEGER;
 var releasePlanToIndex = -1;
 var releasePlanned = false;
@@ -958,7 +962,7 @@ Cell.prototype = {
 		function wrapper(evt) {
 			return listener.call(this, evt.error || null, evt);
 		}
-		(wrappers || (listener[KEY_WRAPPERS] = new _riim_mapSetPolyfill.Map())).set(this, wrapper);
+		(wrappers || (listener[KEY_WRAPPERS] = new mapSetPolyfill.Map())).set(this, wrapper);
 
 		if (context === undefined) {
 			context = this.context;
@@ -1746,15 +1750,15 @@ Cell.prototype = {
 	}
 };
 
-Cell.prototype[_riim_symbolPolyfill.Symbol.iterator] = function () {
-	return this._value[_riim_symbolPolyfill.Symbol.iterator]();
+Cell.prototype[symbolPolyfill.Symbol.iterator] = function () {
+	return this._value[symbolPolyfill.Symbol.iterator]();
 };
 
 function ObservableCollectionMixin() {
 	/**
   * @type {Map<*, uint>}
   */
-	this._valueCounts = new _riim_mapSetPolyfill.Map();
+	this._valueCounts = new mapSetPolyfill.Map();
 }
 
 ObservableCollectionMixin.prototype = {
@@ -1905,7 +1909,7 @@ function ObservableList(items, opts) {
 	}
 }
 
-ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, FreezableCollectionMixin.prototype, ObservableCollectionMixin.prototype, {
+ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, [FreezableCollectionMixin.prototype, ObservableCollectionMixin.prototype, {
 	constructor: ObservableList,
 
 	/**
@@ -2507,7 +2511,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Freezabl
 
 		items.splice(low, 0, value);
 	}
-});
+}]);
 
 ['forEach', 'map', 'filter', 'every', 'some'].forEach((function (name) {
 	ObservableList.prototype[name] = function (callback, context) {
@@ -2566,7 +2570,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, Freezabl
 	};
 }));
 
-ObservableList.prototype[_riim_symbolPolyfill.Symbol.iterator] = ObservableList.prototype.values;
+ObservableList.prototype[symbolPolyfill.Symbol.iterator] = ObservableList.prototype.values;
 
 /**
  * @class cellx.ObservableMap
@@ -2592,7 +2596,7 @@ function ObservableMap(entries, opts) {
 		opts = { adoptsValueChanges: opts };
 	}
 
-	this._entries = new _riim_mapSetPolyfill.Map();
+	this._entries = new mapSetPolyfill.Map();
 
 	this.size = 0;
 
@@ -2604,7 +2608,7 @@ function ObservableMap(entries, opts) {
 	if (entries) {
 		var mapEntries = this._entries;
 
-		if (entries instanceof ObservableMap || entries instanceof _riim_mapSetPolyfill.Map) {
+		if (entries instanceof ObservableMap || entries instanceof mapSetPolyfill.Map) {
 			entries._entries.forEach((function (value, key) {
 				this._registerValue(value);
 				mapEntries.set(key, value);
@@ -2627,7 +2631,7 @@ function ObservableMap(entries, opts) {
 	}
 }
 
-ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype }, FreezableCollectionMixin.prototype, ObservableCollectionMixin.prototype, {
+ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype }, [FreezableCollectionMixin.prototype, ObservableCollectionMixin.prototype, {
 	constructor: ObservableMap,
 
 	/**
@@ -2792,11 +2796,11 @@ ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype }, Freezable
 			adoptsValueChanges: this.adoptsValueChanges
 		});
 	}
-});
+}]);
 
-ObservableMap.prototype[_riim_symbolPolyfill.Symbol.iterator] = ObservableMap.prototype.entries;
+ObservableMap.prototype[symbolPolyfill.Symbol.iterator] = ObservableMap.prototype.entries;
 
-var KEY_CELL_MAP = _riim_symbolPolyfill.Symbol('cellx.cellMap');
+var KEY_CELL_MAP = symbolPolyfill.Symbol('cellx.cellMap');
 
 var map$1 = Array.prototype.map;
 
@@ -2871,7 +2875,7 @@ function cellx(value, opts) {
 		}
 
 		if (!hasOwn.call(context, KEY_CELL_MAP)) {
-			Object.defineProperty(context, KEY_CELL_MAP, { value: new _riim_mapSetPolyfill.Map() });
+			Object.defineProperty(context, KEY_CELL_MAP, { value: new mapSetPolyfill.Map() });
 		}
 
 		var cell = context[KEY_CELL_MAP].get(cx);

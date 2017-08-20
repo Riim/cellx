@@ -1,8 +1,8 @@
-var _riim_symbolPolyfill = {
+var symbolPolyfill = {
 	Symbol: Symbol
 };
 
-var _riim_mapSetPolyfill = {
+var mapSetPolyfill = {
 	Map: Map,
 	Set: Set
 };

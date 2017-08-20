@@ -65,7 +65,7 @@ export default function ObservableMap(entries, opts) {
 	}
 }
 
-ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype },
+ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 		FreezableCollectionMixin.prototype,
 		ObservableCollectionMixin.prototype, {
 	constructor: ObservableMap,
@@ -232,6 +232,6 @@ ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype },
 			adoptsValueChanges: this.adoptsValueChanges
 		});
 	}
-});
+}]);
 
 ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;
