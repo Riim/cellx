@@ -133,23 +133,32 @@ declare namespace Cellx {
 		join(separator?: string): string;
 
 		forEach(callback: (item: T, index: number, list: ObservableList<T>) => void, context?: any): void;
-		map<R = any>(callback: (item: T, index: number, list: ObservableList<T>) => any, context?: any): Array<R>;
-		filter(callback: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): Array<T>;
-		find(
-			callback: (item: T, index: number, list: ObservableList<T>) => boolean | void,
+		map<R>(callback: (item: T, index: number, list: ObservableList<T>) => R, context?: any): Array<R>;
+		filter<R extends T>(
+			callback: (item: T, index: number, list: ObservableList<T>) => item is R,
 			context?: any
-		): T | undefined;
-		findIndex(callback: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): number;
-		every(callback: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): boolean;
-		some(callback: (item: T, index: number, list: ObservableList<T>) => boolean | void, context?: any): boolean;
+		): Array<R>;
+		filter(callback: (item: T, index: number, list: ObservableList<T>) => any, context?: any): Array<T>;
+		find(callback: (item: T, index: number, list: ObservableList<T>) => any, context?: any): T | undefined;
+		findIndex(callback: (item: T, index: number, list: ObservableList<T>) => any, context?: any): number;
+		every(callback: (item: T, index: number, list: ObservableList<T>) => any, context?: any): boolean;
+		some(callback: (item: T, index: number, list: ObservableList<T>) => any, context?: any): boolean;
 		reduce(
-			callback: (accumulator: any, item: T, index: number, list: ObservableList<T>) => any,
-			initialValue?: any
-		): any;
+			callback: (accumulator: T, item: T, index: number, list: ObservableList<T>) => T,
+			initialValue?: T
+		): T;
+		reduce<R>(
+			callback: (accumulator: R, item: T, index: number, list: ObservableList<T>) => R,
+			initialValue?: R
+		): R;
 		reduceRight(
-			callback: (accumulator: any, item: T, index: number, list: ObservableList<T>) => any,
-			initialValue?: any
-		): any;
+			callback: (accumulator: T, item: T, index: number, list: ObservableList<T>) => T,
+			initialValue?: T
+		): T;
+		reduceRight<R>(
+			callback: (accumulator: R, item: T, index: number, list: ObservableList<T>) => R,
+			initialValue?: R
+		): R;
 
 		clone(): this;
 
