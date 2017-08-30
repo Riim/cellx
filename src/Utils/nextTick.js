@@ -1,4 +1,4 @@
-import ErrorLogger from '../ErrorLogger';
+import { logError } from '@riim/error-logger';
 import global from '../global';
 
 /**
@@ -34,7 +34,7 @@ if (global.process && process.toString() == '[object process]' && process.nextTi
 				try {
 					track[i]();
 				} catch (err) {
-					ErrorLogger.log(err);
+					logError(err);
 				}
 			}
 		}

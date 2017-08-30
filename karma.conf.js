@@ -18,7 +18,7 @@ module.exports = function(config) {
 		files: [
 			'node_modules/@riim/symbol-polyfill/index.js',
 			'node_modules/@riim/map-set-polyfill/index.js',
-			'tests/polyfills.js',
+			'tests/preparation.js',
 			'tests/es6-promise.js',
 			'dist/cellx.js',
 			'tests/*.spec.js'

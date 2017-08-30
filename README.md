@@ -839,8 +839,8 @@ Type signature: `() -> string;`.
 
 | File         | Original |  Gzipped |
 |--------------|----------|----------|
-| cellx.js     | 65.39 kB | 12.81 kB |
-| cellx.min.js |  27.8 kB |  7.91 kB |
+| cellx.js     | 62.11 kB | 11.77 kB |
+| cellx.min.js | 25.32 kB |  7.22 kB |
 
 ## List of references
 

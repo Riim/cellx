@@ -1,6 +1,6 @@
+import { logError } from '@riim/error-logger';
 import { Symbol } from '@riim/symbol-polyfill';
 import { Map } from '@riim/map-set-polyfill';
-import ErrorLogger from './ErrorLogger';
 import EventEmitter from './EventEmitter';
 import is from './Utils/is';
 import mixin from './Utils/mixin';
@@ -358,7 +358,7 @@ mixin(Cell, {
 		try {
 			callback();
 		} catch (err) {
-			ErrorLogger.log(err);
+			logError(err);
 			transactionFailure = true;
 		}
 

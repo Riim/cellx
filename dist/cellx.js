@@ -1,26 +1,8 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('@riim/map-set-polyfill'), require('@riim/symbol-polyfill')) :
-	typeof define === 'function' && define.amd ? define(['@riim/map-set-polyfill', '@riim/symbol-polyfill'], factory) :
-	(global.cellx = factory(global.mapSetPolyfill,global.symbolPolyfill));
-}(this, (function (mapSetPolyfill,symbolPolyfill) { 'use strict';
-
-var ErrorLogger = {
-	_handler: null,
-
-	/**
-  * @typesign (handler: (...msg));
-  */
-	setHandler: function setHandler(handler) {
-		this._handler = handler;
-	},
-
-	/**
-  * @typesign (...msg);
-  */
-	log: function log() {
-		this._handler.apply(this, arguments);
-	}
-};
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('@riim/map-set-polyfill'), require('@riim/error-logger'), require('@riim/symbol-polyfill')) :
+	typeof define === 'function' && define.amd ? define(['@riim/map-set-polyfill', '@riim/error-logger', '@riim/symbol-polyfill'], factory) :
+	(global.cellx = factory(global.mapSetPolyfill,global.errorLogger,global.symbolPolyfill));
+}(this, (function (mapSetPolyfill,errorLogger,symbolPolyfill) { 'use strict';
 
 var IS_EVENT = {};
 
@@ -347,7 +329,7 @@ EventEmitter.prototype = {
   * @typesign (...msg);
   */
 	_logError: function _logError() {
-		ErrorLogger.log.apply(ErrorLogger, arguments);
+		errorLogger.logError.apply(this, arguments);
 	}
 };
 
@@ -422,7 +404,7 @@ if (global.process && process.toString() == '[object process]' && process.nextTi
 				try {
 					track[i]();
 				} catch (err) {
-					ErrorLogger.log(err);
+					errorLogger.logError(err);
 				}
 			}
 		}
@@ -793,7 +775,7 @@ mixin(Cell, {
 		try {
 			callback();
 		} catch (err) {
-			ErrorLogger.log(err);
+			errorLogger.logError(err);
 			transactionFailure = true;
 		}
 
@@ -2802,19 +2784,6 @@ ObservableMap.prototype[symbolPolyfill.Symbol.iterator] = ObservableMap.prototyp
 
 var KEY_CELL_MAP = symbolPolyfill.Symbol('cellx.cellMap');
 
-var map$1 = Array.prototype.map;
-
-/**
- * @typesign (...msg);
- */
-function logError() {
-	var console = global.console;
-
-	(console && console.error || noop).call(console || global, map$1.call(arguments, (function (arg) {
-		return arg === Object(arg) && arg.stack || arg;
-	})).join(' '));
-}
-
 var uidCounter = 0;
 
 /**
@@ -2826,8 +2795,6 @@ function nextUID() {
 
 var hasOwn = Object.prototype.hasOwnProperty;
 var slice = Array.prototype.slice;
-
-ErrorLogger.setHandler(logError);
 
 var assign = Object.assign || function (target, source) {
 	for (var name in source) {
@@ -2937,7 +2904,6 @@ cellx.configure = function (config) {
 	Cell.configure(config);
 };
 
-cellx.ErrorLogger = ErrorLogger;
 cellx.EventEmitter = EventEmitter;
 cellx.ObservableCollectionMixin = ObservableCollectionMixin;
 cellx.ObservableMap = ObservableMap;
@@ -3040,12 +3006,10 @@ function define(obj, name, value) {
 cellx.define = define;
 
 cellx.Utils = {
-	logError: logError,
 	nextUID: nextUID,
 	is: is,
 	mixin: mixin,
-	nextTick: nextTick$1,
-	noop: noop
+	nextTick: nextTick$1
 };
 
 cellx.cellx = cellx;

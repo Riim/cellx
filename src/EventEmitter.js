@@ -1,5 +1,5 @@
+import { logError } from '@riim/error-logger';
 import { Map } from '@riim/map-set-polyfill';
-import ErrorLogger from './ErrorLogger';
 
 var IS_EVENT = {};
 
@@ -328,6 +328,6 @@ EventEmitter.prototype = {
 	 * @typesign (...msg);
 	 */
 	_logError: function _logError() {
-		ErrorLogger.log.apply(ErrorLogger, arguments);
+		logError.apply(this, arguments);
 	}
 };

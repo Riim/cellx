@@ -3,11 +3,6 @@ declare namespace Cellx {
 		(a: T, b: T): number;
 	}
 
-	export namespace ErrorLogger {
-		function setHandler(handler: (...msg: Array<any>) => void): void;
-		function log(...msg: Array<any>): void;
-	}
-
 	interface IEventData {
 		target?: EventEmitter;
 		type: string;
@@ -264,7 +259,6 @@ declare namespace Cellx {
 	export function define(obj: EventEmitter, props: { [key: string]: any }): EventEmitter;
 
 	export namespace Utils {
-		function logError(...msg: Array<any>): void;
 		function nextUID(): string;
 		function is(a: any, b: any): boolean;
 		function mixin(target: object, sources: Array<object> | object, skipProperties?: Array<string>): object;

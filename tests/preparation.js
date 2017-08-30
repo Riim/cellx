@@ -1,3 +1,7 @@
+var errorLogger = {
+	logError: function() {}
+};
+
 var symbolPolyfill = {
 	Symbol: Symbol
 };
