@@ -261,7 +261,6 @@ declare namespace Cellx {
 	export namespace Utils {
 		function nextUID(): string;
 		function is(a: any, b: any): boolean;
-		function mixin(target: object, sources: Array<object> | object, skipProperties?: Array<string>): object;
 	}
 
 	interface ICellx<T> {

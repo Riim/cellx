@@ -1,8 +1,8 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('@riim/map-set-polyfill'), require('@riim/error-logger'), require('@riim/symbol-polyfill'), require('@riim/next-tick')) :
-	typeof define === 'function' && define.amd ? define(['@riim/map-set-polyfill', '@riim/error-logger', '@riim/symbol-polyfill', '@riim/next-tick'], factory) :
-	(global.cellx = factory(global.mapSetPolyfill,global.errorLogger,global.symbolPolyfill,global.nextTick));
-}(this, (function (mapSetPolyfill,errorLogger,symbolPolyfill,nextTick) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('@riim/map-set-polyfill'), require('@riim/error-logger'), require('@riim/symbol-polyfill'), require('@riim/mixin'), require('@riim/next-tick')) :
+	typeof define === 'function' && define.amd ? define(['@riim/map-set-polyfill', '@riim/error-logger', '@riim/symbol-polyfill', '@riim/mixin', '@riim/next-tick'], factory) :
+	(global.cellx = factory(global.mapSetPolyfill,global.errorLogger,global.symbolPolyfill,global.mixin,global.nextTick));
+}(this, (function (mapSetPolyfill,errorLogger,symbolPolyfill,mixin,nextTick) { 'use strict';
 
 var IS_EVENT = {};
 
@@ -343,34 +343,6 @@ var is = Object.is || /* istanbul ignore next */function is(a, b) {
 	return a === b || a != a && b != b;
 };
 
-/**
- * @typesign (target: Object, sources: Array<Object> | Object, skipProperties?: Array<string>) -> Object;
- */
-function mixin(target, sources, skipProperties) {
-	if (!Array.isArray(sources)) {
-		sources = [sources];
-	}
-
-	for (var i = 0, l = sources.length; i < l; i++) {
-		var source = sources[i];
-		var names = Object.getOwnPropertyNames(source);
-
-		for (var j = 0, m = names.length; j < m; j++) {
-			var name = names[j];
-
-			if (skipProperties && skipProperties.indexOf(name) != -1) {
-				continue;
-			}
-
-			Object.defineProperty(target, name, Object.getOwnPropertyDescriptor(source, name));
-		}
-	}
-
-	return target;
-}
-
-function noop() {}
-
 var slice$1 = Array.prototype.slice;
 var EventEmitterProto = EventEmitter.prototype;
 
@@ -650,7 +622,7 @@ function Cell(value, opts) {
 	}
 }
 
-mixin(Cell, {
+mixin.mixin(Cell, {
 	/**
   * @typesign (cnfg: { asynchronous?: boolean });
   */
@@ -697,7 +669,7 @@ mixin(Cell, {
 			} else {
 				callback.call(context, disposer);
 			}
-		}, { onChange: noop });
+		}, { onChange: function noop() {} });
 
 		return disposer;
 	},
@@ -1838,7 +1810,7 @@ function ObservableList(items, opts) {
 	}
 }
 
-ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, [FreezableCollectionMixin.prototype, ObservableCollectionMixin.prototype, {
+ObservableList.prototype = mixin.mixin({ __proto__: EventEmitter.prototype }, [FreezableCollectionMixin.prototype, ObservableCollectionMixin.prototype, {
 	constructor: ObservableList,
 
 	/**
@@ -2560,7 +2532,7 @@ function ObservableMap(entries, opts) {
 	}
 }
 
-ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype }, [FreezableCollectionMixin.prototype, ObservableCollectionMixin.prototype, {
+ObservableMap.prototype = mixin.mixin({ __proto__: EventEmitter.prototype }, [FreezableCollectionMixin.prototype, ObservableCollectionMixin.prototype, {
 	constructor: ObservableMap,
 
 	/**
@@ -2956,8 +2928,7 @@ cellx.define = define;
 
 cellx.Utils = {
 	nextUID: nextUID,
-	is: is,
-	mixin: mixin
+	is: is
 };
 
 cellx.cellx = cellx;

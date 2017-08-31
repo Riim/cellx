@@ -7,7 +7,6 @@ import EventEmitter from './EventEmitter';
 import global from './global';
 import { KEY_CELL_MAP } from './keys';
 import is from './Utils/is';
-import mixin from './Utils/mixin';
 import nextUID from './Utils/nextUID';
 
 var hasOwn = Object.prototype.hasOwnProperty;
@@ -218,8 +217,7 @@ cellx.define = define;
 
 cellx.Utils = {
 	nextUID,
-	is,
-	mixin
+	is
 };
 
 cellx.cellx = cellx;

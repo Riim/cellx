@@ -8,6 +8,7 @@ export default {
 		'@riim/error-logger',
 		'@riim/symbol-polyfill',
 		'@riim/map-set-polyfill',
+		'@riim/mixin',
 		'@riim/next-tick'
 	],
 
@@ -27,6 +28,7 @@ export default {
 			'@riim/error-logger': 'errorLogger',
 			'@riim/symbol-polyfill': 'symbolPolyfill',
 			'@riim/map-set-polyfill': 'mapSetPolyfill',
+			'@riim/mixin': 'mixin',
 			'@riim/next-tick': 'nextTick'
 		}
 	}
