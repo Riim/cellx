@@ -1,8 +1,8 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('@riim/map-set-polyfill'), require('@riim/error-logger'), require('@riim/symbol-polyfill')) :
-	typeof define === 'function' && define.amd ? define(['@riim/map-set-polyfill', '@riim/error-logger', '@riim/symbol-polyfill'], factory) :
-	(global.cellx = factory(global.mapSetPolyfill,global.errorLogger,global.symbolPolyfill));
-}(this, (function (mapSetPolyfill,errorLogger,symbolPolyfill) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('@riim/map-set-polyfill'), require('@riim/error-logger'), require('@riim/symbol-polyfill'), require('@riim/next-tick')) :
+	typeof define === 'function' && define.amd ? define(['@riim/map-set-polyfill', '@riim/error-logger', '@riim/symbol-polyfill', '@riim/next-tick'], factory) :
+	(global.cellx = factory(global.mapSetPolyfill,global.errorLogger,global.symbolPolyfill,global.nextTick));
+}(this, (function (mapSetPolyfill,errorLogger,symbolPolyfill,nextTick) { 'use strict';
 
 var IS_EVENT = {};
 
@@ -368,59 +368,6 @@ function mixin(target, sources, skipProperties) {
 
 	return target;
 }
-
-var global = Function('return this;')();
-
-/**
- * @typesign (callback: ());
- */
-var nextTick;
-
-/* istanbul ignore next */
-if (global.process && process.toString() == '[object process]' && process.nextTick) {
-	nextTick = process.nextTick;
-} else if (global.setImmediate) {
-	nextTick = function nextTick(callback) {
-		setImmediate(callback);
-	};
-} else if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
-	var prm = Promise.resolve();
-
-	nextTick = function nextTick(callback) {
-		prm.then((function () {
-			callback();
-		}));
-	};
-} else {
-	var queue;
-
-	global.addEventListener('message', (function () {
-		if (queue) {
-			var track = queue;
-
-			queue = null;
-
-			for (var i = 0, l = track.length; i < l; i++) {
-				try {
-					track[i]();
-				} catch (err) {
-					errorLogger.logError(err);
-				}
-			}
-		}
-	}));
-
-	nextTick = function nextTick(callback) {
-		if (queue) {
-			queue.push(callback);
-		} else {
-			queue = [callback];
-			postMessage('__tic__', '*');
-		}
-	};
-}
-
-var nextTick$1 = nextTick;
 
 function noop() {}
 
@@ -1086,7 +1033,7 @@ Cell.prototype = {
 			if (!transactionLevel && !config.asynchronous) {
 				release();
 			} else {
-				nextTick$1(release);
+				nextTick.nextTick(release);
 			}
 		}
 	},
@@ -2782,6 +2729,8 @@ ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype }, [Freezabl
 
 ObservableMap.prototype[symbolPolyfill.Symbol.iterator] = ObservableMap.prototype.entries;
 
+var global = Function('return this;')();
+
 var KEY_CELL_MAP = symbolPolyfill.Symbol('cellx.cellMap');
 
 var uidCounter = 0;
@@ -3008,8 +2957,7 @@ cellx.define = define;
 cellx.Utils = {
 	nextUID: nextUID,
 	is: is,
-	mixin: mixin,
-	nextTick: nextTick$1
+	mixin: mixin
 };
 
 cellx.cellx = cellx;

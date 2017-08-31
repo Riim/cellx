@@ -7,7 +7,8 @@ export default {
 	external: [
 		'@riim/error-logger',
 		'@riim/symbol-polyfill',
-		'@riim/map-set-polyfill'
+		'@riim/map-set-polyfill',
+		'@riim/next-tick'
 	],
 
 	plugins: [
@@ -25,7 +26,8 @@ export default {
 		globals: {
 			'@riim/error-logger': 'errorLogger',
 			'@riim/symbol-polyfill': 'symbolPolyfill',
-			'@riim/map-set-polyfill': 'mapSetPolyfill'
+			'@riim/map-set-polyfill': 'mapSetPolyfill',
+			'@riim/next-tick': 'nextTick'
 		}
 	}
 };

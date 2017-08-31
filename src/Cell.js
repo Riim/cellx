@@ -1,10 +1,10 @@
 import { logError } from '@riim/error-logger';
 import { Symbol } from '@riim/symbol-polyfill';
 import { Map } from '@riim/map-set-polyfill';
+import { nextTick } from '@riim/next-tick';
 import EventEmitter from './EventEmitter';
 import is from './Utils/is';
 import mixin from './Utils/mixin';
-import nextTick from './Utils/nextTick';
 import noop from './Utils/noop';
 
 var slice = Array.prototype.slice;

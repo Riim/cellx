@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.7.38",
+  "version": "1.7.39",
   "description": "",
   "main": "dist/cellx.js",
   "typings": "src/cellx.d.ts",
@@ -42,6 +42,7 @@
   "dependencies": {
     "@riim/error-logger": "^1.0.1",
     "@riim/map-set-polyfill": "^1.0.0",
+    "@riim/next-tick": "^1.0.0",
     "@riim/symbol-polyfill": "^1.0.0"
   },
   "jest": {
