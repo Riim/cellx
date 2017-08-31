@@ -14,7 +14,7 @@ import nextUID from './Utils/nextUID';
 var hasOwn = Object.prototype.hasOwnProperty;
 var slice = Array.prototype.slice;
 
-var assign = Object.assign || function(target, source) {
+var assign = Object.assign || /* istanbul ignore next */ function(target, source) {
 	for (var name in source) {
 		target[name] = source[name];
 	}

@@ -336,7 +336,7 @@ EventEmitter.prototype = {
 /**
  * @typesign (a, b) -> boolean;
  */
-var is = Object.is || function is(a, b) {
+var is = Object.is || /* istanbul ignore next */function is(a, b) {
 	if (a === 0 && b === 0) {
 		return 1 / a == 1 / b;
 	}
@@ -2796,7 +2796,7 @@ function nextUID() {
 var hasOwn = Object.prototype.hasOwnProperty;
 var slice = Array.prototype.slice;
 
-var assign = Object.assign || function (target, source) {
+var assign = Object.assign || /* istanbul ignore next */function (target, source) {
 	for (var name in source) {
 		target[name] = source[name];
 	}
