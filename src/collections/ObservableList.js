@@ -1,7 +1,7 @@
 import { Symbol } from '@riim/symbol-polyfill';
 import { mixin } from '@riim/mixin';
 import EventEmitter from '../EventEmitter';
-import is from '../Utils/is';
+import is from '../utils/is';
 import FreezableCollectionMixin from './FreezableCollectionMixin';
 import ObservableCollectionMixin from './ObservableCollectionMixin';
 

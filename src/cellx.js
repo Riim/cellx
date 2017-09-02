@@ -1,16 +1,17 @@
 import { Map } from '@riim/map-set-polyfill';
 import Cell from './Cell';
-import ObservableCollectionMixin from './Collections/ObservableCollectionMixin';
-import ObservableList from './Collections/ObservableList';
-import ObservableMap from './Collections/ObservableMap';
+import ObservableCollectionMixin from './collections/ObservableCollectionMixin';
+import ObservableList from './collections/ObservableList';
+import ObservableMap from './collections/ObservableMap';
 import EventEmitter from './EventEmitter';
-import global from './global';
 import { KEY_CELL_MAP } from './keys';
-import is from './Utils/is';
-import nextUID from './Utils/nextUID';
+import is from './utils/is';
+import nextUID from './utils/nextUID';
 
 var hasOwn = Object.prototype.hasOwnProperty;
 var slice = Array.prototype.slice;
+
+var global = Function('return this;')();
 
 var assign = Object.assign || /* istanbul ignore next */ function(target, source) {
 	for (var name in source) {

@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.7.40",
+  "version": "1.7.42",
   "description": "",
   "main": "dist/cellx.js",
   "typings": "src/cellx.d.ts",
@@ -37,7 +37,7 @@
     "rollup-plugin-babel": "^3.0.2",
     "rollup-plugin-eslint": "^4.0.0",
     "run-sequence": "^2.1.0",
-    "typescript": "^2.5.1"
+    "typescript": "^2.5.2"
   },
   "dependencies": {
     "@riim/error-logger": "^1.0.1",

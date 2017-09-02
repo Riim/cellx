@@ -822,8 +822,8 @@ console.log(list.toArray());
 
 | File         | Original |  Gzipped |
 |--------------|----------|----------|
-| cellx.js     | 62.11 kB | 11.77 kB |
-| cellx.min.js | 25.32 kB |  7.22 kB |
+| cellx.js     | 60.57 kB | 11.34 kB |
+| cellx.min.js | 24.67 kB |  6.94 kB |
 
 ## Использованные материалы
 

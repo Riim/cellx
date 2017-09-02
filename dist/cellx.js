@@ -4,8 +4,6 @@
 	(global.cellx = factory(global.mapSetPolyfill,global.errorLogger,global.symbolPolyfill,global.mixin,global.nextTick));
 }(this, (function (mapSetPolyfill,errorLogger,symbolPolyfill,mixin,nextTick) { 'use strict';
 
-var IS_EVENT = {};
-
 /**
  * @typedef {{
  *     listener: (evt: cellx~Event) -> ?boolean,
@@ -53,13 +51,13 @@ EventEmitter.prototype = {
 				return [];
 			}
 
-			return events._isEvent === IS_EVENT ? [events] : events;
+			return Array.isArray(events) ? events : [events];
 		}
 
 		events = Object.create(null);
 
 		this._events.forEach((function (typeEvents, type) {
-			events[type] = typeEvents._isEvent === IS_EVENT ? [typeEvents] : typeEvents;
+			events[type] = Array.isArray(typeEvents) ? typeEvents : [typeEvents];
 		}));
 
 		return events;
@@ -144,18 +142,14 @@ EventEmitter.prototype = {
 			EventEmitter.currentlySubscribing = false;
 		} else {
 			var events = this._events.get(type);
-			var evt = {
-				_isEvent: IS_EVENT,
-				listener: listener,
-				context: context
-			};
+			var evt = { listener: listener, context: context };
 
 			if (!events) {
 				this._events.set(type, evt);
-			} else if (events._isEvent === IS_EVENT) {
-				this._events.set(type, [events, evt]);
-			} else {
+			} else if (Array.isArray(events)) {
 				events.push(evt);
+			} else {
+				this._events.set(type, [events, evt]);
 			}
 		}
 	},
@@ -180,15 +174,12 @@ EventEmitter.prototype = {
 				return;
 			}
 
-			var isEvent = events._isEvent === IS_EVENT;
 			var evt;
 
-			if (isEvent || events.length == 1) {
-				evt = isEvent ? events : events[0];
-
-				if (evt.listener == listener && evt.context === context) {
-					this._events.delete(type);
-				}
+			if (!Array.isArray(events)) {
+				evt = events;
+			} else if (events.length == 1) {
+				evt = events[0];
 			} else {
 				for (var i = events.length; i;) {
 					evt = events[--i];
@@ -198,6 +189,12 @@ EventEmitter.prototype = {
 						break;
 					}
 				}
+
+				return;
+			}
+
+			if (evt.listener == listener && evt.context === context) {
+				this._events.delete(type);
 			}
 		}
 	},
@@ -291,11 +288,7 @@ EventEmitter.prototype = {
 			return;
 		}
 
-		if (events._isEvent === IS_EVENT) {
-			if (this._tryEventListener(events, evt) === false) {
-				evt.isPropagationStopped = true;
-			}
-		} else {
+		if (Array.isArray(events)) {
 			var eventCount = events.length;
 
 			if (eventCount == 1) {
@@ -311,6 +304,8 @@ EventEmitter.prototype = {
 					}
 				}
 			}
+		} else if (this._tryEventListener(events, evt) === false) {
+			evt.isPropagationStopped = true;
 		}
 	},
 
@@ -367,14 +362,14 @@ var pendingReactions = [];
 
 var afterReleaseCallbacks;
 
-var STATE_INITED = 1 << 7;
-var STATE_CURRENTLY_PULLING = 1 << 6;
-var STATE_ACTIVE = 1 << 5;
-var STATE_HAS_FOLLOWERS = 1 << 4;
-var STATE_PENDING = 1 << 3;
-var STATE_FULFILLED = 1 << 2;
-var STATE_REJECTED = 1 << 1;
-var STATE_CAN_CANCEL_CHANGE = 1;
+var STATE_INITED = 1;
+var STATE_CURRENTLY_PULLING = 1 << 1;
+var STATE_ACTIVE = 1 << 2;
+var STATE_HAS_FOLLOWERS = 1 << 3;
+var STATE_PENDING = 1 << 4;
+var STATE_FULFILLED = 1 << 5;
+var STATE_REJECTED = 1 << 6;
+var STATE_CAN_CANCEL_CHANGE = 1 << 7;
 
 function release() {
 	if (!releasePlanned) {
@@ -2701,8 +2696,6 @@ ObservableMap.prototype = mixin.mixin({ __proto__: EventEmitter.prototype }, [Fr
 
 ObservableMap.prototype[symbolPolyfill.Symbol.iterator] = ObservableMap.prototype.entries;
 
-var global = Function('return this;')();
-
 var KEY_CELL_MAP = symbolPolyfill.Symbol('cellx.cellMap');
 
 var uidCounter = 0;
@@ -2716,6 +2709,8 @@ function nextUID() {
 
 var hasOwn = Object.prototype.hasOwnProperty;
 var slice = Array.prototype.slice;
+
+var global = Function('return this;')();
 
 var assign = Object.assign || /* istanbul ignore next */function (target, source) {
 	for (var name in source) {

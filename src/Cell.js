@@ -4,7 +4,7 @@ import { Map } from '@riim/map-set-polyfill';
 import { mixin } from '@riim/mixin';
 import { nextTick } from '@riim/next-tick';
 import EventEmitter from './EventEmitter';
-import is from './Utils/is';
+import is from './utils/is';
 
 var slice = Array.prototype.slice;
 var EventEmitterProto = EventEmitter.prototype;
@@ -30,14 +30,14 @@ var pendingReactions = [];
 
 var afterReleaseCallbacks;
 
-var STATE_INITED = 1 << 7;
-var STATE_CURRENTLY_PULLING = 1 << 6;
-var STATE_ACTIVE = 1 << 5;
-var STATE_HAS_FOLLOWERS = 1 << 4;
-var STATE_PENDING = 1 << 3;
-var STATE_FULFILLED = 1 << 2;
-var STATE_REJECTED = 1 << 1;
-var STATE_CAN_CANCEL_CHANGE = 1;
+var STATE_INITED = 1;
+var STATE_CURRENTLY_PULLING = 1 << 1;
+var STATE_ACTIVE = 1 << 2;
+var STATE_HAS_FOLLOWERS = 1 << 3;
+var STATE_PENDING = 1 << 4;
+var STATE_FULFILLED = 1 << 5;
+var STATE_REJECTED = 1 << 6;
+var STATE_CAN_CANCEL_CHANGE = 1 << 7;
 
 function release() {
 	if (!releasePlanned) {

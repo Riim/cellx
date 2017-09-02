@@ -1,8 +1,6 @@
 import { logError } from '@riim/error-logger';
 import { Map } from '@riim/map-set-polyfill';
 
-var IS_EVENT = {};
-
 /**
  * @typedef {{
  *     listener: (evt: cellx~Event) -> ?boolean,
@@ -50,13 +48,13 @@ EventEmitter.prototype = {
 				return [];
 			}
 
-			return events._isEvent === IS_EVENT ? [events] : events;
+			return Array.isArray(events) ? events : [events];
 		}
 
 		events = Object.create(null);
 
 		this._events.forEach(function(typeEvents, type) {
-			events[type] = typeEvents._isEvent === IS_EVENT ? [typeEvents] : typeEvents;
+			events[type] = Array.isArray(typeEvents) ? typeEvents : [typeEvents];
 		});
 
 		return events;
@@ -142,18 +140,14 @@ EventEmitter.prototype = {
 			EventEmitter.currentlySubscribing = false;
 		} else {
 			var events = this._events.get(type);
-			var evt = {
-				_isEvent: IS_EVENT,
-				listener,
-				context
-			};
+			var evt = { listener, context };
 
 			if (!events) {
 				this._events.set(type, evt);
-			} else if (events._isEvent === IS_EVENT) {
-				this._events.set(type, [events, evt]);
-			} else {
+			} else if (Array.isArray(events)) {
 				events.push(evt);
+			} else {
+				this._events.set(type, [events, evt]);
 			}
 		}
 	},
@@ -179,15 +173,12 @@ EventEmitter.prototype = {
 				return;
 			}
 
-			var isEvent = events._isEvent === IS_EVENT;
 			var evt;
 
-			if (isEvent || events.length == 1) {
-				evt = isEvent ? events : events[0];
-
-				if (evt.listener == listener && evt.context === context) {
-					this._events.delete(type);
-				}
+			if (!Array.isArray(events)) {
+				evt = events;
+			} else if (events.length == 1) {
+				evt = events[0];
 			} else {
 				for (var i = events.length; i;) {
 					evt = events[--i];
@@ -197,6 +188,12 @@ EventEmitter.prototype = {
 						break;
 					}
 				}
+
+				return;
+			}
+
+			if (evt.listener == listener && evt.context === context) {
+				this._events.delete(type);
 			}
 		}
 	},
@@ -290,11 +287,7 @@ EventEmitter.prototype = {
 			return;
 		}
 
-		if (events._isEvent === IS_EVENT) {
-			if (this._tryEventListener(events, evt) === false) {
-				evt.isPropagationStopped = true;
-			}
-		} else {
+		if (Array.isArray(events)) {
 			var eventCount = events.length;
 
 			if (eventCount == 1) {
@@ -310,6 +303,8 @@ EventEmitter.prototype = {
 					}
 				}
 			}
+		} else if (this._tryEventListener(events, evt) === false) {
+			evt.isPropagationStopped = true;
 		}
 	},
 
