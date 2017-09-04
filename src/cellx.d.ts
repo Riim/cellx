@@ -258,11 +258,6 @@ declare namespace Cellx {
 	export function define(obj: EventEmitter, name: string, value: any): EventEmitter;
 	export function define(obj: EventEmitter, props: { [key: string]: any }): EventEmitter;
 
-	export namespace Utils {
-		function nextUID(): string;
-		function is(a: any, b: any): boolean;
-	}
-
 	interface ICellx<T> {
 		(value?: T): T;
 

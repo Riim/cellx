@@ -1,10 +1,10 @@
 import { logError } from '@riim/error-logger';
 import { Symbol } from '@riim/symbol-polyfill';
 import { Map } from '@riim/map-set-polyfill';
+import { is } from '@riim/is';
 import { mixin } from '@riim/mixin';
 import { nextTick } from '@riim/next-tick';
 import EventEmitter from './EventEmitter';
-import is from './utils/is';
 
 var slice = Array.prototype.slice;
 var EventEmitterProto = EventEmitter.prototype;

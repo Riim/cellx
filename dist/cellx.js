@@ -1,8 +1,8 @@
 (function (global, factory) {
-	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('@riim/map-set-polyfill'), require('@riim/error-logger'), require('@riim/symbol-polyfill'), require('@riim/mixin'), require('@riim/next-tick')) :
-	typeof define === 'function' && define.amd ? define(['@riim/map-set-polyfill', '@riim/error-logger', '@riim/symbol-polyfill', '@riim/mixin', '@riim/next-tick'], factory) :
-	(global.cellx = factory(global.mapSetPolyfill,global.errorLogger,global.symbolPolyfill,global.mixin,global.nextTick));
-}(this, (function (mapSetPolyfill,errorLogger,symbolPolyfill,mixin,nextTick) { 'use strict';
+	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('@riim/object-assign-polyfill'), require('@riim/map-set-polyfill'), require('@riim/error-logger'), require('@riim/symbol-polyfill'), require('@riim/is'), require('@riim/mixin'), require('@riim/next-tick')) :
+	typeof define === 'function' && define.amd ? define(['@riim/object-assign-polyfill', '@riim/map-set-polyfill', '@riim/error-logger', '@riim/symbol-polyfill', '@riim/is', '@riim/mixin', '@riim/next-tick'], factory) :
+	(global.cellx = factory(global.objectAssignPolyfill,global.mapSetPolyfill,global.errorLogger,global.symbolPolyfill,global.is,global.mixin,global.nextTick));
+}(this, (function (objectAssignPolyfill,mapSetPolyfill,errorLogger,symbolPolyfill,is,mixin,nextTick) { 'use strict';
 
 /**
  * @typedef {{
@@ -326,16 +326,6 @@ EventEmitter.prototype = {
 	_logError: function _logError() {
 		errorLogger.logError.apply(this, arguments);
 	}
-};
-
-/**
- * @typesign (a, b) -> boolean;
- */
-var is = Object.is || /* istanbul ignore next */function is(a, b) {
-	if (a === 0 && b === 0) {
-		return 1 / a == 1 / b;
-	}
-	return a === b || a != a && b != b;
 };
 
 var slice$1 = Array.prototype.slice;
@@ -1360,7 +1350,7 @@ Cell.prototype = {
 		var oldValue = this._value;
 
 		if (external && currentlyRelease && this._state & STATE_HAS_FOLLOWERS) {
-			if (is(value, oldValue)) {
+			if (is.is(value, oldValue)) {
 				this._setError(null);
 				this._fulfill(value);
 				return false;
@@ -1381,7 +1371,7 @@ Cell.prototype = {
 
 		this._setError(null);
 
-		if (is(value, oldValue)) {
+		if (is.is(value, oldValue)) {
 			if (external || currentlyRelease && pulling) {
 				this._fulfill(value);
 			}
@@ -1400,7 +1390,7 @@ Cell.prototype = {
 
 		if (this._state & STATE_HAS_FOLLOWERS || transactionLevel) {
 			if (this._changeEvent) {
-				if (is(value, this._fixedValue) && this._state & STATE_CAN_CANCEL_CHANGE) {
+				if (is.is(value, this._fixedValue) && this._state & STATE_CAN_CANCEL_CHANGE) {
 					this._levelInRelease = -1;
 					this._changeEvent = null;
 				} else {
@@ -1867,7 +1857,7 @@ ObservableList.prototype = mixin.mixin({ __proto__: EventEmitter.prototype }, [F
 
 		var items = this._items;
 
-		if (is(value, items[index])) {
+		if (is.is(value, items[index])) {
 			return this;
 		}
 
@@ -1912,7 +1902,7 @@ ObservableList.prototype = mixin.mixin({ __proto__: EventEmitter.prototype }, [F
 		for (var i = index + valueCount; i > index;) {
 			var value = values[--i - index];
 
-			if (!is(value, items[i])) {
+			if (!is.is(value, items[i])) {
 				if (!changed) {
 					this._throwIfFrozen();
 				}
@@ -2562,7 +2552,7 @@ ObservableMap.prototype = mixin.mixin({ __proto__: EventEmitter.prototype }, [Fr
 		if (hasKey) {
 			oldValue = entries.get(key);
 
-			if (is(value, oldValue)) {
+			if (is.is(value, oldValue)) {
 				return this;
 			}
 
@@ -2698,27 +2688,10 @@ ObservableMap.prototype[symbolPolyfill.Symbol.iterator] = ObservableMap.prototyp
 
 var KEY_CELL_MAP = symbolPolyfill.Symbol('cellx.cellMap');
 
-var uidCounter = 0;
-
-/**
- * @typesign () -> string;
- */
-function nextUID() {
-  return String(++uidCounter);
-}
-
 var hasOwn = Object.prototype.hasOwnProperty;
 var slice = Array.prototype.slice;
 
 var global = Function('return this;')();
-
-var assign = Object.assign || /* istanbul ignore next */function (target, source) {
-	for (var name in source) {
-		target[name] = source[name];
-	}
-
-	return target;
-};
 
 /**
  * @typesign (value?, opts?: {
@@ -2768,7 +2741,7 @@ function cellx(value, opts) {
 				return;
 			}
 
-			cell = new Cell(initialValue, assign({ context: context }, opts));
+			cell = new Cell(initialValue, objectAssignPolyfill.assign({ context: context }, opts));
 
 			context[KEY_CELL_MAP].set(cx, cell);
 		}
@@ -2920,11 +2893,6 @@ function define(obj, name, value) {
 }
 
 cellx.define = define;
-
-cellx.Utils = {
-	nextUID: nextUID,
-	is: is
-};
 
 cellx.cellx = cellx;
 

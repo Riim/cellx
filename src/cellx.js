@@ -1,3 +1,4 @@
+import { assign } from '@riim/object-assign-polyfill';
 import { Map } from '@riim/map-set-polyfill';
 import Cell from './Cell';
 import ObservableCollectionMixin from './collections/ObservableCollectionMixin';
@@ -5,21 +6,11 @@ import ObservableList from './collections/ObservableList';
 import ObservableMap from './collections/ObservableMap';
 import EventEmitter from './EventEmitter';
 import { KEY_CELL_MAP } from './keys';
-import is from './utils/is';
-import nextUID from './utils/nextUID';
 
 var hasOwn = Object.prototype.hasOwnProperty;
 var slice = Array.prototype.slice;
 
 var global = Function('return this;')();
-
-var assign = Object.assign || /* istanbul ignore next */ function(target, source) {
-	for (var name in source) {
-		target[name] = source[name];
-	}
-
-	return target;
-};
 
 /**
  * @typesign (value?, opts?: {
@@ -215,11 +206,6 @@ function define(obj, name, value) {
 }
 
 cellx.define = define;
-
-cellx.Utils = {
-	nextUID,
-	is
-};
 
 cellx.cellx = cellx;
 
