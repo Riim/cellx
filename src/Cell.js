@@ -1,4 +1,4 @@
-import { logError } from '@riim/error-logger';
+import { error } from '@riim/logger';
 import { Symbol } from '@riim/symbol-polyfill';
 import { Map } from '@riim/map-set-polyfill';
 import { is } from '@riim/is';
@@ -6,7 +6,6 @@ import { mixin } from '@riim/mixin';
 import { nextTick } from '@riim/next-tick';
 import EventEmitter from './EventEmitter';
 
-var slice = Array.prototype.slice;
 var EventEmitterProto = EventEmitter.prototype;
 
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
@@ -21,7 +20,7 @@ var releasePlanToIndex = -1;
 var releasePlanned = false;
 var currentlyRelease = false;
 var currentCell = null;
-var error = { original: null };
+var $error = { error: null };
 var releaseVersion = 1;
 
 var transactionLevel = 0;
@@ -194,8 +193,7 @@ var config = {
  *     reap?: (),
  *     onChange?: (evt: cellx~Event) -> ?boolean,
  *     onError?: (evt: cellx~Event) -> ?boolean
- * }) -> cellx.Cell;
- *
+ * });
  * @typesign new Cell(pull: (cell: Cell, next) -> *, opts?: {
  *     debugKey?: string,
  *     context?: Object,
@@ -206,7 +204,7 @@ var config = {
  *     reap?: (),
  *     onChange?: (evt: cellx~Event) -> ?boolean,
  *     onError?: (evt: cellx~Event) -> ?boolean
- * }) -> cellx.Cell;
+ * });
  */
 export default function Cell(value, opts) {
 	EventEmitter.call(this);
@@ -357,7 +355,7 @@ mixin(Cell, {
 		try {
 			callback();
 		} catch (err) {
-			logError(err);
+			error(err);
 			transactionFailure = true;
 		}
 
@@ -441,6 +439,7 @@ Cell.prototype = {
 
 		return this;
 	},
+
 	/**
 	 * @override
 	 */
@@ -476,48 +475,35 @@ Cell.prototype = {
 	},
 
 	/**
-	 * @typesign (
-	 *     listener: (evt: cellx~Event) -> ?boolean,
-	 *     context?
-	 * ) -> cellx.Cell;
+	 * @typesign (listener: (evt: cellx~Event) -> ?boolean, context?) -> this;
 	 */
 	addChangeListener: function addChangeListener(listener, context) {
 		return this.on('change', listener, context !== undefined ? context : this.context);
 	},
+
 	/**
-	 * @typesign (
-	 *     listener: (evt: cellx~Event) -> ?boolean,
-	 *     context?
-	 * ) -> cellx.Cell;
+	 * @typesign (listener: (evt: cellx~Event) -> ?boolean, context?) -> this;
 	 */
 	removeChangeListener: function removeChangeListener(listener, context) {
 		return this.off('change', listener, context !== undefined ? context : this.context);
 	},
 
 	/**
-	 * @typesign (
-	 *     listener: (evt: cellx~Event) -> ?boolean,
-	 *     context?
-	 * ) -> cellx.Cell;
+	 * @typesign (listener: (evt: cellx~Event) -> ?boolean, context?) -> this;
 	 */
 	addErrorListener: function addErrorListener(listener, context) {
 		return this.on('error', listener, context !== undefined ? context : this.context);
 	},
+
 	/**
-	 * @typesign (
-	 *     listener: (evt: cellx~Event) -> ?boolean,
-	 *     context?
-	 * ) -> cellx.Cell;
+	 * @typesign (listener: (evt: cellx~Event) -> ?boolean, context?) -> this;
 	 */
 	removeErrorListener: function removeErrorListener(listener, context) {
 		return this.off('error', listener, context !== undefined ? context : this.context);
 	},
 
 	/**
-	 * @typesign (
-	 *     listener: (err: ?Error, evt: cellx~Event) -> ?boolean,
-	 *     context?
-	 * ) -> cellx.Cell;
+	 * @typesign (listener: (err: ?Error, evt: cellx~Event) -> ?boolean, context?) -> this;
 	 */
 	subscribe: function subscribe(listener, context) {
 		var wrappers = listener[KEY_WRAPPERS];
@@ -539,11 +525,9 @@ Cell.prototype = {
 			.on('change', wrapper, context)
 			.on('error', wrapper, context);
 	},
+
 	/**
-	 * @typesign (
-	 *     listener: (err: ?Error, evt: cellx~Event) -> ?boolean,
-	 *     context?
-	 * ) -> cellx.Cell;
+	 * @typesign (listener: (err: ?Error, evt: cellx~Event) -> ?boolean, context?) -> this;
 	 */
 	unsubscribe: function unsubscribe(listener, context) {
 		var wrappers = listener[KEY_WRAPPERS];
@@ -573,6 +557,7 @@ Cell.prototype = {
 		this._slaves.push(slave);
 		this._state |= STATE_HAS_FOLLOWERS;
 	},
+
 	/**
 	 * @typesign (slave: cellx.Cell);
 	 */
@@ -604,8 +589,8 @@ Cell.prototype = {
 			var value = this._tryPull();
 
 			if (masters || this._masters || !(this._state & STATE_INITED)) {
-				if (value === error) {
-					this._fail(error.original, false);
+				if (value === $error) {
+					this._fail($error.error, false);
 				} else {
 					this._push(value, false, false);
 				}
@@ -624,6 +609,7 @@ Cell.prototype = {
 			this._state |= STATE_ACTIVE;
 		}
 	},
+
 	/**
 	 * @typesign ();
 	 */
@@ -726,8 +712,8 @@ Cell.prototype = {
 					this._state |= STATE_ACTIVE;
 				}
 
-				if (value === error) {
-					this._fail(error.original, false);
+				if (value === $error) {
+					this._fail($error.error, false);
 				} else {
 					this._push(value, false, false);
 				}
@@ -818,8 +804,8 @@ Cell.prototype = {
 			}
 		}
 
-		if (value === error) {
-			this._fail(error.original, false);
+		if (value === $error) {
+			this._fail($error.error, false);
 			return true;
 		}
 
@@ -855,8 +841,8 @@ Cell.prototype = {
 		try {
 			return pull.length ? pull.call(this.context, this, this._value) : pull.call(this.context);
 		} catch (err) {
-			error.original = err;
-			return error;
+			$error.error = err;
+			return $error;
 		} finally {
 			currentCell = prevCell;
 
@@ -995,7 +981,7 @@ Cell.prototype = {
 	},
 
 	/**
-	 * @typesign (value) -> cellx.Cell;
+	 * @typesign (value) -> this;
 	 */
 	set: function set(value) {
 		if (this._validate) {
@@ -1022,7 +1008,7 @@ Cell.prototype = {
 	},
 
 	/**
-	 * @typesign (value) -> cellx.Cell;
+	 * @typesign (value) -> this;
 	 */
 	push: function push(value) {
 		this._push(value, true, false);
@@ -1085,18 +1071,22 @@ Cell.prototype = {
 					this._changeEvent = {
 						target: this,
 						type: 'change',
-						oldValue: oldValue,
-						value: value,
-						prev: this._changeEvent
+						data: {
+							oldValue: oldValue,
+							value: value,
+							prev: this._changeEvent
+						}
 					};
 				}
 			} else {
 				this._changeEvent = {
 					target: this,
 					type: 'change',
-					oldValue: oldValue,
-					value: value,
-					prev: null
+					data: {
+						oldValue: oldValue,
+						value: value,
+						prev: null
+					}
 				};
 				this._state |= STATE_CAN_CANCEL_CHANGE;
 
@@ -1134,7 +1124,7 @@ Cell.prototype = {
 	},
 
 	/**
-	 * @typesign (err) -> cellx.Cell;
+	 * @typesign (err) -> this;
 	 */
 	fail: function fail(err) {
 		this._fail(err, true);
@@ -1149,7 +1139,7 @@ Cell.prototype = {
 			transactionFailure = true;
 		}
 
-		this._logError(err);
+		error('[' + this.debugKey + ']', err);
 
 		if (!(err instanceof Error)) {
 			err = new Error(String(err));
@@ -1180,7 +1170,9 @@ Cell.prototype = {
 
 			this._handleErrorEvent({
 				type: 'error',
-				error: err
+				data: {
+					error: err
+				}
 			});
 		}
 	},
@@ -1291,20 +1283,7 @@ Cell.prototype = {
 	},
 
 	/**
-	 * @override
-	 */
-	_logError: function _logError() {
-		var msg = slice.call(arguments);
-
-		if (this.debugKey) {
-			msg.unshift('[' + this.debugKey + ']');
-		}
-
-		EventEmitterProto._logError.apply(this, msg);
-	},
-
-	/**
-	 * @typesign () -> cellx.Cell;
+	 * @typesign () -> this;
 	 */
 	reap: function reap() {
 		var slaves = this._slaves;
@@ -1317,7 +1296,7 @@ Cell.prototype = {
 	},
 
 	/**
-	 * @typesign () -> cellx.Cell;
+	 * @typesign () -> this;
 	 */
 	dispose: function dispose() {
 		return this.reap();

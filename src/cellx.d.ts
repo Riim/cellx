@@ -3,52 +3,53 @@ declare namespace Cellx {
 		(a: T, b: T): number;
 	}
 
-	interface IEventData {
-		target?: EventEmitter;
-		type: string;
-		bubbles?: boolean;
-		isPropagationStopped?: boolean;
-		[key: string]: any;
-	}
-
 	interface IEvent<T extends EventEmitter = EventEmitter> {
 		target: T;
 		type: string;
 		bubbles?: boolean;
 		isPropagationStopped?: boolean;
-		[key: string]: any;
+		data: {
+			[name: string]: any;
+		};
 	}
 
-	interface IEventEmitterListener {
-		(evt: IEvent): boolean | void;
+	type TListener = (evt: IEvent) => boolean | void;
+
+	interface IRegisteredEvent {
+		listener: TListener;
+		context: any;
 	}
 
 	export class EventEmitter {
 		static currentlySubscribing: boolean;
 
-		protected _events: Map<string, Array<{ listener: IEventEmitterListener; context: any }>>;
+		protected _events: Map<string, IRegisteredEvent | Array<IRegisteredEvent>>;
 
-		getEvents(): { [type: string]: Array<{ listener: (evt: IEvent) => boolean | void; context: any }> };
-		getEvents(type: string): Array<{ listener: (evt: IEvent) => boolean | void; context: any }>;
+		getEvents(): { [type: string]: Array<IRegisteredEvent> };
+		getEvents(type: string): Array<IRegisteredEvent>;
 
-		on(type: string, listener: IEventEmitterListener, context?: any): this;
-		on(listeners: { [key: string]: IEventEmitterListener }, context?: any): this;
+		on(type: string, listener: TListener, context?: any): this;
+		on(listeners: { [type: string]: TListener }, context?: any): this;
 
-		off(type: string, listener: IEventEmitterListener, context?: any): this;
-		off(listeners: { [key: string]: IEventEmitterListener }, context?: any): this;
-		off(): this;
+		off(type: string, listener: TListener, context?: any): this;
+		off(listeners?: { [type: string]: TListener }, context?: any): this;
 
-		protected _on(type: string, listener: IEventEmitterListener, context: any): void;
-		protected _off(type: string, listener: IEventEmitterListener, context: any): void;
+		protected _on(type: string, listener: TListener, context: any): void;
+		protected _off(type: string, listener: TListener, context: any): void;
 
-		once(type: string, listener: IEventEmitterListener, context?: any): IEventEmitterListener;
+		once(type: string, listener: TListener, context?: any): TListener;
 
-		emit(evt: IEventData): IEvent;
-		emit(type: string): IEvent;
+		emit<T extends EventEmitter = EventEmitter>(evt: {
+			target?: T;
+			type: string;
+			bubbles?: boolean;
+			isPropagationStopped?: boolean;
+			data?: {
+				[name: string]: any;
+			};
+		} | string): IEvent<T>;
 
 		protected _handleEvent(evt: IEvent): void;
-
-		protected _logError(...msg: Array<any>): void;
 	}
 
 	type ObservableMapEntries<K, V> = Array<[K, V]> | { [key: string]: V } | Map<K, V> | ObservableMap<K, V>;
@@ -174,20 +175,24 @@ declare namespace Cellx {
 		merge?: (value: T, oldValue: any) => any;
 		put?: (cell: Cell<T>, value: any, oldValue: any) => void;
 		reap?: () => void;
-		onChange?: IEventEmitterListener;
-		onError?: IEventEmitterListener;
+		onChange?: TListener;
+		onError?: TListener;
 	}
 
 	interface ICellChangeEvent extends IEvent<Cell> {
 		type: 'change';
-		oldValue: any;
-		value: any;
-		prev: ICellChangeEvent;
+		data: {
+			oldValue: any;
+			value: any;
+			prev: ICellChangeEvent;
+		};
 	}
 
 	interface ICellErrorEvent extends IEvent<Cell> {
 		type: 'error';
-		error: any;
+		data: {
+			error: any;
+		};
 	}
 
 	type ICellEvent = ICellChangeEvent | ICellErrorEvent;
@@ -207,10 +212,10 @@ declare namespace Cellx {
 		constructor(value?: T, opts?: ICellOptions<T>);
 		constructor(pull: ICellPull<T>, opts?: ICellOptions<T>);
 
-		addChangeListener(listener: IEventEmitterListener, context?: any): this;
-		removeChangeListener(listener: IEventEmitterListener, context?: any): this;
-		addErrorListener(listener: IEventEmitterListener, context?: any): this;
-		removeErrorListener(listener: IEventEmitterListener, context?: any): this;
+		addChangeListener(listener: TListener, context?: any): this;
+		removeChangeListener(listener: TListener, context?: any): this;
+		addErrorListener(listener: TListener, context?: any): this;
+		removeErrorListener(listener: TListener, context?: any): this;
 		subscribe(listener: (err: Error | void, evt: ICellEvent) => boolean | void, context?: any): this;
 		unsubscribe(listener: (err: Error | void, evt: ICellEvent) => boolean | void, context?: any): this;
 
@@ -254,9 +259,9 @@ declare namespace Cellx {
 	): ObservableList<T>;
 
 	export function defineObservableProperty(obj: EventEmitter, name: string, value: any): EventEmitter;
-	export function defineObservableProperties(obj: EventEmitter, props: { [key: string]: any }): EventEmitter;
+	export function defineObservableProperties(obj: EventEmitter, props: { [name: string]: any }): EventEmitter;
 	export function define(obj: EventEmitter, name: string, value: any): EventEmitter;
-	export function define(obj: EventEmitter, props: { [key: string]: any }): EventEmitter;
+	export function define(obj: EventEmitter, props: { [name: string]: any }): EventEmitter;
 
 	interface ICellx<T> {
 		(value?: T): T;
@@ -264,10 +269,10 @@ declare namespace Cellx {
 		(method: 'bind', zeroArg: any): ICellx<T>;
 		(method: 'unwrap', zeroArg: any): Cell<T>;
 
-		(method: 'addChangeListener', listener: IEventEmitterListener, context?: any): Cell<T>;
-		(method: 'removeChangeListener', listener: IEventEmitterListener, context?: any): Cell<T>;
-		(method: 'addErrorListener', listener: IEventEmitterListener, context?: any): Cell<T>;
-		(method: 'removeErrorListener', listener: IEventEmitterListener, context?: any): Cell<T>;
+		(method: 'addChangeListener', listener: TListener, context?: any): Cell<T>;
+		(method: 'removeChangeListener', listener: TListener, context?: any): Cell<T>;
+		(method: 'addErrorListener', listener: TListener, context?: any): Cell<T>;
+		(method: 'removeErrorListener', listener: TListener, context?: any): Cell<T>;
 		(method: 'subscribe', listener: (err: Error | void, evt: ICellEvent) => boolean | void, context?: any): Cell<T>;
 		(method: 'unsubscribe', listener: (err: Error | void, evt: ICellEvent) => boolean | void, context?: any):
 			Cell<T>;

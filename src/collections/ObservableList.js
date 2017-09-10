@@ -25,12 +25,8 @@ function defaultComparator(a, b) {
  *     adoptsValueChanges?: boolean,
  *     comparator?: (a, b) -> int,
  *     sorted?: boolean
- * }) -> cellx.ObservableList;
- *
- * @typesign new ObservableList(
- *     items?: Array | cellx.ObservableList,
- *     adoptsValueChanges?: boolean
- * ) -> cellx.ObservableList;
+ * });
+ * @typesign new ObservableList(items?: Array | cellx.ObservableList, adoptsValueChanges?: boolean);
  */
 export default function ObservableList(items, opts) {
 	EventEmitter.call(this);
@@ -120,7 +116,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 	},
 
 	/**
-	 * @typesign (index: int, value) -> cellx.ObservableList;
+	 * @typesign (index: int, value) -> this;
 	 */
 	set: function set(index, value) {
 		if (this.sorted) {
@@ -147,7 +143,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 	},
 
 	/**
-	 * @typesign (index: int, values: Array | cellx.ObservableList) -> cellx.ObservableList;
+	 * @typesign (index: int, values: Array | cellx.ObservableList) -> this;
 	 */
 	setRange: function setRange(index, values) {
 		if (this.sorted) {
@@ -196,7 +192,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 	},
 
 	/**
-	 * @typesign (value) -> cellx.ObservableList;
+	 * @typesign (value) -> this;
 	 */
 	add: function add(value) {
 		this._throwIfFrozen();
@@ -216,7 +212,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 	},
 
 	/**
-	 * @typesign (values: Array | cellx.ObservableList) -> cellx.ObservableList;
+	 * @typesign (values: Array | cellx.ObservableList) -> this;
 	 */
 	addRange: function addRange(values) {
 		if (values.length) {
@@ -253,7 +249,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 	},
 
 	/**
-	 * @typesign (index: int, value) -> cellx.ObservableList;
+	 * @typesign (index: int, value) -> this;
 	 */
 	insert: function insert(index, value) {
 		if (this.sorted) {
@@ -274,7 +270,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 	},
 
 	/**
-	 * @typesign (index: int, values: Array | cellx.ObservableList) -> cellx.ObservableList;
+	 * @typesign (index: int, values: Array | cellx.ObservableList) -> this;
 	 */
 	insertRange: function insertRange(index, values) {
 		if (this.sorted) {
@@ -473,7 +469,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 	},
 
 	/**
-	 * @typesign () -> cellx.ObservableList;
+	 * @typesign () -> this;
 	 */
 	clear: function clear() {
 		if (!this.length) {
@@ -497,7 +493,9 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 
 		this.emit({
 			type: 'change',
-			subtype: 'clear'
+			data: {
+				subtype: 'clear'
+			}
 		});
 
 		return this;
@@ -603,7 +601,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 	reduceRight: null,
 
 	/**
-	 * @typesign () -> cellx.ObservableList;
+	 * @typesign () -> this;
 	 */
 	clone: function clone() {
 		return new this.constructor(this, {

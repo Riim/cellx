@@ -23,7 +23,6 @@ var global = Function('return this;')();
  *     onChange?: (evt: cellx~Event) -> ?boolean,
  *     onError?: (evt: cellx~Event) -> ?boolean
  * }) -> cellx;
- *
  * @typesign (pull: (cell: Cell, next) -> *, opts?: {
  *     debugKey?: string,
  *     context?: Object,
@@ -120,7 +119,6 @@ cellx.KEY_CELL_MAP = KEY_CELL_MAP;
  *     entries?: Object | Array<{ 0, 1 }> | cellx.ObservableMap,
  *     opts?: { adoptsValueChanges?: boolean }
  * ) -> cellx.ObservableMap;
- *
  * @typesign (
  *     entries?: Object | Array<{ 0, 1 }> | cellx.ObservableMap,
  *     adoptsValueChanges?: boolean
@@ -138,7 +136,6 @@ cellx.map = map;
  *     comparator?: (a, b) -> int,
  *     sorted?: boolean
  * }) -> cellx.ObservableList;
- *
  * @typesign (items?: Array | cellx.ObservableList, adoptsValueChanges?: boolean) -> cellx.ObservableList;
  */
 function list(items, opts) {

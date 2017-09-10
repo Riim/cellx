@@ -5,7 +5,7 @@ export default {
 	input: 'src/cellx.js',
 
 	external: [
-		'@riim/error-logger',
+		'@riim/logger',
 		'@riim/object-assign-polyfill',
 		'@riim/symbol-polyfill',
 		'@riim/map-set-polyfill',
@@ -27,7 +27,7 @@ export default {
 		name: 'cellx',
 
 		globals: {
-			'@riim/error-logger': 'errorLogger',
+			'@riim/logger': 'errorLogger',
 			'@riim/object-assign-polyfill': 'objectAssignPolyfill',
 			'@riim/symbol-polyfill': 'symbolPolyfill',
 			'@riim/map-set-polyfill': 'mapSetPolyfill',

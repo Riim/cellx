@@ -534,29 +534,6 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test.skip('должна уметь синхронизировать своё значение с внешним хранилищем', () => {
-		localStorage.clear();
-
-		let a = new Cell(() => {
-			return +(localStorage.a || 1);
-		}, {
-			put(cell, value) {
-				localStorage.a = value;
-				cell.push(value);
-			}
-		});
-
-		let b = new Cell(() => a.get() + 1);
-
-		expect(b.get())
-			.toBe(2);
-
-		a.set(5);
-
-		expect(b.get())
-			.toBe(6);
-	});
-
 	test('validation', () => {
 		let a = new Cell(1, {
 			validate(value) {
@@ -597,9 +574,11 @@ describe('Cell', () => {
 			.toHaveBeenCalledWith(null, {
 				type: 'change',
 				target: a,
-				oldValue: 2,
-				value: 3,
-				prev: null
+				data: {
+					oldValue: 2,
+					value: 3,
+					prev: null
+				}
 			});
 	});
 
@@ -621,9 +600,11 @@ describe('Cell', () => {
 			.toHaveBeenCalledWith(null, {
 				type: 'change',
 				target: b,
-				oldValue: 3,
-				value: 4,
-				prev: null
+				data: {
+					oldValue: 3,
+					value: 4,
+					prev: null
+				}
 			});
 	});
 

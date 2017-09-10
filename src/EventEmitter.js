@@ -1,12 +1,5 @@
-import { logError } from '@riim/error-logger';
+import { error } from '@riim/logger';
 import { Map } from '@riim/map-set-polyfill';
-
-/**
- * @typedef {{
- *     listener: (evt: cellx~Event) -> ?boolean,
- *     context
- * }} cellx~EmitterEvent
- */
 
 /**
  * @typedef {{
@@ -18,13 +11,24 @@ import { Map } from '@riim/map-set-polyfill';
  */
 
 /**
+ * @typedef {(evt: cellx~Event) -> ?boolean} cellx~Listener
+ */
+
+/**
+ * @typedef {{
+ *     listener: cellx~Listener,
+ *     context
+ * }} cellx~RegisteredEvent
+ */
+
+/**
  * @class cellx.EventEmitter
  * @extends {Object}
- * @typesign new EventEmitter() -> cellx.EventEmitter;
+ * @typesign new EventEmitter();
  */
 export default function EventEmitter() {
 	/**
-	 * @type {{ [type: string]: cellx~EmitterEvent | Array<cellx~EmitterEvent> }}
+	 * @type {{ [type: string]: cellx~RegisteredEvent | Array<cellx~RegisteredEvent> }}
 	 */
 	this._events = new Map();
 }
@@ -35,8 +39,8 @@ EventEmitter.prototype = {
 	constructor: EventEmitter,
 
 	/**
-	 * @typesign () -> { [type: string]: Array<cellx~EmitterEvent> };
-	 * @typesign (type: string) -> Array<cellx~EmitterEvent>;
+	 * @typesign () -> { [type: string]: Array<cellx~RegisteredEvent> };
+	 * @typesign (type: string) -> Array<cellx~RegisteredEvent>;
 	 */
 	getEvents: function getEvents(type) {
 		var events;
@@ -61,16 +65,8 @@ EventEmitter.prototype = {
 	},
 
 	/**
-	 * @typesign (
-	 *     type: string,
-	 *     listener: (evt: cellx~Event) -> ?boolean,
-	 *     context?
-	 * ) -> cellx.EventEmitter;
-	 *
-	 * @typesign (
-	 *     listeners: { [type: string]: (evt: cellx~Event) -> ?boolean },
-	 *     context?
-	 * ) -> cellx.EventEmitter;
+	 * @typesign (type: string, listener: cellx~Listener, context?) -> this;
+	 * @typesign (listeners: { [type: string]: cellx~Listener }, context?) -> this;
 	 */
 	on: function on(type, listener, context) {
 		if (typeof type == 'object') {
@@ -87,19 +83,10 @@ EventEmitter.prototype = {
 
 		return this;
 	},
+
 	/**
-	 * @typesign (
-	 *     type: string,
-	 *     listener: (evt: cellx~Event) -> ?boolean,
-	 *     context?
-	 * ) -> cellx.EventEmitter;
-	 *
-	 * @typesign (
-	 *     listeners: { [type: string]: (evt: cellx~Event) -> ?boolean },
-	 *     context?
-	 * ) -> cellx.EventEmitter;
-	 *
-	 * @typesign () -> cellx.EventEmitter;
+	 * @typesign (type: string, listener: cellx~Listener, context?) -> this;
+	 * @typesign (listeners?: { [type: string]: cellx~Listener }, context?) -> this;
 	 */
 	off: function off(type, listener, context) {
 		if (type) {
@@ -122,11 +109,7 @@ EventEmitter.prototype = {
 	},
 
 	/**
-	 * @typesign (
-	 *     type: string,
-	 *     listener: (evt: cellx~Event) -> ?boolean,
-	 *     context
-	 * );
+	 * @typesign (type: string, listener: cellx~Listener, context);
 	 */
 	_on: function _on(type, listener, context) {
 		var index = type.indexOf(':');
@@ -151,12 +134,9 @@ EventEmitter.prototype = {
 			}
 		}
 	},
+
 	/**
-	 * @typesign (
-	 *     type: string,
-	 *     listener: (evt: cellx~Event) -> ?boolean,
-	 *     context
-	 * );
+	 * @typesign (type: string, listener: cellx~Listener, context);
 	 */
 	_off: function _off(type, listener, context) {
 		var index = type.indexOf(':');
@@ -199,11 +179,7 @@ EventEmitter.prototype = {
 	},
 
 	/**
-	 * @typesign (
-	 *     type: string,
-	 *     listener: (evt: cellx~Event) -> ?boolean,
-	 *     context?
-	 * ) -> (evt: cellx~Event) -> ?boolean;
+	 * @typesign (type: string, listener: cellx~Listener, context?) -> cellx~Listener;
 	 */
 	once: function once(type, listener, context) {
 		if (context === undefined) {
@@ -243,42 +219,6 @@ EventEmitter.prototype = {
 
 	/**
 	 * @typesign (evt: cellx~Event);
-	 *
-	 * For override:
-	 * @example
-	 * function View(el) {
-	 *     this.element = el;
-	 *     el._view = this;
-	 * }
-	 *
-	 * View.prototype = {
-	 *     __proto__: EventEmitter.prototype,
-	 *     constructor: View,
-	 *
-	 *     getParent: function() {
-	 *         var node = this.element;
-	 *
-	 *         while (node = node.parentNode) {
-	 *             if (node._view) {
-	 *                 return node._view;
-	 *             }
-	 *         }
-	 *
-	 *         return null;
-	 *     },
-	 *
-	 *     _handleEvent: function(evt) {
-	 *         EventEmitter.prototype._handleEvent.call(this, evt);
-	 *
-	 *         if (evt.bubbles !== false && !evt.isPropagationStopped) {
-	 *             var parent = this.getParent();
-	 *
-	 *             if (parent) {
-	 *                 parent._handleEvent(evt);
-	 *             }
-	 *         }
-	 *     }
-	 * };
 	 */
 	_handleEvent: function _handleEvent(evt) {
 		var events = this._events.get(evt.type);
@@ -309,20 +249,13 @@ EventEmitter.prototype = {
 	},
 
 	/**
-	 * @typesign (emEvt: cellx~EmitterEvent, evt: cellx~Event);
+	 * @typesign (emEvt: cellx~RegisteredEvent, evt: cellx~Event);
 	 */
 	_tryEventListener: function _tryEventListener(emEvt, evt) {
 		try {
 			return emEvt.listener.call(emEvt.context, evt);
 		} catch (err) {
-			this._logError(err);
+			error(err);
 		}
-	},
-
-	/**
-	 * @typesign (...msg);
-	 */
-	_logError: function _logError() {
-		logError.apply(this, arguments);
 	}
 };

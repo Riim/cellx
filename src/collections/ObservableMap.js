@@ -14,12 +14,11 @@ import ObservableCollectionMixin from './ObservableCollectionMixin';
  *
  * @typesign new ObservableMap(entries?: Object | cellx.ObservableMap | Map | Array<{ 0, 1 }>, opts?: {
  *     adoptsValueChanges?: boolean
- * }) -> cellx.ObservableMap;
- *
+ * });
  * @typesign new ObservableMap(
  *     entries?: Object | cellx.ObservableMap | Map | Array<{ 0, 1 }>,
  *     adoptsValueChanges?: boolean
- * ) -> cellx.ObservableMap;
+ * );
  */
 export default function ObservableMap(entries, opts) {
 	EventEmitter.call(this);
@@ -92,7 +91,7 @@ ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 	},
 
 	/**
-	 * @typesign (key, value) -> cellx.ObservableMap;
+	 * @typesign (key, value) -> this;
 	 */
 	set: function set(key, value) {
 		var entries = this._entries;
@@ -122,10 +121,12 @@ ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 
 		this.emit({
 			type: 'change',
-			subtype: hasKey ? 'update' : 'add',
-			key: key,
-			oldValue: oldValue,
-			value: value
+			data: {
+				subtype: hasKey ? 'update' : 'add',
+				key: key,
+				oldValue: oldValue,
+				value: value
+			}
 		});
 
 		return this;
@@ -151,17 +152,19 @@ ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 
 		this.emit({
 			type: 'change',
-			subtype: 'delete',
-			key: key,
-			oldValue: value,
-			value: undefined
+			data: {
+				subtype: 'delete',
+				key: key,
+				oldValue: value,
+				value: undefined
+			}
 		});
 
 		return true;
 	},
 
 	/**
-	 * @typesign () -> cellx.ObservableMap;
+	 * @typesign () -> this;
 	 */
 	clear: function clear() {
 		if (!this.size) {
@@ -185,7 +188,9 @@ ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 
 		this.emit({
 			type: 'change',
-			subtype: 'clear'
+			data: {
+				subtype: 'clear'
+			}
 		});
 
 		return this;
@@ -225,7 +230,7 @@ ObservableMap.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 	},
 
 	/**
-	 * @typesign () -> cellx.ObservableMap;
+	 * @typesign () -> this;
 	 */
 	clone: function clone() {
 		return new this.constructor(this, {

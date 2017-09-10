@@ -575,10 +575,10 @@ foo('then', function() {
 var value = cellx(new cellx.EventEmitter());
 
 value('subscribe', function(err, evt) {
-    console.log(evt.ok);
+    console.log(evt.target instanceof cellx.EventEmitter);
 });
 
-value().emit({ type: 'change', ok: true });
+value().emit('change');
 // => true
 ```
 
