@@ -4,7 +4,7 @@ describe('Cell', () => {
 
 	function noop() {}
 
-	test('.afterRelease', (done) => {
+	test('.afterRelease()', (done) => {
 		let a = new Cell(1);
 		let b = new Cell(() => a.get() + 1, { onChange: noop });
 
@@ -20,6 +20,25 @@ describe('Cell', () => {
 
 			done();
 		}, 1);
+	});
+
+	test('.afterRelease() (2)', (done) => {
+		let a = new Cell(1);
+		let b = new Cell(1);
+		let c = new Cell(() => b.get(), { onChange() {} });
+
+		a.on('change', () => {
+			Cell.afterRelease(() => {
+				expect(c.get())
+					.toBe(2);
+
+				done();
+			});
+
+			b.set(2);
+		});
+
+		a.set(2);
 	});
 
 	test('#pull()', (done) => {

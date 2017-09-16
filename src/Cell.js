@@ -27,6 +27,7 @@ var transactionLevel = 0;
 var transactionFailure = false;
 var pendingReactions = [];
 
+var afterReleasePushings;
 var afterReleaseCallbacks;
 
 var STATE_INITED = 1;
@@ -48,7 +49,7 @@ function release() {
 
 	var queue = releasePlan.get(releasePlanIndex);
 
-	for (;;) {
+	for (; ; ) {
 		var cell = queue && queue.shift();
 
 		if (!cell) {
@@ -139,13 +140,23 @@ function release() {
 	currentlyRelease = false;
 	releaseVersion++;
 
+	if (afterReleasePushings) {
+		var pushing = afterReleasePushings;
+
+		afterReleasePushings = null;
+
+		for (var i = 0, l = pushing.length; i < l; i += 2) {
+			pushing[i]._push(pushing[i + 1], true, false);
+		}
+	}
+
 	if (afterReleaseCallbacks) {
 		var callbacks = afterReleaseCallbacks;
 
 		afterReleaseCallbacks = null;
 
-		for (var j = 0, m = callbacks.length; j < m; j++) {
-			callbacks[j]();
+		for (var i = 0, l = callbacks.length; i < l; i++) {
+			callbacks[i]();
 		}
 	}
 }
@@ -360,10 +371,10 @@ mixin(Cell, {
 		}
 
 		if (transactionFailure) {
-			for (var iterator = releasePlan.values(), step; !(step = iterator.next()).done;) {
+			for (var iterator = releasePlan.values(), step; !(step = iterator.next()).done; ) {
 				var queue = step.value;
 
-				for (var i = queue.length; i;) {
+				for (var i = queue.length; i; ) {
 					var cell = queue[--i];
 					cell._value = cell._fixedValue;
 					cell._levelInRelease = -1;
@@ -783,8 +794,8 @@ Cell.prototype = {
 			}
 
 			if (oldMasters && (masters ? masters.length - newMasterCount : 0) < oldMasters.length) {
-				for (var j = oldMasters.length; j;) {
-					var oldMaster = oldMasters[--j];
+				for (var i = oldMasters.length; i; ) {
+					var oldMaster = oldMasters[--i];
 
 					if (!masters || masters.indexOf(oldMaster) == -1) {
 						oldMaster._unregisterSlave(this);
@@ -1030,11 +1041,7 @@ Cell.prototype = {
 				return false;
 			}
 
-			var cell = this;
-
-			(afterReleaseCallbacks || (afterReleaseCallbacks = [])).push(function() {
-				cell._push(value, true, false);
-			});
+			(afterReleasePushings || (afterReleasePushings = [])).push(this, value);
 
 			return true;
 		}

@@ -160,7 +160,7 @@ EventEmitter.prototype = {
 			} else if (events.length == 1) {
 				evt = events[0];
 			} else {
-				for (var i = events.length; i;) {
+				for (var i = events.length; i; ) {
 					evt = events[--i];
 
 					if (evt.listener == listener && evt.context === context) {

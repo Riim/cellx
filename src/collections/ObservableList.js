@@ -169,7 +169,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 		var items = this._items;
 		var changed = false;
 
-		for (var i = index + valueCount; i > index;) {
+		for (var i = index + valueCount; i > index; ) {
 			var value = values[--i - index];
 
 			if (!is(value, items[i])) {
@@ -240,8 +240,8 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 
 			this.length += values.length;
 		} else {
-			for (var j = values.length; j;) {
-				this._registerValue(values[--j]);
+			for (var i = values.length; i; ) {
+				this._registerValue(values[--i]);
 			}
 
 			this.length = push.apply(this._items, values);
@@ -291,7 +291,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 			values = values._items;
 		}
 
-		for (var i = valueCount; i;) {
+		for (var i = valueCount; i; ) {
 			this._registerValue(values[--i]);
 		}
 
@@ -402,7 +402,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 		for (var i = 0, l = values.length; i < l; i++) {
 			var value = values[i];
 
-			for (var index = fromIndex; (index = items.indexOf(value, index)) != -1;) {
+			for (var index = fromIndex; (index = items.indexOf(value, index)) != -1; ) {
 				if (!changed) {
 					this._throwIfFrozen();
 				}
@@ -457,7 +457,7 @@ ObservableList.prototype = mixin({ __proto__: EventEmitter.prototype }, [
 
 		this._throwIfFrozen();
 
-		for (var i = index + count; i > index;) {
+		for (var i = index + count; i > index; ) {
 			this._unregisterValue(items[--i]);
 		}
 		var values = items.splice(index, count);
