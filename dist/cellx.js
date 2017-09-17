@@ -282,7 +282,6 @@ var transactionLevel = 0;
 var transactionFailure = false;
 var pendingReactions = [];
 
-var afterReleasePushings;
 var afterReleaseCallbacks;
 
 var STATE_INITED = 1;
@@ -316,6 +315,8 @@ function release() {
 			continue;
 		}
 
+		var oldReleasePlanIndex = releasePlanIndex;
+
 		var level = cell._level;
 		var changeEvent = cell._changeEvent;
 
@@ -336,9 +337,13 @@ function release() {
 
 			level = cell._level;
 
-			if (level > releasePlanIndex) {
-				if (!queue.length) {
-					queue = releasePlan.get(++releasePlanIndex);
+			if (level > oldReleasePlanIndex) {
+				if (releasePlanIndex == oldReleasePlanIndex) {
+					if (!queue.length) {
+						queue = releasePlan.get(++releasePlanIndex);
+					}
+				} else {
+					queue = releasePlan.get(releasePlanIndex);
 				}
 
 				continue;
@@ -350,8 +355,6 @@ function release() {
 		cell._levelInRelease = -1;
 
 		if (changeEvent) {
-			var oldReleasePlanIndex = releasePlanIndex;
-
 			cell._fixedValue = cell._value;
 			cell._changeEvent = null;
 
@@ -374,19 +377,18 @@ function release() {
 					slave._addToRelease();
 				}
 			}
-
-			if (releasePlanIndex != oldReleasePlanIndex) {
-				queue = releasePlan.get(releasePlanIndex);
-				continue;
-			}
 		}
 
-		if (!queue.length) {
-			if (releasePlanIndex == releasePlanToIndex) {
-				break;
-			}
+		if (releasePlanIndex == oldReleasePlanIndex) {
+			if (!queue.length) {
+				if (releasePlanIndex == releasePlanToIndex) {
+					break;
+				}
 
-			queue = releasePlan.get(++releasePlanIndex);
+				queue = releasePlan.get(++releasePlanIndex);
+			}
+		} else {
+			queue = releasePlan.get(releasePlanIndex);
 		}
 	}
 
@@ -394,16 +396,6 @@ function release() {
 	releasePlanToIndex = -1;
 	currentlyRelease = false;
 	releaseVersion++;
-
-	if (afterReleasePushings) {
-		var pushing = afterReleasePushings;
-
-		afterReleasePushings = null;
-
-		for (var i = 0, l = pushing.length; i < l; i += 2) {
-			pushing[i]._push(pushing[i + 1], true, false);
-		}
-	}
 
 	if (afterReleaseCallbacks) {
 		var callbacks = afterReleaseCallbacks;
@@ -1277,25 +1269,13 @@ Cell.prototype = {
 	_push: function _push(value, external, pulling) {
 		this._state |= STATE_INITED;
 
-		var oldValue = this._value;
-
-		if (external && currentlyRelease && this._state & STATE_HAS_FOLLOWERS) {
-			if (is.is(value, oldValue)) {
-				this._setError(null);
-				this._fulfill(value);
-				return false;
-			}
-
-			(afterReleasePushings || (afterReleasePushings = [])).push(this, value);
-
-			return true;
-		}
-
 		if (external || !currentlyRelease && pulling) {
 			this._pushingIndex = ++pushingIndexCounter;
 		}
 
 		this._setError(null);
+
+		var oldValue = this._value;
 
 		if (is.is(value, oldValue)) {
 			if (external || currentlyRelease && pulling) {
@@ -1559,6 +1539,47 @@ Cell.prototype[symbolPolyfill.Symbol.iterator] = function () {
 	return this._value[symbolPolyfill.Symbol.iterator]();
 };
 
+function FreezableCollectionMixin() {
+	/**
+  * @type {boolean}
+  */
+	this._isFrozen = false;
+}
+
+FreezableCollectionMixin.prototype = {
+	/**
+  * @type {boolean}
+  */
+	get isFrozen() {
+		return this._isFrozen;
+	},
+
+	/**
+  * @typesign () -> this;
+  */
+	freeze: function freeze() {
+		this._isFrozen = true;
+		return this;
+	},
+
+	/**
+  * @typesign () -> this;
+  */
+	unfreeze: function unfreeze() {
+		this._isFrozen = false;
+		return this;
+	},
+
+	/**
+  * @typesign (msg: string);
+  */
+	_throwIfFrozen: function _throwIfFrozen(msg) {
+		if (this._isFrozen) {
+			throw new TypeError(msg || 'Frozen collection cannot be mutated');
+		}
+	}
+};
+
 function ObservableCollectionMixin() {
 	/**
   * @type {Map<*, uint>}
@@ -1607,47 +1628,6 @@ ObservableCollectionMixin.prototype = {
 			if (this.adoptsValueChanges && value instanceof EventEmitter) {
 				value.off('change', this._onItemChange, this);
 			}
-		}
-	}
-};
-
-function FreezableCollectionMixin() {
-	/**
-  * @type {boolean}
-  */
-	this._isFrozen = false;
-}
-
-FreezableCollectionMixin.prototype = {
-	/**
-  * @type {boolean}
-  */
-	get isFrozen() {
-		return this._isFrozen;
-	},
-
-	/**
-  * @typesign () -> this;
-  */
-	freeze: function freeze() {
-		this._isFrozen = true;
-		return this;
-	},
-
-	/**
-  * @typesign () -> this;
-  */
-	unfreeze: function unfreeze() {
-		this._isFrozen = false;
-		return this;
-	},
-
-	/**
-  * @typesign (msg: string);
-  */
-	_throwIfFrozen: function _throwIfFrozen(msg) {
-		if (this._isFrozen) {
-			throw new TypeError(msg || 'Frozen collection cannot be mutated');
 		}
 	}
 };
@@ -2715,6 +2695,7 @@ cellx.configure = function (config) {
 };
 
 cellx.EventEmitter = EventEmitter;
+cellx.FreezableCollectionMixin = FreezableCollectionMixin;
 cellx.ObservableCollectionMixin = ObservableCollectionMixin;
 cellx.ObservableMap = ObservableMap;
 cellx.ObservableList = ObservableList;

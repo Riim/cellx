@@ -26,7 +26,7 @@ import { Map } from '@riim/map-set-polyfill';
  * @extends {Object}
  * @typesign new EventEmitter();
  */
-export default function EventEmitter() {
+export function EventEmitter() {
 	/**
 	 * @type {{ [type: string]: cellx~RegisteredEvent | Array<cellx~RegisteredEvent> }}
 	 */

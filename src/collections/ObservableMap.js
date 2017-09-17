@@ -2,9 +2,9 @@ import { Symbol } from '@riim/symbol-polyfill';
 import { Map } from '@riim/map-set-polyfill';
 import { is } from '@riim/is';
 import { mixin } from '@riim/mixin';
-import EventEmitter from '../EventEmitter';
-import FreezableCollectionMixin from './FreezableCollectionMixin';
-import ObservableCollectionMixin from './ObservableCollectionMixin';
+import { EventEmitter } from '../EventEmitter';
+import { FreezableCollectionMixin } from './FreezableCollectionMixin';
+import { ObservableCollectionMixin } from './ObservableCollectionMixin';
 
 /**
  * @class cellx.ObservableMap
@@ -20,7 +20,7 @@ import ObservableCollectionMixin from './ObservableCollectionMixin';
  *     adoptsValueChanges?: boolean
  * );
  */
-export default function ObservableMap(entries, opts) {
+export function ObservableMap(entries, opts) {
 	EventEmitter.call(this);
 	FreezableCollectionMixin.call(this);
 	ObservableCollectionMixin.call(this);

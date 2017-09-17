@@ -4,7 +4,7 @@ import { Map } from '@riim/map-set-polyfill';
 import { is } from '@riim/is';
 import { mixin } from '@riim/mixin';
 import { nextTick } from '@riim/next-tick';
-import EventEmitter from './EventEmitter';
+import { EventEmitter } from './EventEmitter';
 
 var EventEmitterProto = EventEmitter.prototype;
 
@@ -27,7 +27,6 @@ var transactionLevel = 0;
 var transactionFailure = false;
 var pendingReactions = [];
 
-var afterReleasePushings;
 var afterReleaseCallbacks;
 
 var STATE_INITED = 1;
@@ -61,6 +60,8 @@ function release() {
 			continue;
 		}
 
+		var oldReleasePlanIndex = releasePlanIndex;
+
 		var level = cell._level;
 		var changeEvent = cell._changeEvent;
 
@@ -81,9 +82,13 @@ function release() {
 
 			level = cell._level;
 
-			if (level > releasePlanIndex) {
-				if (!queue.length) {
-					queue = releasePlan.get(++releasePlanIndex);
+			if (level > oldReleasePlanIndex) {
+				if (releasePlanIndex == oldReleasePlanIndex) {
+					if (!queue.length) {
+						queue = releasePlan.get(++releasePlanIndex);
+					}
+				} else {
+					queue = releasePlan.get(releasePlanIndex);
 				}
 
 				continue;
@@ -95,8 +100,6 @@ function release() {
 		cell._levelInRelease = -1;
 
 		if (changeEvent) {
-			var oldReleasePlanIndex = releasePlanIndex;
-
 			cell._fixedValue = cell._value;
 			cell._changeEvent = null;
 
@@ -119,19 +122,18 @@ function release() {
 					slave._addToRelease();
 				}
 			}
-
-			if (releasePlanIndex != oldReleasePlanIndex) {
-				queue = releasePlan.get(releasePlanIndex);
-				continue;
-			}
 		}
 
-		if (!queue.length) {
-			if (releasePlanIndex == releasePlanToIndex) {
-				break;
-			}
+		if (releasePlanIndex == oldReleasePlanIndex) {
+			if (!queue.length) {
+				if (releasePlanIndex == releasePlanToIndex) {
+					break;
+				}
 
-			queue = releasePlan.get(++releasePlanIndex);
+				queue = releasePlan.get(++releasePlanIndex);
+			}
+		} else {
+			queue = releasePlan.get(releasePlanIndex);
 		}
 	}
 
@@ -139,16 +141,6 @@ function release() {
 	releasePlanToIndex = -1;
 	currentlyRelease = false;
 	releaseVersion++;
-
-	if (afterReleasePushings) {
-		var pushing = afterReleasePushings;
-
-		afterReleasePushings = null;
-
-		for (var i = 0, l = pushing.length; i < l; i += 2) {
-			pushing[i]._push(pushing[i + 1], true, false);
-		}
-	}
 
 	if (afterReleaseCallbacks) {
 		var callbacks = afterReleaseCallbacks;
@@ -217,7 +209,7 @@ var config = {
  *     onError?: (evt: cellx~Event) -> ?boolean
  * });
  */
-export default function Cell(value, opts) {
+export function Cell(value, opts) {
 	EventEmitter.call(this);
 
 	this.debugKey = opts && opts.debugKey;
@@ -1032,25 +1024,13 @@ Cell.prototype = {
 	_push: function _push(value, external, pulling) {
 		this._state |= STATE_INITED;
 
-		var oldValue = this._value;
-
-		if (external && currentlyRelease && (this._state & STATE_HAS_FOLLOWERS)) {
-			if (is(value, oldValue)) {
-				this._setError(null);
-				this._fulfill(value);
-				return false;
-			}
-
-			(afterReleasePushings || (afterReleasePushings = [])).push(this, value);
-
-			return true;
-		}
-
 		if (external || !currentlyRelease && pulling) {
 			this._pushingIndex = ++pushingIndexCounter;
 		}
 
 		this._setError(null);
+
+		var oldValue = this._value;
 
 		if (is(value, oldValue)) {
 			if (external || currentlyRelease && pulling) {

@@ -1,4 +1,4 @@
-export default function FreezableCollectionMixin() {
+export function FreezableCollectionMixin() {
 	/**
 	 * @type {boolean}
 	 */

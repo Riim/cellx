@@ -1,10 +1,11 @@
 import { assign } from '@riim/object-assign-polyfill';
 import { Map } from '@riim/map-set-polyfill';
-import Cell from './Cell';
-import ObservableCollectionMixin from './collections/ObservableCollectionMixin';
-import ObservableList from './collections/ObservableList';
-import ObservableMap from './collections/ObservableMap';
-import EventEmitter from './EventEmitter';
+import { Cell } from './Cell';
+import { FreezableCollectionMixin } from './collections/FreezableCollectionMixin';
+import { ObservableCollectionMixin } from './collections/ObservableCollectionMixin';
+import { ObservableList } from './collections/ObservableList';
+import { ObservableMap } from './collections/ObservableMap';
+import { EventEmitter } from './EventEmitter';
 import { KEY_CELL_MAP } from './keys';
 
 var hasOwn = Object.prototype.hasOwnProperty;
@@ -106,6 +107,7 @@ cellx.configure = function(config) {
 };
 
 cellx.EventEmitter = EventEmitter;
+cellx.FreezableCollectionMixin = FreezableCollectionMixin;
 cellx.ObservableCollectionMixin = ObservableCollectionMixin;
 cellx.ObservableMap = ObservableMap;
 cellx.ObservableList = ObservableList;

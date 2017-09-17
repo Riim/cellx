@@ -44,7 +44,7 @@ describe('cellx', () => {
 			.toBeInstanceOf(cellx.Cell);
 	});
 
-	it('должна позволять использование в прототипе', () => {
+	it('позволяет использование в прототипе', () => {
 		function A() {}
 		A.prototype.prop1 = cellx([1, 2, 3]);
 		A.prototype.prop2 = cellx(() => { return [1, 2, 3]; });

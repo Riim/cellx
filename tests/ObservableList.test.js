@@ -312,7 +312,7 @@ describe('ObservableList', () => {
 			.toBe('1,2,3');
 	});
 
-	test('должен понимать отрицательные индексы', () => {
+	test('понимает отрицательные индексы', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
 		expect(list.get(-3))
@@ -322,7 +322,7 @@ describe('ObservableList', () => {
 			.toBe(2);
 	});
 
-	test('должен поддерживать перебор for-of-ом', () => {
+	test('поддерживает перебор for-of-ом', () => {
 		let list = new ObservableList([1, 2, 3]);
 		let result = [];
 

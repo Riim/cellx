@@ -1,7 +1,7 @@
 import { Map } from '@riim/map-set-polyfill';
-import EventEmitter from '../EventEmitter';
+import { EventEmitter } from '../EventEmitter';
 
-export default function ObservableCollectionMixin() {
+export function ObservableCollectionMixin() {
 	/**
 	 * @type {Map<*, uint>}
 	 */

@@ -1,9 +1,9 @@
 import { Symbol } from '@riim/symbol-polyfill';
 import { is } from '@riim/is';
 import { mixin } from '@riim/mixin';
-import EventEmitter from '../EventEmitter';
-import FreezableCollectionMixin from './FreezableCollectionMixin';
-import ObservableCollectionMixin from './ObservableCollectionMixin';
+import { EventEmitter } from '../EventEmitter';
+import { FreezableCollectionMixin } from './FreezableCollectionMixin';
+import { ObservableCollectionMixin } from './ObservableCollectionMixin';
 
 var push = Array.prototype.push;
 var splice = Array.prototype.splice;
@@ -28,7 +28,7 @@ function defaultComparator(a, b) {
  * });
  * @typesign new ObservableList(items?: Array | cellx.ObservableList, adoptsValueChanges?: boolean);
  */
-export default function ObservableList(items, opts) {
+export function ObservableList(items, opts) {
 	EventEmitter.call(this);
 	FreezableCollectionMixin.call(this);
 	ObservableCollectionMixin.call(this);

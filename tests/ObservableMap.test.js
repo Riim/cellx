@@ -184,7 +184,7 @@ describe('ObservableMap', () => {
 			.toBe(3);
 	});
 
-	test('должна поддерживать перебор for-of-ом', () => {
+	test('поддерживает перебор for-of-ом', () => {
 		let map = new ObservableMap({
 			foo: 1,
 			bar: 2,

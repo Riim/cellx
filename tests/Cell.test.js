@@ -2,11 +2,9 @@ let { EventEmitter, ObservableList, Cell, define } = require('../dist/cellx');
 
 describe('Cell', () => {
 
-	function noop() {}
-
 	test('.afterRelease()', (done) => {
 		let a = new Cell(1);
-		let b = new Cell(() => a.get() + 1, { onChange: noop });
+		let b = new Cell(() => a.get() + 1, { onChange() {} });
 
 		a.set(2);
 
@@ -65,7 +63,7 @@ describe('Cell', () => {
 
 	// Если в get устанавливать _level раньше запуска _tryPull,
 	// то на уровнях 2+ _level всегда будет 1, что как-то не очень хорошо.
-	test('должна минимизировать число лишних вызовов pull', (done) => {
+	test('минимизирует число лишних вызовов pull', (done) => {
 		let a = new Cell(1, { debugKey: 'a' });
 		let b = new Cell(2, { debugKey: 'b' });
 		let c = new Cell(() => b.get() + 1, { debugKey: 'c' });
@@ -74,7 +72,7 @@ describe('Cell', () => {
 
 		let d = new Cell(getD, { debugKey: 'd' });
 
-		d.on('change', noop);
+		d.on('change', function() {});
 
 		getD.mockReset();
 
@@ -89,7 +87,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('не должна создавать событие `change` при установке значения равного текущему', (done) => {
+	test('не создаёт событие `change` при установке значения равного текущему', (done) => {
 		let onChange = jest.fn();
 		let a = new Cell(1, { onChange });
 
@@ -103,7 +101,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('не должна создавать событие `change` при установке значения равного текущему (NaN)', (done) => {
+	test('не создаёт событие `change` при установке значения равного текущему (NaN)', (done) => {
 		let onChange = jest.fn();
 		let a = new Cell(NaN, { onChange });
 
@@ -117,7 +115,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('не должна создавать событие `change`, если вычесляемое значение не меняется (NaN)', (done) => {
+	test('не создаёт событие `change`, если вычесляемое значение не меняется (NaN)', (done) => {
 		let onChange = jest.fn();
 
 		let a = new Cell(1);
@@ -133,7 +131,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('не должна создавать событие `change`, если установить новое значение и сразу вернуть исходное', (done) => {
+	test('не создаёт событие `change`, если установить новое значение и сразу вернуть исходное', (done) => {
 		let onChange = jest.fn();
 		let a = new Cell(1, { onChange });
 
@@ -151,7 +149,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('не должна создавать событие `change` если установить новое значение и сразу вернуть исходное (2)', (done) => {
+	test('не создаёт событие `change` если установить новое значение и сразу вернуть исходное (2)', (done) => {
 		let emitter1 = new EventEmitter();
 		let emitter2 = new EventEmitter();
 
@@ -169,7 +167,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('должна подписываться на внутренние изменения значения-EventEmitter-а и эмиттить их на себе', (done) => {
+	test('подписывается на внутренние изменения значения-EventEmitter-а и эмиттит их на себе', (done) => {
 		let emitter = new EventEmitter();
 
 		let onChange = jest.fn();
@@ -185,7 +183,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('должна подписываться на внутренние изменения значения-EventEmitter-а и эмиттить их на себе (2)', (done) => {
+	test('подписывается на внутренние изменения значения-EventEmitter-а и эмиттит их на себе (2)', (done) => {
 		let emitter = new EventEmitter();
 
 		let onChange = jest.fn();
@@ -206,7 +204,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('не должна создавать событие `change`, если установить новое значение, изменить его (внутреннее изменение) и вернуть исходное значение', (done) => {
+	test('не создаёт событие `change`, если установить новое значение, изменить его (внутреннее изменение) и вернуть исходное значение', (done) => {
 		let emitter1 = new EventEmitter();
 		let emitter2 = new EventEmitter();
 
@@ -227,7 +225,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('должна создавать событие `change`, если измененить текущее значение (внутреннее изменение), установить новое значение и сразу вернуть исходное', (done) => {
+	test('создаёт событие `change`, если измененить текущее значение (внутреннее изменение), установить новое значение и сразу вернуть исходное', (done) => {
 		let emitter1 = new EventEmitter();
 		let emitter2 = new EventEmitter();
 
@@ -247,13 +245,13 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('при инициализации должна вычисляться только 1 раз, даже если родительских ячеек больше одной', (done) => {
+	test('при инициализации вычисляется только 1 раз, даже если родительских ячеек больше одной', (done) => {
 		let a = new Cell(1);
 		let b = new Cell(2);
 
 		let getC = jest.fn(() => a.get() + b.get());
 
-		let c = new Cell(getC, { onChange: noop });
+		let c = new Cell(getC, { onChange() {} });
 
 		setTimeout(() => {
 			expect(getC)
@@ -263,7 +261,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('должна вычисляться только 1 раз, даже если поменять сразу несколько родительских ячеек', (done) => {
+	test('вычисляется только 1 раз, даже если поменять сразу несколько родительских ячеек', (done) => {
 		let a = new Cell(1, { debugKey: 'a' });
 		let b = new Cell(2, { debugKey: 'b' });
 
@@ -271,7 +269,7 @@ describe('Cell', () => {
 
 		let c = new Cell(getC, {
 			debugKey: 'c',
-			onChange: noop
+			onChange() {}
 		});
 
 		setTimeout(() => {
@@ -289,7 +287,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('должна вычисляться только 1 раз, даже если поменять сразу несколько родительских ячеек (2)', (done) => {
+	test('вычисляется только 1 раз, даже если поменять сразу несколько родительских ячеек (2)', (done) => {
 		let a = new Cell(1);
 		let b = new Cell(2);
 		let aa = new Cell(() => a.get() + 1);
@@ -297,7 +295,7 @@ describe('Cell', () => {
 
 		let getC = jest.fn(() => aa.get() + bb.get());
 
-		let c = new Cell(getC, { onChange: noop });
+		let c = new Cell(getC, { onChange() {} });
 
 		setTimeout(() => {
 			getC.mockReset();
@@ -314,7 +312,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('не должна отменять событие `change` при чтении пока событие запланировано', (done) => {
+	test('не отменяет событие `change` при чтении пока событие запланировано', (done) => {
 		let aOnChange = jest.fn(() => {
 			let bValue = b.get();
 		});
@@ -349,7 +347,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('должна правильно вычисляться при записи в родительскую ячейку в формуле', () => {
+	test('правильно вычисляется при записи в родительскую ячейку в формуле', () => {
 		let a = new Cell(1);
 		let b = new Cell(() => a.get() + 1);
 		let c = new Cell(() => {
@@ -366,9 +364,9 @@ describe('Cell', () => {
 			.toBe(12);
 	});
 
-	test('не должна вызывать обработчик `change` при добавлении его после изменения', (done) => {
+	test('не вызывает обработчик `change` при добавлении его после изменения', (done) => {
 		let onChange = jest.fn();
-		let a = new Cell(1, { onChange: noop });
+		let a = new Cell(1, { onChange() {} });
 
 		a.set(2);
 
@@ -382,7 +380,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('должна применять изменения при чтении вычисляемой ячейки', () => {
+	test('применяет изменения при чтении вычисляемой ячейки', () => {
 		let a = new Cell(1);
 		let b = new Cell(() => a.get() + 1);
 
@@ -392,7 +390,7 @@ describe('Cell', () => {
 			.toBe(3);
 	});
 
-	test('не должна применять изменения при чтении невычисляемой ячейки', (done) => {
+	test('не применяет изменения при чтении невычисляемой ячейки', (done) => {
 		let onChange = jest.fn();
 
 		let a = new Cell(1);
@@ -413,7 +411,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('должна распространять ошибку потомкам без дублирования', (done) => {
+	test('распространяет ошибку потомкам без дублирования', (done) => {
 		let bOnError = jest.fn();
 		let c1OnError = jest.fn();
 		let c2OnError = jest.fn();
@@ -453,10 +451,10 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('должна учитывать последний set как более приоритетный', () => {
+	test('учитывает последний set как более приоритетный', () => {
 		let a = new Cell(1);
 		let b = new Cell(() => a.get() + 1);
-		let c = new Cell(() => b.get() + 1, { onChange: noop });
+		let c = new Cell(() => b.get() + 1, { onChange() {} });
 
 		a.set(2);
 		b.set(4);
@@ -465,10 +463,10 @@ describe('Cell', () => {
 			.toBe(5);
 	});
 
-	test('должна учитывать последний set как более приоритетный (2)', () => {
+	test('учитывает последний set как более приоритетный (2)', () => {
 		let a = new Cell(1);
 		let b = new Cell(() => a.get() + 1);
-		let c = new Cell(() => b.get() + 1, { onChange: noop });
+		let c = new Cell(() => b.get() + 1, { onChange() {} });
 
 		b.set(4);
 		a.set(2);
@@ -477,10 +475,10 @@ describe('Cell', () => {
 			.toBe(4);
 	});
 
-	test('должна учитывать последний set как более приоритетный (3)', () => {
+	test('учитывает последний set как более приоритетный (3)', () => {
 		let a = new Cell(1);
 		let b = new Cell(() => a.get() + 1);
-		let c = new Cell(() => b.get() + 1, { onChange: noop });
+		let c = new Cell(() => b.get() + 1, { onChange() {} });
 
 		a.set(2);
 		b.set(2);
@@ -489,7 +487,7 @@ describe('Cell', () => {
 			.toBe(3);
 	});
 
-	test('должна учитывать последний set как более приоритетный (4)', () => {
+	test('учитывает последний set как более приоритетный (4)', () => {
 		let counter = 0;
 		let a = new Cell(() => ++counter);
 		let b = new Cell(() => a.get() + 1);
@@ -501,7 +499,7 @@ describe('Cell', () => {
 			.toBe(2);
 	});
 
-	test('должна учитывать последний set как более приоритетный (5)', () => {
+	test('учитывает последний set как более приоритетный (5)', () => {
 		let counter = 0;
 		let a = new Cell(() => ++counter, { onChange() {} });
 		let b = new Cell(() => a.get() + 1, { onChange() {} });
@@ -513,13 +511,13 @@ describe('Cell', () => {
 			.toBe(3);
 	});
 
-	test('не должна создавать бесконечный цикл', (done) => {
+	test('не создаёт бесконечный цикл', (done) => {
 		let a = new Cell(1);
 		let b = new Cell(() => a.get() + 1);
 		let c = new Cell(() => b.get() + 1);
 
 		let d = new Cell(1);
-		let e = new Cell(() => c.get() + d.get(), { onChange: noop });
+		let e = new Cell(() => c.get() + d.get(), { onChange() {} });
 
 		c.get();
 
@@ -533,7 +531,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('не должна создавать бесконечный цикл (2)', (done) => {
+	test('не создаёт бесконечный цикл (2)', (done) => {
 		let a = new Cell(1);
 		let b = new Cell(() => a.get() + 1, {
 			onChange() {
@@ -541,7 +539,7 @@ describe('Cell', () => {
 			}
 		});
 
-		let c = new Cell(1, { onChange: noop });
+		let c = new Cell(1, { onChange() {} });
 
 		a.set(2);
 
@@ -781,7 +779,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('должна подписывать через EventEmitter', (done) => {
+	test('подписывает через EventEmitter', (done) => {
 		let emitter = new EventEmitter();
 		let onFooChange = jest.fn();
 
@@ -801,7 +799,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('должна поддерживать перебор for-of-ом', () => {
+	test('поддерживает перебор for-of-ом', () => {
 		let list = new Cell(new ObservableList([1, 2, 3]));
 		let result = [];
 
@@ -813,9 +811,9 @@ describe('Cell', () => {
 			.toEqual([1, 2, 3]);
 	});
 
-	test('должна позволять запись даже если является вычисляемой', () => {
+	test('позволяет запись даже если является вычисляемой', () => {
 		let a = new Cell(1);
-		let b = new Cell(() => a.get() + 1, { onChange: noop });
+		let b = new Cell(() => a.get() + 1, { onChange() {} });
 
 		b.set(5);
 
@@ -825,7 +823,7 @@ describe('Cell', () => {
 			.toBe(5);
 	});
 
-	test('должна позволять запись даже если является вычисляемой 2', () => {
+	test('позволяет запись даже если является вычисляемой 2', () => {
 		let a = new Cell(1);
 		let b = new Cell(() => a.get() + 1);
 
@@ -837,7 +835,7 @@ describe('Cell', () => {
 			.toBe(5);
 	});
 
-	test('должна минимизировать число лишних вызовов pull (3)', (done) => {
+	test('минимизирует число лишних вызовов pull (3)', (done) => {
 		let a = new Cell({ x: 1 });
 		let b = new Cell(() => a.get(), { onChange(evt) {
 			if (evt.value) {
@@ -847,7 +845,7 @@ describe('Cell', () => {
 			}
 		} });
 		let getC = jest.fn(() => a.get().x);
-		let c = new Cell(getC, { onChange: noop });
+		let c = new Cell(getC, { onChange() {} });
 
 		a.set(null);
 
@@ -859,7 +857,7 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('должна инициализироваться устанавливаемым значением даже если вычисляемая', () => {
+	test('инициализируется устанавливаемым значением даже если вычисляемая', () => {
 		let a = new Cell(() => 1);
 		let b = new Cell(2);
 
@@ -870,7 +868,7 @@ describe('Cell', () => {
 			.toEqual(5);
 	});
 
-	test('должна инициализироваться устанавливаемым значением даже если вычисляемая (2)', () => {
+	test('инициализируется устанавливаемым значением даже если вычисляемая (2)', () => {
 		let a = new Cell(() => 1);
 		let b = new Cell(2);
 
@@ -881,6 +879,29 @@ describe('Cell', () => {
 
 		expect(a.get())
 			.toBe(5);
+	});
+
+	test.skip('немедленно учитывает изменения внесённые во время релиза', () => {
+		let cOnChange = jest.fn();
+
+		let a = new Cell(1, { onChange() {} });
+		let b = new Cell(() => a.get(), { onChange() {} });
+		let c = new Cell(1);
+		let d = new Cell(() => {
+			if (c.get() > 1) {
+				a.set(2);
+			}
+
+			return c.get();
+		});
+
+		c.set(2);
+
+		expect(b.get())
+			.toBe(2);
+
+		expect(cOnChange)
+			.toHaveBeenCalledTimes(1);
 	});
 
 });

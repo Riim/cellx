@@ -2,7 +2,7 @@ let { Map } = require('@riim/map-set-polyfill');
 
 describe('Map', () => {
 
-	test('должна позволять использовать замороженный объект как ключ', () => {
+	test('позволяет использовать замороженный объект как ключ', () => {
 		let obj = Object.freeze({});
 
 		let map = new Map();

@@ -5,13 +5,13 @@ export default {
 	input: 'src/cellx.js',
 
 	external: [
-		'@riim/logger',
-		'@riim/object-assign-polyfill',
-		'@riim/symbol-polyfill',
-		'@riim/map-set-polyfill',
 		'@riim/is',
+		'@riim/logger',
+		'@riim/map-set-polyfill',
 		'@riim/mixin',
-		'@riim/next-tick'
+		'@riim/next-tick',
+		'@riim/object-assign-polyfill',
+		'@riim/symbol-polyfill'
 	],
 
 	plugins: [
@@ -27,13 +27,13 @@ export default {
 		name: 'cellx',
 
 		globals: {
-			'@riim/logger': 'errorLogger',
-			'@riim/object-assign-polyfill': 'objectAssignPolyfill',
-			'@riim/symbol-polyfill': 'symbolPolyfill',
-			'@riim/map-set-polyfill': 'mapSetPolyfill',
 			'@riim/is': 'is',
+			'@riim/logger': 'errorLogger',
+			'@riim/map-set-polyfill': 'mapSetPolyfill',
 			'@riim/mixin': 'mixin',
-			'@riim/next-tick': 'nextTick'
+			'@riim/next-tick': 'nextTick',
+			'@riim/object-assign-polyfill': 'objectAssignPolyfill',
+			'@riim/symbol-polyfill': 'symbolPolyfill'
 		}
 	}
 };
