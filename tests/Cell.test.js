@@ -639,75 +639,6 @@ describe('Cell', () => {
 			.toHaveBeenCalledTimes(1);
 	});
 
-	test('#then()', (done) => {
-		let a = new Cell((cell) => {
-			setTimeout(() => {
-				cell.push(5);
-			}, 1);
-		});
-
-		a.then((value) => {
-			expect(value)
-				.toBe(5);
-
-			expect(a.get())
-				.toBe(5);
-
-			done();
-		});
-	});
-
-	test('#then() 2', (done) => {
-		let a = new Cell(1);
-
-		a.then((value) => {
-			expect(value)
-				.toBe(1);
-
-			expect(a.get())
-				.toBe(1);
-
-			done();
-		});
-	});
-
-	test('#then() 3', (done) => {
-		let a = new Cell((cell) => {
-			setTimeout(() => {
-				cell.push(5);
-			}, 1);
-		});
-		let b = new Cell(() => a.get() + 1);
-
-		b.then((value) => {
-			expect(value)
-				.toBe(6);
-
-			expect(a.get())
-				.toBe(5);
-
-			done();
-		});
-	});
-
-	test('#catch()', (done) => {
-		let a = new Cell((cell) => {
-			setTimeout(() => {
-				cell.fail('5');
-			}, 1);
-		});
-
-		a.catch((err) => {
-			expect(err.message)
-				.toBe('5');
-
-			expect(a.getError())
-				.toBe(err);
-
-			done();
-		});
-	});
-
 	test('#isPending()', (done) => {
 		let cOnChange = jest.fn();
 		let loadingOnChange = jest.fn();
@@ -838,7 +769,7 @@ describe('Cell', () => {
 	test('минимизирует число лишних вызовов pull (3)', (done) => {
 		let a = new Cell({ x: 1 });
 		let b = new Cell(() => a.get(), { onChange(evt) {
-			if (evt.value) {
+			if (evt.data.value.x) {
 				c = new Cell(() => a.get().x);
 			} else {
 				c.dispose();
@@ -847,11 +778,11 @@ describe('Cell', () => {
 		let getC = jest.fn(() => a.get().x);
 		let c = new Cell(getC, { onChange() {} });
 
-		a.set(null);
+		a.set({ x: 0 });
 
 		setTimeout(() => {
 			expect(getC)
-				.toHaveBeenCalledTimes(1);
+				.toHaveBeenCalledTimes(2);
 
 			done();
 		}, 1);
@@ -881,27 +812,28 @@ describe('Cell', () => {
 			.toBe(5);
 	});
 
-	test.skip('немедленно учитывает изменения внесённые во время релиза', () => {
-		let cOnChange = jest.fn();
+	test('увеличение level ячейки с изменением releasePlanIndex', () => {
+		let list = new ObservableList([1]);
+		let $ = new Cell(list, { debugKey: '$' });
+		let a = new Cell(1, { debugKey: 'a' });
+		let b = new Cell(() => a.get() + $.get().get(0), { debugKey: 'b' });
+		let c = new Cell(() => b.get() + 1, { debugKey: 'c'});
 
-		let a = new Cell(1, { onChange() {} });
-		let b = new Cell(() => a.get(), { onChange() {} });
-		let c = new Cell(1);
+		c.get();
+
 		let d = new Cell(() => {
-			if (c.get() > 1) {
-				a.set(2);
+			if (a.get() == 2) {
+				list.set(0, 2);
+				return c.get();
 			}
 
-			return c.get();
-		});
+			return a.get();
+		}, { debugKey: 'd', onChange() {} });
 
-		c.set(2);
+		a.set(2);
 
-		expect(b.get())
-			.toBe(2);
-
-		expect(cOnChange)
-			.toHaveBeenCalledTimes(1);
+		expect(d.get())
+			.toBe(5);
 	});
 
 });

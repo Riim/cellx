@@ -273,33 +273,33 @@ var releasePlan = new mapSetPolyfill.Map();
 var releasePlanIndex = MAX_SAFE_INTEGER;
 var releasePlanToIndex = -1;
 var releasePlanned = false;
-var currentlyRelease = false;
+var currentlyRelease = 0;
 var currentCell = null;
 var $error = { error: null };
 var releaseVersion = 1;
 
-var transactionLevel = 0;
+var currentlyTransaction = 0;
 var transactionFailure = false;
 var pendingReactions = [];
 
+var afterReleasePushings;
 var afterReleaseCallbacks;
 
 var STATE_INITED = 1;
-var STATE_CURRENTLY_PULLING = 1 << 1;
-var STATE_ACTIVE = 1 << 2;
-var STATE_HAS_FOLLOWERS = 1 << 3;
-var STATE_PENDING = 1 << 4;
-var STATE_FULFILLED = 1 << 5;
-var STATE_REJECTED = 1 << 6;
-var STATE_CAN_CANCEL_CHANGE = 1 << 7;
+var STATE_NOT_RELEASED = 1 << 1;
+var STATE_CURRENTLY_PULLING = 1 << 2;
+var STATE_ACTIVE = 1 << 3;
+var STATE_HAS_FOLLOWERS = 1 << 4;
+var STATE_PENDING = 1 << 5;
+var STATE_CAN_CANCEL_CHANGE = 1 << 6;
 
-function release() {
-	if (!releasePlanned) {
+function release(force) {
+	if (!releasePlanned && !force) {
 		return;
 	}
 
 	releasePlanned = false;
-	currentlyRelease = true;
+	currentlyRelease++;
 
 	var queue = releasePlan.get(releasePlanIndex);
 
@@ -358,7 +358,14 @@ function release() {
 			cell._fixedValue = cell._value;
 			cell._changeEvent = null;
 
+			cell._state |= STATE_NOT_RELEASED;
 			cell._handleEvent(changeEvent);
+
+			if (!(cell._state & STATE_NOT_RELEASED)) {
+				break;
+			}
+
+			cell._state ^= STATE_NOT_RELEASED;
 
 			var pushingIndex = cell._pushingIndex;
 			var slaves = cell._slaves;
@@ -377,6 +384,10 @@ function release() {
 					slave._addToRelease();
 				}
 			}
+
+			if (releasePlanIndex == MAX_SAFE_INTEGER) {
+				break;
+			}
 		}
 
 		if (releasePlanIndex == oldReleasePlanIndex) {
@@ -392,18 +403,29 @@ function release() {
 		}
 	}
 
-	releasePlanIndex = MAX_SAFE_INTEGER;
-	releasePlanToIndex = -1;
-	currentlyRelease = false;
-	releaseVersion++;
+	if (! --currentlyRelease) {
+		releasePlanIndex = MAX_SAFE_INTEGER;
+		releasePlanToIndex = -1;
+		releaseVersion++;
 
-	if (afterReleaseCallbacks) {
-		var callbacks = afterReleaseCallbacks;
+		if (afterReleasePushings) {
+			var pushings = afterReleasePushings;
 
-		afterReleaseCallbacks = null;
+			afterReleasePushings = null;
 
-		for (var i = 0, l = callbacks.length; i < l; i++) {
-			callbacks[i]();
+			for (var i = 0, l = pushings.length; i < l; i += 2) {
+				pushings[i]._push(pushings[i + 1], true, false);
+			}
+		}
+
+		if (afterReleaseCallbacks) {
+			var callbacks = afterReleaseCallbacks;
+
+			afterReleaseCallbacks = null;
+
+			for (var i = 0, l = callbacks.length; i < l; i++) {
+				callbacks[i]();
+			}
 		}
 	}
 }
@@ -478,8 +500,6 @@ function Cell(value, opts) {
 	this._merge = opts && opts.merge || null;
 	this._put = opts && opts.put || defaultPut;
 
-	this._onFulfilled = this._onRejected = null;
-
 	this._reap = opts && opts.reap || null;
 
 	if (this._pull) {
@@ -524,8 +544,6 @@ function Cell(value, opts) {
 	this._selfPendingStatusCell = null;
 	this._pendingStatusCell = null;
 
-	this._status = null;
-
 	this._changeEvent = null;
 	this._lastErrorEvent = null;
 
@@ -547,8 +565,8 @@ mixin.mixin(Cell, {
   */
 	configure: function configure(cnfg) {
 		if (cnfg.asynchronous !== undefined) {
-			if (releasePlanned) {
-				release();
+			if (releasePlanned || currentlyRelease) {
+				release(true);
 			}
 
 			config.asynchronous = cnfg.asynchronous;
@@ -577,7 +595,7 @@ mixin.mixin(Cell, {
 				};
 			}
 
-			if (transactionLevel) {
+			if (currentlyTransaction) {
 				var index = pendingReactions.indexOf(this);
 
 				if (index != -1) {
@@ -597,8 +615,8 @@ mixin.mixin(Cell, {
   * @typesign ();
   */
 	forceRelease: function forceRelease() {
-		if (releasePlanned) {
-			release();
+		if (releasePlanned || currentlyRelease) {
+			release(true);
 		}
 	},
 
@@ -606,8 +624,8 @@ mixin.mixin(Cell, {
   * @typesign (callback: ());
   */
 	transaction: function transaction(callback) {
-		if (!transactionLevel++ && releasePlanned) {
-			release();
+		if (!currentlyTransaction++ && (releasePlanned || currentlyRelease)) {
+			release(true);
 		}
 
 		try {
@@ -636,7 +654,7 @@ mixin.mixin(Cell, {
 			pendingReactions.length = 0;
 		}
 
-		if (! --transactionLevel && !transactionFailure) {
+		if (! --currentlyTransaction && !transactionFailure) {
 			for (var i = 0, l = pendingReactions.length; i < l; i++) {
 				var reaction = pendingReactions[i];
 
@@ -670,7 +688,7 @@ Cell.prototype = {
 	constructor: Cell,
 
 	_handleEvent: function _handleEvent(evt) {
-		if (transactionLevel) {
+		if (currentlyTransaction) {
 			pendingReactions.push([evt, this]);
 		} else {
 			EventEmitterProto._handleEvent.call(this, evt);
@@ -681,8 +699,8 @@ Cell.prototype = {
   * @override
   */
 	on: function on(type, listener, context) {
-		if (releasePlanned) {
-			release();
+		if (releasePlanned || currentlyRelease) {
+			release(true);
 		}
 
 		this._activate();
@@ -702,8 +720,8 @@ Cell.prototype = {
   * @override
   */
 	off: function off(type, listener, context) {
-		if (releasePlanned) {
-			release();
+		if (releasePlanned || currentlyRelease) {
+			release(true);
 		}
 
 		if (type) {
@@ -909,7 +927,7 @@ Cell.prototype = {
 		if (!releasePlanned && !currentlyRelease) {
 			releasePlanned = true;
 
-			if (!transactionLevel && !config.asynchronous) {
+			if (!currentlyTransaction && !config.asynchronous) {
 				release();
 			} else {
 				nextTick.nextTick(release);
@@ -943,8 +961,8 @@ Cell.prototype = {
   * @typesign () -> *;
   */
 	get: function get() {
-		if (releasePlanned && this._pull) {
-			release();
+		if ((releasePlanned || currentlyRelease && !currentCell) && this._pull) {
+			release(true);
 		}
 
 		if (this._pull && !(this._state & STATE_ACTIVE) && this._version < releaseVersion && this._masters !== null) {
@@ -1078,8 +1096,6 @@ Cell.prototype = {
 			if (this._selfPendingStatusCell) {
 				this._selfPendingStatusCell.set(true);
 			}
-
-			this._state &= ~(STATE_FULFILLED | STATE_REJECTED);
 		}
 
 		var prevCell = currentCell;
@@ -1097,7 +1113,7 @@ Cell.prototype = {
 		} finally {
 			currentCell = prevCell;
 
-			this._version = releaseVersion + currentlyRelease;
+			this._version = releaseVersion + (currentlyRelease > 0);
 
 			var pendingStatusCell = this._pendingStatusCell;
 
@@ -1130,12 +1146,12 @@ Cell.prototype = {
 				this.get();
 
 				var err = this._selfErrorCell.get();
-				var index;
+				var errorIndex;
 
 				if (err) {
-					index = this._errorIndex;
+					errorIndex = this._errorIndex;
 
-					if (index == errorIndexCounter) {
+					if (errorIndex == errorIndexCounter) {
 						return err;
 					}
 				}
@@ -1156,9 +1172,9 @@ Cell.prototype = {
 								return masterError;
 							}
 
-							if (!err || index < masterErrorIndex) {
+							if (!err || errorIndex < masterErrorIndex) {
 								err = masterError;
-								index = masterErrorIndex;
+								errorIndex = masterErrorIndex;
 							}
 						}
 					} while (i);
@@ -1208,26 +1224,6 @@ Cell.prototype = {
 		return pendingStatusCell.get();
 	},
 
-	getStatus: function getStatus() {
-		var status = this._status;
-
-		if (!status) {
-			var cell = this;
-
-			status = this._status = {
-				get success() {
-					return !cell.getError();
-				},
-
-				get pending() {
-					return cell.isPending();
-				}
-			};
-		}
-
-		return status;
-	},
-
 	/**
   * @typesign (value) -> this;
   */
@@ -1243,8 +1239,6 @@ Cell.prototype = {
 		if (this._selfPendingStatusCell) {
 			this._selfPendingStatusCell.set(true);
 		}
-
-		this._state &= ~(STATE_FULFILLED | STATE_REJECTED);
 
 		if (this._put.length >= 3) {
 			this._put.call(this.context, this, value, this._value);
@@ -1269,17 +1263,29 @@ Cell.prototype = {
 	_push: function _push(value, external, pulling) {
 		this._state |= STATE_INITED;
 
+		var oldValue = this._value;
+
+		if (external && currentCell && this._state & STATE_HAS_FOLLOWERS) {
+			if (is.is(value, oldValue)) {
+				this._setError(null);
+				this._resolvePending();
+				return false;
+			}
+
+			(afterReleasePushings || (afterReleasePushings = [])).push(this, value);
+
+			return true;
+		}
+
 		if (external || !currentlyRelease && pulling) {
 			this._pushingIndex = ++pushingIndexCounter;
 		}
 
 		this._setError(null);
 
-		var oldValue = this._value;
-
 		if (is.is(value, oldValue)) {
 			if (external || currentlyRelease && pulling) {
-				this._fulfill(value);
+				this._resolvePending();
 			}
 
 			return false;
@@ -1294,7 +1300,7 @@ Cell.prototype = {
 			value.on('change', this._onValueChange, this);
 		}
 
-		if (this._state & STATE_HAS_FOLLOWERS || transactionLevel) {
+		if (this._state & STATE_HAS_FOLLOWERS || currentlyTransaction) {
 			if (this._changeEvent) {
 				if (is.is(value, this._fixedValue) && this._state & STATE_CAN_CANCEL_CHANGE) {
 					this._levelInRelease = -1;
@@ -1330,29 +1336,14 @@ Cell.prototype = {
 			}
 
 			this._fixedValue = value;
-			this._version = releaseVersion + currentlyRelease;
+			this._version = releaseVersion + (currentlyRelease > 0);
 		}
 
 		if (external || currentlyRelease && pulling) {
-			this._fulfill(value);
+			this._resolvePending();
 		}
 
 		return true;
-	},
-
-	/**
-  * @typesign (value);
-  */
-	_fulfill: function _fulfill(value) {
-		this._resolvePending();
-
-		if (!(this._state & STATE_FULFILLED)) {
-			this._state |= STATE_FULFILLED;
-
-			if (this._onFulfilled) {
-				this._onFulfilled(value);
-			}
-		}
 	},
 
 	/**
@@ -1367,7 +1358,7 @@ Cell.prototype = {
   * @typesign (err, external: boolean);
   */
 	_fail: function _fail(err, external) {
-		if (transactionLevel) {
+		if (currentlyTransaction) {
 			transactionFailure = true;
 		}
 
@@ -1380,7 +1371,7 @@ Cell.prototype = {
 		this._setError(err);
 
 		if (external) {
-			this._reject(err);
+			this._resolvePending();
 		}
 	},
 
@@ -1428,21 +1419,6 @@ Cell.prototype = {
 	},
 
 	/**
-  * @typesign (err: Error);
-  */
-	_reject: function _reject(err) {
-		this._resolvePending();
-
-		if (!(this._state & STATE_REJECTED)) {
-			this._state |= STATE_REJECTED;
-
-			if (this._onRejected) {
-				this._onRejected(err);
-			}
-		}
-	},
-
-	/**
   * @typesign ();
   */
 	_resolvePending: function _resolvePending() {
@@ -1453,65 +1429,6 @@ Cell.prototype = {
 				this._selfPendingStatusCell.set(false);
 			}
 		}
-	},
-
-	/**
-  * @typesign (onFulfilled: ?(value) -> *, onRejected?: (err) -> *) -> Promise;
-  */
-	then: function then(onFulfilled, onRejected) {
-		if (releasePlanned) {
-			release();
-		}
-
-		if (!this._pull || this._state & STATE_FULFILLED) {
-			return Promise.resolve(this._get ? this._get(this._value) : this._value).then(onFulfilled);
-		}
-		if (this._state & STATE_REJECTED) {
-			return Promise.reject(this._error).catch(onRejected);
-		}
-
-		var cell = this;
-
-		var promise = new Promise(function (resolve, reject) {
-			cell._onFulfilled = function onFulfilled(value) {
-				cell._onFulfilled = cell._onRejected = null;
-				resolve(cell._get ? cell._get(value) : value);
-			};
-
-			cell._onRejected = function onRejected(err) {
-				cell._onFulfilled = cell._onRejected = null;
-				reject(err);
-			};
-		}).then(onFulfilled, onRejected);
-
-		if (!(this._state & STATE_PENDING)) {
-			this.pull();
-		}
-
-		if (cell.isPending()) {
-			cell._pendingStatusCell.on('change', (function onPendingStatusCellChange() {
-				cell._pendingStatusCell.off('change', onPendingStatusCellChange);
-
-				if (!(cell._state & STATE_FULFILLED) && !(cell._state & STATE_REJECTED)) {
-					var err = cell.getError();
-
-					if (err) {
-						cell._reject(err);
-					} else {
-						cell._fulfill(cell._get ? cell._get(cell._value) : cell._value);
-					}
-				}
-			}));
-		}
-
-		return promise;
-	},
-
-	/**
-  * @typesign (onRejected: (err) -> *) -> Promise;
-  */
-	catch: function catch_(onRejected) {
-		return this.then(null, onRejected);
 	},
 
 	/**

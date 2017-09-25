@@ -222,14 +222,12 @@ declare namespace Cellx {
 		get(): T;
 		pull(): boolean;
 		getError(): Error;
+		isPending(): boolean;
 		set(value: T): this;
 		push(value: any): this;
 		fail(err: any): this;
 
-		isPending(): boolean;
-		then<R = any>(onFulfilled: (value: T) => any, onRejected?: (err: any) => any): Promise<R>;
-		catch<R = any>(onRejected: (err: any) => any): Promise<R>;
-
+		reap(): this;
 		dispose(): this;
 	}
 
