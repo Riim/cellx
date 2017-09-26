@@ -198,11 +198,9 @@ declare namespace Cellx {
 	type ICellEvent = ICellChangeEvent | ICellErrorEvent;
 
 	export class Cell<T = any> extends EventEmitter {
-		static configure(config: { asynchronous?: boolean }): void;
 		static readonly currentlyPulling: boolean;
 		static autorun(callback: () => void, context?: any): () => void;
 		static forceRelease(): void;
-		static transaction(callback: () => void): void;
 		static afterRelease(callback: () => void): void;
 
 		readonly debugKey: string;
@@ -232,9 +230,6 @@ declare namespace Cellx {
 	}
 
 	export function autorun(callback: () => void, context?: any): () => void;
-
-	export function transact(callback: () => void): void;
-	export function transaction(callback: () => void): void;
 
 	export let KEY_CELL_MAP: symbol;
 

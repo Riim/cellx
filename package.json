@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.7.53",
+  "version": "1.7.55",
   "description": "",
   "main": "dist/cellx.js",
   "typings": "src/cellx.d.ts",
@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/Riim/cellx",
   "devDependencies": {
-    "babel-eslint": "^8.0.0",
+    "babel-eslint": "^8.0.1",
     "babel-plugin-transform-es2015-shorthand-properties": "^6.24.1",
     "gulp": "^3.9.1",
     "gulp-optimize-js": "^1.1.0",
@@ -37,7 +37,7 @@
     "rollup-plugin-babel": "^3.0.2",
     "rollup-plugin-eslint": "^4.0.0",
     "run-sequence": "^2.2.0",
-    "typescript": "^2.5.2"
+    "typescript": "^2.5.3"
   },
   "dependencies": {
     "@riim/is": "^1.0.0",

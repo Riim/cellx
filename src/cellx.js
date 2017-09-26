@@ -102,10 +102,6 @@ export default function cellx(value, opts) {
 	return cx;
 }
 
-cellx.configure = function(config) {
-	Cell.configure(config);
-};
-
 cellx.EventEmitter = EventEmitter;
 cellx.FreezableCollectionMixin = FreezableCollectionMixin;
 cellx.ObservableCollectionMixin = ObservableCollectionMixin;
@@ -113,7 +109,6 @@ cellx.ObservableMap = ObservableMap;
 cellx.ObservableList = ObservableList;
 cellx.Cell = Cell;
 cellx.autorun = Cell.autorun;
-cellx.transact = cellx.transaction = Cell.transaction;
 cellx.KEY_CELL_MAP = KEY_CELL_MAP;
 
 /**
