@@ -26,12 +26,11 @@ var releaseVersion = 1;
 var afterRelease;
 
 var STATE_INITED = 1;
-var STATE_NOT_RELEASED = 1 << 1;
-var STATE_CURRENTLY_PULLING = 1 << 2;
-var STATE_ACTIVE = 1 << 3;
-var STATE_HAS_FOLLOWERS = 1 << 4;
-var STATE_PENDING = 1 << 5;
-var STATE_CAN_CANCEL_CHANGE = 1 << 6;
+var STATE_CURRENTLY_PULLING = 1 << 1;
+var STATE_ACTIVE = 1 << 2;
+var STATE_HAS_FOLLOWERS = 1 << 3;
+var STATE_PENDING = 1 << 4;
+var STATE_CAN_CANCEL_CHANGE = 1 << 5;
 
 function release(force) {
 	if (!releasePlanned && !force) {
@@ -77,13 +76,9 @@ function release(force) {
 
 			level = cell._level;
 
-			if (level > oldReleasePlanIndex) {
-				if (releasePlanIndex == oldReleasePlanIndex) {
-					if (!queue.length) {
-						queue = releasePlan.get(++releasePlanIndex);
-					}
-				} else {
-					queue = releasePlan.get(releasePlanIndex);
+			if (level > releasePlanIndex) {
+				if (!queue.length) {
+					queue = releasePlan.get(++releasePlanIndex);
 				}
 
 				continue;
@@ -116,30 +111,26 @@ function release(force) {
 				}
 			}
 
-			cell._state |= STATE_NOT_RELEASED;
+			var oldReleasePlanIndex = releasePlanIndex;
+
 			cell._handleEvent(changeEvent);
-
-			if (!(cell._state & STATE_NOT_RELEASED)) {
-				break;
-			}
-
-			cell._state ^= STATE_NOT_RELEASED;
 
 			if (releasePlanIndex == MAX_SAFE_INTEGER) {
 				break;
 			}
+
+			if (releasePlanIndex != oldReleasePlanIndex) {
+				queue = releasePlan.get(releasePlanIndex);
+				continue;
+			}
 		}
 
-		if (releasePlanIndex == oldReleasePlanIndex) {
-			if (!queue.length) {
-				if (releasePlanIndex == releasePlanToIndex) {
-					break;
-				}
-
-				queue = releasePlan.get(++releasePlanIndex);
+		if (!queue.length) {
+			if (releasePlanIndex == releasePlanToIndex) {
+				break;
 			}
-		} else {
-			queue = releasePlan.get(releasePlanIndex);
+
+			queue = releasePlan.get(++releasePlanIndex);
 		}
 	}
 
