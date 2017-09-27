@@ -632,30 +632,32 @@ Cell.prototype = {
 	 * @typesign () -> *;
 	 */
 	get: function get() {
-		if ((releasePlanned || (currentlyRelease && !currentCell)) && this._pull) {
-			release(true);
-		}
-
-		if (this._pull && !(this._state & STATE_ACTIVE) && this._version < releaseVersion && this._masters !== null) {
-			var oldMasters = this._masters;
-			var value = this._tryPull();
-			var masters = this._masters;
-
-			if (oldMasters || masters || !(this._state & STATE_INITED)) {
-				if (masters && (this._state & STATE_HAS_FOLLOWERS)) {
-					var i = masters.length;
-
-					do {
-						masters[--i]._registerSlave(this);
-					} while (i);
-
-					this._state |= STATE_ACTIVE;
+		if (this._pull) {
+			if (this._state & STATE_ACTIVE) {
+				if (releasePlanned || (currentlyRelease && !currentCell)) {
+					release(true);
 				}
+			} else if (this._version < (releaseVersion + (currentlyRelease > 0)) && this._masters !== null) {
+				var oldMasters = this._masters;
+				var value = this._tryPull();
+				var masters = this._masters;
 
-				if (value === $error) {
-					this._fail($error.error, false);
-				} else {
-					this._push(value, false, false);
+				if (oldMasters || masters || !(this._state & STATE_INITED)) {
+					if (masters && (this._state & STATE_HAS_FOLLOWERS)) {
+						var i = masters.length;
+
+						do {
+							masters[--i]._registerSlave(this);
+						} while (i);
+
+						this._state |= STATE_ACTIVE;
+					}
+
+					if (value === $error) {
+						this._fail($error.error, false);
+					} else {
+						this._push(value, false, false);
+					}
 				}
 			}
 		}

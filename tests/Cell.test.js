@@ -812,28 +812,17 @@ describe('Cell', () => {
 			.toBe(5);
 	});
 
-	test('увеличение level ячейки с изменением releasePlanIndex', () => {
-		let list = new ObservableList([1]);
-		let $ = new Cell(list, { debugKey: '$' });
+	test('рекурсивно запускает релиз при чтении в обработчике', (done) => {
 		let a = new Cell(1, { debugKey: 'a' });
-		let b = new Cell(() => a.get() + $.get().get(0), { debugKey: 'b' });
-		let c = new Cell(() => b.get() + 1, { debugKey: 'c'});
+		let b = new Cell(() => a.get(), { debugKey: 'b', onChange() {
+			expect(c.get())
+				.toBe(2);
 
-		c.get();
-
-		let d = new Cell(() => {
-			if (a.get() == 2) {
-				list.set(0, 2);
-				return c.get();
-			}
-
-			return a.get();
-		}, { debugKey: 'd', onChange() {} });
+			done();
+		} });
+		let c = new Cell(() => b.get(), { debugKey: 'c', onChange() {} });
 
 		a.set(2);
-
-		expect(d.get())
-			.toBe(5);
 	});
 
 });
