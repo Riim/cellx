@@ -826,6 +826,7 @@ function release(force) {
             queue = releasePlan.get(++releasePlanIndex);
             continue;
         }
+        var oldReleasePlanIndex = releasePlanIndex;
         var level = cell._level;
         var changeEvent = cell._changeEvent;
         if (!changeEvent) {
@@ -865,7 +866,6 @@ function release(force) {
                     slave._addToRelease();
                 }
             }
-            var oldReleasePlanIndex = releasePlanIndex;
             cell.handleEvent(changeEvent);
             if (releasePlanIndex == MAX_SAFE_INTEGER) {
                 break;

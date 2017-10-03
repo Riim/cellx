@@ -83,6 +83,8 @@ function release(force?: boolean) {
 			continue;
 		}
 
+		let oldReleasePlanIndex = releasePlanIndex;
+
 		let level = cell._level;
 		let changeEvent = cell._changeEvent;
 
@@ -137,8 +139,6 @@ function release(force?: boolean) {
 					slave._addToRelease();
 				}
 			}
-
-			let oldReleasePlanIndex = releasePlanIndex;
 
 			cell.handleEvent(changeEvent);
 
