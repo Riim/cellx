@@ -1,4 +1,4 @@
-let { ObservableList } = require('../dist/cellx');
+let { ObservableList } = require('../dist/cellx.umd');
 
 describe('ObservableList', () => {
 

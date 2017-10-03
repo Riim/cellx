@@ -1,4 +1,4 @@
-let cellx = require('../dist/cellx');
+let { Cell, cellx } = require('../dist/cellx.umd');
 
 describe('cellx', () => {
 
@@ -41,7 +41,7 @@ describe('cellx', () => {
 		let aa = a('unwrap', 0);
 
 		expect(aa)
-			.toBeInstanceOf(cellx.Cell);
+			.toBeInstanceOf(Cell);
 	});
 
 	it('позволяет использование в прототипе', () => {

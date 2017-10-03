@@ -1,0 +1,19 @@
+{
+	"compilerOptions": {
+		"allowSyntheticDefaultImports": true,
+		"declaration": true,
+		"experimentalDecorators": true,
+		"lib": ["dom", "es2017"],
+		"module": "commonjs",
+		"noImplicitAny": true,
+		"noImplicitReturns": true,
+		"noUnusedLocals": true,
+		"outDir": "dist",
+		"preserveConstEnums": true,
+		"strictNullChecks": true,
+		"target": "es5"
+	},
+	"files": [
+		"src/cellx.ts"
+	]
+}

@@ -1,4 +1,4 @@
-let { EventEmitter } = require('../dist/cellx');
+let { EventEmitter } = require('../dist/cellx.umd');
 
 describe('EventEmitter', () => {
 

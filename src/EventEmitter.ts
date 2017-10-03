@@ -1,49 +1,36 @@
 import { error } from '@riim/logger';
 import { Map } from '@riim/map-set-polyfill';
 
-/**
- * @typedef {{
- *     target?: Object,
- *     type: string,
- *     bubbles?: boolean,
- *     isPropagationStopped?: boolean
- * }} cellx~Event
- */
-
-/**
- * @typedef {(evt: cellx~Event) -> ?boolean} cellx~Listener
- */
-
-/**
- * @typedef {{
- *     listener: cellx~Listener,
- *     context
- * }} cellx~RegisteredEvent
- */
-
-/**
- * @class cellx.EventEmitter
- * @extends {Object}
- * @typesign new EventEmitter();
- */
-export function EventEmitter() {
-	/**
-	 * @type {{ [type: string]: cellx~RegisteredEvent | Array<cellx~RegisteredEvent> }}
-	 */
-	this._events = new Map();
+export interface IEvent<T extends EventEmitter = EventEmitter> {
+	target: T;
+	type: string;
+	bubbles?: boolean;
+	isPropagationStopped?: boolean;
+	data: {
+		[name: string]: any;
+	};
 }
 
-EventEmitter.currentlySubscribing = false;
+export type TListener<T extends EventEmitter = EventEmitter> = (evt: IEvent<T>) => any;
 
-EventEmitter.prototype = {
-	constructor: EventEmitter,
+export interface IRegisteredEvent {
+	listener: TListener;
+	context: any;
+}
 
-	/**
-	 * @typesign () -> { [type: string]: Array<cellx~RegisteredEvent> };
-	 * @typesign (type: string) -> Array<cellx~RegisteredEvent>;
-	 */
-	getEvents: function getEvents(type) {
-		var events;
+export class EventEmitter {
+	static currentlySubscribing = false;
+
+	_events: Map<string, IRegisteredEvent | Array<IRegisteredEvent>>;
+
+	constructor() {
+		this._events = new Map();
+	}
+
+	getEvents(): { [type: string]: Array<IRegisteredEvent> };
+	getEvents(type: string): Array<IRegisteredEvent>;
+	getEvents(type?: string) {
+		let events: any;
 
 		if (type) {
 			events = this._events.get(type);
@@ -57,22 +44,20 @@ EventEmitter.prototype = {
 
 		events = Object.create(null);
 
-		this._events.forEach(function(typeEvents, type) {
+		this._events.forEach((typeEvents, type) => {
 			events[type] = Array.isArray(typeEvents) ? typeEvents : [typeEvents];
 		});
 
 		return events;
-	},
+	}
 
-	/**
-	 * @typesign (type: string, listener: cellx~Listener, context?) -> this;
-	 * @typesign (listeners: { [type: string]: cellx~Listener }, context?) -> this;
-	 */
-	on: function on(type, listener, context) {
+	on(type: string, listener: TListener, context?: any): this;
+	on(listeners: { [type: string]: TListener }, context?: any): this;
+	on(type: string | { [type: string]: TListener }, listener?: any, context?: any) {
 		if (typeof type == 'object') {
 			context = listener !== undefined ? listener : this;
 
-			var listeners = type;
+			let listeners = type;
 
 			for (type in listeners) {
 				this._on(type, listeners[type], context);
@@ -82,18 +67,16 @@ EventEmitter.prototype = {
 		}
 
 		return this;
-	},
+	}
 
-	/**
-	 * @typesign (type: string, listener: cellx~Listener, context?) -> this;
-	 * @typesign (listeners?: { [type: string]: cellx~Listener }, context?) -> this;
-	 */
-	off: function off(type, listener, context) {
+	off(type: string, listener: TListener, context?: any): this;
+	off(listeners?: { [type: string]: TListener }, context?: any): this;
+	off(type?: string | { [type: string]: TListener }, listener?: any, context?: any) {
 		if (type) {
 			if (typeof type == 'object') {
 				context = listener !== undefined ? listener : this;
 
-				var listeners = type;
+				let listeners = type;
 
 				for (type in listeners) {
 					this._off(type, listeners[type], context);
@@ -106,24 +89,21 @@ EventEmitter.prototype = {
 		}
 
 		return this;
-	},
+	}
 
-	/**
-	 * @typesign (type: string, listener: cellx~Listener, context);
-	 */
-	_on: function _on(type, listener, context) {
-		var index = type.indexOf(':');
+	_on(type: string, listener: TListener, context: any) {
+		let index = type.indexOf(':');
 
 		if (index != -1) {
-			var propName = type.slice(index + 1);
+			let propName = type.slice(index + 1);
 
 			EventEmitter.currentlySubscribing = true;
-			(this[propName + 'Cell'] || (this[propName], this[propName + 'Cell']))
+			((this as any)[propName + 'Cell'] || ((this as any)[propName], (this as any)[propName + 'Cell']))
 				.on(type.slice(0, index), listener, context);
 			EventEmitter.currentlySubscribing = false;
 		} else {
-			var events = this._events.get(type);
-			var evt = { listener, context };
+			let events = this._events.get(type);
+			let evt = { listener, context };
 
 			if (!events) {
 				this._events.set(type, evt);
@@ -133,34 +113,31 @@ EventEmitter.prototype = {
 				this._events.set(type, [events, evt]);
 			}
 		}
-	},
+	}
 
-	/**
-	 * @typesign (type: string, listener: cellx~Listener, context);
-	 */
-	_off: function _off(type, listener, context) {
-		var index = type.indexOf(':');
+	_off(type: string, listener: TListener, context: any) {
+		let index = type.indexOf(':');
 
 		if (index != -1) {
-			var propName = type.slice(index + 1);
+			let propName = type.slice(index + 1);
 
-			(this[propName + 'Cell'] || (this[propName], this[propName + 'Cell']))
+			((this as any)[propName + 'Cell'] || ((this as any)[propName], (this as any)[propName + 'Cell']))
 				.off(type.slice(0, index), listener, context);
 		} else {
-			var events = this._events.get(type);
+			let events = this._events.get(type);
 
 			if (!events) {
 				return;
 			}
 
-			var evt;
+			let evt;
 
 			if (!Array.isArray(events)) {
 				evt = events;
 			} else if (events.length == 1) {
 				evt = events[0];
 			} else {
-				for (var i = events.length; i; ) {
+				for (let i = events.length; i; ) {
 					evt = events[--i];
 
 					if (evt.listener == listener && evt.context === context) {
@@ -176,17 +153,14 @@ EventEmitter.prototype = {
 				this._events.delete(type);
 			}
 		}
-	},
+	}
 
-	/**
-	 * @typesign (type: string, listener: cellx~Listener, context?) -> cellx~Listener;
-	 */
-	once: function once(type, listener, context) {
+	once(type: string, listener: TListener, context?: any): TListener {
 		if (context === undefined) {
 			context = this;
 		}
 
-		function wrapper(evt) {
+		function wrapper(evt: IEvent) {
 			this._off(type, wrapper, context);
 			return listener.call(this, evt);
 		}
@@ -194,13 +168,17 @@ EventEmitter.prototype = {
 		this._on(type, wrapper, context);
 
 		return wrapper;
-	},
+	}
 
-	/**
-	 * @typesign (evt: cellx~Event) -> cellx~Event;
-	 * @typesign (type: string) -> cellx~Event;
-	 */
-	emit: function emit(evt) {
+	emit(evt: {
+		target?: EventEmitter;
+		type: string;
+		bubbles?: boolean;
+		isPropagationStopped?: boolean;
+		data?: {
+			[name: string]: any;
+		};
+	} | string, data?: { [name: string]: any }): IEvent {
 		if (typeof evt == 'string') {
 			evt = {
 				target: this,
@@ -212,23 +190,24 @@ EventEmitter.prototype = {
 			throw new TypeError('Event cannot be emitted on this object');
 		}
 
-		this._handleEvent(evt);
+		if (data) {
+			evt.data = data;
+		}
 
-		return evt;
-	},
+		this.handleEvent(evt as IEvent);
 
-	/**
-	 * @typesign (evt: cellx~Event);
-	 */
-	_handleEvent: function _handleEvent(evt) {
-		var events = this._events.get(evt.type);
+		return evt as IEvent;
+	}
+
+	handleEvent(evt: IEvent) {
+		let events = this._events.get(evt.type);
 
 		if (!events) {
 			return;
 		}
 
 		if (Array.isArray(events)) {
-			var eventCount = events.length;
+			let eventCount = events.length;
 
 			if (eventCount == 1) {
 				if (this._tryEventListener(events[0], evt) === false) {
@@ -237,7 +216,7 @@ EventEmitter.prototype = {
 			} else {
 				events = events.slice();
 
-				for (var i = 0; i < eventCount; i++) {
+				for (let i = 0; i < eventCount; i++) {
 					if (this._tryEventListener(events[i], evt) === false) {
 						evt.isPropagationStopped = true;
 					}
@@ -246,16 +225,13 @@ EventEmitter.prototype = {
 		} else if (this._tryEventListener(events, evt) === false) {
 			evt.isPropagationStopped = true;
 		}
-	},
+	}
 
-	/**
-	 * @typesign (emEvt: cellx~RegisteredEvent, evt: cellx~Event);
-	 */
-	_tryEventListener: function _tryEventListener(emEvt, evt) {
+	_tryEventListener(emEvt: IRegisteredEvent, evt: IEvent): any {
 		try {
 			return emEvt.listener.call(emEvt.context, evt);
 		} catch (err) {
 			error(err);
 		}
 	}
-};
+}

@@ -818,13 +818,6 @@ console.log(list.toArray());
 
 Сигнатура вызова: `() -> string;`.
 
-## Размер
-
-| File         | Original |  Gzipped |
-|--------------|----------|----------|
-| cellx.js     |  58.1 kB | 10.81 kB |
-| cellx.min.js | 24.34 kB |   6.8 kB |
-
 ## Использованные материалы
 
 - [Пишем простое приложение на React с использованием библиотеки cellx](https://habrahabr.ru/post/313038/)

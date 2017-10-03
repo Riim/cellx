@@ -1,14 +1,14 @@
 {
   "name": "cellx",
-  "version": "1.7.57",
+  "version": "1.7.60",
   "description": "",
   "main": "dist/cellx.js",
-  "typings": "src/cellx.d.ts",
+  "typings": "dist/cellx.d.ts",
   "directories": {
     "test": "tests"
   },
   "scripts": {
-    "build": "rm -rf dist && node_modules/.bin/rollup -c && node_modules/.bin/gulp",
+    "build": "rm -rf dist && node_modules/.bin/webpack && node_modules/.bin/tsc",
     "test": "rm -rf coverage && node_modules/.bin/jest",
     "coveralls": "cat coverage/lcov.info | node_modules/.bin/coveralls"
   },
@@ -23,21 +23,12 @@
   },
   "homepage": "https://github.com/Riim/cellx",
   "devDependencies": {
-    "babel-eslint": "^8.0.1",
-    "babel-plugin-transform-es2015-shorthand-properties": "^6.24.1",
-    "gulp": "^3.9.1",
-    "gulp-optimize-js": "^1.1.0",
-    "gulp-rename": "^1.2.2",
-    "gulp-sizereport": "^1.2.0",
-    "gulp-uglify": "^3.0.0",
+    "awesome-typescript-loader": "^3.2.3",
     "jest": "^20.0.4",
-    "pump": "^1.0.2",
-    "require-dir": "^0.3.2",
-    "rollup": "^0.50.0",
-    "rollup-plugin-babel": "^3.0.2",
-    "rollup-plugin-eslint": "^4.0.0",
-    "run-sequence": "^2.2.0",
-    "typescript": "^2.5.3"
+    "tslint": "^5.7.0",
+    "tslint-loader": "^3.5.3",
+    "typescript": "^2.5.3",
+    "webpack": "^3.6.0"
   },
   "dependencies": {
     "@riim/is": "^1.0.0",
@@ -46,7 +37,7 @@
     "@riim/mixin": "^1.0.0",
     "@riim/next-tick": "^1.0.1",
     "@riim/object-assign-polyfill": "^1.0.0",
-    "@riim/symbol-polyfill": "^1.0.0"
+    "@riim/symbol-polyfill": "^1.0.1"
   },
   "jest": {
     "testEnvironment": "node",

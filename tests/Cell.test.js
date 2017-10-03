@@ -1,4 +1,4 @@
-let { EventEmitter, ObservableList, Cell, define } = require('../dist/cellx');
+let { EventEmitter, ObservableList, Cell, define } = require('../dist/cellx.umd');
 
 describe('Cell', () => {
 
@@ -822,6 +822,20 @@ describe('Cell', () => {
 		} });
 		let c = new Cell(() => b.get(), { debugKey: 'c', onChange() {} });
 
+		a.set(2);
+	});
+
+	test('рекурсивно запускает релиз при чтении в обработчике (2)', (done) => {
+		let a = new Cell(1, { debugKey: 'a' });
+		let b = new Cell(() => a.get(), { debugKey: 'b', onChange() {
+			expect(c.get())
+				.toBe(2);
+
+			done();
+		} });
+		let c = new Cell(() => a.get(), { debugKey: 'c' });
+
+		c.get();
 		a.set(2);
 	});
 

@@ -835,13 +835,6 @@ Type signature: `() -> Array;`.
 
 Type signature: `() -> string;`.
 
-## Size
-
-| File         | Original |  Gzipped |
-|--------------|----------|----------|
-| cellx.js     |  58.1 kB | 10.81 kB |
-| cellx.min.js | 24.34 kB |   6.8 kB |
-
 ## List of references
 
 - [Building a Reactive App Using Cellx and React](https://60devs.com/building-a-reactive-todo-app-using-cellx-and-react.html)

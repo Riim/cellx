@@ -1,0 +1,29 @@
+{
+  "extends": "tslint:recommended",
+  "rules": {
+    "array-type": [true, "generic"],
+    "ban-types": false,
+    "forin": false,
+    "indent": [true, "tabs", 4],
+    "max-classes-per-file": false,
+    "max-line-length": false,
+    "member-access": false,
+    "member-ordering": false,
+    "no-bitwise": false,
+    "no-conditional-assignment": false,
+    "no-console": false,
+    "no-debugger": false,
+    "no-empty": false,
+    "no-shadowed-variable": false,
+    "no-string-literal": false,
+    "no-unused-expression": false,
+    "object-literal-key-quotes": [true, "as-needed"],
+    "object-literal-sort-keys": false,
+    "ordered-imports": false,
+    "prefer-const": false,
+    "quotemark": [true, "single", "avoid-escape", "avoid-template"],
+    "trailing-comma": [true, { "singleline": "never", "multiline": "never" }],
+    "triple-equals": false,
+    "variable-name": [true, "ban-keywords", "check-format", "allow-leading-underscore", "allow-trailing-underscore", "allow-pascal-case"]
+  }
+}

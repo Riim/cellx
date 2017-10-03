@@ -1,4 +1,4 @@
-let { ObservableMap } = require('../dist/cellx');
+let { ObservableMap } = require('../dist/cellx.umd');
 
 describe('ObservableMap', () => {
 
