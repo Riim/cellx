@@ -2,14 +2,14 @@ let { Cell, cellx } = require('../dist/cellx.umd');
 
 describe('cellx', () => {
 
-	it('#get()', () => {
+	test('#get()', () => {
 		let a = cellx(1);
 
 		expect(a())
 			.toBe(1);
 	});
 
-	it('#set()', () => {
+	test('#set()', () => {
 		let a = cellx(1);
 
 		a(2);
@@ -18,7 +18,7 @@ describe('cellx', () => {
 			.toBe(2);
 	});
 
-	it('#bind()', () => {
+	test('#bind()', () => {
 		let c;
 		let getA = jest.fn(function() {
 			c = this;
@@ -36,7 +36,7 @@ describe('cellx', () => {
 			.toBe(context);
 	});
 
-	it('#unwrap()', () => {
+	test('#unwrap()', () => {
 		let a = cellx(1);
 		let aa = a('unwrap', 0);
 
@@ -44,7 +44,7 @@ describe('cellx', () => {
 			.toBeInstanceOf(Cell);
 	});
 
-	it('позволяет использование в прототипе', () => {
+	test('позволяет использование в прототипе', () => {
 		function A() {}
 		A.prototype.prop1 = cellx([1, 2, 3]);
 		A.prototype.prop2 = cellx(() => { return [1, 2, 3]; });

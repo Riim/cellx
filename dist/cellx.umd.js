@@ -793,8 +793,6 @@ var symbol_polyfill_1 = __webpack_require__(2);
 var EventEmitter_1 = __webpack_require__(0);
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
 var KEY_WRAPPERS = symbol_polyfill_1.Symbol('wrappers');
-var errorIndexCounter = 0;
-var pushingIndexCounter = 0;
 var releasePlan = new map_set_polyfill_1.Map();
 var releasePlanIndex = MAX_SAFE_INTEGER;
 var releasePlanToIndex = -1;
@@ -802,6 +800,8 @@ var releasePlanned = false;
 var currentlyRelease = 0;
 var currentCell = null;
 var $error = { error: null };
+var pushingIndexCounter = 0;
+var errorIndexCounter = 0;
 var releaseVersion = 1;
 var afterRelease;
 var STATE_INITED = 1;
@@ -890,12 +890,12 @@ function release(force) {
             var after = afterRelease;
             afterRelease = null;
             for (var i = 0, l = after.length; i < l; i++) {
-                var item = after[i];
-                if (typeof item == 'function') {
-                    item();
+                var afterItem = after[i];
+                if (typeof afterItem == 'function') {
+                    afterItem();
                 }
                 else {
-                    item[0]._push(item[1], true, false);
+                    afterItem[0]._push(afterItem[1], true, false);
                 }
             }
         }
@@ -909,8 +909,6 @@ var Cell = /** @class */ (function (_super) {
     function Cell(value, opts) {
         var _this = _super.call(this) || this;
         _this._error = null;
-        _this._selfErrorCell = null;
-        _this._errorCell = null;
         _this._pushingIndex = 0;
         _this._errorIndex = 0;
         _this._version = 0;
@@ -920,6 +918,8 @@ var Cell = /** @class */ (function (_super) {
         _this._levelInRelease = -1;
         _this._selfPendingStatusCell = null;
         _this._pendingStatusCell = null;
+        _this._selfErrorCell = null;
+        _this._errorCell = null;
         _this._state = STATE_CAN_CANCEL_CHANGE;
         _this._changeEvent = null;
         _this._lastErrorEvent = null;
@@ -1084,7 +1084,7 @@ var Cell = /** @class */ (function (_super) {
         }
     };
     Cell.prototype._activate = function () {
-        if (!this._pull || this._state & STATE_ACTIVE) {
+        if (!this._pull || (this._state & STATE_ACTIVE)) {
             return;
         }
         var masters = this._masters;
@@ -1125,25 +1125,6 @@ var Cell = /** @class */ (function (_super) {
             this._changeEvent = null;
         }
         this._state ^= STATE_ACTIVE;
-    };
-    Cell.prototype._addToRelease = function () {
-        var level = this._level;
-        if (level <= this._levelInRelease) {
-            return;
-        }
-        var queue;
-        (releasePlan.get(level) || (releasePlan.set(level, (queue = [])), queue)).push(this);
-        if (releasePlanIndex > level) {
-            releasePlanIndex = level;
-        }
-        if (releasePlanToIndex < level) {
-            releasePlanToIndex = level;
-        }
-        this._levelInRelease = level;
-        if (!releasePlanned && !currentlyRelease) {
-            releasePlanned = true;
-            next_tick_1.nextTick(release);
-        }
     };
     Cell.prototype._onValueChange = function (evt) {
         var _this = this;
@@ -1258,7 +1239,7 @@ var Cell = /** @class */ (function (_super) {
                     }
                 }
             }
-            if (masters && masters.length) {
+            if (masters) {
                 this._state |= STATE_ACTIVE;
             }
             else {
@@ -1405,7 +1386,9 @@ var Cell = /** @class */ (function (_super) {
         var oldValue = this._value;
         if (external && currentCell && (this._state & STATE_HAS_FOLLOWERS)) {
             if (is_1.is(value, oldValue)) {
-                this._setError(null);
+                if (this._error) {
+                    this._setError(null);
+                }
                 this._resolvePending();
                 return false;
             }
@@ -1415,7 +1398,9 @@ var Cell = /** @class */ (function (_super) {
         if (external || !currentlyRelease && pulling) {
             this._pushingIndex = ++pushingIndexCounter;
         }
-        this._setError(null);
+        if (this._error) {
+            this._setError(null);
+        }
         if (is_1.is(value, oldValue)) {
             if (external || currentlyRelease && pulling) {
                 this._resolvePending();
@@ -1473,6 +1458,25 @@ var Cell = /** @class */ (function (_super) {
         }
         return true;
     };
+    Cell.prototype._addToRelease = function () {
+        var level = this._level;
+        if (level <= this._levelInRelease) {
+            return;
+        }
+        var queue;
+        (releasePlan.get(level) || (releasePlan.set(level, (queue = [])), queue)).push(this);
+        if (releasePlanIndex > level) {
+            releasePlanIndex = level;
+        }
+        if (releasePlanToIndex < level) {
+            releasePlanToIndex = level;
+        }
+        this._levelInRelease = level;
+        if (!releasePlanned && !currentlyRelease) {
+            releasePlanned = true;
+            next_tick_1.nextTick(release);
+        }
+    };
     Cell.prototype.fail = function (err) {
         this._fail(err, true);
         return this;
@@ -1488,9 +1492,6 @@ var Cell = /** @class */ (function (_super) {
         }
     };
     Cell.prototype._setError = function (err) {
-        if (!err && !this._error) {
-            return;
-        }
         this._error = err;
         if (this._selfErrorCell) {
             this._selfErrorCell.set(err);
@@ -1538,9 +1539,6 @@ var Cell = /** @class */ (function (_super) {
     return Cell;
 }(EventEmitter_1.EventEmitter));
 exports.Cell = Cell;
-Cell.prototype[symbol_polyfill_1.Symbol.iterator] = function () {
-    return this._value[symbol_polyfill_1.Symbol.iterator]();
-};
 
 
 /***/ }),

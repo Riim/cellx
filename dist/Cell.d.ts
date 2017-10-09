@@ -42,8 +42,6 @@ export declare class Cell<T = any> extends EventEmitter {
     _fixedValue: any;
     _value: any;
     _error: Error | null;
-    _selfErrorCell: Cell<Error | null> | null;
-    _errorCell: Cell<Error | null> | null;
     _pushingIndex: number;
     _errorIndex: number;
     _version: number;
@@ -53,6 +51,8 @@ export declare class Cell<T = any> extends EventEmitter {
     _levelInRelease: number;
     _selfPendingStatusCell: Cell<boolean> | null;
     _pendingStatusCell: Cell<boolean> | null;
+    _selfErrorCell: Cell<Error | null> | null;
+    _errorCell: Cell<Error | null> | null;
     _state: number;
     _changeEvent: IEvent | null;
     _lastErrorEvent: IEvent<this> | null;
@@ -76,7 +76,6 @@ export declare class Cell<T = any> extends EventEmitter {
     _unregisterSlave(slave: Cell): void;
     _activate(): void;
     _deactivate(): void;
-    _addToRelease(): void;
     _onValueChange(evt: IEvent): void;
     _onValueChange$(evt: IEvent): void;
     get(): T;
@@ -87,6 +86,7 @@ export declare class Cell<T = any> extends EventEmitter {
     set(value: T): this;
     push(value: any): this;
     _push(value: any, external: boolean, pulling: boolean): boolean;
+    _addToRelease(): void;
     fail(err: any): this;
     _fail(err: any, external: boolean): void;
     _setError(err: Error | null): void;

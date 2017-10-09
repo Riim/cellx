@@ -25,7 +25,7 @@ describe('Cell', () => {
 		let b = new Cell(1);
 		let c = new Cell(() => b.get(), { onChange() {} });
 
-		a.on('change', () => {
+		a.addChangeListener(() => {
 			Cell.afterRelease(() => {
 				expect(c.get())
 					.toBe(2);
@@ -72,7 +72,7 @@ describe('Cell', () => {
 
 		let d = new Cell(getD, { debugKey: 'd' });
 
-		d.on('change', function() {});
+		d.addChangeListener(() => {});
 
 		getD.mockReset();
 
@@ -370,7 +370,7 @@ describe('Cell', () => {
 
 		a.set(2);
 
-		a.on('change', onChange);
+		a.addChangeListener(onChange);
 
 		setTimeout(() => {
 			expect(onChange)
@@ -632,8 +632,8 @@ describe('Cell', () => {
 
 		let listener = () => {};
 
-		b.on('change', listener);
-		b.off('change', listener);
+		b.addChangeListener(listener);
+		b.removeChangeListener(listener);
 
 		expect(reap)
 			.toHaveBeenCalledTimes(1);
@@ -730,18 +730,6 @@ describe('Cell', () => {
 		}, 1);
 	});
 
-	test('поддерживает перебор for-of-ом', () => {
-		let list = new Cell(new ObservableList([1, 2, 3]));
-		let result = [];
-
-		for (let value of list) {
-			result.push(value);
-		}
-
-		expect(result)
-			.toEqual([1, 2, 3]);
-	});
-
 	test('позволяет запись даже если является вычисляемой', () => {
 		let a = new Cell(1);
 		let b = new Cell(() => a.get() + 1, { onChange() {} });
@@ -806,7 +794,7 @@ describe('Cell', () => {
 		a.set(5);
 		b.set(5);
 
-		a.on('change', () => {});
+		a.addChangeListener(() => {});
 
 		expect(a.get())
 			.toBe(5);
@@ -825,7 +813,7 @@ describe('Cell', () => {
 		a.set(2);
 	});
 
-	test('рекурсивно запускает релиз при чтении в обработчике (2)', (done) => {
+	test('делает pull при чтении в обработчике', (done) => {
 		let a = new Cell(1, { debugKey: 'a' });
 		let b = new Cell(() => a.get(), { debugKey: 'b', onChange() {
 			expect(c.get())
