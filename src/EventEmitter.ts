@@ -18,8 +18,40 @@ export interface IRegisteredEvent {
 	context: any;
 }
 
+let currentlySubscribing = false;
+
+let transactionEvents = new Map<EventEmitter, { [type: string]: IEvent }>();
+let transactionLevel = 0;
+
 export class EventEmitter {
-	static currentlySubscribing = false;
+	static get currentlySubscribing(): boolean {
+		return currentlySubscribing;
+	}
+	static set currentlySubscribing(value: boolean) {
+		currentlySubscribing = value;
+	}
+
+	static transact(cb: Function) {
+		transactionLevel++;
+
+		try {
+			cb();
+		} finally {
+			if (--transactionLevel) {
+				return;
+			}
+
+			let events = transactionEvents;
+
+			transactionEvents = new Map();
+
+			events.forEach((events, target) => {
+				for (let type in events) {
+					target.handleEvent(events[type]);
+				}
+			});
+		}
+	}
 
 	_events: Map<string, IRegisteredEvent | Array<IRegisteredEvent>>;
 
@@ -97,10 +129,10 @@ export class EventEmitter {
 		if (index != -1) {
 			let propName = type.slice(index + 1);
 
-			EventEmitter.currentlySubscribing = true;
+			currentlySubscribing = true;
 			((this as any)[propName + 'Cell'] || ((this as any)[propName], (this as any)[propName + 'Cell']))
 				.on(type.slice(0, index), listener, context);
-			EventEmitter.currentlySubscribing = false;
+			currentlySubscribing = false;
 		} else {
 			let events = this._events.get(type);
 			let evt = { listener, context };
@@ -194,7 +226,19 @@ export class EventEmitter {
 			evt.data = data;
 		}
 
-		this.handleEvent(evt as IEvent);
+		if (transactionLevel) {
+			let events = transactionEvents.get(this);
+
+			if (!events) {
+				events = Object.create(null) as { [type: string]: IEvent };
+				transactionEvents.set(this, events);
+			}
+
+			(evt.data || (evt.data = {})).prev = events[evt.type] || null;
+			events[evt.type] = evt as IEvent;
+		} else {
+			this.handleEvent(evt as IEvent);
+		}
 
 		return evt as IEvent;
 	}

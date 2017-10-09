@@ -82,10 +82,41 @@ return /******/ (function(modules) { // webpackBootstrap
 Object.defineProperty(exports, "__esModule", { value: true });
 var logger_1 = __webpack_require__(4);
 var map_set_polyfill_1 = __webpack_require__(1);
+var currentlySubscribing = false;
+var transactionEvents = new map_set_polyfill_1.Map();
+var transactionLevel = 0;
 var EventEmitter = /** @class */ (function () {
     function EventEmitter() {
         this._events = new map_set_polyfill_1.Map();
     }
+    Object.defineProperty(EventEmitter, "currentlySubscribing", {
+        get: function () {
+            return currentlySubscribing;
+        },
+        set: function (value) {
+            currentlySubscribing = value;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    EventEmitter.transact = function (cb) {
+        transactionLevel++;
+        try {
+            cb();
+        }
+        finally {
+            if (--transactionLevel) {
+                return;
+            }
+            var events = transactionEvents;
+            transactionEvents = new map_set_polyfill_1.Map();
+            events.forEach(function (events, target) {
+                for (var type in events) {
+                    target.handleEvent(events[type]);
+                }
+            });
+        }
+    };
     EventEmitter.prototype.getEvents = function (type) {
         var events;
         if (type) {
@@ -136,10 +167,10 @@ var EventEmitter = /** @class */ (function () {
         var index = type.indexOf(':');
         if (index != -1) {
             var propName = type.slice(index + 1);
-            EventEmitter.currentlySubscribing = true;
+            currentlySubscribing = true;
             (this[propName + 'Cell'] || (this[propName], this[propName + 'Cell']))
                 .on(type.slice(0, index), listener, context);
-            EventEmitter.currentlySubscribing = false;
+            currentlySubscribing = false;
         }
         else {
             var events = this._events.get(type);
@@ -216,7 +247,18 @@ var EventEmitter = /** @class */ (function () {
         if (data) {
             evt.data = data;
         }
-        this.handleEvent(evt);
+        if (transactionLevel) {
+            var events = transactionEvents.get(this);
+            if (!events) {
+                events = Object.create(null);
+                transactionEvents.set(this, events);
+            }
+            (evt.data || (evt.data = {})).prev = events[evt.type] || null;
+            events[evt.type] = evt;
+        }
+        else {
+            this.handleEvent(evt);
+        }
         return evt;
     };
     EventEmitter.prototype.handleEvent = function (evt) {
@@ -252,7 +294,6 @@ var EventEmitter = /** @class */ (function () {
             logger_1.error(err);
         }
     };
-    EventEmitter.currentlySubscribing = false;
     return EventEmitter;
 }());
 exports.EventEmitter = EventEmitter;

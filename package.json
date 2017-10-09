@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.7.62",
+  "version": "1.7.63",
   "description": "",
   "main": "dist/cellx.js",
   "typings": "dist/cellx.d.ts",
