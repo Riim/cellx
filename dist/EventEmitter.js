@@ -3,8 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var logger_1 = require("@riim/logger");
 var map_set_polyfill_1 = require("@riim/map-set-polyfill");
 var currentlySubscribing = false;
-var transactionEvents = new map_set_polyfill_1.Map();
 var transactionLevel = 0;
+var transactionEvents = new map_set_polyfill_1.Map();
 var EventEmitter = /** @class */ (function () {
     function EventEmitter() {
         this._events = new map_set_polyfill_1.Map();
@@ -19,23 +19,24 @@ var EventEmitter = /** @class */ (function () {
         enumerable: true,
         configurable: true
     });
-    EventEmitter.transact = function (cb) {
+    EventEmitter.transact = function (callback) {
         transactionLevel++;
         try {
-            cb();
+            callback();
         }
-        finally {
-            if (--transactionLevel) {
-                return;
+        catch (err) {
+            logger_1.error(err);
+        }
+        if (--transactionLevel) {
+            return;
+        }
+        var events = transactionEvents;
+        transactionEvents = new map_set_polyfill_1.Map();
+        events.forEach(function (events, target) {
+            for (var type in events) {
+                target.handleEvent(events[type]);
             }
-            var events = transactionEvents;
-            transactionEvents = new map_set_polyfill_1.Map();
-            events.forEach(function (events, target) {
-                for (var type in events) {
-                    target.handleEvent(events[type]);
-                }
-            });
-        }
+        });
     };
     EventEmitter.prototype.getEvents = function (type) {
         var events;

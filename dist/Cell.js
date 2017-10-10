@@ -191,10 +191,10 @@ var Cell = /** @class */ (function (_super) {
     Cell.autorun = function (callback, context) {
         var disposer;
         new Cell(function () {
-            var cell = this;
+            var _this = this;
             if (!disposer) {
                 disposer = function () {
-                    cell.dispose();
+                    _this.dispose();
                 };
             }
             callback.call(context, disposer);

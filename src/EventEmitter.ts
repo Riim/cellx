@@ -20,8 +20,8 @@ export interface IRegisteredEvent {
 
 let currentlySubscribing = false;
 
-let transactionEvents = new Map<EventEmitter, { [type: string]: IEvent }>();
 let transactionLevel = 0;
+let transactionEvents = new Map<EventEmitter, { [type: string]: IEvent }>();
 
 export class EventEmitter {
 	static get currentlySubscribing(): boolean {
@@ -31,26 +31,28 @@ export class EventEmitter {
 		currentlySubscribing = value;
 	}
 
-	static transact(cb: Function) {
+	static transact(callback: Function) {
 		transactionLevel++;
 
 		try {
-			cb();
-		} finally {
-			if (--transactionLevel) {
-				return;
-			}
-
-			let events = transactionEvents;
-
-			transactionEvents = new Map();
-
-			events.forEach((events, target) => {
-				for (let type in events) {
-					target.handleEvent(events[type]);
-				}
-			});
+			callback();
+		} catch (err) {
+			error(err);
 		}
+
+		if (--transactionLevel) {
+			return;
+		}
+
+		let events = transactionEvents;
+
+		transactionEvents = new Map();
+
+		events.forEach((events, target) => {
+			for (let type in events) {
+				target.handleEvent(events[type]);
+			}
+		});
 	}
 
 	_events: Map<string, IRegisteredEvent | Array<IRegisteredEvent>>;

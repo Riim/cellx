@@ -643,19 +643,19 @@ describe('Cell', () => {
 		let cOnChange = jest.fn();
 		let loadingOnChange = jest.fn();
 
-		let a = new Cell((cell, next) => {
+		let a = new Cell((cell, next = 0) => {
 			setTimeout(() => {
 				cell.push(Math.random());
 			}, 10);
 
-			return next || 0;
+			return next;
 		});
-		let b = new Cell((cell, next) => {
+		let b = new Cell((cell, next = 0) => {
 			setTimeout(() => {
 				cell.push(Math.random());
 			}, 50);
 
-			return next || 0;
+			return next;
 		});
 
 		let c = new Cell(() => a.get() + b.get(), { onChange: cOnChange });

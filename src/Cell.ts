@@ -201,11 +201,9 @@ export class Cell<T = any> extends EventEmitter {
 		let disposer: (() => void) | undefined;
 
 		new Cell(function() {
-			let cell = this;
-
 			if (!disposer) {
 				disposer = () => {
-					cell.dispose();
+					this.dispose();
 				};
 			}
 
