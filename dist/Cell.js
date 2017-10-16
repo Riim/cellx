@@ -51,7 +51,7 @@ function release(force) {
             queue = releasePlan.get(++releasePlanIndex);
             continue;
         }
-        var oldReleasePlanIndex = releasePlanIndex;
+        var prevReleasePlanIndex = releasePlanIndex;
         var level = cell._level;
         var changeEvent = cell._changeEvent;
         if (!changeEvent) {
@@ -95,7 +95,7 @@ function release(force) {
             if (releasePlanIndex == MAX_SAFE_INTEGER) {
                 break;
             }
-            if (releasePlanIndex != oldReleasePlanIndex) {
+            if (releasePlanIndex != prevReleasePlanIndex) {
                 queue = releasePlan.get(releasePlanIndex);
                 continue;
             }
@@ -370,7 +370,7 @@ var Cell = /** @class */ (function (_super) {
     };
     Cell.prototype._onValueChange$ = function (evt) {
         this._pushingIndex = ++pushingIndexCounter;
-        var changeEvent = (evt.data || (evt.data = {})).prev = this._changeEvent;
+        var changeEvent = (evt.data || (evt.data = {})).prevEvent = this._changeEvent;
         this._changeEvent = evt;
         if (changeEvent) {
             if (this._value === this._fixedValue) {
@@ -390,11 +390,11 @@ var Cell = /** @class */ (function (_super) {
                 }
             }
             else if (this._version < releaseVersion + +(currentlyRelease > 0)) {
-                var oldMasters = this._masters;
-                if (oldMasters !== null) {
+                var prevMasters = this._masters;
+                if (prevMasters !== null) {
                     var value = this._tryPull();
                     var masters = this._masters;
-                    if (oldMasters || masters || !(this._state & STATE_INITED)) {
+                    if (prevMasters || masters || !(this._state & STATE_INITED)) {
                         if (masters && (this._state & STATE_HAS_FOLLOWERS)) {
                             var i = masters.length;
                             do {
@@ -437,12 +437,12 @@ var Cell = /** @class */ (function (_super) {
         if (releasePlanned) {
             release();
         }
-        var oldMasters;
-        var oldLevel;
+        var prevMasters;
+        var prevLevel;
         var value;
         if (this._state & STATE_HAS_FOLLOWERS) {
-            oldMasters = this._masters;
-            oldLevel = this._level;
+            prevMasters = this._masters;
+            prevLevel = this._level;
             value = this._tryPull();
             var masters = this._masters;
             var newMasterCount = 0;
@@ -450,17 +450,17 @@ var Cell = /** @class */ (function (_super) {
                 var i = masters.length;
                 do {
                     var master = masters[--i];
-                    if (!oldMasters || oldMasters.indexOf(master) == -1) {
+                    if (!prevMasters || prevMasters.indexOf(master) == -1) {
                         master._registerSlave(this);
                         newMasterCount++;
                     }
                 } while (i);
             }
-            if (oldMasters && (masters ? masters.length - newMasterCount : 0) < oldMasters.length) {
-                for (var i = oldMasters.length; i;) {
-                    var oldMaster = oldMasters[--i];
-                    if (!masters || masters.indexOf(oldMaster) == -1) {
-                        oldMaster._unregisterSlave(this);
+            if (prevMasters && (masters ? masters.length - newMasterCount : 0) < prevMasters.length) {
+                for (var i = prevMasters.length; i;) {
+                    var prevMaster = prevMasters[--i];
+                    if (!masters || masters.indexOf(prevMaster) == -1) {
+                        prevMaster._unregisterSlave(this);
                     }
                 }
             }
@@ -470,7 +470,7 @@ var Cell = /** @class */ (function (_super) {
             else {
                 this._state &= ~STATE_ACTIVE;
             }
-            if (currentlyRelease && this._level > oldLevel) {
+            if (currentlyRelease && this._level > prevLevel) {
                 this._addToRelease();
                 return false;
             }
@@ -608,9 +608,9 @@ var Cell = /** @class */ (function (_super) {
     };
     Cell.prototype._push = function (value, external, pulling) {
         this._state |= STATE_INITED;
-        var oldValue = this._value;
+        var prev = this._value;
         if (external && currentCell && (this._state & STATE_HAS_FOLLOWERS)) {
-            if (is_1.is(value, oldValue)) {
+            if (is_1.is(value, prev)) {
                 if (this._error) {
                     this._setError(null);
                 }
@@ -626,15 +626,15 @@ var Cell = /** @class */ (function (_super) {
         if (this._error) {
             this._setError(null);
         }
-        if (is_1.is(value, oldValue)) {
+        if (is_1.is(value, prev)) {
             if (external || currentlyRelease && pulling) {
                 this._resolvePending();
             }
             return false;
         }
         this._value = value;
-        if (oldValue instanceof EventEmitter_1.EventEmitter) {
-            oldValue.off('change', this._onValueChange, this);
+        if (prev instanceof EventEmitter_1.EventEmitter) {
+            prev.off('change', this._onValueChange, this);
         }
         if (value instanceof EventEmitter_1.EventEmitter) {
             value.on('change', this._onValueChange, this);
@@ -650,9 +650,9 @@ var Cell = /** @class */ (function (_super) {
                         target: this,
                         type: 'change',
                         data: {
-                            oldValue: oldValue,
-                            value: value,
-                            prev: this._changeEvent
+                            prevEvent: this._changeEvent,
+                            prevValue: prev,
+                            value: value
                         }
                     };
                 }
@@ -663,9 +663,9 @@ var Cell = /** @class */ (function (_super) {
                     target: this,
                     type: 'change',
                     data: {
-                        oldValue: oldValue,
-                        value: value,
-                        prev: null
+                        prevEvent: null,
+                        prevValue: prev,
+                        value: value
                     }
                 };
                 this._addToRelease();

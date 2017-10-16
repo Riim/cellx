@@ -71,14 +71,14 @@ var ObservableMap = /** @class */ (function (_super) {
     ObservableMap.prototype.set = function (key, value) {
         var entries = this._entries;
         var hasKey = entries.has(key);
-        var oldValue;
+        var prev;
         if (hasKey) {
-            oldValue = entries.get(key);
-            if (is_1.is(value, oldValue)) {
+            prev = entries.get(key);
+            if (is_1.is(value, prev)) {
                 return this;
             }
             this._throwIfFrozen();
-            this._unregisterValue(oldValue);
+            this._unregisterValue(prev);
         }
         else {
             this._throwIfFrozen();
@@ -90,7 +90,7 @@ var ObservableMap = /** @class */ (function (_super) {
         this.emit('change', {
             subtype: hasKey ? 'update' : 'add',
             key: key,
-            oldValue: oldValue,
+            prevValue: prev,
             value: value
         });
         return this;

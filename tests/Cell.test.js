@@ -592,9 +592,9 @@ describe('Cell', () => {
 				type: 'change',
 				target: a,
 				data: {
-					oldValue: 2,
-					value: 3,
-					prev: null
+					prevEvent: null,
+					prevValue: 2,
+					value: 3
 				}
 			});
 	});
@@ -618,9 +618,9 @@ describe('Cell', () => {
 				type: 'change',
 				target: b,
 				data: {
-					oldValue: 3,
-					value: 4,
-					prev: null
+					prevEvent: null,
+					prevValue: 3,
+					value: 4
 				}
 			});
 	});

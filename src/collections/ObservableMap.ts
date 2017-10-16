@@ -70,18 +70,18 @@ export class ObservableMap<K = any, V = any> extends EventEmitter implements
 	set(key: K, value: V): this {
 		let entries = this._entries;
 		let hasKey = entries.has(key);
-		let oldValue: V | undefined;
+		let prev: V | undefined;
 
 		if (hasKey) {
-			oldValue = entries.get(key)!;
+			prev = entries.get(key)!;
 
-			if (is(value, oldValue)) {
+			if (is(value, prev)) {
 				return this;
 			}
 
 			this._throwIfFrozen();
 
-			this._unregisterValue(oldValue);
+			this._unregisterValue(prev);
 		} else {
 			this._throwIfFrozen();
 		}
@@ -95,7 +95,7 @@ export class ObservableMap<K = any, V = any> extends EventEmitter implements
 		this.emit('change', {
 			subtype: hasKey ? 'update' : 'add',
 			key,
-			oldValue,
+			prevValue: prev,
 			value
 		});
 

@@ -293,7 +293,7 @@ num('addChangeListener', function(evt) {
 });
 
 num(10);
-// => { oldValue: 5, value: 10 }
+// => { prevValue: 5, value: 10 }
 ```
 
 #### removeChangeListener
@@ -395,7 +395,7 @@ and in the absence of links all branch of dependencies will "die".
 ## Collapse and discarding of events
 
 To minimize redraw of UI cellx may "collapse" several events into one. Link to the previous event is stored in
-`evt.prev`:
+`evt.prevEvent`:
 
 ```js
 var num = cellx(5);
@@ -408,17 +408,17 @@ num(10);
 num(15);
 num(20);
 // => {
-//     oldValue: 15,
-//     value: 20,
-//     prev: {
-//         oldValue: 10,
-//         value: 15,
-//         prev: {
-//             oldValue: 5,
-//             value: 10,
-//             prev: null
+//     prevEvent: {
+//         prevEvent: {
+//             prevEvent: null
+//             prevValue: 5,
+//             value: 10
 //         }
+//         prevValue: 10,
+//         value: 15
 //     }
+//     prevValue: 15,
+//     value: 20
 // }
 ```
 
@@ -460,9 +460,9 @@ num1(10);
 num2(15);
 // => 'sum.formula'
 // => {
-//     oldValue: 15,
-//     value: 25,
-//     prev: null
+//     prevEvent: null
+//     prevValue: 15,
+//     value: 25
 // }
 ```
 
@@ -544,23 +544,23 @@ var request = (function() {
 	};
 })();
 
-var foo = cellx(function(push, fail, oldValue) {
+var foo = cellx(function(cell, next = 0) {
 	request.get('http://...').then(function(res) {
 		if (res.ok) {
-			push(res.value);
+			cell.push(res.value);
 		} else {
-			fail(res.error);
+			cell.fail(res.error);
 		}
 	});
 
-	return oldValue || 0;
+	return next;
 }, {
-	put: function(value, push, fail, oldValue) {
+	put: function(value, cell, next) {
 		request.put('http://...', { value: value }).then(function(res) {
 			if (res.ok) {
-				push(value);
+				cell.push(value);
 			} else {
-				fail(res.error);
+				cell.fail(res.error);
 			}
 		});
 	}

@@ -4,9 +4,9 @@ export interface ICellOptions<T> {
     debugKey?: string;
     context?: object;
     get?: (value: any) => T;
-    validate?: (value: T, oldValue: any) => void;
-    merge?: (value: T, oldValue: any) => any;
-    put?: (cell: Cell<T>, value: any, oldValue: any) => void;
+    validate?: (next: T, value: any) => void;
+    merge?: (next: T, value: any) => any;
+    put?: (cell: Cell<T>, next: any, value: any) => void;
     reap?: () => void;
     onChange?: TListener;
     onError?: TListener;
@@ -14,9 +14,9 @@ export interface ICellOptions<T> {
 export interface ICellChangeEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
     type: 'change';
     data: {
-        oldValue: any;
+        prevEvent: ICellChangeEvent | null;
+        prevValue: any;
         value: any;
-        prev: ICellChangeEvent | null;
     };
 }
 export interface ICellErrorEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
@@ -35,9 +35,9 @@ export declare class Cell<T = any> extends EventEmitter {
     context: object;
     _pull: TCellPull<T> | null;
     _get: ((value: any) => T) | null;
-    _validate: ((value: T, oldValue: any) => void) | null;
-    _merge: ((value: T, oldValue: any) => any) | null;
-    _put: (cell: Cell<T>, value: any, oldValue: any) => void;
+    _validate: ((next: T, value: any) => void) | null;
+    _merge: ((next: T, value: any) => any) | null;
+    _put: (cell: Cell<T>, next: any, value: any) => void;
     _reap: (() => void) | null;
     _fixedValue: any;
     _value: any;
