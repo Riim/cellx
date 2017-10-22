@@ -18,10 +18,11 @@ export interface IObservableListOptions<T> {
 }
 
 function defaultComparator(a: any, b: any): number {
-	return a < b ? -1 : (a > b ? 1 : 0);
+	return a < b ? -1 : a > b ? 1 : 0;
 }
 
-export class ObservableList<T = any> extends EventEmitter implements FreezableCollection, ObservableCollection<T> {
+export class ObservableList<T = any> extends EventEmitter
+	implements FreezableCollection, ObservableCollection<T> {
 	_items = [] as Array<T>;
 
 	_length = 0;
@@ -32,7 +33,10 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 	_comparator: TComparator<T> | null;
 	_sorted: boolean;
 
-	constructor(items?: TObservableListItems<T> | null, opts?: IObservableListOptions<T> | boolean) {
+	constructor(
+		items?: TObservableListItems<T> | null,
+		opts?: IObservableListOptions<T> | boolean
+	) {
 		super();
 		FreezableCollection.call(this);
 		ObservableCollection.call(this);
@@ -43,7 +47,7 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 
 		this._adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
 
-		if (opts && (opts.sorted || opts.comparator && opts.sorted !== false)) {
+		if (opts && (opts.sorted || (opts.comparator && opts.sorted !== false))) {
 			this._comparator = opts.comparator || defaultComparator;
 			this._sorted = true;
 		} else {
@@ -83,7 +87,10 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 	}
 
 	lastIndexOf(value: T, fromIndex?: number): number {
-		return this._items.lastIndexOf(value, fromIndex === undefined ? -1 : this._validateIndex(fromIndex, true));
+		return this._items.lastIndexOf(
+			value,
+			fromIndex === undefined ? -1 : this._validateIndex(fromIndex, true)
+		);
 	}
 
 	get(index: number): T | undefined {
@@ -461,7 +468,10 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 		return [];
 	}
 
-	filter<R extends T>(callback: (item: T, index: number, list: this) => item is R, context?: any): Array<R>;
+	filter<R extends T>(
+		callback: (item: T, index: number, list: this) => item is R,
+		context?: any
+	): Array<R>;
 	filter(callback: (item: T, index: number, list: this) => any, context?: any): Array<T>;
 	filter() {
 		return [];
@@ -501,11 +511,17 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 		return false;
 	}
 
-	reduce<R = T>(callback: (accumulator: R, item: T, index: number, list: this) => R, initialValue?: R): R {
+	reduce<R = T>(
+		callback: (accumulator: R, item: T, index: number, list: this) => R,
+		initialValue?: R
+	): R {
 		return 0 as any;
 	}
 
-	reduceRight<R = T>(callback: (accumulator: R, item: T, index: number, list: this) => R, initialValue?: R): R {
+	reduceRight<R = T>(
+		callback: (accumulator: R, item: T, index: number, list: this) => R,
+		initialValue?: R
+	): R {
 		return 0 as any;
 	}
 
@@ -583,7 +599,7 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 mixin(ObservableList.prototype, FreezableCollection.prototype, ['constructor']);
 mixin(ObservableList.prototype, ObservableCollection.prototype, ['constructor']);
 
-['forEach', 'map', 'filter', 'every', 'some'].forEach(function(name) {
+['forEach', 'map', 'filter', 'every', 'some'].forEach(name => {
 	(ObservableList.prototype as any)[name] = function(callback: Function, context?: any) {
 		return this._items[name](function(item: any, index: number): any {
 			return callback.call(context, item, index, this);
@@ -591,15 +607,20 @@ mixin(ObservableList.prototype, ObservableCollection.prototype, ['constructor'])
 	};
 });
 
-['reduce', 'reduceRight'].forEach(function(name) {
-	(ObservableList.prototype as any)[name] = function(callback: Function, initialValue?: any): any {
+['reduce', 'reduceRight'].forEach(name => {
+	(ObservableList.prototype as any)[name] = function(
+		callback: Function,
+		initialValue?: any
+	): any {
 		let list = this;
 
 		function wrapper(accumulator: any, item: any, index: number): any {
 			return callback(accumulator, item, index, list);
 		}
 
-		return arguments.length >= 2 ? this._items[name](wrapper, initialValue) : this._items[name](wrapper);
+		return arguments.length >= 2
+			? this._items[name](wrapper, initialValue)
+			: this._items[name](wrapper);
 	};
 });
 

@@ -6,14 +6,18 @@ import { EventEmitter, IEvent } from '../EventEmitter';
 import { FreezableCollection } from './FreezableCollection';
 import { ObservableCollection } from './ObservableCollection';
 
-export type TObservableMapEntries<K, V> = Array<[K, V]> | { [key: string]: V } | Map<K, V> | ObservableMap<K, V>;
+export type TObservableMapEntries<K, V> =
+	| Array<[K, V]>
+	| { [key: string]: V }
+	| Map<K, V>
+	| ObservableMap<K, V>;
 
 export interface IObservableMapOptions {
 	adoptsValueChanges?: boolean;
 }
 
-export class ObservableMap<K = any, V = any> extends EventEmitter implements
-		FreezableCollection, ObservableCollection<V> {
+export class ObservableMap<K = any, V = any> extends EventEmitter
+	implements FreezableCollection, ObservableCollection<V> {
 	_entries = new Map<K, V>();
 
 	_size: number;
@@ -21,7 +25,10 @@ export class ObservableMap<K = any, V = any> extends EventEmitter implements
 		return this._size;
 	}
 
-	constructor(entries?: TObservableMapEntries<K, V> | null, opts?: IObservableMapOptions | boolean) {
+	constructor(
+		entries?: TObservableMapEntries<K, V> | null,
+		opts?: IObservableMapOptions | boolean
+	) {
 		super();
 		FreezableCollection.call(this);
 		ObservableCollection.call(this);

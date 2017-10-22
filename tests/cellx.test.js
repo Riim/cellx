@@ -1,12 +1,10 @@
 let { Cell, cellx } = require('../dist/cellx.umd');
 
 describe('cellx', () => {
-
 	test('#get()', () => {
 		let a = cellx(1);
 
-		expect(a())
-			.toBe(1);
+		expect(a()).toBe(1);
 	});
 
 	test('#set()', () => {
@@ -14,8 +12,7 @@ describe('cellx', () => {
 
 		a(2);
 
-		expect(a())
-			.toBe(2);
+		expect(a()).toBe(2);
 	});
 
 	test('#bind()', () => {
@@ -29,37 +26,29 @@ describe('cellx', () => {
 		a = a.call(context, 'bind', 0);
 		a();
 
-		expect(getA)
-			.toHaveBeenCalledTimes(1);
-
-		expect(c)
-			.toBe(context);
+		expect(getA).toHaveBeenCalledTimes(1);
+		expect(c).toBe(context);
 	});
 
 	test('#unwrap()', () => {
 		let a = cellx(1);
 		let aa = a('unwrap', 0);
 
-		expect(aa)
-			.toBeInstanceOf(Cell);
+		expect(aa).toBeInstanceOf(Cell);
 	});
 
 	test('позволяет использование в прототипе', () => {
 		function A() {}
 		A.prototype.prop1 = cellx([1, 2, 3]);
-		A.prototype.prop2 = cellx(() => { return [1, 2, 3]; });
+		A.prototype.prop2 = cellx(() => {
+			return [1, 2, 3];
+		});
 
 		let a1 = new A();
 		let a2 = new A();
 
-		expect(a1.prop1())
-			.toBe(a2.prop1());
-
-		expect(a1.prop2())
-			.not.toBe(a2.prop2());
-
-		expect(a1.prop2())
-			.toEqual(a2.prop2());
+		expect(a1.prop1()).toBe(a2.prop1());
+		expect(a1.prop2()).not.toBe(a2.prop2());
+		expect(a1.prop2()).toEqual(a2.prop2());
 	});
-
 });

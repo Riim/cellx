@@ -35,7 +35,9 @@ export interface ICellErrorEvent<T extends EventEmitter = EventEmitter> extends 
 	};
 }
 
-export type TCellEvent<T extends EventEmitter = EventEmitter> = ICellChangeEvent<T> | ICellErrorEvent<T>;
+export type TCellEvent<T extends EventEmitter = EventEmitter> =
+	| ICellChangeEvent<T>
+	| ICellErrorEvent<T>;
 
 let MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
 let KEY_WRAPPERS = Symbol('wrappers');
@@ -75,7 +77,7 @@ function release(force?: boolean) {
 
 	let queue = releasePlan.get(releasePlanIndex);
 
-	for (; ; ) {
+	for (;;) {
 		let cell = queue && queue.shift();
 
 		if (!cell) {
@@ -200,17 +202,20 @@ export class Cell<T = any> extends EventEmitter {
 	static autorun(callback: Function, context?: any): () => void {
 		let disposer: (() => void) | undefined;
 
-		new Cell(function() {
-			if (!disposer) {
-				disposer = () => {
-					this.dispose();
-				};
-			}
+		new Cell(
+			function() {
+				if (!disposer) {
+					disposer = () => {
+						this.dispose();
+					};
+				}
 
-			callback.call(context, disposer);
-		}, {
-			onChange() {}
-		});
+				callback.call(context, disposer);
+			},
+			{
+				onChange() {}
+			}
+		);
 
 		return disposer!;
 	}
@@ -264,23 +269,21 @@ export class Cell<T = any> extends EventEmitter {
 	_changeEvent: IEvent | null = null;
 	_lastErrorEvent: IEvent<this> | null = null;
 
-	constructor(value: T, opts?: ICellOptions<T>);
-	constructor(pull: TCellPull<T>, opts?: ICellOptions<T>);
 	constructor(value: T | TCellPull<T>, opts?: ICellOptions<T>) {
 		super();
 
 		this.debugKey = opts && opts.debugKey;
 
-		this.context = opts && opts.context || this;
+		this.context = (opts && opts.context) || this;
 
 		this._pull = typeof value == 'function' ? value : null;
-		this._get = opts && opts.get || null;
+		this._get = (opts && opts.get) || null;
 
-		this._validate = opts && opts.validate || null;
-		this._merge = opts && opts.merge || null;
-		this._put = opts && opts.put || defaultPut;
+		this._validate = (opts && opts.validate) || null;
+		this._merge = (opts && opts.merge) || null;
+		this._put = (opts && opts.put) || defaultPut;
 
-		this._reap = opts && opts.reap || null;
+		this._reap = (opts && opts.reap) || null;
 
 		if (this._pull) {
 			this._fixedValue = this._value = undefined;
@@ -347,8 +350,10 @@ export class Cell<T = any> extends EventEmitter {
 		}
 
 		if (
-			!this._slaves.length && !this._events.has('change') && !this._events.has('error') &&
-				(this._state & STATE_HAS_FOLLOWERS)
+			!this._slaves.length &&
+			!this._events.has('change') &&
+			!this._events.has('error') &&
+			this._state & STATE_HAS_FOLLOWERS
 		) {
 			this._state ^= STATE_HAS_FOLLOWERS;
 
@@ -379,8 +384,8 @@ export class Cell<T = any> extends EventEmitter {
 	}
 
 	subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this {
-		let wrappers: Map<Cell, TListener> = (listener as any)[KEY_WRAPPERS] ||
-			((listener as any)[KEY_WRAPPERS] = new Map());
+		let wrappers: Map<Cell, TListener> =
+			(listener as any)[KEY_WRAPPERS] || ((listener as any)[KEY_WRAPPERS] = new Map());
 
 		if (wrappers.has(this)) {
 			return this;
@@ -395,9 +400,7 @@ export class Cell<T = any> extends EventEmitter {
 			context = this.context;
 		}
 
-		return this
-			.on('change', wrapper, context)
-			.on('error', wrapper, context);
+		return this.on('change', wrapper, context).on('error', wrapper, context);
 	}
 
 	unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this {
@@ -414,9 +417,7 @@ export class Cell<T = any> extends EventEmitter {
 			context = this.context;
 		}
 
-		return this
-			.off('change', wrapper, context)
-			.off('error', wrapper, context);
+		return this.off('change', wrapper, context).off('error', wrapper, context);
 	}
 
 	_registerSlave(slave: Cell) {
@@ -441,7 +442,7 @@ export class Cell<T = any> extends EventEmitter {
 	}
 
 	_activate() {
-		if (!this._pull || (this._state & STATE_ACTIVE)) {
+		if (!this._pull || this._state & STATE_ACTIVE) {
 			return;
 		}
 
@@ -514,7 +515,7 @@ export class Cell<T = any> extends EventEmitter {
 	_onValueChange$(evt: IEvent) {
 		this._pushingIndex = ++pushingIndexCounter;
 
-		let changeEvent = (evt.data || (evt.data = {})).prevEvent = this._changeEvent;
+		let changeEvent = ((evt.data || (evt.data = {})).prevEvent = this._changeEvent);
 
 		this._changeEvent = evt;
 
@@ -531,7 +532,7 @@ export class Cell<T = any> extends EventEmitter {
 	get(): T {
 		if (this._pull) {
 			if (this._state & STATE_ACTIVE) {
-				if (releasePlanned || currentlyRelease && !currentCell) {
+				if (releasePlanned || (currentlyRelease && !currentCell)) {
 					release(true);
 				}
 			} else if (this._version < releaseVersion + +(currentlyRelease > 0)) {
@@ -542,7 +543,7 @@ export class Cell<T = any> extends EventEmitter {
 					let masters = this._masters;
 
 					if (prevMasters || masters || !(this._state & STATE_INITED)) {
-						if (masters && (this._state & STATE_HAS_FOLLOWERS)) {
+						if (masters && this._state & STATE_HAS_FOLLOWERS) {
 							let i = masters.length;
 
 							do {
@@ -619,7 +620,10 @@ export class Cell<T = any> extends EventEmitter {
 				} while (i);
 			}
 
-			if (prevMasters && (masters ? masters.length - newMasterCount : 0) < prevMasters.length) {
+			if (
+				prevMasters &&
+				(masters ? masters.length - newMasterCount : 0) < prevMasters.length
+			) {
 				for (let i = prevMasters.length; i; ) {
 					let prevMaster = prevMasters[--i];
 
@@ -673,7 +677,9 @@ export class Cell<T = any> extends EventEmitter {
 		this._state |= STATE_CURRENTLY_PULLING;
 
 		try {
-			return pull.length ? pull.call(this.context, this, this._value) : pull.call(this.context);
+			return pull.length
+				? pull.call(this.context, this, this._value)
+				: pull.call(this.context);
 		} catch (err) {
 			$error.error = err;
 			return $error;
@@ -684,13 +690,13 @@ export class Cell<T = any> extends EventEmitter {
 
 			let pendingStatusCell = this._pendingStatusCell;
 
-			if (pendingStatusCell && (pendingStatusCell._state & STATE_ACTIVE)) {
+			if (pendingStatusCell && pendingStatusCell._state & STATE_ACTIVE) {
 				pendingStatusCell.pull();
 			}
 
 			let errorCell = this._errorCell;
 
-			if (errorCell && (errorCell._state & STATE_ACTIVE)) {
+			if (errorCell && errorCell._state & STATE_ACTIVE) {
 				errorCell.pull();
 			}
 
@@ -739,7 +745,7 @@ export class Cell<T = any> extends EventEmitter {
 								return masterError;
 							}
 
-							if (!err || errorIndex as number < masterErrorIndex) {
+							if (!err || (errorIndex as number) < masterErrorIndex) {
 								err = masterError;
 								errorIndex = masterErrorIndex;
 							}
@@ -748,7 +754,9 @@ export class Cell<T = any> extends EventEmitter {
 				}
 
 				return err;
-			}, debugKey ? { debugKey: debugKey + '._errorCell', context: this } : { context: this });
+			}, debugKey
+				? { debugKey: debugKey + '._errorCell', context: this }
+				: { context: this });
 		}
 
 		return errorCell.get();
@@ -785,7 +793,9 @@ export class Cell<T = any> extends EventEmitter {
 				}
 
 				return false;
-			}, debugKey ? { debugKey: debugKey + '._pendingStatusCell', context: this } : { context: this });
+			}, debugKey
+				? { debugKey: debugKey + '._pendingStatusCell', context: this }
+				: { context: this });
 		}
 
 		return pendingStatusCell.get();
@@ -823,7 +833,7 @@ export class Cell<T = any> extends EventEmitter {
 
 		let prev = this._value;
 
-		if (external && currentCell && (this._state & STATE_HAS_FOLLOWERS)) {
+		if (external && currentCell && this._state & STATE_HAS_FOLLOWERS) {
 			if (is(value, prev)) {
 				if (this._error) {
 					this._setError(null);
@@ -839,7 +849,7 @@ export class Cell<T = any> extends EventEmitter {
 			return true;
 		}
 
-		if (external || !currentlyRelease && pulling) {
+		if (external || (!currentlyRelease && pulling)) {
 			this._pushingIndex = ++pushingIndexCounter;
 		}
 
@@ -848,7 +858,7 @@ export class Cell<T = any> extends EventEmitter {
 		}
 
 		if (is(value, prev)) {
-			if (external || currentlyRelease && pulling) {
+			if (external || (currentlyRelease && pulling)) {
 				this._resolvePending();
 			}
 
@@ -866,7 +876,7 @@ export class Cell<T = any> extends EventEmitter {
 
 		if (this._state & STATE_HAS_FOLLOWERS) {
 			if (this._changeEvent) {
-				if (is(value, this._fixedValue) && (this._state & STATE_CAN_CANCEL_CHANGE)) {
+				if (is(value, this._fixedValue) && this._state & STATE_CAN_CANCEL_CHANGE) {
 					this._levelInRelease = -1;
 					this._changeEvent = null;
 				} else {
@@ -895,7 +905,7 @@ export class Cell<T = any> extends EventEmitter {
 				this._addToRelease();
 			}
 		} else {
-			if (external || !currentlyRelease && pulling) {
+			if (external || (!currentlyRelease && pulling)) {
 				releaseVersion++;
 			}
 
@@ -903,7 +913,7 @@ export class Cell<T = any> extends EventEmitter {
 			this._version = releaseVersion + +(currentlyRelease > 0);
 		}
 
-		if (external || currentlyRelease && pulling) {
+		if (external || (currentlyRelease && pulling)) {
 			this._resolvePending();
 		}
 

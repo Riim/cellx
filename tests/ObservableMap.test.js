@@ -1,7 +1,6 @@
 let { ObservableMap } = require('../dist/cellx.umd');
 
 describe('ObservableMap', () => {
-
 	test('#has()', function() {
 		let map = new ObservableMap({
 			foo: 1,
@@ -9,19 +8,13 @@ describe('ObservableMap', () => {
 			baz: 3
 		});
 
-		expect(map.has('foo'))
-			.toBeTruthy();
-
-		expect(map.has('quux'))
-			.toBeFalsy();
+		expect(map.has('foo')).toBeTruthy();
+		expect(map.has('quux')).toBeFalsy();
 
 		map.set('foo', 4).set('quux', 5);
 
-		expect(map.has('foo'))
-			.toBeTruthy();
-
-		expect(map.has('quux'))
-			.toBeTruthy();
+		expect(map.has('foo')).toBeTruthy();
+		expect(map.has('quux')).toBeTruthy();
 	});
 
 	test('#contains()', function() {
@@ -31,25 +24,15 @@ describe('ObservableMap', () => {
 			baz: 3
 		});
 
-		expect(map.contains(3))
-			.toBeTruthy();
-
-		expect(map.contains(4))
-			.toBeFalsy();
-
-		expect(map.contains(5))
-			.toBeFalsy();
+		expect(map.contains(3)).toBeTruthy();
+		expect(map.contains(4)).toBeFalsy();
+		expect(map.contains(5)).toBeFalsy();
 
 		map.set('baz', 4).set('quux', 5);
 
-		expect(map.contains(3))
-			.toBeFalsy();
-
-		expect(map.contains(4))
-			.toBeTruthy();
-
-		expect(map.contains(5))
-			.toBeTruthy();
+		expect(map.contains(3)).toBeFalsy();
+		expect(map.contains(4)).toBeTruthy();
+		expect(map.contains(5)).toBeTruthy();
 	});
 
 	test('#get()', function() {
@@ -59,11 +42,8 @@ describe('ObservableMap', () => {
 			baz: 3
 		});
 
-		expect(map.get('foo'))
-			.toBe(1);
-
-		expect(map.get('bar'))
-			.toBe(2);
+		expect(map.get('foo')).toBe(1);
+		expect(map.get('bar')).toBe(2);
 	});
 
 	test('#set()', function() {
@@ -75,14 +55,9 @@ describe('ObservableMap', () => {
 
 		map.set('foo', 4).set('quux', 5);
 
-		expect(map.get('foo'))
-			.toBe(4);
-
-		expect(map.get('bar'))
-			.toBe(2);
-
-		expect(map.get('quux'))
-			.toBe(5);
+		expect(map.get('foo')).toBe(4);
+		expect(map.get('bar')).toBe(2);
+		expect(map.get('quux')).toBe(5);
 	});
 
 	test('#delete()', function() {
@@ -92,17 +67,10 @@ describe('ObservableMap', () => {
 			baz: 3
 		});
 
-		expect(map.delete('foo'))
-			.toBeTruthy();
-
-		expect(map.delete('quux'))
-			.toBeFalsy();
-
-		expect(map.has('foo'))
-			.toBeFalsy();
-
-		expect(map.get('foo'))
-			.toBeUndefined();
+		expect(map.delete('foo')).toBeTruthy();
+		expect(map.delete('quux')).toBeFalsy();
+		expect(map.has('foo')).toBeFalsy();
+		expect(map.get('foo')).toBeUndefined();
 	});
 
 	test('#size', function() {
@@ -112,13 +80,11 @@ describe('ObservableMap', () => {
 			baz: 3
 		});
 
-		expect(map.size)
-			.toBe(3);
+		expect(map.size).toBe(3);
 
 		map.set('foo', 4).set('quux', 5);
 
-		expect(map.size)
-			.toBe(4);
+		expect(map.size).toBe(4);
 	});
 
 	test('#clear()', function() {
@@ -128,17 +94,10 @@ describe('ObservableMap', () => {
 			baz: 3
 		});
 
-		expect(map.clear())
-			.toBe(map);
-
-		expect(map.has('foo'))
-			.toBeFalsy();
-
-		expect(map.contains('2'))
-			.toBeFalsy();
-
-		expect(map.size)
-			.toBe(0);
+		expect(map.clear()).toBe(map);
+		expect(map.has('foo')).toBeFalsy();
+		expect(map.contains('2')).toBeFalsy();
+		expect(map.size).toBe(0);
 	});
 
 	test('#forEach()', function() {
@@ -151,11 +110,8 @@ describe('ObservableMap', () => {
 
 		map.forEach(cb);
 
-		expect(cb)
-			.toHaveBeenCalledTimes(3);
-
-		expect(cb.mock.calls[1])
-			.toEqual([2, 'bar', map]);
+		expect(cb).toHaveBeenCalledTimes(3);
+		expect(cb.mock.calls[1]).toEqual([2, 'bar', map]);
 	});
 
 	test('#clone()', () => {
@@ -166,22 +122,14 @@ describe('ObservableMap', () => {
 		});
 		let copy = map.clone();
 
-		expect(map)
-			.not.toBe(copy);
-
-		expect(copy.has('foo'))
-			.toBeTruthy();
-
-		expect(copy.contains(2))
-			.toBeTruthy();
+		expect(map).not.toBe(copy);
+		expect(copy.has('foo')).toBeTruthy();
+		expect(copy.contains(2)).toBeTruthy();
 
 		map.set('quux', 4);
 
-		expect(copy.contains(4))
-			.toBeFalsy();
-
-		expect(copy.size)
-			.toBe(3);
+		expect(copy.contains(4)).toBeFalsy();
+		expect(copy.size).toBe(3);
 	});
 
 	test('поддерживает перебор for-of-ом', () => {
@@ -196,8 +144,6 @@ describe('ObservableMap', () => {
 			result.push(key, value);
 		}
 
-		expect(result)
-			.toEqual(['foo', 1, 'bar', 2, 'baz', 3]);
+		expect(result).toEqual(['foo', 1, 'bar', 2, 'baz', 3]);
 	});
-
 });

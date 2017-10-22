@@ -2,6 +2,7 @@
   "extends": "tslint:recommended",
   "rules": {
     "array-type": [true, "generic"],
+    "arrow-parens": false,
     "ban-types": false,
     "forin": false,
     "indent": [true, "tabs", 4],

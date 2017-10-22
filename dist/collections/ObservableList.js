@@ -18,7 +18,7 @@ var FreezableCollection_1 = require("./FreezableCollection");
 var ObservableCollection_1 = require("./ObservableCollection");
 var splice = Array.prototype.splice;
 function defaultComparator(a, b) {
-    return a < b ? -1 : (a > b ? 1 : 0);
+    return a < b ? -1 : a > b ? 1 : 0;
 }
 var ObservableList = /** @class */ (function (_super) {
     __extends(ObservableList, _super);
@@ -32,7 +32,7 @@ var ObservableList = /** @class */ (function (_super) {
             opts = { adoptsValueChanges: opts };
         }
         _this._adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
-        if (opts && (opts.sorted || opts.comparator && opts.sorted !== false)) {
+        if (opts && (opts.sorted || (opts.comparator && opts.sorted !== false))) {
             _this._comparator = opts.comparator || defaultComparator;
             _this._sorted = true;
         }
@@ -459,7 +459,9 @@ mixin_1.mixin(ObservableList.prototype, ObservableCollection_1.ObservableCollect
         function wrapper(accumulator, item, index) {
             return callback(accumulator, item, index, list);
         }
-        return arguments.length >= 2 ? this._items[name](wrapper, initialValue) : this._items[name](wrapper);
+        return arguments.length >= 2
+            ? this._items[name](wrapper, initialValue)
+            : this._items[name](wrapper);
     };
 });
 [

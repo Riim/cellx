@@ -89,8 +89,8 @@ var EventEmitter = /** @class */ (function () {
         if (index != -1) {
             var propName = type.slice(index + 1);
             currentlySubscribing = true;
-            (this[propName + 'Cell'] || (this[propName], this[propName + 'Cell']))
-                .on(type.slice(0, index), listener, context);
+            (this[propName + 'Cell'] ||
+                (this[propName], this[propName + 'Cell'])).on(type.slice(0, index), listener, context);
             currentlySubscribing = false;
         }
         else {
@@ -111,8 +111,8 @@ var EventEmitter = /** @class */ (function () {
         var index = type.indexOf(':');
         if (index != -1) {
             var propName = type.slice(index + 1);
-            (this[propName + 'Cell'] || (this[propName], this[propName + 'Cell']))
-                .off(type.slice(0, index), listener, context);
+            (this[propName + 'Cell'] ||
+                (this[propName], this[propName + 'Cell'])).off(type.slice(0, index), listener, context);
         }
         else {
             var events = this._events.get(type);

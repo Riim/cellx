@@ -56,8 +56,7 @@ export declare class Cell<T = any> extends EventEmitter {
     _state: number;
     _changeEvent: IEvent | null;
     _lastErrorEvent: IEvent<this> | null;
-    constructor(value: T, opts?: ICellOptions<T>);
-    constructor(pull: TCellPull<T>, opts?: ICellOptions<T>);
+    constructor(value: T | TCellPull<T>, opts?: ICellOptions<T>);
     on(type: string, listener: TListener, context?: any): this;
     on(listeners: {
         [type: string]: TListener;

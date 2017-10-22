@@ -132,8 +132,9 @@ export class EventEmitter {
 			let propName = type.slice(index + 1);
 
 			currentlySubscribing = true;
-			((this as any)[propName + 'Cell'] || ((this as any)[propName], (this as any)[propName + 'Cell']))
-				.on(type.slice(0, index), listener, context);
+			((this as any)[propName + 'Cell'] ||
+				((this as any)[propName], (this as any)[propName + 'Cell'])
+			).on(type.slice(0, index), listener, context);
 			currentlySubscribing = false;
 		} else {
 			let events = this._events.get(type);
@@ -155,8 +156,9 @@ export class EventEmitter {
 		if (index != -1) {
 			let propName = type.slice(index + 1);
 
-			((this as any)[propName + 'Cell'] || ((this as any)[propName], (this as any)[propName + 'Cell']))
-				.off(type.slice(0, index), listener, context);
+			((this as any)[propName + 'Cell'] ||
+				((this as any)[propName], (this as any)[propName + 'Cell'])
+			).off(type.slice(0, index), listener, context);
 		} else {
 			let events = this._events.get(type);
 
@@ -204,15 +206,20 @@ export class EventEmitter {
 		return wrapper;
 	}
 
-	emit(evt: {
-		target?: EventEmitter;
-		type: string;
-		bubbles?: boolean;
-		isPropagationStopped?: boolean;
-		data?: {
-			[name: string]: any;
-		};
-	} | string, data?: { [name: string]: any }): IEvent {
+	emit(
+		evt:
+			| {
+					target?: EventEmitter;
+					type: string;
+					bubbles?: boolean;
+					isPropagationStopped?: boolean;
+					data?: {
+						[name: string]: any;
+					};
+				}
+			| string,
+		data?: { [name: string]: any }
+	): IEvent {
 		if (typeof evt == 'string') {
 			evt = {
 				target: this,

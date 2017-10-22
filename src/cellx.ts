@@ -14,14 +14,25 @@ import { KEY_CELL_MAP } from './keys';
 export { IEvent, TListener, IRegisteredEvent, EventEmitter } from './EventEmitter';
 export { FreezableCollection } from './collections/FreezableCollection';
 export { ObservableCollection } from './collections/ObservableCollection';
-export { TObservableMapEntries, IObservableMapOptions, ObservableMap } from './collections/ObservableMap';
+export {
+	TObservableMapEntries,
+	IObservableMapOptions,
+	ObservableMap
+} from './collections/ObservableMap';
 export {
 	TComparator,
 	TObservableListItems,
 	IObservableListOptions,
 	ObservableList
 } from './collections/ObservableList';
-export { TCellPull, ICellOptions, ICellChangeEvent, ICellErrorEvent, TCellEvent, Cell } from './Cell';
+export {
+	TCellPull,
+	ICellOptions,
+	ICellChangeEvent,
+	ICellErrorEvent,
+	TCellEvent,
+	Cell
+} from './Cell';
 export { KEY_CELL_MAP } from './keys';
 
 let hasOwn = Object.prototype.hasOwnProperty;
@@ -49,29 +60,37 @@ export interface ICellx<T> {
 	(method: 'bind', $: any): ICellx<T>;
 	(method: 'unwrap', $: any): Cell<T>;
 
-	(method: 'addChangeListener', listener: TListener, context?: any): Cell<T>;
-	(method: 'removeChangeListener', listener: TListener, context?: any): Cell<T>;
-	(method: 'addErrorListener', listener: TListener, context?: any): Cell<T>;
-	(method: 'removeErrorListener', listener: TListener, context?: any): Cell<T>;
-	(method: 'subscribe', listener: (err: Error | void, evt: TCellEvent) => boolean | void, context?: any): Cell<T>;
-	(method: 'unsubscribe', listener: (err: Error | void, evt: TCellEvent) => boolean | void, context?: any):
-		Cell<T>;
+	(
+		method:
+			| 'addChangeListener'
+			| 'removeChangeListener'
+			| 'addErrorListener'
+			| 'removeErrorListener',
+		listener: TListener,
+		context?: any
+	): Cell<T>;
+	(
+		method: 'subscribe' | 'unsubscribe',
+		listener: (err: Error | void, evt: TCellEvent) => boolean | void,
+		context?: any
+	): Cell<T>;
 
 	(method: 'pull', $: any): boolean;
 	(method: 'getError', $: any): Error;
+	// tslint:disable-next-line
 	(method: 'push', value: any): Cell<T>;
+	// tslint:disable-next-line
 	(method: 'fail', err: any): Cell<T>;
 
+	// tslint:disable-next-line
 	(method: 'isPending', $: any): boolean;
 	(method: 'then', onFulfilled: (value: T) => any, onRejected?: (err: any) => any): Promise<any>;
 	(method: 'catch', onRejected: (err: any) => any): Promise<any>;
-	(method: 'reap', $: any): Cell<T>;
-	(method: 'dispose', $: any): Cell<T>;
+	// tslint:disable-next-line
+	(method: 'reap' | 'dispose', $: any): Cell<T>;
 }
 
-export function cellx<T = any>(value: T, opts?: ICellOptions<T>): ICellx<T>;
-export function cellx<T = any>(pull: TCellPull<T>, opts?: ICellOptions<T>): ICellx<T>;
-export function cellx(value: any, opts?: ICellOptions<any>) {
+export function cellx<T = any>(value: T | TCellPull<T>, opts?: ICellOptions<T>): ICellx<T> {
 	if (!opts) {
 		opts = {};
 	}
@@ -122,7 +141,11 @@ export function cellx(value: any, opts?: ICellOptions<any>) {
 						return cell;
 					}
 					default: {
-						let result = (Cell.prototype as any)[method].apply(cell, slice.call(arguments, 1));
+						let result = (Cell.prototype as any)[method].apply(
+							cell,
+							slice.call(arguments, 1)
+						);
+
 						return result === cell ? cx : result;
 					}
 				}
@@ -138,7 +161,11 @@ export function cellx(value: any, opts?: ICellOptions<any>) {
 	return cx;
 }
 
-export function defineObservableProperty<T extends EventEmitter = EventEmitter>(obj: T, name: string, value: any): T {
+export function defineObservableProperty<T extends EventEmitter = EventEmitter>(
+	obj: T,
+	name: string,
+	value: any
+): T {
 	let cellName = name + 'Cell';
 
 	Object.defineProperty(obj, cellName, {
@@ -152,11 +179,11 @@ export function defineObservableProperty<T extends EventEmitter = EventEmitter>(
 		configurable: true,
 		enumerable: true,
 
-		get: function() {
+		get() {
 			return this[cellName].get();
 		},
 
-		set: function(value) {
+		set(value) {
 			this[cellName].set(value);
 		}
 	});
@@ -168,7 +195,7 @@ export function defineObservableProperties<T extends EventEmitter = EventEmitter
 	obj: T,
 	props: { [name: string]: string }
 ): T {
-	Object.keys(props).forEach((name) => {
+	Object.keys(props).forEach(name => {
 		defineObservableProperty(obj, name, props[name]);
 	});
 
@@ -176,7 +203,10 @@ export function defineObservableProperties<T extends EventEmitter = EventEmitter
 }
 
 export function define<T extends EventEmitter = EventEmitter>(obj: T, name: string, value: any): T;
-export function define<T extends EventEmitter = EventEmitter>(obj: T, props: { [name: string]: any }): T;
+export function define<T extends EventEmitter = EventEmitter>(
+	obj: T,
+	props: { [name: string]: any }
+): T;
 export function define(obj: EventEmitter, name: string | { [name: string]: any }, value?: any) {
 	if (typeof name == 'string') {
 		defineObservableProperty(obj, name, value);

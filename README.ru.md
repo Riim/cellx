@@ -528,23 +528,23 @@ var request = (function() {
 	};
 })();
 
-var foo = cellx(function(push, fail, next = 0) {
+var foo = cellx(function(cell, next = 0) {
 	request.get('http://...').then(function(res) {
 		if (res.ok) {
-			push(res.value);
+			cell.push(res.value);
 		} else {
-			fail(res.error);
+			cell.fail(res.error);
 		}
 	});
 
 	return next;
 }, {
-	put: function(value, push, fail, next) {
+	put: function(value, cell, next) {
 		request.put('http://...', { value: value }).then(function(res) {
 			if (res.ok) {
-				push(value);
+				cell.push(value);
 			} else {
-				fail(res.error);
+				cell.fail(res.error);
 			}
 		});
 	}

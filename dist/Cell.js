@@ -149,13 +149,13 @@ var Cell = /** @class */ (function (_super) {
         _this._changeEvent = null;
         _this._lastErrorEvent = null;
         _this.debugKey = opts && opts.debugKey;
-        _this.context = opts && opts.context || _this;
+        _this.context = (opts && opts.context) || _this;
         _this._pull = typeof value == 'function' ? value : null;
-        _this._get = opts && opts.get || null;
-        _this._validate = opts && opts.validate || null;
-        _this._merge = opts && opts.merge || null;
-        _this._put = opts && opts.put || defaultPut;
-        _this._reap = opts && opts.reap || null;
+        _this._get = (opts && opts.get) || null;
+        _this._validate = (opts && opts.validate) || null;
+        _this._merge = (opts && opts.merge) || null;
+        _this._put = (opts && opts.put) || defaultPut;
+        _this._reap = (opts && opts.reap) || null;
         if (_this._pull) {
             _this._fixedValue = _this._value = undefined;
         }
@@ -240,8 +240,10 @@ var Cell = /** @class */ (function (_super) {
         else {
             _super.prototype.off.call(this);
         }
-        if (!this._slaves.length && !this._events.has('change') && !this._events.has('error') &&
-            (this._state & STATE_HAS_FOLLOWERS)) {
+        if (!this._slaves.length &&
+            !this._events.has('change') &&
+            !this._events.has('error') &&
+            this._state & STATE_HAS_FOLLOWERS) {
             this._state ^= STATE_HAS_FOLLOWERS;
             this._deactivate();
             if (this._reap) {
@@ -263,8 +265,7 @@ var Cell = /** @class */ (function (_super) {
         return this.off('error', listener, context !== undefined ? context : this.context);
     };
     Cell.prototype.subscribe = function (listener, context) {
-        var wrappers = listener[KEY_WRAPPERS] ||
-            (listener[KEY_WRAPPERS] = new map_set_polyfill_1.Map());
+        var wrappers = listener[KEY_WRAPPERS] || (listener[KEY_WRAPPERS] = new map_set_polyfill_1.Map());
         if (wrappers.has(this)) {
             return this;
         }
@@ -275,9 +276,7 @@ var Cell = /** @class */ (function (_super) {
         if (context === undefined) {
             context = this.context;
         }
-        return this
-            .on('change', wrapper, context)
-            .on('error', wrapper, context);
+        return this.on('change', wrapper, context).on('error', wrapper, context);
     };
     Cell.prototype.unsubscribe = function (listener, context) {
         var wrappers = listener[KEY_WRAPPERS];
@@ -289,9 +288,7 @@ var Cell = /** @class */ (function (_super) {
         if (context === undefined) {
             context = this.context;
         }
-        return this
-            .off('change', wrapper, context)
-            .off('error', wrapper, context);
+        return this.off('change', wrapper, context).off('error', wrapper, context);
     };
     Cell.prototype._registerSlave = function (slave) {
         this._activate();
@@ -309,7 +306,7 @@ var Cell = /** @class */ (function (_super) {
         }
     };
     Cell.prototype._activate = function () {
-        if (!this._pull || (this._state & STATE_ACTIVE)) {
+        if (!this._pull || this._state & STATE_ACTIVE) {
             return;
         }
         var masters = this._masters;
@@ -370,7 +367,7 @@ var Cell = /** @class */ (function (_super) {
     };
     Cell.prototype._onValueChange$ = function (evt) {
         this._pushingIndex = ++pushingIndexCounter;
-        var changeEvent = (evt.data || (evt.data = {})).prevEvent = this._changeEvent;
+        var changeEvent = ((evt.data || (evt.data = {})).prevEvent = this._changeEvent);
         this._changeEvent = evt;
         if (changeEvent) {
             if (this._value === this._fixedValue) {
@@ -385,7 +382,7 @@ var Cell = /** @class */ (function (_super) {
     Cell.prototype.get = function () {
         if (this._pull) {
             if (this._state & STATE_ACTIVE) {
-                if (releasePlanned || currentlyRelease && !currentCell) {
+                if (releasePlanned || (currentlyRelease && !currentCell)) {
                     release(true);
                 }
             }
@@ -395,7 +392,7 @@ var Cell = /** @class */ (function (_super) {
                     var value = this._tryPull();
                     var masters = this._masters;
                     if (prevMasters || masters || !(this._state & STATE_INITED)) {
-                        if (masters && (this._state & STATE_HAS_FOLLOWERS)) {
+                        if (masters && this._state & STATE_HAS_FOLLOWERS) {
                             var i = masters.length;
                             do {
                                 masters[--i]._registerSlave(this);
@@ -456,7 +453,8 @@ var Cell = /** @class */ (function (_super) {
                     }
                 } while (i);
             }
-            if (prevMasters && (masters ? masters.length - newMasterCount : 0) < prevMasters.length) {
+            if (prevMasters &&
+                (masters ? masters.length - newMasterCount : 0) < prevMasters.length) {
                 for (var i = prevMasters.length; i;) {
                     var prevMaster = prevMasters[--i];
                     if (!masters || masters.indexOf(prevMaster) == -1) {
@@ -501,7 +499,9 @@ var Cell = /** @class */ (function (_super) {
         this._level = 0;
         this._state |= STATE_CURRENTLY_PULLING;
         try {
-            return pull.length ? pull.call(this.context, this, this._value) : pull.call(this.context);
+            return pull.length
+                ? pull.call(this.context, this, this._value)
+                : pull.call(this.context);
         }
         catch (err) {
             $error.error = err;
@@ -511,11 +511,11 @@ var Cell = /** @class */ (function (_super) {
             currentCell = prevCell;
             this._version = releaseVersion + +(currentlyRelease > 0);
             var pendingStatusCell = this._pendingStatusCell;
-            if (pendingStatusCell && (pendingStatusCell._state & STATE_ACTIVE)) {
+            if (pendingStatusCell && pendingStatusCell._state & STATE_ACTIVE) {
                 pendingStatusCell.pull();
             }
             var errorCell = this._errorCell;
-            if (errorCell && (errorCell._state & STATE_ACTIVE)) {
+            if (errorCell && errorCell._state & STATE_ACTIVE) {
                 errorCell.pull();
             }
             this._state ^= STATE_CURRENTLY_PULLING;
@@ -555,7 +555,9 @@ var Cell = /** @class */ (function (_super) {
                     } while (i);
                 }
                 return err;
-            }, debugKey ? { debugKey: debugKey + '._errorCell', context: this } : { context: this });
+            }, debugKey
+                ? { debugKey: debugKey + '._errorCell', context: this }
+                : { context: this });
         }
         return errorCell.get();
     };
@@ -579,7 +581,9 @@ var Cell = /** @class */ (function (_super) {
                     } while (i);
                 }
                 return false;
-            }, debugKey ? { debugKey: debugKey + '._pendingStatusCell', context: this } : { context: this });
+            }, debugKey
+                ? { debugKey: debugKey + '._pendingStatusCell', context: this }
+                : { context: this });
         }
         return pendingStatusCell.get();
     };
@@ -609,7 +613,7 @@ var Cell = /** @class */ (function (_super) {
     Cell.prototype._push = function (value, external, pulling) {
         this._state |= STATE_INITED;
         var prev = this._value;
-        if (external && currentCell && (this._state & STATE_HAS_FOLLOWERS)) {
+        if (external && currentCell && this._state & STATE_HAS_FOLLOWERS) {
             if (is_1.is(value, prev)) {
                 if (this._error) {
                     this._setError(null);
@@ -620,14 +624,14 @@ var Cell = /** @class */ (function (_super) {
             (afterRelease || (afterRelease = [])).push([this, value]);
             return true;
         }
-        if (external || !currentlyRelease && pulling) {
+        if (external || (!currentlyRelease && pulling)) {
             this._pushingIndex = ++pushingIndexCounter;
         }
         if (this._error) {
             this._setError(null);
         }
         if (is_1.is(value, prev)) {
-            if (external || currentlyRelease && pulling) {
+            if (external || (currentlyRelease && pulling)) {
                 this._resolvePending();
             }
             return false;
@@ -641,7 +645,7 @@ var Cell = /** @class */ (function (_super) {
         }
         if (this._state & STATE_HAS_FOLLOWERS) {
             if (this._changeEvent) {
-                if (is_1.is(value, this._fixedValue) && (this._state & STATE_CAN_CANCEL_CHANGE)) {
+                if (is_1.is(value, this._fixedValue) && this._state & STATE_CAN_CANCEL_CHANGE) {
                     this._levelInRelease = -1;
                     this._changeEvent = null;
                 }
@@ -672,13 +676,13 @@ var Cell = /** @class */ (function (_super) {
             }
         }
         else {
-            if (external || !currentlyRelease && pulling) {
+            if (external || (!currentlyRelease && pulling)) {
                 releaseVersion++;
             }
             this._fixedValue = value;
             this._version = releaseVersion + +(currentlyRelease > 0);
         }
-        if (external || currentlyRelease && pulling) {
+        if (external || (currentlyRelease && pulling)) {
             this._resolvePending();
         }
         return true;
