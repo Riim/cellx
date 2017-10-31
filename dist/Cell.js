@@ -16,6 +16,7 @@ var map_set_polyfill_1 = require("@riim/map-set-polyfill");
 var next_tick_1 = require("@riim/next-tick");
 var symbol_polyfill_1 = require("@riim/symbol-polyfill");
 var EventEmitter_1 = require("./EventEmitter");
+var WaitError_1 = require("./WaitError");
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
 var KEY_WRAPPERS = symbol_polyfill_1.Symbol('wrappers');
 var releasePlan = new map_set_polyfill_1.Map();
@@ -425,6 +426,9 @@ var Cell = /** @class */ (function (_super) {
                 currentCell._level = level + 1;
             }
         }
+        if (currentCell && this._error && this._error instanceof WaitError_1.WaitError) {
+            throw this._error;
+        }
         return this._get ? this._get(this._value) : this._value;
     };
     Cell.prototype.pull = function () {
@@ -711,14 +715,24 @@ var Cell = /** @class */ (function (_super) {
         return this;
     };
     Cell.prototype._fail = function (err, external) {
-        logger_1.error('[' + this.debugKey + ']', err);
-        if (!(err instanceof Error)) {
-            err = new Error(String(err));
+        if (!(err instanceof WaitError_1.WaitError)) {
+            if (this.debugKey) {
+                logger_1.error('[' + this.debugKey + ']', err);
+            }
+            else {
+                logger_1.error(err);
+            }
+            if (!(err instanceof Error)) {
+                err = new Error(String(err));
+            }
         }
         this._setError(err);
         if (external) {
             this._resolvePending();
         }
+    };
+    Cell.prototype.wait = function () {
+        throw new WaitError_1.WaitError();
     };
     Cell.prototype._setError = function (err) {
         this._error = err;

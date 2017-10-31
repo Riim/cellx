@@ -4,6 +4,7 @@ import { Map } from '@riim/map-set-polyfill';
 import { nextTick } from '@riim/next-tick';
 import { Symbol } from '@riim/symbol-polyfill';
 import { EventEmitter, IEvent, TListener } from './EventEmitter';
+import { WaitError } from './WaitError';
 
 export type TCellPull<T> = (cell: Cell<T>, next: any) => any;
 
@@ -581,6 +582,10 @@ export class Cell<T = any> extends EventEmitter {
 			}
 		}
 
+		if (currentCell && this._error && this._error instanceof WaitError) {
+			throw this._error;
+		}
+
 		return this._get ? this._get(this._value) : this._value!;
 	}
 
@@ -952,10 +957,16 @@ export class Cell<T = any> extends EventEmitter {
 	}
 
 	_fail(err: any, external: boolean) {
-		error('[' + this.debugKey + ']', err);
+		if (!(err instanceof WaitError)) {
+			if (this.debugKey) {
+				error('[' + this.debugKey + ']', err);
+			} else {
+				error(err);
+			}
 
-		if (!(err instanceof Error)) {
-			err = new Error(String(err));
+			if (!(err instanceof Error)) {
+				err = new Error(String(err));
+			}
 		}
 
 		this._setError(err);
@@ -963,6 +974,10 @@ export class Cell<T = any> extends EventEmitter {
 		if (external) {
 			this._resolvePending();
 		}
+	}
+
+	wait() {
+		throw new (WaitError as any)();
 	}
 
 	_setError(err: Error | null) {

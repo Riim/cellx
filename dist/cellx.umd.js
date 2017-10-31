@@ -70,7 +70,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 12);
+/******/ 	return __webpack_require__(__webpack_require__.s = 13);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -830,9 +830,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var is_1 = __webpack_require__(3);
 var logger_1 = __webpack_require__(4);
 var map_set_polyfill_1 = __webpack_require__(1);
-var next_tick_1 = __webpack_require__(14);
+var next_tick_1 = __webpack_require__(15);
 var symbol_polyfill_1 = __webpack_require__(2);
 var EventEmitter_1 = __webpack_require__(0);
+var WaitError_1 = __webpack_require__(8);
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
 var KEY_WRAPPERS = symbol_polyfill_1.Symbol('wrappers');
 var releasePlan = new map_set_polyfill_1.Map();
@@ -1242,6 +1243,9 @@ var Cell = /** @class */ (function (_super) {
                 currentCell._level = level + 1;
             }
         }
+        if (currentCell && this._error && this._error instanceof WaitError_1.WaitError) {
+            throw this._error;
+        }
         return this._get ? this._get(this._value) : this._value;
     };
     Cell.prototype.pull = function () {
@@ -1528,14 +1532,24 @@ var Cell = /** @class */ (function (_super) {
         return this;
     };
     Cell.prototype._fail = function (err, external) {
-        logger_1.error('[' + this.debugKey + ']', err);
-        if (!(err instanceof Error)) {
-            err = new Error(String(err));
+        if (!(err instanceof WaitError_1.WaitError)) {
+            if (this.debugKey) {
+                logger_1.error('[' + this.debugKey + ']', err);
+            }
+            else {
+                logger_1.error(err);
+            }
+            if (!(err instanceof Error)) {
+                err = new Error(String(err));
+            }
         }
         this._setError(err);
         if (external) {
             this._resolvePending();
         }
+    };
+    Cell.prototype.wait = function () {
+        throw new WaitError_1.WaitError();
     };
     Cell.prototype._setError = function (err) {
         this._error = err;
@@ -1593,6 +1607,21 @@ exports.Cell = Cell;
 
 "use strict";
 
+Object.defineProperty(exports, "__esModule", { value: true });
+function WaitError() { }
+exports.WaitError = WaitError;
+WaitError.prototype = {
+    __proto__: Error.prototype,
+    constructor: WaitError
+};
+
+
+/***/ }),
+/* 9 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -1605,7 +1634,7 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var is_1 = __webpack_require__(3);
-var mixin_1 = __webpack_require__(9);
+var mixin_1 = __webpack_require__(10);
 var symbol_polyfill_1 = __webpack_require__(2);
 var EventEmitter_1 = __webpack_require__(0);
 var FreezableCollection_1 = __webpack_require__(5);
@@ -2091,7 +2120,7 @@ ObservableList.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableList.pro
 
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2117,7 +2146,7 @@ exports.mixin = mixin;
 
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2135,7 +2164,7 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var is_1 = __webpack_require__(3);
 var map_set_polyfill_1 = __webpack_require__(1);
-var mixin_1 = __webpack_require__(9);
+var mixin_1 = __webpack_require__(10);
 var symbol_polyfill_1 = __webpack_require__(2);
 var EventEmitter_1 = __webpack_require__(0);
 var FreezableCollection_1 = __webpack_require__(5);
@@ -2305,7 +2334,7 @@ ObservableMap.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableMap.proto
 
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2316,31 +2345,33 @@ exports.KEY_CELL_MAP = symbol_polyfill_1.Symbol('cellx.cellMap');
 
 
 /***/ }),
-/* 12 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var map_set_polyfill_1 = __webpack_require__(1);
-var object_assign_polyfill_1 = __webpack_require__(13);
+var object_assign_polyfill_1 = __webpack_require__(14);
 var Cell_1 = __webpack_require__(7);
-var ObservableList_1 = __webpack_require__(8);
-var ObservableMap_1 = __webpack_require__(10);
-var keys_1 = __webpack_require__(11);
+var ObservableList_1 = __webpack_require__(9);
+var ObservableMap_1 = __webpack_require__(11);
+var keys_1 = __webpack_require__(12);
 var EventEmitter_1 = __webpack_require__(0);
 exports.EventEmitter = EventEmitter_1.EventEmitter;
 var FreezableCollection_1 = __webpack_require__(5);
 exports.FreezableCollection = FreezableCollection_1.FreezableCollection;
 var ObservableCollection_1 = __webpack_require__(6);
 exports.ObservableCollection = ObservableCollection_1.ObservableCollection;
-var ObservableMap_2 = __webpack_require__(10);
+var ObservableMap_2 = __webpack_require__(11);
 exports.ObservableMap = ObservableMap_2.ObservableMap;
-var ObservableList_2 = __webpack_require__(8);
+var ObservableList_2 = __webpack_require__(9);
 exports.ObservableList = ObservableList_2.ObservableList;
 var Cell_2 = __webpack_require__(7);
 exports.Cell = Cell_2.Cell;
-var keys_2 = __webpack_require__(11);
+var WaitError_1 = __webpack_require__(8);
+exports.WaitError = WaitError_1.WaitError;
+var keys_2 = __webpack_require__(12);
 exports.KEY_CELL_MAP = keys_2.KEY_CELL_MAP;
 var hasOwn = Object.prototype.hasOwnProperty;
 var slice = Array.prototype.slice;
@@ -2449,7 +2480,7 @@ exports.define = define;
 
 
 /***/ }),
-/* 13 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2465,7 +2496,7 @@ exports.assign = assign;
 
 
 /***/ }),
-/* 14 */
+/* 15 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";

@@ -8,6 +8,7 @@ export { ObservableCollection } from './collections/ObservableCollection';
 export { TObservableMapEntries, IObservableMapOptions, ObservableMap } from './collections/ObservableMap';
 export { TComparator, TObservableListItems, IObservableListOptions, ObservableList } from './collections/ObservableList';
 export { TCellPull, ICellOptions, ICellChangeEvent, ICellErrorEvent, TCellEvent, Cell } from './Cell';
+export { WaitError } from './WaitError';
 export { KEY_CELL_MAP } from './keys';
 export declare function map<K = any, V = any>(entries?: TObservableMapEntries<K, V> | null, opts?: IObservableMapOptions | boolean): ObservableMap<K, V>;
 export declare function list<T = any>(items?: TObservableListItems<T> | null, opts?: IObservableListOptions<T> | boolean): ObservableList<T>;

@@ -33,6 +33,7 @@ export {
 	TCellEvent,
 	Cell
 } from './Cell';
+export { WaitError } from './WaitError';
 export { KEY_CELL_MAP } from './keys';
 
 let hasOwn = Object.prototype.hasOwnProperty;

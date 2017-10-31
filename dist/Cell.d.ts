@@ -88,6 +88,7 @@ export declare class Cell<T = any> extends EventEmitter {
     _addToRelease(): void;
     fail(err: any): this;
     _fail(err: any, external: boolean): void;
+    wait(): void;
     _setError(err: Error | null): void;
     _handleErrorEvent(evt: IEvent<this>): void;
     _resolvePending(): void;
