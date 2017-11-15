@@ -1,7 +1,7 @@
 import { Cell, ICellOptions, TCellEvent, TCellPull } from './Cell';
 import { IObservableListOptions, ObservableList, TObservableListItems } from './collections/ObservableList';
 import { IObservableMapOptions, ObservableMap, TObservableMapEntries } from './collections/ObservableMap';
-import { EventEmitter, TListener } from './EventEmitter';
+import { TListener } from './EventEmitter';
 export { IEvent, TListener, IRegisteredEvent, EventEmitter } from './EventEmitter';
 export { FreezableCollection } from './collections/FreezableCollection';
 export { ObservableCollection } from './collections/ObservableCollection';
@@ -28,11 +28,11 @@ export interface ICellx<T> {
     (method: 'reap' | 'dispose', $: any): Cell<T>;
 }
 export declare function cellx<T = any>(value: T | TCellPull<T>, opts?: ICellOptions<T>): ICellx<T>;
-export declare function defineObservableProperty<T extends EventEmitter = EventEmitter>(obj: T, name: string, value: any): T;
-export declare function defineObservableProperties<T extends EventEmitter = EventEmitter>(obj: T, props: {
+export declare function defineObservableProperty<T extends object = object>(obj: T, name: string, value: any): T;
+export declare function defineObservableProperties<T extends object = object>(obj: T, props: {
     [name: string]: string;
 }): T;
-export declare function define<T extends EventEmitter = EventEmitter>(obj: T, name: string, value: any): T;
-export declare function define<T extends EventEmitter = EventEmitter>(obj: T, props: {
+export declare function define<T extends object = object>(obj: T, name: string, value: any): T;
+export declare function define<T extends object = object>(obj: T, props: {
     [name: string]: any;
 }): T;

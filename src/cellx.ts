@@ -8,7 +8,7 @@ import {
 	} from './Cell';
 import { IObservableListOptions, ObservableList, TObservableListItems } from './collections/ObservableList';
 import { IObservableMapOptions, ObservableMap, TObservableMapEntries } from './collections/ObservableMap';
-import { EventEmitter, TListener } from './EventEmitter';
+import { TListener } from './EventEmitter';
 import { KEY_CELL_MAP } from './keys';
 
 export { IEvent, TListener, IRegisteredEvent, EventEmitter } from './EventEmitter';
@@ -162,7 +162,7 @@ export function cellx<T = any>(value: T | TCellPull<T>, opts?: ICellOptions<T>):
 	return cx;
 }
 
-export function defineObservableProperty<T extends EventEmitter = EventEmitter>(
+export function defineObservableProperty<T extends object = object>(
 	obj: T,
 	name: string,
 	value: any
@@ -192,7 +192,7 @@ export function defineObservableProperty<T extends EventEmitter = EventEmitter>(
 	return obj;
 }
 
-export function defineObservableProperties<T extends EventEmitter = EventEmitter>(
+export function defineObservableProperties<T extends object = object>(
 	obj: T,
 	props: { [name: string]: string }
 ): T {
@@ -203,12 +203,9 @@ export function defineObservableProperties<T extends EventEmitter = EventEmitter
 	return obj;
 }
 
-export function define<T extends EventEmitter = EventEmitter>(obj: T, name: string, value: any): T;
-export function define<T extends EventEmitter = EventEmitter>(
-	obj: T,
-	props: { [name: string]: any }
-): T;
-export function define(obj: EventEmitter, name: string | { [name: string]: any }, value?: any) {
+export function define<T extends object = object>(obj: T, name: string, value: any): T;
+export function define<T extends object = object>(obj: T, props: { [name: string]: any }): T;
+export function define(obj: object, name: string | { [name: string]: any }, value?: any) {
 	if (typeof name == 'string') {
 		defineObservableProperty(obj, name, value);
 	} else {
