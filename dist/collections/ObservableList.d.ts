@@ -9,7 +9,7 @@ export interface IObservableListOptions<T> {
     sorted?: boolean;
 }
 export declare class ObservableList<T = any> extends EventEmitter implements FreezableCollection, ObservableCollection<T> {
-    _items: T[];
+    _items: Array<T>;
     _length: number;
     readonly length: number;
     _comparator: TComparator<T> | null;

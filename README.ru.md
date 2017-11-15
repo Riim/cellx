@@ -25,7 +25,7 @@ bower install cellx --save
 ## Пример использования
 
 ```js
-var user = {
+let user = {
     firstName: cellx('Матроскин'),
     lastName: cellx('Кот'),
 
@@ -35,7 +35,7 @@ var user = {
 };
 
 user.fullName('subscribe', function() {
-    console.log('fullName: ' + user.fullName());
+    console.log('fullName: ' + this.fullName());
 });
 
 console.log(user.fullName());
@@ -83,8 +83,8 @@ user.lastName('Пёс');
 Ячейки можно сохранять в переменных:
 
 ```js
-var num = cellx(1);
-var plusOne = cellx(function() { return num() + 1; });
+let num = cellx(1);
+let plusOne = cellx(() => num() + 1);
 
 console.log(plusOne());
 // => 2
@@ -98,7 +98,7 @@ function User(name) {
     this.nameInitial = cellx(function() { return this.name().charAt(0).toUpperCase(); });
 }
 
-var user = new User('Матроскин');
+let user = new User('Матроскин');
 
 console.log(user.nameInitial());
 // => 'М'
@@ -111,10 +111,10 @@ function User(name) {
     this.name(name);
 }
 User.prototype.name = cellx();
-User.prototype.friends = cellx(function() { return []; }); // каждый инстанс юзера получит свой инстанс массива
+User.prototype.friends = cellx(() => []); // каждый инстанс юзера получит свой инстанс массива
 
-var user1 = new User('Матроскин');
-var user2 = new User('Шарик');
+let user1 = new User('Матроскин');
+let user2 = new User('Шарик');
 
 console.log(user1.friends() == user2.friends());
 // => false
@@ -130,7 +130,7 @@ function User(name) {
     });
 }
 
-var user = new User('Матроскин');
+let user = new User('Матроскин');
 
 console.log(user.nameInitial);
 // => 'М'
@@ -159,8 +159,8 @@ console.log(user.nameInitial);
 
 ```js
 // массив, который не получится случайно испортить, портиться будет копия
-var arr = cellx([1, 2, 3], {
-    get: function(arr) { return arr.slice(); }
+let arr = cellx([1, 2, 3], {
+    get: arr => arr.slice()
 });
 
 console.log(arr()[0]);
@@ -193,7 +193,7 @@ function User() {
     });
 }
 
-var user = new User();
+let user = new User();
 
 user.fullName('Матроскин Кот');
 
@@ -210,8 +210,8 @@ console.log(user.lastName());
 Валидация при записи в ячейку:
 
 ```js
-var num = cellx(5, {
-    validate: function(value) {
+let num = cellx(5, {
+    validate: value => {
         if (typeof value != 'number') {
             throw new TypeError('Oops!');
         }
@@ -232,19 +232,17 @@ console.log(num());
 Валидация при вычислении ячейки:
 
 ```js
-var value = cellx(5);
+let value = cellx(5);
 
-var num = cellx(function() {
-    return value();
-}, {
-    validate: function(value) {
+let num = cellx(() => value(), {
+    validate: value => {
         if (typeof value != 'number') {
             throw new TypeError('Oops!');
         }
     }
 });
 
-num('subscribe', function(err) {
+num('subscribe', err => {
     console.log(err.message);
 });
 
@@ -270,9 +268,9 @@ console.log(num());
 Добавляет обработчик изменения:
 
 ```js
-var num = cellx(5);
+let num = cellx(5);
 
-num('addChangeListener', function(evt) {
+num('addChangeListener', evt => {
     console.log(evt);
 });
 
@@ -289,17 +287,17 @@ num(10);
 Добавляет обработчик ошибки:
 
 ```js
-var value = cellx(1);
+let value = cellx(1);
 
-var num = cellx(function() { return value(); }, {
-    validate: function(v) {
+let num = cellx(() => value(), {
+    validate: v => {
         if (v > 1) {
             throw new TypeError('Oops!');
         }
     }
 });
 
-num('addErrorListener', function(evt) {
+num('addErrorListener', evt => {
     console.log(evt.error.message);
 });
 
@@ -316,7 +314,7 @@ value(2);
 Подписывает на события `change` и `error`. В обработчик первым аргументом приходит объект ошибки, вторым — событие.
 
 ```js
-user.fullName('subscribe', function(err, evt) {
+user.fullName('subscribe', (err, evt) => {
     if (err) {
         //
     } else {
@@ -345,7 +343,7 @@ class User extends cellx.EventEmitter {
 
 let user = new User('Матроскин');
 
-user.on('change:nameInitial', function(evt) {
+user.on('change:nameInitial', evt => {
     console.log('nameInitial: ' + evt.value);
 });
 
@@ -382,9 +380,9 @@ user.name('dispose', 0);
 `evt.prevEvent`:
 
 ```js
-var num = cellx(5);
+let num = cellx(5);
 
-num('addChangeListener', function(evt) {
+num('addChangeListener', evt => {
     console.log(evt);
 });
 
@@ -409,9 +407,9 @@ num(20);
 В ситуации когда ячейка приходит к исходному значению до генерации события, она совсем его не генерит:
 
 ```js
-var num = cellx(5);
+let num = cellx(5);
 
-num('addChangeListener', function(evt) {
+num('addChangeListener', evt => {
     console.log(evt);
 });
 
@@ -424,17 +422,18 @@ num(5); // возвращаем исходное значение
 При изменении нескольких зависимостей вычисляемой ячейки, она вычисляется лишь раз и событие создаётся одно:
 
 ```js
-var inited = false;
-var num1 = cellx(5);
-var num2 = cellx(10);
-var sum = cellx(function() {
+let inited = false;
+let num1 = cellx(5);
+let num2 = cellx(10);
+let sum = cellx(() => {
     if (inited) {
         console.log('sum.formula');
     }
+
     return num1() + num2();
 });
 
-sum('addChangeListener', function(evt) {
+sum('addChangeListener', evt => {
     console.log(evt);
 });
 
@@ -455,7 +454,7 @@ num2(15);
 Формула вычисляемой ячейки может быть написана так, что набор зависимостей может со временем меняться. Например:
 
 ```js
-var user = {
+let user = {
     firstName: cellx(''),
     lastName: cellx(''),
 
@@ -476,18 +475,14 @@ var user = {
 ## Синхронизация значения с синхронным хранилищем
 
 ```js
-var foo = cellx(function() {
-	return localStorage.foo || 'foo';
-}, {
+let foo = cellx(() => localStorage.foo || 'foo', {
 	put: function(value) {
 		localStorage.foo = value;
 		this.push(value);
 	}
 });
 
-var foobar = cellx(function() {
-	return foo() + 'bar';
-});
+let foobar = cellx(() => foo() + 'bar');
 
 console.log(foobar()); // => 'foobar'
 console.log(localStorage.foo); // => undefined
@@ -499,37 +494,33 @@ console.log(localStorage.foo); // => 'FOO'
 ## Синхронизация значения с асинхронным хранилищем
 
 ```js
-var request = (function() {
-	var value = 1;
+let request = (() => {
+	let value = 1;
 
 	return {
-		get: function(url) {
-			return new Promise(function(resolve, reject) {
-				setTimeout(function() {
-					resolve({
-						ok: true,
-						value: value
-					});
-				}, 1000);
-			});
-		},
+		get: url => new Promise((resolve, reject) => {
+            setTimeout(() => {
+                resolve({
+                    ok: true,
+                    value
+                });
+            }, 1000);
+        }),
 
-		put: function(url, params) {
-			return new Promise(function(resolve, reject) {
-				setTimeout(function() {
-					value = params.value;
+		put: (url, params) => new Promise((resolve, reject) => {
+            setTimeout(() => {
+                value = params.value;
 
-					resolve({
-						ok: true
-					});
-				}, 1000);
-			});
-		}
+                resolve({
+                    ok: true
+                });
+            }, 1000);
+        })
 	};
 })();
 
-var foo = cellx(function(cell, next = 0) {
-	request.get('http://...').then(function(res) {
+let foo = cellx(function(cell, next = 0) {
+	request.get('http://...').then((res) => {
 		if (res.ok) {
 			cell.push(res.value);
 		} else {
@@ -539,8 +530,8 @@ var foo = cellx(function(cell, next = 0) {
 
 	return next;
 }, {
-	put: function(value, cell, next) {
-		request.put('http://...', { value: value }).then(function(res) {
+	put: (value, cell, next) => {
+		request.put('http://...', { value: value }).then(res => {
 			if (res.ok) {
 				cell.push(value);
 			} else {
@@ -550,7 +541,7 @@ var foo = cellx(function(cell, next = 0) {
 	}
 });
 
-foo('subscribe', function() {
+foo('subscribe', () => {
 	console.log('New foo value: ' + foo());
 	foo(5);
 });
@@ -558,7 +549,7 @@ foo('subscribe', function() {
 console.log(foo());
 // => 0
 
-foo('then', function() {
+foo('then', () => {
     console.log(foo());
 });
 // => 'New foo value: 1'
@@ -572,9 +563,9 @@ foo('then', function() {
 событие `change` и будет выдавать его за своё:
 
 ```js
-var value = cellx(new cellx.EventEmitter());
+let value = cellx(new cellx.EventEmitter());
 
-value('subscribe', function(err, evt) {
+value('subscribe', (err, evt) => {
     console.log(evt.target instanceof cellx.EventEmitter);
 });
 
@@ -590,7 +581,7 @@ value().emit('change');
 Короткий синтаксис для создания:
 
 ```js
-var map = cellx.map({
+let map = cellx.map({
     key1: 1,
     key2: 2,
     key3: 3
@@ -612,7 +603,7 @@ var map = cellx.map({
 Короткий синтаксис для создания:
 
 ```js
-var list = cellx.list([1, 2, 3]);
+let list = cellx.list([1, 2, 3]);
 ```
 
 Список также как и `cellx.ObservableMap` генерирует событие `change` при любом изменении своих записей.
@@ -620,12 +611,12 @@ var list = cellx.list([1, 2, 3]);
 При инициализации список может принимать `comparator`, с помощью которого будет происходить сортировка его значений:
 
 ```js
-var list = cellx.list([
+let list = cellx.list([
     { x: 5 },
     { x: 1 },
     { x: 10 }
 ], {
-    comparator: function(a, b) {
+    comparator: (a, b) => {
         if (a.x < b.x) { return -1; }
         if (a.x > b.x) { return 1; }
         return 0;
@@ -644,7 +635,7 @@ console.log(list.toArray());
 Если вместо `comparator`-а передать опцию `sorted` со значением `true`, то будет использован стандартный `comparator`:
 
 ```js
-var list = cellx.list([5, 1, 10], { sorted: true });
+let list = cellx.list([5, 1, 10], { sorted: true });
 
 console.log(list.toArray());
 // => [1, 5, 10]

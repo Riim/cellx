@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.7.70",
+  "version": "1.7.71",
   "description": "",
   "main": "dist/cellx.js",
   "typings": "dist/cellx.d.ts",
@@ -23,11 +23,11 @@
   },
   "homepage": "https://github.com/Riim/cellx",
   "devDependencies": {
-    "awesome-typescript-loader": "^3.2.3",
+    "awesome-typescript-loader": "^3.3.0",
     "jest": "^21.2.1",
     "tslint": "^5.8.0",
     "tslint-loader": "^3.5.3",
-    "typescript": "^2.5.3",
+    "typescript": "^2.6.1",
     "webpack": "^3.8.1"
   },
   "dependencies": {

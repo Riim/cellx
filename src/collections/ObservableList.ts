@@ -23,7 +23,7 @@ function defaultComparator(a: any, b: any): number {
 
 export class ObservableList<T = any> extends EventEmitter
 	implements FreezableCollection, ObservableCollection<T> {
-	_items = [] as Array<T>;
+	_items: Array<T> = [];
 
 	_length = 0;
 	get length(): number {
