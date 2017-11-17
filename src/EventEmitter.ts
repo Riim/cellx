@@ -132,7 +132,8 @@ export class EventEmitter {
 			let propName = type.slice(index + 1);
 
 			currentlySubscribing = true;
-			((this as any)[propName + 'Cell'] ||
+			(
+				(this as any)[propName + 'Cell'] ||
 				((this as any)[propName], (this as any)[propName + 'Cell'])
 			).on(type.slice(0, index), listener, context);
 			currentlySubscribing = false;
@@ -156,7 +157,8 @@ export class EventEmitter {
 		if (index != -1) {
 			let propName = type.slice(index + 1);
 
-			((this as any)[propName + 'Cell'] ||
+			(
+				(this as any)[propName + 'Cell'] ||
 				((this as any)[propName], (this as any)[propName + 'Cell'])
 			).off(type.slice(0, index), listener, context);
 		} else {

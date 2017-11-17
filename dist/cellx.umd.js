@@ -70,7 +70,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	__webpack_require__.p = "";
 /******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 13);
+/******/ 	return __webpack_require__(__webpack_require__.s = 12);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -830,12 +830,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var is_1 = __webpack_require__(3);
 var logger_1 = __webpack_require__(4);
 var map_set_polyfill_1 = __webpack_require__(1);
-var next_tick_1 = __webpack_require__(15);
+var next_tick_1 = __webpack_require__(14);
 var symbol_polyfill_1 = __webpack_require__(2);
 var EventEmitter_1 = __webpack_require__(0);
 var WaitError_1 = __webpack_require__(8);
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
-var KEY_WRAPPERS = symbol_polyfill_1.Symbol('wrappers');
+var KEY_WRAPPERS = symbol_polyfill_1.Symbol('cellx.wrappers');
 var releasePlan = new map_set_polyfill_1.Map();
 var releasePlanIndex = MAX_SAFE_INTEGER;
 var releasePlanToIndex = -1;
@@ -2349,23 +2349,12 @@ ObservableMap.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableMap.proto
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var symbol_polyfill_1 = __webpack_require__(2);
-exports.KEY_CELL_MAP = symbol_polyfill_1.Symbol('cellx.cellMap');
-
-
-/***/ }),
-/* 13 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
 var map_set_polyfill_1 = __webpack_require__(1);
-var object_assign_polyfill_1 = __webpack_require__(14);
+var object_assign_polyfill_1 = __webpack_require__(13);
+var symbol_polyfill_1 = __webpack_require__(2);
 var Cell_1 = __webpack_require__(7);
 var ObservableList_1 = __webpack_require__(9);
 var ObservableMap_1 = __webpack_require__(11);
-var keys_1 = __webpack_require__(12);
 var EventEmitter_1 = __webpack_require__(0);
 exports.EventEmitter = EventEmitter_1.EventEmitter;
 var FreezableCollection_1 = __webpack_require__(5);
@@ -2380,8 +2369,6 @@ var Cell_2 = __webpack_require__(7);
 exports.Cell = Cell_2.Cell;
 var WaitError_1 = __webpack_require__(8);
 exports.WaitError = WaitError_1.WaitError;
-var keys_2 = __webpack_require__(12);
-exports.KEY_CELL_MAP = keys_2.KEY_CELL_MAP;
 var hasOwn = Object.prototype.hasOwnProperty;
 var slice = Array.prototype.slice;
 var global = Function('return this;')();
@@ -2393,6 +2380,7 @@ function list(items, opts) {
     return new ObservableList_1.ObservableList(items, opts);
 }
 exports.list = list;
+exports.KEY_CELL_MAP = symbol_polyfill_1.Symbol('cellx.cellMap');
 function cellx(value, opts) {
     if (!opts) {
         opts = {};
@@ -2403,16 +2391,16 @@ function cellx(value, opts) {
         if (!context || context == global) {
             context = cx;
         }
-        if (!hasOwn.call(context, keys_1.KEY_CELL_MAP)) {
-            Object.defineProperty(context, keys_1.KEY_CELL_MAP, { value: new map_set_polyfill_1.Map() });
+        if (!hasOwn.call(context, exports.KEY_CELL_MAP)) {
+            Object.defineProperty(context, exports.KEY_CELL_MAP, { value: new map_set_polyfill_1.Map() });
         }
-        var cell = context[keys_1.KEY_CELL_MAP].get(cx);
+        var cell = context[exports.KEY_CELL_MAP].get(cx);
         if (!cell) {
             if (value === 'dispose' && arguments.length >= 2) {
                 return;
             }
             cell = new Cell_1.Cell(initialValue, object_assign_polyfill_1.assign({ context: context }, opts));
-            context[keys_1.KEY_CELL_MAP].set(cx, cell);
+            context[exports.KEY_CELL_MAP].set(cx, cell);
         }
         switch (arguments.length) {
             case 0: {
@@ -2489,7 +2477,7 @@ exports.define = define;
 
 
 /***/ }),
-/* 14 */
+/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2505,7 +2493,7 @@ exports.assign = assign;
 
 
 /***/ }),
-/* 15 */
+/* 14 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";

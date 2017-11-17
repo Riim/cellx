@@ -41,7 +41,7 @@ export type TCellEvent<T extends EventEmitter = EventEmitter> =
 	| ICellErrorEvent<T>;
 
 let MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
-let KEY_WRAPPERS = Symbol('wrappers');
+let KEY_WRAPPERS = Symbol('cellx.wrappers');
 
 let releasePlan = new Map<number, Array<Cell>>();
 let releasePlanIndex = MAX_SAFE_INTEGER;

@@ -1,5 +1,6 @@
 import { Map } from '@riim/map-set-polyfill';
 import { assign } from '@riim/object-assign-polyfill';
+import { Symbol } from '@riim/symbol-polyfill';
 import {
 	Cell,
 	ICellOptions,
@@ -9,7 +10,6 @@ import {
 import { IObservableListOptions, ObservableList, TObservableListItems } from './collections/ObservableList';
 import { IObservableMapOptions, ObservableMap, TObservableMapEntries } from './collections/ObservableMap';
 import { TListener } from './EventEmitter';
-import { KEY_CELL_MAP } from './keys';
 
 export { IEvent, TListener, IRegisteredEvent, EventEmitter } from './EventEmitter';
 export { FreezableCollection } from './collections/FreezableCollection';
@@ -34,7 +34,6 @@ export {
 	Cell
 } from './Cell';
 export { WaitError } from './WaitError';
-export { KEY_CELL_MAP } from './keys';
 
 let hasOwn = Object.prototype.hasOwnProperty;
 let slice = Array.prototype.slice;
@@ -90,6 +89,8 @@ export interface ICellx<T> {
 	// tslint:disable-next-line
 	(method: 'reap' | 'dispose', $: any): Cell<T>;
 }
+
+export let KEY_CELL_MAP = Symbol('cellx.cellMap');
 
 export function cellx<T = any>(value: T | TCellPull<T>, opts?: ICellOptions<T>): ICellx<T> {
 	if (!opts) {

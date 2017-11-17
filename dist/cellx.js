@@ -2,10 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 var map_set_polyfill_1 = require("@riim/map-set-polyfill");
 var object_assign_polyfill_1 = require("@riim/object-assign-polyfill");
+var symbol_polyfill_1 = require("@riim/symbol-polyfill");
 var Cell_1 = require("./Cell");
 var ObservableList_1 = require("./collections/ObservableList");
 var ObservableMap_1 = require("./collections/ObservableMap");
-var keys_1 = require("./keys");
 var EventEmitter_1 = require("./EventEmitter");
 exports.EventEmitter = EventEmitter_1.EventEmitter;
 var FreezableCollection_1 = require("./collections/FreezableCollection");
@@ -20,8 +20,6 @@ var Cell_2 = require("./Cell");
 exports.Cell = Cell_2.Cell;
 var WaitError_1 = require("./WaitError");
 exports.WaitError = WaitError_1.WaitError;
-var keys_2 = require("./keys");
-exports.KEY_CELL_MAP = keys_2.KEY_CELL_MAP;
 var hasOwn = Object.prototype.hasOwnProperty;
 var slice = Array.prototype.slice;
 var global = Function('return this;')();
@@ -33,6 +31,7 @@ function list(items, opts) {
     return new ObservableList_1.ObservableList(items, opts);
 }
 exports.list = list;
+exports.KEY_CELL_MAP = symbol_polyfill_1.Symbol('cellx.cellMap');
 function cellx(value, opts) {
     if (!opts) {
         opts = {};
@@ -43,16 +42,16 @@ function cellx(value, opts) {
         if (!context || context == global) {
             context = cx;
         }
-        if (!hasOwn.call(context, keys_1.KEY_CELL_MAP)) {
-            Object.defineProperty(context, keys_1.KEY_CELL_MAP, { value: new map_set_polyfill_1.Map() });
+        if (!hasOwn.call(context, exports.KEY_CELL_MAP)) {
+            Object.defineProperty(context, exports.KEY_CELL_MAP, { value: new map_set_polyfill_1.Map() });
         }
-        var cell = context[keys_1.KEY_CELL_MAP].get(cx);
+        var cell = context[exports.KEY_CELL_MAP].get(cx);
         if (!cell) {
             if (value === 'dispose' && arguments.length >= 2) {
                 return;
             }
             cell = new Cell_1.Cell(initialValue, object_assign_polyfill_1.assign({ context: context }, opts));
-            context[keys_1.KEY_CELL_MAP].set(cx, cell);
+            context[exports.KEY_CELL_MAP].set(cx, cell);
         }
         switch (arguments.length) {
             case 0: {

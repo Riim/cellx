@@ -9,7 +9,6 @@ export { TObservableMapEntries, IObservableMapOptions, ObservableMap } from './c
 export { TComparator, TObservableListItems, IObservableListOptions, ObservableList } from './collections/ObservableList';
 export { TCellPull, ICellOptions, ICellChangeEvent, ICellErrorEvent, TCellEvent, Cell } from './Cell';
 export { WaitError } from './WaitError';
-export { KEY_CELL_MAP } from './keys';
 export declare function map<K = any, V = any>(entries?: TObservableMapEntries<K, V> | null, opts?: IObservableMapOptions | boolean): ObservableMap<K, V>;
 export declare function list<T = any>(items?: TObservableListItems<T> | null, opts?: IObservableListOptions<T> | boolean): ObservableList<T>;
 export interface ICellx<T> {
@@ -27,6 +26,7 @@ export interface ICellx<T> {
     (method: 'catch', onRejected: (err: any) => any): Promise<any>;
     (method: 'reap' | 'dispose', $: any): Cell<T>;
 }
+export declare let KEY_CELL_MAP: symbol;
 export declare function cellx<T = any>(value: T | TCellPull<T>, opts?: ICellOptions<T>): ICellx<T>;
 export declare function defineObservableProperty<T extends object = object>(obj: T, name: string, value: any): T;
 export declare function defineObservableProperties<T extends object = object>(obj: T, props: {
