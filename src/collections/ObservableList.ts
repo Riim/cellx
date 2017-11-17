@@ -537,12 +537,17 @@ export class ObservableList<T = any> extends EventEmitter
 		return 0 as any;
 	}
 
-	clone(): ObservableList<T> {
-		return new (this.constructor as typeof ObservableList)(this, {
-			adoptsValueChanges: this._adoptsValueChanges,
-			comparator: this._comparator || undefined,
-			sorted: this._sorted
-		});
+	clone(deep?: boolean): ObservableList<T> {
+		return new (this.constructor as typeof ObservableList)(
+			deep
+				? this._items.map(item => ((item as any).clone ? (item as any).clone() : item))
+				: this,
+			{
+				adoptsValueChanges: this._adoptsValueChanges,
+				comparator: this._comparator || undefined,
+				sorted: this._sorted
+			}
+		);
 	}
 
 	toArray(): Array<T> {

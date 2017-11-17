@@ -178,8 +178,21 @@ export class ObservableMap<K = any, V = any> extends EventEmitter
 		return this._entries.entries();
 	}
 
-	clone(): ObservableMap<K, V> {
-		return new (this.constructor as typeof ObservableMap)(this, this._adoptsValueChanges);
+	clone(deep?: boolean): ObservableMap<K, V> {
+		let entries: Array<[K, V]> | undefined;
+
+		if (deep) {
+			entries = [];
+
+			this._entries.forEach((value, key) => {
+				entries!.push([key, (value as any).clone ? (value as any).clone() : value]);
+			});
+		}
+
+		return new (this.constructor as typeof ObservableMap)(
+			entries || this,
+			this._adoptsValueChanges
+		);
 	}
 
 	// FreezableCollection

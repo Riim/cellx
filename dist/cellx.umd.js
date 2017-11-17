@@ -2011,8 +2011,10 @@ var ObservableList = /** @class */ (function (_super) {
     ObservableList.prototype.entries = function () {
         return 0;
     };
-    ObservableList.prototype.clone = function () {
-        return new this.constructor(this, {
+    ObservableList.prototype.clone = function (deep) {
+        return new this.constructor(deep
+            ? this._items.map(function (item) { return (item.clone ? item.clone() : item); })
+            : this, {
             adoptsValueChanges: this._adoptsValueChanges,
             comparator: this._comparator || undefined,
             sorted: this._sorted
@@ -2298,8 +2300,15 @@ var ObservableMap = /** @class */ (function (_super) {
     ObservableMap.prototype.entries = function () {
         return this._entries.entries();
     };
-    ObservableMap.prototype.clone = function () {
-        return new this.constructor(this, this._adoptsValueChanges);
+    ObservableMap.prototype.clone = function (deep) {
+        var entries;
+        if (deep) {
+            entries = [];
+            this._entries.forEach(function (value, key) {
+                entries.push([key, value.clone ? value.clone() : value]);
+            });
+        }
+        return new this.constructor(entries || this, this._adoptsValueChanges);
     };
     Object.defineProperty(ObservableMap.prototype, "isFrozen", {
         get: function () {

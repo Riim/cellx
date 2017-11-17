@@ -146,8 +146,15 @@ var ObservableMap = /** @class */ (function (_super) {
     ObservableMap.prototype.entries = function () {
         return this._entries.entries();
     };
-    ObservableMap.prototype.clone = function () {
-        return new this.constructor(this, this._adoptsValueChanges);
+    ObservableMap.prototype.clone = function (deep) {
+        var entries;
+        if (deep) {
+            entries = [];
+            this._entries.forEach(function (value, key) {
+                entries.push([key, value.clone ? value.clone() : value]);
+            });
+        }
+        return new this.constructor(entries || this, this._adoptsValueChanges);
     };
     Object.defineProperty(ObservableMap.prototype, "isFrozen", {
         get: function () {

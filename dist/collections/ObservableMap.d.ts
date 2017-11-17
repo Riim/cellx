@@ -22,7 +22,7 @@ export declare class ObservableMap<K = any, V = any> extends EventEmitter implem
     keys(): IterableIterator<K>;
     values(): IterableIterator<V>;
     entries(): IterableIterator<[K, V]>;
-    clone(): ObservableMap<K, V>;
+    clone(deep?: boolean): ObservableMap<K, V>;
     _isFrozen: boolean;
     readonly isFrozen: boolean;
     freeze(): this;

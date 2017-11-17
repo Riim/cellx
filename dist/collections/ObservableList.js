@@ -388,8 +388,10 @@ var ObservableList = /** @class */ (function (_super) {
     ObservableList.prototype.entries = function () {
         return 0;
     };
-    ObservableList.prototype.clone = function () {
-        return new this.constructor(this, {
+    ObservableList.prototype.clone = function (deep) {
+        return new this.constructor(deep
+            ? this._items.map(function (item) { return (item.clone ? item.clone() : item); })
+            : this, {
             adoptsValueChanges: this._adoptsValueChanges,
             comparator: this._comparator || undefined,
             sorted: this._sorted

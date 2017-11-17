@@ -49,7 +49,7 @@ export declare class ObservableList<T = any> extends EventEmitter implements Fre
     keys(): IterableIterator<number>;
     values(): IterableIterator<T>;
     entries(): IterableIterator<[number, T]>;
-    clone(): ObservableList<T>;
+    clone(deep?: boolean): ObservableList<T>;
     toArray(): Array<T>;
     toString(): string;
     _insertSortedValue(value: T): void;
