@@ -905,6 +905,7 @@ function release(force) {
                 }
                 if (pushingIndex > slave._pushingIndex) {
                     slave._pushingIndex = pushingIndex;
+                    slave._prevChangeEvent = slave._changeEvent;
                     slave._changeEvent = null;
                     slave._addToRelease();
                 }
@@ -964,6 +965,7 @@ var Cell = /** @class */ (function (_super) {
         _this._selfErrorCell = null;
         _this._errorCell = null;
         _this._state = STATE_CAN_CANCEL_CHANGE;
+        _this._prevChangeEvent = null;
         _this._changeEvent = null;
         _this._lastErrorEvent = null;
         _this.debugKey = opts && opts.debugKey;
@@ -1167,16 +1169,8 @@ var Cell = /** @class */ (function (_super) {
         this._state ^= STATE_ACTIVE;
     };
     Cell.prototype._onValueChange = function (evt) {
-        var _this = this;
         if (this._state & STATE_HAS_FOLLOWERS) {
-            if (currentCell) {
-                (afterRelease || (afterRelease = [])).push(function () {
-                    _this._onValueChange$(evt);
-                });
-            }
-            else {
-                this._onValueChange$(evt);
-            }
+            this._onValueChange$(evt);
         }
         else {
             this._pushingIndex = ++pushingIndexCounter;
@@ -1432,40 +1426,30 @@ var Cell = /** @class */ (function (_super) {
         return this;
     };
     Cell.prototype._push = function (value, external, pulling) {
-        this._state |= STATE_INITED;
-        var prev = this._value;
-        if (external && currentCell && this._state & STATE_HAS_FOLLOWERS) {
-            if (is_1.is(value, prev)) {
-                if (this._error) {
-                    this._setError(null);
-                }
-                this._resolvePending();
-                return false;
-            }
-            (afterRelease || (afterRelease = [])).push([this, value]);
-            return true;
-        }
         if (external || (!currentlyRelease && pulling)) {
             this._pushingIndex = ++pushingIndexCounter;
         }
+        this._state |= STATE_INITED;
         if (this._error) {
             this._setError(null);
         }
-        if (is_1.is(value, prev)) {
+        var prevValue = this._value;
+        if (is_1.is(value, prevValue)) {
             if (external || (currentlyRelease && pulling)) {
                 this._resolvePending();
             }
             return false;
         }
         this._value = value;
-        if (prev instanceof EventEmitter_1.EventEmitter) {
-            prev.off('change', this._onValueChange, this);
+        if (prevValue instanceof EventEmitter_1.EventEmitter) {
+            prevValue.off('change', this._onValueChange, this);
         }
         if (value instanceof EventEmitter_1.EventEmitter) {
             value.on('change', this._onValueChange, this);
         }
         if (this._state & STATE_HAS_FOLLOWERS) {
-            if (this._changeEvent) {
+            var prevEvent = this._changeEvent || this._prevChangeEvent;
+            if (prevEvent) {
                 if (is_1.is(value, this._fixedValue) && this._state & STATE_CAN_CANCEL_CHANGE) {
                     this._levelInRelease = -1;
                     this._changeEvent = null;
@@ -1475,12 +1459,13 @@ var Cell = /** @class */ (function (_super) {
                         target: this,
                         type: 'change',
                         data: {
-                            prevEvent: this._changeEvent,
-                            prevValue: prev,
+                            prevEvent: prevEvent,
+                            prevValue: prevValue,
                             value: value
                         }
                     };
                 }
+                this._prevChangeEvent = null;
             }
             else {
                 this._state |= STATE_CAN_CANCEL_CHANGE;
@@ -1488,11 +1473,12 @@ var Cell = /** @class */ (function (_super) {
                     target: this,
                     type: 'change',
                     data: {
-                        prevEvent: null,
-                        prevValue: prev,
+                        prevEvent: this._prevChangeEvent,
+                        prevValue: prevValue,
                         value: value
                     }
                 };
+                this._prevChangeEvent = null;
                 this._addToRelease();
             }
         }

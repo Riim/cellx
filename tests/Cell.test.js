@@ -736,4 +736,41 @@ describe('Cell', () => {
 		c.get();
 		a.set(2);
 	});
+
+	test('передаёт правильный next в pull', done => {
+		let a = new Cell(1, { debugKey: 'a' });
+		let b = new Cell((cell, next) => {
+			if (a.get() == 2) {
+				expect(next).toBe(5);
+			}
+
+			return a.get();
+		}, {
+			debugKey: 'b',
+			onChange(evt) {
+				expect(evt).toEqual({
+					type: 'change',
+					target: b,
+					data: {
+						prevEvent: {
+							type: 'change',
+							target: b,
+							data: {
+								prevEvent: null,
+								prevValue: 1,
+								value: 5
+							}
+						},
+						prevValue: 5,
+						value: 2
+					}
+				});
+
+				done();
+			}
+		});
+
+		b.set(5);
+		a.set(2);
+	});
 });

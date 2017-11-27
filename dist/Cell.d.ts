@@ -39,8 +39,8 @@ export declare class Cell<T = any> extends EventEmitter {
     _merge: ((next: T, value: any) => any) | null;
     _put: (cell: Cell<T>, next: any, value: any) => void;
     _reap: (() => void) | null;
-    _fixedValue: any;
     _value: any;
+    _fixedValue: any;
     _error: Error | null;
     _pushingIndex: number;
     _errorIndex: number;
@@ -54,6 +54,7 @@ export declare class Cell<T = any> extends EventEmitter {
     _selfErrorCell: Cell<Error | null> | null;
     _errorCell: Cell<Error | null> | null;
     _state: number;
+    _prevChangeEvent: IEvent | null;
     _changeEvent: IEvent | null;
     _lastErrorEvent: IEvent<this> | null;
     constructor(value: T | TCellPull<T>, opts?: ICellOptions<T>);

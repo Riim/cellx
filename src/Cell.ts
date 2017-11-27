@@ -141,6 +141,7 @@ function release(force?: boolean) {
 
 				if (pushingIndex > slave._pushingIndex) {
 					slave._pushingIndex = pushingIndex;
+					slave._prevChangeEvent = slave._changeEvent;
 					slave._changeEvent = null;
 
 					slave._addToRelease();
@@ -244,8 +245,8 @@ export class Cell<T = any> extends EventEmitter {
 
 	_reap: (() => void) | null;
 
-	_fixedValue: any;
 	_value: any;
+	_fixedValue: any;
 
 	_error: Error | null = null;
 
@@ -267,7 +268,9 @@ export class Cell<T = any> extends EventEmitter {
 
 	_state = STATE_CAN_CANCEL_CHANGE;
 
+	_prevChangeEvent: IEvent | null = null;
 	_changeEvent: IEvent | null = null;
+
 	_lastErrorEvent: IEvent<this> | null = null;
 
 	constructor(value: T | TCellPull<T>, opts?: ICellOptions<T>) {
@@ -500,13 +503,7 @@ export class Cell<T = any> extends EventEmitter {
 
 	_onValueChange(evt: IEvent) {
 		if (this._state & STATE_HAS_FOLLOWERS) {
-			if (currentCell) {
-				(afterRelease || (afterRelease = [])).push(() => {
-					this._onValueChange$(evt);
-				});
-			} else {
-				this._onValueChange$(evt);
-			}
+			this._onValueChange$(evt);
 		} else {
 			this._pushingIndex = ++pushingIndexCounter;
 			this._version = ++releaseVersion + +(currentlyRelease > 0);
@@ -834,35 +831,19 @@ export class Cell<T = any> extends EventEmitter {
 	}
 
 	_push(value: any, external: boolean, pulling: boolean): boolean {
-		this._state |= STATE_INITED;
-
-		let prev = this._value;
-
-		if (external && currentCell && this._state & STATE_HAS_FOLLOWERS) {
-			if (is(value, prev)) {
-				if (this._error) {
-					this._setError(null);
-				}
-
-				this._resolvePending();
-
-				return false;
-			}
-
-			(afterRelease || (afterRelease = [])).push([this, value]);
-
-			return true;
-		}
-
 		if (external || (!currentlyRelease && pulling)) {
 			this._pushingIndex = ++pushingIndexCounter;
 		}
+
+		this._state |= STATE_INITED;
 
 		if (this._error) {
 			this._setError(null);
 		}
 
-		if (is(value, prev)) {
+		let prevValue = this._value;
+
+		if (is(value, prevValue)) {
 			if (external || (currentlyRelease && pulling)) {
 				this._resolvePending();
 			}
@@ -872,15 +853,17 @@ export class Cell<T = any> extends EventEmitter {
 
 		this._value = value;
 
-		if (prev instanceof EventEmitter) {
-			prev.off('change', this._onValueChange, this);
+		if (prevValue instanceof EventEmitter) {
+			prevValue.off('change', this._onValueChange, this);
 		}
 		if (value instanceof EventEmitter) {
 			value.on('change', this._onValueChange, this);
 		}
 
 		if (this._state & STATE_HAS_FOLLOWERS) {
-			if (this._changeEvent) {
+			let prevEvent = this._changeEvent || this._prevChangeEvent;
+
+			if (prevEvent) {
 				if (is(value, this._fixedValue) && this._state & STATE_CAN_CANCEL_CHANGE) {
 					this._levelInRelease = -1;
 					this._changeEvent = null;
@@ -889,23 +872,25 @@ export class Cell<T = any> extends EventEmitter {
 						target: this,
 						type: 'change',
 						data: {
-							prevEvent: this._changeEvent,
-							prevValue: prev,
+							prevEvent,
+							prevValue,
 							value
 						}
 					};
 				}
+				this._prevChangeEvent = null;
 			} else {
 				this._state |= STATE_CAN_CANCEL_CHANGE;
 				this._changeEvent = {
 					target: this,
 					type: 'change',
 					data: {
-						prevEvent: null,
-						prevValue: prev,
+						prevEvent: this._prevChangeEvent,
+						prevValue,
 						value
 					}
 				};
+				this._prevChangeEvent = null;
 
 				this._addToRelease();
 			}
