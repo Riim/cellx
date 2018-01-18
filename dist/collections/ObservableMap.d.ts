@@ -19,9 +19,9 @@ export declare class ObservableMap<K = any, V = any> extends EventEmitter implem
     delete(key: K): boolean;
     clear(): this;
     forEach(callback: (value: V, key: K, map: this) => void, context?: any): void;
-    keys(): IterableIterator<K>;
-    values(): IterableIterator<V>;
-    entries(): IterableIterator<[K, V]>;
+    keys(): Iterator<K>;
+    values(): Iterator<V>;
+    entries(): Iterator<[K, V]>;
     clone(deep?: boolean): ObservableMap<K, V>;
     _isFrozen: boolean;
     readonly isFrozen: boolean;

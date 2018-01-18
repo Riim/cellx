@@ -389,7 +389,7 @@ export class Cell<T = any> extends EventEmitter {
 
 	subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this {
 		let wrappers: Map<Cell, TListener> =
-			(listener as any)[KEY_WRAPPERS] || ((listener as any)[KEY_WRAPPERS] = new Map());
+			listener[KEY_WRAPPERS] || (listener[KEY_WRAPPERS] = new Map());
 
 		if (wrappers.has(this)) {
 			return this;
@@ -408,7 +408,7 @@ export class Cell<T = any> extends EventEmitter {
 	}
 
 	unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this {
-		let wrappers: Map<Cell, TListener> | undefined = (listener as any)[KEY_WRAPPERS];
+		let wrappers: Map<Cell, TListener> | undefined = listener[KEY_WRAPPERS];
 		let wrapper = wrappers && wrappers.get(this);
 
 		if (!wrapper) {

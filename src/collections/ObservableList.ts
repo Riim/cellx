@@ -525,15 +525,15 @@ export class ObservableList<T = any> extends EventEmitter
 		return 0 as any;
 	}
 
-	keys(): IterableIterator<number> {
+	keys(): Iterator<number> {
 		return 0 as any;
 	}
 
-	values(): IterableIterator<T> {
+	values(): Iterator<T> {
 		return 0 as any;
 	}
 
-	entries(): IterableIterator<[number, T]> {
+	entries(): Iterator<[number, T]> {
 		return 0 as any;
 	}
 
@@ -605,7 +605,7 @@ mixin(ObservableList.prototype, FreezableCollection.prototype, ['constructor']);
 mixin(ObservableList.prototype, ObservableCollection.prototype, ['constructor']);
 
 ['forEach', 'map', 'filter', 'every', 'some'].forEach(name => {
-	(ObservableList.prototype as any)[name] = function(callback: Function, context?: any) {
+	ObservableList.prototype[name] = function(callback: Function, context?: any) {
 		return this._items[name](function(item: any, index: number): any {
 			return callback.call(context, item, index, this);
 		}, this);
@@ -613,10 +613,7 @@ mixin(ObservableList.prototype, ObservableCollection.prototype, ['constructor'])
 });
 
 ['reduce', 'reduceRight'].forEach(name => {
-	(ObservableList.prototype as any)[name] = function(
-		callback: Function,
-		initialValue?: any
-	): any {
+	ObservableList.prototype[name] = function(callback: Function, initialValue?: any): any {
 		let list = this;
 
 		function wrapper(accumulator: any, item: any, index: number): any {
@@ -636,7 +633,7 @@ mixin(ObservableList.prototype, ObservableCollection.prototype, ['constructor'])
 ].forEach((settings: [string, (index: number, item: any) => any]) => {
 	let getStepValue = settings[1];
 
-	(ObservableList.prototype as any)[settings[0]] = function() {
+	ObservableList.prototype[settings[0]] = function() {
 		let items = this._items;
 		let index = 0;
 		let done = false;
@@ -663,4 +660,4 @@ mixin(ObservableList.prototype, ObservableCollection.prototype, ['constructor'])
 	};
 });
 
-(ObservableList.prototype as any)[Symbol.iterator] = ObservableList.prototype.values;
+ObservableList.prototype[Symbol.iterator] = ObservableList.prototype.values;

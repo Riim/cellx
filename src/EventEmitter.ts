@@ -132,10 +132,11 @@ export class EventEmitter {
 			let propName = type.slice(index + 1);
 
 			currentlySubscribing = true;
-			(
-				(this as any)[propName + 'Cell'] ||
-				((this as any)[propName], (this as any)[propName + 'Cell'])
-			).on(type.slice(0, index), listener, context);
+			(this[propName + 'Cell'] || (this[propName], this[propName + 'Cell'])).on(
+				type.slice(0, index),
+				listener,
+				context
+			);
 			currentlySubscribing = false;
 		} else {
 			let events = this._events.get(type);
@@ -157,10 +158,11 @@ export class EventEmitter {
 		if (index != -1) {
 			let propName = type.slice(index + 1);
 
-			(
-				(this as any)[propName + 'Cell'] ||
-				((this as any)[propName], (this as any)[propName + 'Cell'])
-			).off(type.slice(0, index), listener, context);
+			(this[propName + 'Cell'] || (this[propName], this[propName + 'Cell'])).off(
+				type.slice(0, index),
+				listener,
+				context
+			);
 		} else {
 			let events = this._events.get(type);
 

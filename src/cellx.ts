@@ -143,11 +143,7 @@ export function cellx<T = any>(value: T | TCellPull<T>, opts?: ICellOptions<T>):
 						return cell;
 					}
 					default: {
-						let result = (Cell.prototype as any)[method].apply(
-							cell,
-							slice.call(arguments, 1)
-						);
-
+						let result = Cell.prototype[method].apply(cell, slice.call(arguments, 1));
 						return result === cell ? cx : result;
 					}
 				}

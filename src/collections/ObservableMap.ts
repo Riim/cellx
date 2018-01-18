@@ -166,15 +166,15 @@ export class ObservableMap<K = any, V = any> extends EventEmitter
 		}, this);
 	}
 
-	keys(): IterableIterator<K> {
+	keys(): Iterator<K> {
 		return this._entries.keys();
 	}
 
-	values(): IterableIterator<V> {
+	values(): Iterator<V> {
 		return this._entries.values();
 	}
 
-	entries(): IterableIterator<[K, V]> {
+	entries(): Iterator<[K, V]> {
 		return this._entries.entries();
 	}
 
@@ -222,4 +222,4 @@ export class ObservableMap<K = any, V = any> extends EventEmitter
 mixin(ObservableMap.prototype, FreezableCollection.prototype, ['constructor']);
 mixin(ObservableMap.prototype, ObservableCollection.prototype, ['constructor']);
 
-(ObservableMap.prototype as any)[Symbol.iterator] = ObservableMap.prototype.entries;
+ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;

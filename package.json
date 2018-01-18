@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.7.78",
+  "version": "1.7.80",
   "description": "",
   "main": "dist/cellx.js",
   "typings": "dist/cellx.d.ts",
@@ -23,12 +23,12 @@
   },
   "homepage": "https://github.com/Riim/cellx",
   "devDependencies": {
-    "awesome-typescript-loader": "^3.4.0",
-    "jest": "^21.2.1",
-    "tslint": "^5.8.0",
+    "awesome-typescript-loader": "^3.4.1",
+    "jest": "^22.1.4",
+    "tslint": "^5.9.1",
     "tslint-loader": "^3.5.3",
-    "typescript": "^2.6.1",
-    "webpack": "^3.8.1"
+    "typescript": "^2.6.2",
+    "webpack": "^3.10.0"
   },
   "dependencies": {
     "@riim/is": "^1.0.0",

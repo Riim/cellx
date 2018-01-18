@@ -46,9 +46,9 @@ export declare class ObservableList<T = any> extends EventEmitter implements Fre
     some(callback: (item: T, index: number, list: this) => any, context?: any): boolean;
     reduce<R = T>(callback: (accumulator: R, item: T, index: number, list: this) => R, initialValue?: R): R;
     reduceRight<R = T>(callback: (accumulator: R, item: T, index: number, list: this) => R, initialValue?: R): R;
-    keys(): IterableIterator<number>;
-    values(): IterableIterator<T>;
-    entries(): IterableIterator<[number, T]>;
+    keys(): Iterator<number>;
+    values(): Iterator<T>;
+    entries(): Iterator<[number, T]>;
     clone(deep?: boolean): ObservableList<T>;
     toArray(): Array<T>;
     toString(): string;
