@@ -846,9 +846,9 @@ var errorIndexCounter = 0;
 var releaseVersion = 1;
 var afterRelease;
 var STATE_INITED = 1;
-var STATE_CURRENTLY_PULLING = 1 << 1;
-var STATE_ACTIVE = 1 << 2;
-var STATE_HAS_FOLLOWERS = 1 << 3;
+var STATE_ACTIVE = 1 << 1;
+var STATE_HAS_FOLLOWERS = 1 << 2;
+var STATE_CURRENTLY_PULLING = 1 << 3;
 var STATE_PENDING = 1 << 4;
 var STATE_CAN_CANCEL_CHANGE = 1 << 5;
 function release(force) {
@@ -867,10 +867,13 @@ function release(force) {
             queue = releasePlan.get(++releasePlanIndex);
             continue;
         }
-        var prevReleasePlanIndex = releasePlanIndex;
+        var prevReleasePlanIndex = void 0;
         var level = cell._level;
         var changeEvent = cell._changeEvent;
-        if (!changeEvent) {
+        if (changeEvent) {
+            prevReleasePlanIndex = releasePlanIndex;
+        }
+        else {
             if (level > releasePlanIndex || cell._levelInRelease == -1) {
                 if (!queue.length) {
                     if (releasePlanIndex == releasePlanToIndex) {
@@ -880,6 +883,7 @@ function release(force) {
                 }
                 continue;
             }
+            prevReleasePlanIndex = releasePlanIndex;
             cell.pull();
             level = cell._level;
             if (level > releasePlanIndex) {
@@ -895,17 +899,17 @@ function release(force) {
             cell._fixedValue = cell._value;
             cell._changeEvent = null;
             var pushingIndex = cell._pushingIndex;
-            var slaves = cell._slaves;
-            for (var i = 0, l = slaves.length; i < l; i++) {
-                var slave = slaves[i];
-                if (slave._level <= level) {
-                    slave._level = level + 1;
+            var reactions = cell._reactions;
+            for (var i = 0, l = reactions.length; i < l; i++) {
+                var reaction = reactions[i];
+                if (reaction._level <= level) {
+                    reaction._level = level + 1;
                 }
-                if (pushingIndex > slave._pushingIndex) {
-                    slave._pushingIndex = pushingIndex;
-                    slave._prevChangeEvent = slave._changeEvent;
-                    slave._changeEvent = null;
-                    slave._addToRelease();
+                if (pushingIndex > reaction._pushingIndex) {
+                    reaction._pushingIndex = pushingIndex;
+                    reaction._prevChangeEvent = reaction._changeEvent;
+                    reaction._changeEvent = null;
+                    reaction._addToRelease();
                 }
             }
             cell.handleEvent(changeEvent);
@@ -932,12 +936,12 @@ function release(force) {
             var after = afterRelease;
             afterRelease = null;
             for (var i = 0, l = after.length; i < l; i++) {
-                var afterItem = after[i];
-                if (typeof afterItem == 'function') {
-                    afterItem();
+                var callback = after[i];
+                if (typeof callback == 'function') {
+                    callback();
                 }
                 else {
-                    afterItem[0]._push(afterItem[1], true, false);
+                    callback[0]._push(callback[1], true, false);
                 }
             }
         }
@@ -954,8 +958,8 @@ var Cell = /** @class */ (function (_super) {
         _this._pushingIndex = 0;
         _this._errorIndex = 0;
         _this._version = 0;
-        _this._masters = undefined;
-        _this._slaves = [];
+        _this._dependencies = undefined;
+        _this._reactions = [];
         _this._level = 0;
         _this._levelInRelease = -1;
         _this._selfPendingStatusCell = null;
@@ -1058,7 +1062,7 @@ var Cell = /** @class */ (function (_super) {
         else {
             _super.prototype.off.call(this);
         }
-        if (!this._slaves.length &&
+        if (!this._reactions.length &&
             !this._events.has('change') &&
             !this._events.has('error') &&
             this._state & STATE_HAS_FOLLOWERS) {
@@ -1108,14 +1112,14 @@ var Cell = /** @class */ (function (_super) {
         }
         return this.off('change', wrapper, context).off('error', wrapper, context);
     };
-    Cell.prototype._registerSlave = function (slave) {
+    Cell.prototype._addReaction = function (reaction) {
         this._activate();
-        this._slaves.push(slave);
+        this._reactions.push(reaction);
         this._state |= STATE_HAS_FOLLOWERS;
     };
-    Cell.prototype._unregisterSlave = function (slave) {
-        this._slaves.splice(this._slaves.indexOf(slave), 1);
-        if (!this._slaves.length && !this._events.has('change') && !this._events.has('error')) {
+    Cell.prototype._deleteReaction = function (reaction) {
+        this._reactions.splice(this._reactions.indexOf(reaction), 1);
+        if (!this._reactions.length && !this._events.has('change') && !this._events.has('error')) {
             this._state ^= STATE_HAS_FOLLOWERS;
             this._deactivate();
             if (this._reap) {
@@ -1127,13 +1131,13 @@ var Cell = /** @class */ (function (_super) {
         if (!this._pull || this._state & STATE_ACTIVE) {
             return;
         }
-        var masters = this._masters;
-        if (masters === null) {
+        var deps = this._dependencies;
+        if (deps === null) {
             return;
         }
         if (this._version < releaseVersion) {
-            var value = this._tryPull();
-            if (masters || this._masters || !(this._state & STATE_INITED)) {
+            var value = this._$pull();
+            if (deps || this._dependencies || !(this._state & STATE_INITED)) {
                 if (value === $error) {
                     this._fail($error.error, false);
                 }
@@ -1141,12 +1145,12 @@ var Cell = /** @class */ (function (_super) {
                     this._push(value, false, false);
                 }
             }
-            masters = this._masters;
+            deps = this._dependencies;
         }
-        if (masters) {
-            var i = masters.length;
+        if (deps) {
+            var i = deps.length;
             do {
-                masters[--i]._registerSlave(this);
+                deps[--i]._addReaction(this);
             } while (i);
             this._state |= STATE_ACTIVE;
         }
@@ -1155,10 +1159,10 @@ var Cell = /** @class */ (function (_super) {
         if (!(this._state & STATE_ACTIVE)) {
             return;
         }
-        var masters = this._masters;
-        var i = masters.length;
+        var deps = this._dependencies;
+        var i = deps.length;
         do {
-            masters[--i]._unregisterSlave(this);
+            deps[--i]._deleteReaction(this);
         } while (i);
         if (this._levelInRelease != -1) {
             this._levelInRelease = -1;
@@ -1167,26 +1171,22 @@ var Cell = /** @class */ (function (_super) {
         this._state ^= STATE_ACTIVE;
     };
     Cell.prototype._onValueChange = function (evt) {
-        if (this._state & STATE_HAS_FOLLOWERS) {
-            this._onValueChange$(evt);
-        }
-        else {
-            this._pushingIndex = ++pushingIndexCounter;
-            this._version = ++releaseVersion + +(currentlyRelease > 0);
-        }
-    };
-    Cell.prototype._onValueChange$ = function (evt) {
         this._pushingIndex = ++pushingIndexCounter;
-        var changeEvent = ((evt.data || (evt.data = {})).prevEvent = this._changeEvent);
-        this._changeEvent = evt;
-        if (changeEvent) {
-            if (this._value === this._fixedValue) {
+        if (this._state & STATE_HAS_FOLLOWERS) {
+            var changeEvent = ((evt.data || (evt.data = {})).prevEvent = this._changeEvent);
+            this._changeEvent = evt;
+            if (changeEvent) {
+                if (this._value === this._fixedValue) {
+                    this._state &= ~STATE_CAN_CANCEL_CHANGE;
+                }
+            }
+            else {
                 this._state &= ~STATE_CAN_CANCEL_CHANGE;
+                this._addToRelease();
             }
         }
         else {
-            this._state &= ~STATE_CAN_CANCEL_CHANGE;
-            this._addToRelease();
+            this._version = ++releaseVersion + +(currentlyRelease != 0);
         }
     };
     Cell.prototype.get = function () {
@@ -1196,16 +1196,16 @@ var Cell = /** @class */ (function (_super) {
                     release(true);
                 }
             }
-            else if (this._version < releaseVersion + +(currentlyRelease > 0)) {
-                var prevMasters = this._masters;
-                if (prevMasters !== null) {
-                    var value = this._tryPull();
-                    var masters = this._masters;
-                    if (prevMasters || masters || !(this._state & STATE_INITED)) {
-                        if (masters && this._state & STATE_HAS_FOLLOWERS) {
-                            var i = masters.length;
+            else if (this._version < releaseVersion + +(currentlyRelease != 0)) {
+                var prevDeps = this._dependencies;
+                if (prevDeps !== null) {
+                    var value = this._$pull();
+                    var deps = this._dependencies;
+                    if (prevDeps || deps || !(this._state & STATE_INITED)) {
+                        if (deps && this._state & STATE_HAS_FOLLOWERS) {
+                            var i = deps.length;
                             do {
-                                masters[--i]._registerSlave(this);
+                                deps[--i]._addReaction(this);
                             } while (i);
                             this._state |= STATE_ACTIVE;
                         }
@@ -1220,18 +1220,18 @@ var Cell = /** @class */ (function (_super) {
             }
         }
         if (currentCell) {
-            var currentCellMasters = currentCell._masters;
+            var currentCellDeps = currentCell._dependencies;
             var level = this._level;
-            if (currentCellMasters) {
-                if (currentCellMasters.indexOf(this) == -1) {
-                    currentCellMasters.push(this);
+            if (currentCellDeps) {
+                if (currentCellDeps.indexOf(this) == -1) {
+                    currentCellDeps.push(this);
                     if (currentCell._level <= level) {
                         currentCell._level = level + 1;
                     }
                 }
             }
             else {
-                currentCell._masters = [this];
+                currentCell._dependencies = [this];
                 currentCell._level = level + 1;
             }
         }
@@ -1247,35 +1247,34 @@ var Cell = /** @class */ (function (_super) {
         if (releasePlanned) {
             release();
         }
-        var prevMasters;
+        var prevDeps;
         var prevLevel;
         var value;
         if (this._state & STATE_HAS_FOLLOWERS) {
-            prevMasters = this._masters;
+            prevDeps = this._dependencies;
             prevLevel = this._level;
-            value = this._tryPull();
-            var masters = this._masters;
-            var newMasterCount = 0;
-            if (masters) {
-                var i = masters.length;
+            value = this._$pull();
+            var deps = this._dependencies;
+            var newDepCount = 0;
+            if (deps) {
+                var i = deps.length;
                 do {
-                    var master = masters[--i];
-                    if (!prevMasters || prevMasters.indexOf(master) == -1) {
-                        master._registerSlave(this);
-                        newMasterCount++;
+                    var dep = deps[--i];
+                    if (!prevDeps || prevDeps.indexOf(dep) == -1) {
+                        dep._addReaction(this);
+                        newDepCount++;
                     }
                 } while (i);
             }
-            if (prevMasters &&
-                (masters ? masters.length - newMasterCount : 0) < prevMasters.length) {
-                for (var i = prevMasters.length; i;) {
-                    var prevMaster = prevMasters[--i];
-                    if (!masters || masters.indexOf(prevMaster) == -1) {
-                        prevMaster._unregisterSlave(this);
+            if (prevDeps && (deps ? deps.length - newDepCount : 0) < prevDeps.length) {
+                for (var i = prevDeps.length; i;) {
+                    var prevDep = prevDeps[--i];
+                    if (!deps || deps.indexOf(prevDep) == -1) {
+                        prevDep._deleteReaction(this);
                     }
                 }
             }
-            if (masters) {
+            if (deps) {
                 this._state |= STATE_ACTIVE;
             }
             else {
@@ -1287,7 +1286,7 @@ var Cell = /** @class */ (function (_super) {
             }
         }
         else {
-            value = this._tryPull();
+            value = this._$pull();
         }
         if (value === $error) {
             this._fail($error.error, false);
@@ -1295,7 +1294,7 @@ var Cell = /** @class */ (function (_super) {
         }
         return this._push(value, false, true);
     };
-    Cell.prototype._tryPull = function () {
+    Cell.prototype._$pull = function () {
         if (this._state & STATE_CURRENTLY_PULLING) {
             throw new TypeError('Circular pulling detected');
         }
@@ -1308,7 +1307,7 @@ var Cell = /** @class */ (function (_super) {
         }
         var prevCell = currentCell;
         currentCell = this;
-        this._masters = null;
+        this._dependencies = null;
         this._level = 0;
         this._state |= STATE_CURRENTLY_PULLING;
         try {
@@ -1322,7 +1321,7 @@ var Cell = /** @class */ (function (_super) {
         }
         finally {
             currentCell = prevCell;
-            this._version = releaseVersion + +(currentlyRelease > 0);
+            this._version = releaseVersion + +(currentlyRelease != 0);
             var pendingStatusCell = this._pendingStatusCell;
             if (pendingStatusCell && pendingStatusCell._state & STATE_ACTIVE) {
                 pendingStatusCell.pull();
@@ -1349,20 +1348,20 @@ var Cell = /** @class */ (function (_super) {
                         return err;
                     }
                 }
-                var masters = this._masters;
-                if (masters) {
-                    var i = masters.length;
+                var deps = this._dependencies;
+                if (deps) {
+                    var i = deps.length;
                     do {
-                        var master = masters[--i];
-                        var masterError = master.getError();
-                        if (masterError) {
-                            var masterErrorIndex = master._errorIndex;
-                            if (masterErrorIndex == errorIndexCounter) {
-                                return masterError;
+                        var dep = deps[--i];
+                        var depError = dep.getError();
+                        if (depError) {
+                            var depErrorIndex = dep._errorIndex;
+                            if (depErrorIndex == errorIndexCounter) {
+                                return depError;
                             }
-                            if (!err || errorIndex < masterErrorIndex) {
-                                err = masterError;
-                                errorIndex = masterErrorIndex;
+                            if (!err || errorIndex < depErrorIndex) {
+                                err = depError;
+                                errorIndex = depErrorIndex;
                             }
                         }
                     } while (i);
@@ -1384,11 +1383,11 @@ var Cell = /** @class */ (function (_super) {
                     return true;
                 }
                 this.get();
-                var masters = this._masters;
-                if (masters) {
-                    var i = masters.length;
+                var deps = this._dependencies;
+                if (deps) {
+                    var i = deps.length;
                     do {
-                        if (masters[--i].isPending()) {
+                        if (deps[--i].isPending()) {
                             return true;
                         }
                     } while (i);
@@ -1446,8 +1445,8 @@ var Cell = /** @class */ (function (_super) {
             value.on('change', this._onValueChange, this);
         }
         if (this._state & STATE_HAS_FOLLOWERS) {
-            var prevEvent = this._changeEvent || this._prevChangeEvent;
-            if (prevEvent) {
+            var changeEvent = this._changeEvent || this._prevChangeEvent;
+            if (changeEvent) {
                 if (is_1.is(value, this._fixedValue) && this._state & STATE_CAN_CANCEL_CHANGE) {
                     this._levelInRelease = -1;
                     this._changeEvent = null;
@@ -1457,7 +1456,7 @@ var Cell = /** @class */ (function (_super) {
                         target: this,
                         type: 'change',
                         data: {
-                            prevEvent: prevEvent,
+                            prevEvent: changeEvent,
                             prevValue: prevValue,
                             value: value
                         }
@@ -1471,12 +1470,11 @@ var Cell = /** @class */ (function (_super) {
                     target: this,
                     type: 'change',
                     data: {
-                        prevEvent: this._prevChangeEvent,
+                        prevEvent: null,
                         prevValue: prevValue,
                         value: value
                     }
                 };
-                this._prevChangeEvent = null;
                 this._addToRelease();
             }
         }
@@ -1485,7 +1483,7 @@ var Cell = /** @class */ (function (_super) {
                 releaseVersion++;
             }
             this._fixedValue = value;
-            this._version = releaseVersion + +(currentlyRelease > 0);
+            this._version = releaseVersion + +(currentlyRelease != 0);
         }
         if (external || (currentlyRelease && pulling)) {
             this._resolvePending();
@@ -1557,9 +1555,9 @@ var Cell = /** @class */ (function (_super) {
         }
         this._lastErrorEvent = evt;
         this.handleEvent(evt);
-        var slaves = this._slaves;
-        for (var i = 0, l = slaves.length; i < l; i++) {
-            slaves[i]._handleErrorEvent(evt);
+        var reactions = this._reactions;
+        for (var i = 0, l = reactions.length; i < l; i++) {
+            reactions[i]._handleErrorEvent(evt);
         }
     };
     Cell.prototype._resolvePending = function () {
@@ -1571,9 +1569,9 @@ var Cell = /** @class */ (function (_super) {
         }
     };
     Cell.prototype.reap = function () {
-        var slaves = this._slaves;
-        for (var i = 0, l = slaves.length; i < l; i++) {
-            slaves[i].reap();
+        var reactions = this._reactions;
+        for (var i = 0, l = reactions.length; i < l; i++) {
+            reactions[i].reap();
         }
         return this.off();
     };

@@ -23,12 +23,13 @@
   },
   "homepage": "https://github.com/Riim/cellx",
   "devDependencies": {
-    "awesome-typescript-loader": "^3.4.1",
-    "jest": "^22.1.4",
+    "ajv": "^6.2.1",
+    "awesome-typescript-loader": "^4.0.1",
+    "jest": "^22.4.2",
     "tslint": "^5.9.1",
-    "tslint-loader": "^3.5.3",
-    "typescript": "^2.6.2",
-    "webpack": "^3.10.0"
+    "tslint-loader": "^3.6.0",
+    "typescript": "^2.7.2",
+    "webpack": "^3.11.0"
   },
   "dependencies": {
     "@riim/is": "^1.0.0",
