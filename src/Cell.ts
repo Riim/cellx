@@ -114,6 +114,13 @@ function release(force?: boolean) {
 
 			cell.pull();
 
+			if (releasePlanIndex < prevReleasePlanIndex) {
+				queue!.unshift(cell);
+
+				queue = releasePlan.get(releasePlanIndex);
+				continue;
+			}
+
 			level = cell._level;
 
 			if (level > releasePlanIndex) {

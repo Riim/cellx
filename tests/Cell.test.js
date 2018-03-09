@@ -325,6 +325,24 @@ describe('Cell', () => {
 		expect(c.get()).toBe(12);
 	});
 
+	test('запись в родительскую ячейку в формуле (2)', () => {
+		let a = new Cell(1, { debugKey: 'a' });
+		let b = new Cell(() => a.get() + 1, { debugKey: 'b' });
+		let c = new Cell(() => {
+			if (b.get() == 3) {
+				a.set(10);
+			}
+
+			return b.get() + 1;
+		}, { debugKey: 'c' });
+
+		c.addChangeListener(() => {});
+
+		a.set(2);
+
+		expect(c.get()).toBe(12);
+	});
+
 	test('нет события `change` при добавлении обработчика после изменения', done => {
 		let onChange = jest.fn();
 		let a = new Cell(1, { onChange() {} });
