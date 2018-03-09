@@ -386,7 +386,8 @@ var Cell = /** @class */ (function (_super) {
                     release(true);
                 }
             }
-            else if (this._version < releaseVersion + +(currentlyRelease != 0)) {
+            else if (this._version <
+                releaseVersion + +releasePlanned + +(currentlyRelease != 0)) {
                 var prevDeps = this._dependencies;
                 if (prevDeps !== null) {
                     var value = this._$pull();

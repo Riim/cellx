@@ -539,7 +539,10 @@ export class Cell<T = any> extends EventEmitter {
 				if (releasePlanned || (currentlyRelease && !currentCell)) {
 					release(true);
 				}
-			} else if (this._version < releaseVersion + +(currentlyRelease != 0)) {
+			} else if (
+				this._version <
+				releaseVersion + +releasePlanned + +(currentlyRelease != 0)
+			) {
 				let prevDeps = this._dependencies;
 
 				if (prevDeps !== null) {

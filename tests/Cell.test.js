@@ -328,13 +328,16 @@ describe('Cell', () => {
 	test('запись в родительскую ячейку в формуле (2)', () => {
 		let a = new Cell(1, { debugKey: 'a' });
 		let b = new Cell(() => a.get() + 1, { debugKey: 'b' });
-		let c = new Cell(() => {
-			if (b.get() == 3) {
-				a.set(10);
-			}
+		let c = new Cell(
+			() => {
+				if (b.get() == 3) {
+					a.set(10);
+				}
 
-			return b.get() + 1;
-		}, { debugKey: 'c' });
+				return b.get() + 1;
+			},
+			{ debugKey: 'c' }
+		);
 
 		c.addChangeListener(() => {});
 
@@ -757,38 +760,56 @@ describe('Cell', () => {
 
 	test('правильный next в pull', done => {
 		let a = new Cell(1, { debugKey: 'a' });
-		let b = new Cell((cell, next) => {
-			if (a.get() == 2) {
-				expect(next).toBe(5);
-			}
+		let b = new Cell(
+			(cell, next) => {
+				if (a.get() == 2) {
+					expect(next).toBe(5);
+				}
 
-			return a.get();
-		}, {
-			debugKey: 'b',
-			onChange(evt) {
-				expect(evt).toEqual({
-					type: 'change',
-					target: b,
-					data: {
-						prevEvent: {
-							type: 'change',
-							target: b,
-							data: {
-								prevEvent: null,
-								prevValue: 1,
-								value: 5
-							}
-						},
-						prevValue: 5,
-						value: 2
-					}
-				});
+				return a.get();
+			},
+			{
+				debugKey: 'b',
+				onChange(evt) {
+					expect(evt).toEqual({
+						type: 'change',
+						target: b,
+						data: {
+							prevEvent: {
+								type: 'change',
+								target: b,
+								data: {
+									prevEvent: null,
+									prevValue: 1,
+									value: 5
+								}
+							},
+							prevValue: 5,
+							value: 2
+						}
+					});
 
-				done();
+					done();
+				}
 			}
-		});
+		);
 
 		b.set(5);
 		a.set(2);
+	});
+
+	test('чтение пассивной ячейки зависимой от активной после её изменения', () => {
+		let a = new Cell(1, { debugKey: 'a' });
+		let b = new Cell(() => a.get(), { debugKey: 'b', onChange() {} });
+		let c = new Cell(() => a.get(), { debugKey: 'c' });
+
+		let cOnChange = () => {};
+
+		c.addChangeListener(cOnChange);
+		c.removeChangeListener(cOnChange);
+
+		a.set(2);
+
+		expect(c.get()).toBe(2);
 	});
 });
