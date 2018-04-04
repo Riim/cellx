@@ -40,10 +40,10 @@ export type TCellEvent<T extends EventEmitter = EventEmitter> =
 	| ICellChangeEvent<T>
 	| ICellErrorEvent<T>;
 
-let MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
-let KEY_WRAPPERS = Symbol('cellx.wrappers');
+const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
+const KEY_WRAPPERS = Symbol('cellx.wrappers');
 
-let releasePlan = new Map<number, Array<Cell>>();
+const releasePlan = new Map<number, Array<Cell>>();
 let releasePlanIndex = MAX_SAFE_INTEGER;
 let releasePlanToIndex = -1;
 
@@ -52,7 +52,7 @@ let currentlyRelease = 0;
 
 let currentCell: Cell | null = null;
 
-let $error: { error: Error | null } = { error: null };
+const $error: { error: Error | null } = { error: null };
 
 let pushingIndexCounter = 0;
 let errorIndexCounter = 0;
@@ -61,12 +61,12 @@ let releaseVersion = 1;
 
 let afterRelease: Array<Function | [Cell, any]> | null;
 
-let STATE_INITED = 1;
-let STATE_ACTIVE = 1 << 1;
-let STATE_HAS_FOLLOWERS = 1 << 2;
-let STATE_CURRENTLY_PULLING = 1 << 3;
-let STATE_PENDING = 1 << 4;
-let STATE_CAN_CANCEL_CHANGE = 1 << 5;
+const STATE_INITED = 1;
+const STATE_ACTIVE = 1 << 1;
+const STATE_HAS_FOLLOWERS = 1 << 2;
+const STATE_CURRENTLY_PULLING = 1 << 3;
+const STATE_PENDING = 1 << 4;
+const STATE_CAN_CANCEL_CHANGE = 1 << 5;
 
 function release(force?: boolean) {
 	if (!releasePlanned && !force) {

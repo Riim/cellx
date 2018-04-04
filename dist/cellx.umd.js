@@ -1915,7 +1915,7 @@ var ObservableList = /** @class */ (function (_super) {
             count = items.length - index;
         }
         else if (index + count > items.length) {
-            throw new RangeError('Sum of "index" and "count" out of valid range');
+            throw new RangeError('"index" and "count" out of valid range');
         }
         if (!count) {
             return [];
@@ -1944,9 +1944,7 @@ var ObservableList = /** @class */ (function (_super) {
         this._valueCounts.clear();
         this._items.length = 0;
         this._length = 0;
-        this.emit('change', {
-            subtype: 'clear'
-        });
+        this.emit('change', { subtype: 'clear' });
         return this;
     };
     ObservableList.prototype.join = function (separator) {

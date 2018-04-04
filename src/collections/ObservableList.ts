@@ -5,7 +5,7 @@ import { EventEmitter, IEvent } from '../EventEmitter';
 import { FreezableCollection } from './FreezableCollection';
 import { ObservableCollection } from './ObservableCollection';
 
-let splice = Array.prototype.splice;
+const splice = Array.prototype.splice;
 
 export type TComparator<T> = (a: T, b: T) => number;
 
@@ -412,7 +412,7 @@ export class ObservableList<T = any> extends EventEmitter
 		if (count === undefined) {
 			count = items.length - index;
 		} else if (index + count > items.length) {
-			throw new RangeError('Sum of "index" and "count" out of valid range');
+			throw new RangeError('"index" and "count" out of valid range');
 		}
 
 		if (!count) {
@@ -451,9 +451,7 @@ export class ObservableList<T = any> extends EventEmitter
 		this._items.length = 0;
 		this._length = 0;
 
-		this.emit('change', {
-			subtype: 'clear'
-		});
+		this.emit('change', { subtype: 'clear' });
 
 		return this;
 	}

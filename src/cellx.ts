@@ -35,10 +35,10 @@ export {
 } from './Cell';
 export { WaitError } from './WaitError';
 
-let hasOwn = Object.prototype.hasOwnProperty;
-let slice = Array.prototype.slice;
+const hasOwn = Object.prototype.hasOwnProperty;
+const slice = Array.prototype.slice;
 
-let global = Function('return this;')();
+const global = Function('return this;')();
 
 export function map<K = any, V = any>(
 	entries?: TObservableMapEntries<K, V> | null,
@@ -90,7 +90,7 @@ export interface ICellx<T> {
 	(method: 'reap' | 'dispose', $: any): Cell<T>;
 }
 
-export let KEY_CELL_MAP = Symbol('cellx.cellMap');
+export const KEY_CELL_MAP = Symbol('cellx.cellMap');
 
 export function cellx<T = any>(value: T | TCellPull<T>, opts?: ICellOptions<T>): ICellx<T> {
 	if (!opts) {
