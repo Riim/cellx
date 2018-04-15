@@ -1000,8 +1000,8 @@ export class Cell<T = any> extends EventEmitter {
 
 		let reactions = this._reactions;
 
-		for (let i = 0, l = reactions.length; i < l; i++) {
-			reactions[i]._handleErrorEvent(evt);
+		for (let i = reactions.length; i; ) {
+			reactions[--i]._handleErrorEvent(evt);
 		}
 	}
 
@@ -1015,13 +1015,15 @@ export class Cell<T = any> extends EventEmitter {
 	}
 
 	reap(): this {
+		this.off();
+
 		let reactions = this._reactions;
 
-		for (let i = 0, l = reactions.length; i < l; i++) {
-			reactions[i].reap();
+		for (let i = reactions.length; i; ) {
+			reactions[--i].reap();
 		}
 
-		return this.off();
+		return this;
 	}
 
 	dispose(): this {

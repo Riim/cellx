@@ -1,7 +1,7 @@
 let { EventEmitter, ObservableList, Cell, define } = require('../dist/cellx.umd');
 
 describe('Cell', () => {
-	test('.afterRelease()', done => {
+	test('.afterRelease()', () => {
 		let a = new Cell(1);
 		let b = new Cell(() => a.get() + 1, { onChange() {} });
 
@@ -11,10 +11,8 @@ describe('Cell', () => {
 
 		Cell.afterRelease(afterReleaseCallback);
 
-		setTimeout(() => {
-			expect(afterReleaseCallback).toHaveBeenCalledTimes(1);
-			done();
-		}, 1);
+		Cell.forceRelease();
+		expect(afterReleaseCallback).toHaveBeenCalledTimes(1);
 	});
 
 	test('.afterRelease() (2)', done => {
@@ -34,7 +32,7 @@ describe('Cell', () => {
 		a.set(2);
 	});
 
-	test('#pull()', done => {
+	test('#pull()', () => {
 		let counter = 0;
 		let a = new Cell(() => {
 			return ++counter;
@@ -45,16 +43,15 @@ describe('Cell', () => {
 
 		a.pull();
 
-		setTimeout(() => {
-			expect(onChange).toHaveBeenCalledTimes(1);
-			expect(b.get()).toBe(3);
-			done();
-		}, 1);
+		Cell.forceRelease();
+
+		expect(onChange).toHaveBeenCalledTimes(1);
+		expect(b.get()).toBe(3);
 	});
 
 	// Если в get устанавливать _level раньше запуска _tryPull,
 	// то на уровнях 2+ _level всегда будет 1, что как-то не очень хорошо.
-	test('минимум вызовов pull', done => {
+	test('минимум вызовов pull', () => {
 		let a = new Cell(1, { debugKey: 'a' });
 		let b = new Cell(2, { debugKey: 'b' });
 		let c = new Cell(() => b.get() + 1, { debugKey: 'c' });
@@ -65,42 +62,39 @@ describe('Cell', () => {
 
 		d.addChangeListener(() => {});
 
-		getD.mockReset();
+		getD.mockClear();
 
 		a.set(2);
 		b.set(3);
 
-		setTimeout(() => {
-			expect(getD).toHaveBeenCalledTimes(1);
-			done();
-		}, 1);
+		Cell.forceRelease();
+
+		expect(getD).toHaveBeenCalledTimes(1);
 	});
 
-	test('нет события `change` при установке значения равного текущему', done => {
+	test('нет события `change` при установке значения равного текущему', () => {
 		let onChange = jest.fn();
 		let a = new Cell(1, { onChange });
 
 		a.set(1);
 
-		setTimeout(() => {
-			expect(onChange).toHaveBeenCalledTimes(0);
-			done();
-		}, 1);
+		Cell.forceRelease();
+
+		expect(onChange).toHaveBeenCalledTimes(0);
 	});
 
-	test('нет события `change` при установке значения равного текущему (NaN)', done => {
+	test('нет события `change` при установке значения равного текущему (NaN)', () => {
 		let onChange = jest.fn();
 		let a = new Cell(NaN, { onChange });
 
 		a.set(NaN);
 
-		setTimeout(() => {
-			expect(onChange).toHaveBeenCalledTimes(0);
-			done();
-		}, 1);
+		Cell.forceRelease();
+
+		expect(onChange).toHaveBeenCalledTimes(0);
 	});
 
-	test('нет события `change`, если вычесляемое значение не меняется (NaN)', done => {
+	test('нет события `change`, если вычесляемое значение не меняется (NaN)', () => {
 		let onChange = jest.fn();
 
 		let a = new Cell(1);
@@ -108,28 +102,25 @@ describe('Cell', () => {
 
 		a.set(2);
 
-		setTimeout(() => {
-			expect(onChange).toHaveBeenCalledTimes(0);
-			done();
-		}, 1);
+		Cell.forceRelease();
+
+		expect(onChange).toHaveBeenCalledTimes(0);
 	});
 
-	test('нет события `change`, если установить новое значение и сразу вернуть исходное', done => {
+	test('нет события `change`, если установить новое значение и сразу вернуть исходное', () => {
 		let onChange = jest.fn();
 		let a = new Cell(1, { onChange });
 
 		a.set(5);
 		a.set(1);
 
-		setTimeout(() => {
-			expect(onChange).toHaveBeenCalledTimes(0);
-			expect(a.get()).toBe(1);
+		Cell.forceRelease();
 
-			done();
-		}, 1);
+		expect(onChange).toHaveBeenCalledTimes(0);
+		expect(a.get()).toBe(1);
 	});
 
-	test('нет события `change` если установить новое значение и сразу вернуть исходное (2)', done => {
+	test('нет события `change` если установить новое значение и сразу вернуть исходное (2)', () => {
 		let emitter1 = new EventEmitter();
 		let emitter2 = new EventEmitter();
 
@@ -139,13 +130,12 @@ describe('Cell', () => {
 		a.set(emitter2);
 		a.set(emitter1);
 
-		setTimeout(() => {
-			expect(onChange).toHaveBeenCalledTimes(0);
-			done();
-		}, 1);
+		Cell.forceRelease();
+
+		expect(onChange).toHaveBeenCalledTimes(0);
 	});
 
-	test('EventEmitter в качестве значения', done => {
+	test('EventEmitter в качестве значения', () => {
 		let emitter = new EventEmitter();
 
 		let onChange = jest.fn();
@@ -153,13 +143,12 @@ describe('Cell', () => {
 
 		emitter.emit('change');
 
-		setTimeout(() => {
-			expect(onChange).toHaveBeenCalled();
-			done();
-		}, 1);
+		Cell.forceRelease();
+
+		expect(onChange).toHaveBeenCalled();
 	});
 
-	test('EventEmitter в качестве значения (2)', done => {
+	test('EventEmitter в качестве значения (2)', () => {
 		let emitter = new EventEmitter();
 
 		let onChange = jest.fn();
@@ -175,13 +164,12 @@ describe('Cell', () => {
 
 		emitter.emit('change');
 
-		setTimeout(() => {
-			expect(onChange).toHaveBeenCalled();
-			done();
-		}, 1);
+		Cell.forceRelease();
+
+		expect(onChange).toHaveBeenCalled();
 	});
 
-	test('нет события `change`, если установить новое значение, изменить его (внутреннее изменение) и вернуть исходное значение', done => {
+	test('нет события `change`, если установить новое значение, изменить его (внутреннее изменение) и вернуть исходное значение', () => {
 		let emitter1 = new EventEmitter();
 		let emitter2 = new EventEmitter();
 
@@ -194,13 +182,12 @@ describe('Cell', () => {
 
 		a.set(emitter1);
 
-		setTimeout(() => {
-			expect(onChange).not.toHaveBeenCalled();
-			done();
-		}, 1);
+		Cell.forceRelease();
+
+		expect(onChange).not.toHaveBeenCalled();
 	});
 
-	test('событие `change`, если измененить текущее значение (внутреннее изменение), установить новое значение и сразу вернуть исходное', done => {
+	test('событие `change`, если измененить текущее значение (внутреннее изменение), установить новое значение и сразу вернуть исходное', () => {
 		let emitter1 = new EventEmitter();
 		let emitter2 = new EventEmitter();
 
@@ -212,13 +199,12 @@ describe('Cell', () => {
 		a.set(emitter2);
 		a.set(emitter1);
 
-		setTimeout(() => {
-			expect(onChange).toHaveBeenCalled();
-			done();
-		}, 1);
+		Cell.forceRelease();
+
+		expect(onChange).toHaveBeenCalled();
 	});
 
-	test('одно вычисление при инициализации, даже если родительских ячеек больше одной', done => {
+	test('одно вычисление при инициализации, даже если родительских ячеек больше одной', () => {
 		let a = new Cell(1);
 		let b = new Cell(2);
 
@@ -226,13 +212,12 @@ describe('Cell', () => {
 
 		let c = new Cell(getC, { onChange() {} });
 
-		setTimeout(() => {
-			expect(getC).toHaveBeenCalledTimes(1);
-			done();
-		}, 1);
+		Cell.forceRelease();
+
+		expect(getC).toHaveBeenCalledTimes(1);
 	});
 
-	test('одно вычисление, даже если поменять сразу несколько родительских ячеек', done => {
+	test('одно вычисление, даже если поменять сразу несколько родительских ячеек', () => {
 		let a = new Cell(1, { debugKey: 'a' });
 		let b = new Cell(2, { debugKey: 'b' });
 
@@ -243,20 +228,19 @@ describe('Cell', () => {
 			onChange() {}
 		});
 
-		setTimeout(() => {
-			getC.mockReset();
+		Cell.forceRelease();
 
-			a.set(5);
-			b.set(10);
+		getC.mockClear();
 
-			setTimeout(() => {
-				expect(getC).toHaveBeenCalledTimes(1);
-				done();
-			}, 1);
-		}, 1);
+		a.set(5);
+		b.set(10);
+
+		Cell.forceRelease();
+
+		expect(getC).toHaveBeenCalledTimes(1);
 	});
 
-	test('одно вычисление, даже если поменять сразу несколько родительских ячеек (2)', done => {
+	test('одно вычисление, даже если поменять сразу несколько родительских ячеек (2)', () => {
 		let a = new Cell(1);
 		let b = new Cell(2);
 		let aa = new Cell(() => a.get() + 1);
@@ -266,20 +250,17 @@ describe('Cell', () => {
 
 		let c = new Cell(getC, { onChange() {} });
 
-		setTimeout(() => {
-			getC.mockReset();
+		getC.mockClear();
 
-			a.set(5);
-			b.set(10);
+		a.set(5);
+		b.set(10);
 
-			setTimeout(() => {
-				expect(getC).toHaveBeenCalledTimes(1);
-				done();
-			}, 1);
-		}, 1);
+		Cell.forceRelease();
+
+		expect(getC).toHaveBeenCalledTimes(1);
 	});
 
-	test('событие `change` при чтении пока событие запланировано', done => {
+	test('событие `change` при чтении пока событие запланировано', () => {
 		let aOnChange = jest.fn(() => {
 			let bValue = b.get();
 		});
@@ -294,19 +275,15 @@ describe('Cell', () => {
 		let b = new Cell(2, { onChange: bOnChange });
 		let c = new Cell(3, { onChange: cOnChange });
 
-		setTimeout(() => {
-			a.set(5);
-			b.set(10);
-			c.set(15);
+		a.set(5);
+		b.set(10);
+		c.set(15);
 
-			setTimeout(() => {
-				expect(aOnChange).toHaveBeenCalledTimes(1);
-				expect(bOnChange).toHaveBeenCalledTimes(1);
-				expect(cOnChange).toHaveBeenCalledTimes(1);
+		Cell.forceRelease();
 
-				done();
-			}, 1);
-		}, 1);
+		expect(aOnChange).toHaveBeenCalledTimes(1);
+		expect(bOnChange).toHaveBeenCalledTimes(1);
+		expect(cOnChange).toHaveBeenCalledTimes(1);
 	});
 
 	test('запись в родительскую ячейку в формуле', () => {
@@ -346,7 +323,7 @@ describe('Cell', () => {
 		expect(c.get()).toBe(12);
 	});
 
-	test('нет события `change` при добавлении обработчика после изменения', done => {
+	test('нет события `change` при добавлении обработчика после изменения', () => {
 		let onChange = jest.fn();
 		let a = new Cell(1, { onChange() {} });
 
@@ -354,10 +331,9 @@ describe('Cell', () => {
 
 		a.addChangeListener(onChange);
 
-		setTimeout(() => {
-			expect(onChange).not.toHaveBeenCalled();
-			done();
-		}, 1);
+		Cell.forceRelease();
+
+		expect(onChange).not.toHaveBeenCalled();
 	});
 
 	test('чтение вычисляемой ячейки после изменения зависимости', () => {
@@ -369,7 +345,7 @@ describe('Cell', () => {
 		expect(b.get()).toBe(3);
 	});
 
-	test('нет изменения при чтении невычисляемой ячейки', done => {
+	test('нет изменения при чтении невычисляемой ячейки', () => {
 		let onChange = jest.fn();
 
 		let a = new Cell(1);
@@ -381,13 +357,12 @@ describe('Cell', () => {
 
 		expect(onChange).not.toHaveBeenCalled();
 
-		setTimeout(() => {
-			expect(onChange).toHaveBeenCalled();
-			done();
-		}, 1);
+		Cell.forceRelease();
+
+		expect(onChange).toHaveBeenCalled();
 	});
 
-	test('событие `error` без дублирования', done => {
+	test('событие `error` без дублирования', () => {
 		let bOnError = jest.fn();
 		let c1OnError = jest.fn();
 		let c2OnError = jest.fn();
@@ -413,14 +388,12 @@ describe('Cell', () => {
 
 		a.set(2);
 
-		setTimeout(() => {
-			expect(bOnError).toHaveBeenCalledTimes(1);
-			expect(c1OnError).toHaveBeenCalledTimes(1);
-			expect(c2OnError).toHaveBeenCalledTimes(1);
-			expect(dOnError).toHaveBeenCalledTimes(1);
+		Cell.forceRelease();
 
-			done();
-		}, 1);
+		expect(bOnError).toHaveBeenCalledTimes(1);
+		expect(c1OnError).toHaveBeenCalledTimes(1);
+		expect(c2OnError).toHaveBeenCalledTimes(1);
+		expect(dOnError).toHaveBeenCalledTimes(1);
 	});
 
 	test('последний set более приоритетный', () => {
@@ -478,7 +451,7 @@ describe('Cell', () => {
 		expect(b.get()).toBe(3);
 	});
 
-	test('нет бесконечного цикла', done => {
+	test('нет бесконечного цикла', () => {
 		let a = new Cell(1);
 		let b = new Cell(() => a.get() + 1);
 		let c = new Cell(() => b.get() + 1);
@@ -490,13 +463,12 @@ describe('Cell', () => {
 
 		d.set(2);
 
-		setTimeout(() => {
-			expect(e.get()).toBe(5);
-			done();
-		}, 1);
+		Cell.forceRelease();
+
+		expect(e.get()).toBe(5);
 	});
 
-	test('нет бесконечного цикла (2)', done => {
+	test('нет бесконечного цикла (2)', () => {
 		let a = new Cell(1);
 		let b = new Cell(() => a.get() + 1, {
 			onChange() {
@@ -508,10 +480,9 @@ describe('Cell', () => {
 
 		a.set(2);
 
-		setTimeout(() => {
-			expect(c.get()).toBe(2);
-			done();
-		}, 1);
+		Cell.forceRelease();
+
+		expect(c.get()).toBe(2);
 	});
 
 	test('validation', () => {
@@ -598,56 +569,60 @@ describe('Cell', () => {
 		let cOnChange = jest.fn();
 		let loadingOnChange = jest.fn();
 
-		let a = new Cell((cell, next = 0) => {
-			setTimeout(() => {
-				cell.push(Math.random());
-			}, 10);
+		setTimeout(() => { // for travis
+			let a = new Cell((cell, next = 0) => {
+				setTimeout(() => {
+					cell.push(Math.random());
+				}, 10);
 
-			return next;
-		});
-		let b = new Cell((cell, next = 0) => {
-			setTimeout(() => {
-				cell.push(Math.random());
-			}, 50);
+				return next;
+			});
+			let b = new Cell((cell, next = 0) => {
+				setTimeout(() => {
+					cell.push(Math.random());
+				}, 50);
 
-			return next;
-		});
+				return next;
+			});
 
-		let c = new Cell(() => a.get() + b.get(), { onChange: cOnChange });
+			let c = new Cell(() => a.get() + b.get(), { onChange: cOnChange });
 
-		let loading = new Cell(() => a.isPending() || b.isPending(), { onChange: loadingOnChange });
-
-		setTimeout(() => {
-			expect(c.get()).toBe(0);
-			expect(loading.get()).toBeTruthy();
-			expect(cOnChange).not.toHaveBeenCalled();
-			expect(loadingOnChange).not.toHaveBeenCalled();
+			let loading = new Cell(() => a.isPending() || b.isPending(), {
+				onChange: loadingOnChange
+			});
 
 			setTimeout(() => {
-				expect(c.get()).not.toBe(0);
+				expect(c.get()).toBe(0);
 				expect(loading.get()).toBeTruthy();
-				expect(cOnChange).toHaveBeenCalled();
+				expect(cOnChange).not.toHaveBeenCalled();
 				expect(loadingOnChange).not.toHaveBeenCalled();
 
 				setTimeout(() => {
-					expect(loading.get()).toBeFalsy();
-
-					a.pull();
+					expect(c.get()).not.toBe(0);
+					expect(loading.get()).toBeTruthy();
+					expect(cOnChange).toHaveBeenCalled();
+					expect(loadingOnChange).not.toHaveBeenCalled();
 
 					setTimeout(() => {
-						expect(loading.get()).toBeTruthy();
+						expect(loading.get()).toBeFalsy();
+
+						a.pull();
 
 						setTimeout(() => {
-							expect(loading.get()).toBeFalsy();
-							done();
-						}, 20);
-					}, 1);
-				}, 100);
-			}, 20);
-		}, 1);
+							expect(loading.get()).toBeTruthy();
+
+							setTimeout(() => {
+								expect(loading.get()).toBeFalsy();
+								done();
+							}, 20);
+						}, 1);
+					}, 100);
+				}, 20);
+			}, 1);
+		}, 10);
 	});
 
-	test('подписка через EventEmitter', done => {
+	test('подписка через EventEmitter', () => {
 		let emitter = new EventEmitter();
 		let onFooChange = jest.fn();
 
@@ -659,10 +634,9 @@ describe('Cell', () => {
 
 		emitter.foo = 2;
 
-		setTimeout(() => {
-			expect(onFooChange).toHaveBeenCalledTimes(1);
-			done();
-		}, 1);
+		Cell.forceRelease();
+
+		expect(onFooChange).toHaveBeenCalledTimes(1);
 	});
 
 	test('запись в вычисляемую ячейку', () => {
@@ -685,7 +659,7 @@ describe('Cell', () => {
 		expect(b.get()).toBe(5);
 	});
 
-	test('минимум вызовов pull (2)', done => {
+	test('минимум вызовов pull (2)', () => {
 		let a = new Cell({ x: 1 });
 		let b = new Cell(() => a.get(), {
 			onChange(evt) {
@@ -701,10 +675,9 @@ describe('Cell', () => {
 
 		a.set({ x: 0 });
 
-		setTimeout(() => {
-			expect(getC).toHaveBeenCalledTimes(2);
-			done();
-		}, 1);
+		Cell.forceRelease();
+
+		expect(getC).toHaveBeenCalledTimes(2);
 	});
 
 	test('инициализация устанавливаемым значением вычисляемой ячейки', () => {
@@ -811,5 +784,30 @@ describe('Cell', () => {
 		a.set(2);
 
 		expect(c.get()).toBe(2);
+	});
+
+	test('#reap()', () => {
+		let a = new Cell(1);
+		let b = new Cell(() => a.get(), { onChange() {} });
+		let c = new Cell(() => a.get(), { onChange() {} });
+
+		a.reap();
+	});
+
+	test('#reap() (2)', () => {
+		let a = new Cell(true);
+		let b = new Cell(1);
+
+		let cOnChange = jest.fn();
+		let c = new Cell(() => a.get() && b.get(), { onChange: cOnChange });
+
+		a.set(false);
+		b.reap();
+
+		a.set(true);
+
+		Cell.forceRelease();
+
+		expect(cOnChange).toHaveBeenCalledTimes(2);
 	});
 });

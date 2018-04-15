@@ -36,19 +36,8 @@ export declare class ObservableList<T = any> extends EventEmitter implements Fre
     removeRange(index: number, count?: number): Array<T>;
     clear(): this;
     join(separator?: string): string;
-    forEach(callback: (item: T, index: number, list: this) => void, context?: any): void;
-    map<R>(callback: (item: T, index: number, list: this) => R, context?: any): Array<R>;
-    filter<R extends T>(callback: (item: T, index: number, list: this) => item is R, context?: any): Array<R>;
-    filter(callback: (item: T, index: number, list: this) => any, context?: any): Array<T>;
     find(callback: (item: T, index: number, list: this) => any, context?: any): T | undefined;
     findIndex(callback: (item: T, index: number, list: this) => any, context?: any): number;
-    every(callback: (item: T, index: number, list: this) => any, context?: any): boolean;
-    some(callback: (item: T, index: number, list: this) => any, context?: any): boolean;
-    reduce<R = T>(callback: (accumulator: R, item: T, index: number, list: this) => R, initialValue?: R): R;
-    reduceRight<R = T>(callback: (accumulator: R, item: T, index: number, list: this) => R, initialValue?: R): R;
-    keys(): Iterator<number>;
-    values(): Iterator<T>;
-    entries(): Iterator<[number, T]>;
     clone(deep?: boolean): ObservableList<T>;
     toArray(): Array<T>;
     toString(): string;
@@ -64,4 +53,19 @@ export declare class ObservableList<T = any> extends EventEmitter implements Fre
     _onItemChange(evt: IEvent): void;
     _registerValue(value: any): any;
     _unregisterValue(value: any): void;
+}
+declare module '../collections/ObservableList' {
+    interface ObservableList<T = any> {
+        forEach(callback: (item: T, index: number, list: this) => void, context?: any): void;
+        map<R>(callback: (item: T, index: number, list: this) => R, context?: any): Array<R>;
+        filter<R extends T>(callback: (item: T, index: number, list: this) => item is R, context?: any): Array<R>;
+        filter(callback: (item: T, index: number, list: this) => any, context?: any): Array<T>;
+        every(callback: (item: T, index: number, list: this) => any, context?: any): boolean;
+        some(callback: (item: T, index: number, list: this) => any, context?: any): boolean;
+        reduce<R = T>(callback: (accumulator: R, item: T, index: number, list: this) => R, initialValue?: R): R;
+        reduceRight<R = T>(callback: (accumulator: R, item: T, index: number, list: this) => R, initialValue?: R): R;
+        keys(): Iterator<number>;
+        values(): Iterator<T>;
+        entries(): Iterator<[number, T]>;
+    }
 }

@@ -747,8 +747,8 @@ var Cell = /** @class */ (function (_super) {
         this._lastErrorEvent = evt;
         this.handleEvent(evt);
         var reactions = this._reactions;
-        for (var i = 0, l = reactions.length; i < l; i++) {
-            reactions[i]._handleErrorEvent(evt);
+        for (var i = reactions.length; i;) {
+            reactions[--i]._handleErrorEvent(evt);
         }
     };
     Cell.prototype._resolvePending = function () {
@@ -760,11 +760,12 @@ var Cell = /** @class */ (function (_super) {
         }
     };
     Cell.prototype.reap = function () {
+        this.off();
         var reactions = this._reactions;
-        for (var i = 0, l = reactions.length; i < l; i++) {
-            reactions[i].reap();
+        for (var i = reactions.length; i;) {
+            reactions[--i].reap();
         }
-        return this.off();
+        return this;
     };
     Cell.prototype.dispose = function () {
         return this.reap();

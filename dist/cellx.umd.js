@@ -1562,8 +1562,8 @@ var Cell = /** @class */ (function (_super) {
         this._lastErrorEvent = evt;
         this.handleEvent(evt);
         var reactions = this._reactions;
-        for (var i = 0, l = reactions.length; i < l; i++) {
-            reactions[i]._handleErrorEvent(evt);
+        for (var i = reactions.length; i;) {
+            reactions[--i]._handleErrorEvent(evt);
         }
     };
     Cell.prototype._resolvePending = function () {
@@ -1575,11 +1575,12 @@ var Cell = /** @class */ (function (_super) {
         }
     };
     Cell.prototype.reap = function () {
+        this.off();
         var reactions = this._reactions;
-        for (var i = 0, l = reactions.length; i < l; i++) {
-            reactions[i].reap();
+        for (var i = reactions.length; i;) {
+            reactions[--i].reap();
         }
-        return this.off();
+        return this;
     };
     Cell.prototype.dispose = function () {
         return this.reap();
@@ -1950,13 +1951,6 @@ var ObservableList = /** @class */ (function (_super) {
     ObservableList.prototype.join = function (separator) {
         return this._items.join(separator);
     };
-    ObservableList.prototype.forEach = function (callback, context) { };
-    ObservableList.prototype.map = function (callback, context) {
-        return [];
-    };
-    ObservableList.prototype.filter = function () {
-        return [];
-    };
     ObservableList.prototype.find = function (callback, context) {
         var items = this._items;
         for (var i = 0, l = items.length; i < l; i++) {
@@ -1975,27 +1969,6 @@ var ObservableList = /** @class */ (function (_super) {
             }
         }
         return -1;
-    };
-    ObservableList.prototype.every = function (callback, context) {
-        return false;
-    };
-    ObservableList.prototype.some = function (callback, context) {
-        return false;
-    };
-    ObservableList.prototype.reduce = function (callback, initialValue) {
-        return 0;
-    };
-    ObservableList.prototype.reduceRight = function (callback, initialValue) {
-        return 0;
-    };
-    ObservableList.prototype.keys = function () {
-        return 0;
-    };
-    ObservableList.prototype.values = function () {
-        return 0;
-    };
-    ObservableList.prototype.entries = function () {
-        return 0;
     };
     ObservableList.prototype.clone = function (deep) {
         return new this.constructor(deep

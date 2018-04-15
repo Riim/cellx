@@ -460,21 +460,6 @@ export class ObservableList<T = any> extends EventEmitter
 		return this._items.join(separator);
 	}
 
-	forEach(callback: (item: T, index: number, list: this) => void, context?: any) {}
-
-	map<R>(callback: (item: T, index: number, list: this) => R, context?: any): Array<R> {
-		return [];
-	}
-
-	filter<R extends T>(
-		callback: (item: T, index: number, list: this) => item is R,
-		context?: any
-	): Array<R>;
-	filter(callback: (item: T, index: number, list: this) => any, context?: any): Array<T>;
-	filter() {
-		return [];
-	}
-
 	find(callback: (item: T, index: number, list: this) => any, context?: any): T | undefined {
 		let items = this._items;
 
@@ -499,40 +484,6 @@ export class ObservableList<T = any> extends EventEmitter
 		}
 
 		return -1;
-	}
-
-	every(callback: (item: T, index: number, list: this) => any, context?: any): boolean {
-		return false;
-	}
-
-	some(callback: (item: T, index: number, list: this) => any, context?: any): boolean {
-		return false;
-	}
-
-	reduce<R = T>(
-		callback: (accumulator: R, item: T, index: number, list: this) => R,
-		initialValue?: R
-	): R {
-		return 0 as any;
-	}
-
-	reduceRight<R = T>(
-		callback: (accumulator: R, item: T, index: number, list: this) => R,
-		initialValue?: R
-	): R {
-		return 0 as any;
-	}
-
-	keys(): Iterator<number> {
-		return 0 as any;
-	}
-
-	values(): Iterator<T> {
-		return 0 as any;
-	}
-
-	entries(): Iterator<[number, T]> {
-		return 0 as any;
 	}
 
 	clone(deep?: boolean): ObservableList<T> {
@@ -657,5 +608,40 @@ mixin(ObservableList.prototype, ObservableCollection.prototype, ['constructor'])
 		};
 	};
 });
+
+declare module '../collections/ObservableList' {
+	/* tslint:disable-next-line */
+	interface ObservableList<T = any> {
+		forEach(callback: (item: T, index: number, list: this) => void, context?: any): void;
+
+		map<R>(callback: (item: T, index: number, list: this) => R, context?: any): Array<R>;
+
+		filter<R extends T>(
+			callback: (item: T, index: number, list: this) => item is R,
+			context?: any
+		): Array<R>;
+		filter(callback: (item: T, index: number, list: this) => any, context?: any): Array<T>;
+
+		every(callback: (item: T, index: number, list: this) => any, context?: any): boolean;
+
+		some(callback: (item: T, index: number, list: this) => any, context?: any): boolean;
+
+		reduce<R = T>(
+			callback: (accumulator: R, item: T, index: number, list: this) => R,
+			initialValue?: R
+		): R;
+
+		reduceRight<R = T>(
+			callback: (accumulator: R, item: T, index: number, list: this) => R,
+			initialValue?: R
+		): R;
+
+		keys(): Iterator<number>;
+
+		values(): Iterator<T>;
+
+		entries(): Iterator<[number, T]>;
+	}
+}
 
 ObservableList.prototype[Symbol.iterator] = ObservableList.prototype.values;
