@@ -189,20 +189,20 @@ var EventEmitter = /** @class */ (function () {
             var eventCount = events.length;
             if (eventCount == 1) {
                 if (this._tryEventListener(events[0], evt) === false) {
-                    evt.isPropagationStopped = true;
+                    evt.propagationStopped = true;
                 }
             }
             else {
                 events = events.slice();
                 for (var i = 0; i < eventCount; i++) {
                     if (this._tryEventListener(events[i], evt) === false) {
-                        evt.isPropagationStopped = true;
+                        evt.propagationStopped = true;
                     }
                 }
             }
         }
         else if (this._tryEventListener(events, evt) === false) {
-            evt.isPropagationStopped = true;
+            evt.propagationStopped = true;
         }
     };
     EventEmitter.prototype._tryEventListener = function (emEvt, evt) {

@@ -1,4 +1,4 @@
-let { ObservableMap } = require('../dist/cellx.umd');
+let { ObservableMap } = require('../dist/cellx');
 
 describe('ObservableMap', () => {
 	test('#has()', function() {

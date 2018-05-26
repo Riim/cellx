@@ -42,8 +42,8 @@ export declare class ObservableList<T = any> extends EventEmitter implements Fre
     toArray(): Array<T>;
     toString(): string;
     _insertSortedValue(value: T): void;
-    _isFrozen: boolean;
-    readonly isFrozen: boolean;
+    _frozen: boolean;
+    readonly frozen: boolean;
     freeze(): this;
     unfreeze(): this;
     _throwIfFrozen(msg?: string): void;

@@ -7,7 +7,7 @@
 		exports["cellx"] = factory();
 	else
 		root["cellx"] = factory();
-})(typeof self !== 'undefined' ? self : this, function() {
+})(window, function() {
 return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
@@ -54,6 +54,11 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 		}
 /******/ 	};
 /******/
+/******/ 	// define __esModule on exports
+/******/ 	__webpack_require__.r = function(exports) {
+/******/ 		Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 	};
+/******/
 /******/ 	// getDefaultExport function for compatibility with non-harmony modules
 /******/ 	__webpack_require__.n = function(module) {
 /******/ 		var getter = module && module.__esModule ?
@@ -69,8 +74,9 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// __webpack_public_path__
 /******/ 	__webpack_require__.p = "";
 /******/
+/******/
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(__webpack_require__.s = 12);
+/******/ 	return __webpack_require__(__webpack_require__.s = 0);
 /******/ })
 /************************************************************************/
 /******/ ([
@@ -80,222 +86,131 @@ return /******/ (function(modules) { // webpackBootstrap
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var logger_1 = __webpack_require__(4);
 var map_set_polyfill_1 = __webpack_require__(1);
-var currentlySubscribing = false;
-var transactionLevel = 0;
-var transactionEvents = new map_set_polyfill_1.Map();
-var EventEmitter = /** @class */ (function () {
-    function EventEmitter() {
-        this._events = new map_set_polyfill_1.Map();
+var object_assign_polyfill_1 = __webpack_require__(3);
+var symbol_polyfill_1 = __webpack_require__(2);
+var Cell_1 = __webpack_require__(4);
+var ObservableList_1 = __webpack_require__(10);
+var ObservableMap_1 = __webpack_require__(14);
+var EventEmitter_1 = __webpack_require__(8);
+exports.EventEmitter = EventEmitter_1.EventEmitter;
+var FreezableCollection_1 = __webpack_require__(12);
+exports.FreezableCollection = FreezableCollection_1.FreezableCollection;
+var ObservableCollection_1 = __webpack_require__(13);
+exports.ObservableCollection = ObservableCollection_1.ObservableCollection;
+var ObservableMap_2 = __webpack_require__(14);
+exports.ObservableMap = ObservableMap_2.ObservableMap;
+var ObservableList_2 = __webpack_require__(10);
+exports.ObservableList = ObservableList_2.ObservableList;
+var Cell_2 = __webpack_require__(4);
+exports.Cell = Cell_2.Cell;
+var WaitError_1 = __webpack_require__(9);
+exports.WaitError = WaitError_1.WaitError;
+var hasOwn = Object.prototype.hasOwnProperty;
+var slice = Array.prototype.slice;
+var global = Function('return this;')();
+function map(entries, opts) {
+    return new ObservableMap_1.ObservableMap(entries, opts);
+}
+exports.map = map;
+function list(items, opts) {
+    return new ObservableList_1.ObservableList(items, opts);
+}
+exports.list = list;
+exports.KEY_CELL_MAP = symbol_polyfill_1.Symbol('cellx.cellMap');
+function cellx(value, opts) {
+    if (!opts) {
+        opts = {};
     }
-    Object.defineProperty(EventEmitter, "currentlySubscribing", {
+    var initialValue = value;
+    var cx = function (value) {
+        var context = this;
+        if (!context || context == global) {
+            context = cx;
+        }
+        if (!hasOwn.call(context, exports.KEY_CELL_MAP)) {
+            Object.defineProperty(context, exports.KEY_CELL_MAP, { value: new map_set_polyfill_1.Map() });
+        }
+        var cell = context[exports.KEY_CELL_MAP].get(cx);
+        if (!cell) {
+            if (value === 'dispose' && arguments.length >= 2) {
+                return;
+            }
+            cell = new Cell_1.Cell(initialValue, object_assign_polyfill_1.assign({ context: context }, opts));
+            context[exports.KEY_CELL_MAP].set(cx, cell);
+        }
+        switch (arguments.length) {
+            case 0: {
+                return cell.get();
+            }
+            case 1: {
+                cell.set(value);
+                return value;
+            }
+            default: {
+                var method = value;
+                switch (method) {
+                    case 'bind': {
+                        cx = cx.bind(context);
+                        cx.constructor = cellx;
+                        return cx;
+                    }
+                    case 'unwrap': {
+                        return cell;
+                    }
+                    default: {
+                        var result = Cell_1.Cell.prototype[method].apply(cell, slice.call(arguments, 1));
+                        return result === cell ? cx : result;
+                    }
+                }
+            }
+        }
+    };
+    cx.constructor = cellx;
+    if (opts.onChange || opts.onError) {
+        cx.call(opts.context || global);
+    }
+    return cx;
+}
+exports.cellx = cellx;
+function defineObservableProperty(obj, name, value) {
+    var cellName = name + 'Cell';
+    Object.defineProperty(obj, cellName, {
+        configurable: true,
+        enumerable: false,
+        writable: true,
+        value: value instanceof Cell_1.Cell ? value : new Cell_1.Cell(value, { context: obj })
+    });
+    Object.defineProperty(obj, name, {
+        configurable: true,
+        enumerable: true,
         get: function () {
-            return currentlySubscribing;
+            return this[cellName].get();
         },
         set: function (value) {
-            currentlySubscribing = value;
-        },
-        enumerable: true,
-        configurable: true
+            this[cellName].set(value);
+        }
     });
-    EventEmitter.transact = function (callback) {
-        transactionLevel++;
-        try {
-            callback();
-        }
-        catch (err) {
-            logger_1.error(err);
-        }
-        if (--transactionLevel) {
-            return;
-        }
-        var events = transactionEvents;
-        transactionEvents = new map_set_polyfill_1.Map();
-        events.forEach(function (events, target) {
-            for (var type in events) {
-                target.handleEvent(events[type]);
-            }
-        });
-    };
-    EventEmitter.prototype.getEvents = function (type) {
-        var events;
-        if (type) {
-            events = this._events.get(type);
-            if (!events) {
-                return [];
-            }
-            return Array.isArray(events) ? events : [events];
-        }
-        events = Object.create(null);
-        this._events.forEach(function (typeEvents, type) {
-            events[type] = Array.isArray(typeEvents) ? typeEvents : [typeEvents];
-        });
-        return events;
-    };
-    EventEmitter.prototype.on = function (type, listener, context) {
-        if (typeof type == 'object') {
-            context = listener !== undefined ? listener : this;
-            var listeners = type;
-            for (type in listeners) {
-                this._on(type, listeners[type], context);
-            }
-        }
-        else {
-            this._on(type, listener, context !== undefined ? context : this);
-        }
-        return this;
-    };
-    EventEmitter.prototype.off = function (type, listener, context) {
-        if (type) {
-            if (typeof type == 'object') {
-                context = listener !== undefined ? listener : this;
-                var listeners = type;
-                for (type in listeners) {
-                    this._off(type, listeners[type], context);
-                }
-            }
-            else {
-                this._off(type, listener, context !== undefined ? context : this);
-            }
-        }
-        else {
-            this._events.clear();
-        }
-        return this;
-    };
-    EventEmitter.prototype._on = function (type, listener, context) {
-        var index = type.indexOf(':');
-        if (index != -1) {
-            var propName = type.slice(index + 1);
-            currentlySubscribing = true;
-            (this[propName + 'Cell'] || (this[propName], this[propName + 'Cell'])).on(type.slice(0, index), listener, context);
-            currentlySubscribing = false;
-        }
-        else {
-            var events = this._events.get(type);
-            var evt = { listener: listener, context: context };
-            if (!events) {
-                this._events.set(type, evt);
-            }
-            else if (Array.isArray(events)) {
-                events.push(evt);
-            }
-            else {
-                this._events.set(type, [events, evt]);
-            }
-        }
-    };
-    EventEmitter.prototype._off = function (type, listener, context) {
-        var index = type.indexOf(':');
-        if (index != -1) {
-            var propName = type.slice(index + 1);
-            (this[propName + 'Cell'] || (this[propName], this[propName + 'Cell'])).off(type.slice(0, index), listener, context);
-        }
-        else {
-            var events = this._events.get(type);
-            if (!events) {
-                return;
-            }
-            var evt = void 0;
-            if (!Array.isArray(events)) {
-                evt = events;
-            }
-            else if (events.length == 1) {
-                evt = events[0];
-            }
-            else {
-                for (var i = events.length; i;) {
-                    evt = events[--i];
-                    if (evt.listener == listener && evt.context === context) {
-                        events.splice(i, 1);
-                        break;
-                    }
-                }
-                return;
-            }
-            if (evt.listener == listener && evt.context === context) {
-                this._events.delete(type);
-            }
-        }
-    };
-    EventEmitter.prototype.once = function (type, listener, context) {
-        if (context === undefined) {
-            context = this;
-        }
-        function wrapper(evt) {
-            this._off(type, wrapper, context);
-            return listener.call(this, evt);
-        }
-        this._on(type, wrapper, context);
-        return wrapper;
-    };
-    EventEmitter.prototype.emit = function (evt, data) {
-        if (typeof evt == 'string') {
-            evt = {
-                target: this,
-                type: evt
-            };
-        }
-        else if (!evt.target) {
-            evt.target = this;
-        }
-        else if (evt.target != this) {
-            throw new TypeError('Event cannot be emitted on this object');
-        }
-        if (data) {
-            evt.data = data;
-        }
-        if (transactionLevel) {
-            var events = transactionEvents.get(this);
-            if (!events) {
-                events = Object.create(null);
-                transactionEvents.set(this, events);
-            }
-            (evt.data || (evt.data = {})).prev = events[evt.type] || null;
-            events[evt.type] = evt;
-        }
-        else {
-            this.handleEvent(evt);
-        }
-        return evt;
-    };
-    EventEmitter.prototype.handleEvent = function (evt) {
-        var events = this._events.get(evt.type);
-        if (!events) {
-            return;
-        }
-        if (Array.isArray(events)) {
-            var eventCount = events.length;
-            if (eventCount == 1) {
-                if (this._tryEventListener(events[0], evt) === false) {
-                    evt.isPropagationStopped = true;
-                }
-            }
-            else {
-                events = events.slice();
-                for (var i = 0; i < eventCount; i++) {
-                    if (this._tryEventListener(events[i], evt) === false) {
-                        evt.isPropagationStopped = true;
-                    }
-                }
-            }
-        }
-        else if (this._tryEventListener(events, evt) === false) {
-            evt.isPropagationStopped = true;
-        }
-    };
-    EventEmitter.prototype._tryEventListener = function (emEvt, evt) {
-        try {
-            return emEvt.listener.call(emEvt.context, evt);
-        }
-        catch (err) {
-            logger_1.error(err);
-        }
-    };
-    return EventEmitter;
-}());
-exports.EventEmitter = EventEmitter;
+    return obj;
+}
+exports.defineObservableProperty = defineObservableProperty;
+function defineObservableProperties(obj, props) {
+    Object.keys(props).forEach(function (name) {
+        defineObservableProperty(obj, name, props[name]);
+    });
+    return obj;
+}
+exports.defineObservableProperties = defineObservableProperties;
+function define(obj, name, value) {
+    if (typeof name == 'string') {
+        defineObservableProperty(obj, name, value);
+    }
+    else {
+        defineObservableProperties(obj, name);
+    }
+    return obj;
+}
+exports.define = define;
 
 
 /***/ }),
@@ -303,7 +218,7 @@ exports.EventEmitter = EventEmitter;
 /***/ (function(module, exports, __webpack_require__) {
 
 var global = Function('return this;')();
-var Symbol =  true ? __webpack_require__(2).Symbol : global.Symbol;
+var Symbol =  true ? __webpack_require__(2).Symbol : undefined;
 
 var hasOwn = Object.prototype.hasOwnProperty;
 
@@ -600,10 +515,7 @@ if (!Set.prototype[Symbol.iterator]) {
 if (true) {
 	exports.Map = Map;
 	exports.Set = Set;
-} else {
-	global.Map = Map;
-	global.Set = Set;
-}
+} else {}
 
 
 /***/ }),
@@ -623,7 +535,7 @@ if (!Symbol) {
 	Symbol.iterator = Symbol('Symbol.iterator');
 }
 
-( true ? exports : global).Symbol = Symbol;
+( true ? exports : undefined).Symbol = Symbol;
 
 
 /***/ }),
@@ -633,10 +545,13 @@ if (!Symbol) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var is = Object.is || (function (a, b) {
-    return a === b ? a !== 0 || 1 / a == 1 / b : a != a && b != b;
+var assign = Object.assign || (function (target, source) {
+    for (var name_1 in source) {
+        target[name_1] = source[name_1];
+    }
+    return target;
 });
-exports.is = is;
+exports.assign = assign;
 
 
 /***/ }),
@@ -645,57 +560,6 @@ exports.is = is;
 
 "use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
-var global = Function('return this;')();
-function noop() { }
-var defaultHandler = function (type) {
-    var msg = [];
-    for (var _i = 1; _i < arguments.length; _i++) {
-        msg[_i - 1] = arguments[_i];
-    }
-    var console = global.console;
-    (console && console[type] || noop).call(console || null, (type == 'error' ? msg.map(function (m) { return m === Object(m) && m.stack || m; }) : msg).join(' '));
-};
-var Logger = /** @class */ (function () {
-    function Logger(handler) {
-        this.handler = handler || defaultHandler;
-    }
-    Logger.prototype.log = function () {
-        var msg = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            msg[_i] = arguments[_i];
-        }
-        this.handler.apply(this, ['log'].concat(msg));
-    };
-    Logger.prototype.warn = function () {
-        var msg = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            msg[_i] = arguments[_i];
-        }
-        this.handler.apply(this, ['warn'].concat(msg));
-    };
-    Logger.prototype.error = function () {
-        var msg = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            msg[_i] = arguments[_i];
-        }
-        this.handler.apply(this, ['error'].concat(msg));
-    };
-    return Logger;
-}());
-exports.Logger = Logger;
-exports.logger = new Logger();
-exports.log = exports.logger.log.bind(exports.logger);
-exports.warn = exports.logger.warn.bind(exports.logger);
-exports.error = exports.logger.error.bind(exports.logger);
-
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -707,131 +571,13 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var EventEmitter_1 = __webpack_require__(0);
-var FreezableCollection = /** @class */ (function (_super) {
-    __extends(FreezableCollection, _super);
-    function FreezableCollection() {
-        var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this._isFrozen = false;
-        return _this;
-    }
-    Object.defineProperty(FreezableCollection.prototype, "isFrozen", {
-        get: function () {
-            return this._isFrozen;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    FreezableCollection.prototype.freeze = function () {
-        this._isFrozen = true;
-        return this;
-    };
-    FreezableCollection.prototype.unfreeze = function () {
-        this._isFrozen = false;
-        return this;
-    };
-    FreezableCollection.prototype._throwIfFrozen = function (msg) {
-        if (this._isFrozen) {
-            throw new TypeError(msg || 'Frozen collection cannot be mutated');
-        }
-    };
-    return FreezableCollection;
-}(EventEmitter_1.EventEmitter));
-exports.FreezableCollection = FreezableCollection;
-
-
-/***/ }),
-/* 6 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
+var is_1 = __webpack_require__(5);
+var logger_1 = __webpack_require__(6);
 var map_set_polyfill_1 = __webpack_require__(1);
-var EventEmitter_1 = __webpack_require__(0);
-var ObservableCollection = /** @class */ (function (_super) {
-    __extends(ObservableCollection, _super);
-    function ObservableCollection() {
-        var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this._valueCounts = new map_set_polyfill_1.Map();
-        return _this;
-    }
-    Object.defineProperty(ObservableCollection.prototype, "adoptsValueChanges", {
-        get: function () {
-            return this._adoptsValueChanges;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ObservableCollection.prototype._onItemChange = function (evt) {
-        this.handleEvent(evt);
-    };
-    ObservableCollection.prototype._registerValue = function (value) {
-        var valueCounts = this._valueCounts;
-        var valueCount = valueCounts.get(value);
-        if (valueCount) {
-            valueCounts.set(value, valueCount + 1);
-        }
-        else {
-            valueCounts.set(value, 1);
-            if (this._adoptsValueChanges && value instanceof EventEmitter_1.EventEmitter) {
-                value.on('change', this._onItemChange, this);
-            }
-        }
-        return value;
-    };
-    ObservableCollection.prototype._unregisterValue = function (value) {
-        var valueCounts = this._valueCounts;
-        var valueCount = valueCounts.get(value);
-        if (valueCount == 1) {
-            valueCounts.delete(value);
-            if (this._adoptsValueChanges && value instanceof EventEmitter_1.EventEmitter) {
-                value.off('change', this._onItemChange, this);
-            }
-        }
-        else {
-            valueCounts.set(value, valueCount - 1);
-        }
-    };
-    return ObservableCollection;
-}(EventEmitter_1.EventEmitter));
-exports.ObservableCollection = ObservableCollection;
-
-
-/***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-var is_1 = __webpack_require__(3);
-var logger_1 = __webpack_require__(4);
-var map_set_polyfill_1 = __webpack_require__(1);
-var next_tick_1 = __webpack_require__(14);
+var next_tick_1 = __webpack_require__(7);
 var symbol_polyfill_1 = __webpack_require__(2);
-var EventEmitter_1 = __webpack_require__(0);
-var WaitError_1 = __webpack_require__(8);
+var EventEmitter_1 = __webpack_require__(8);
+var WaitError_1 = __webpack_require__(9);
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
 var KEY_WRAPPERS = symbol_polyfill_1.Symbol('cellx.wrappers');
 var releasePlan = new map_set_polyfill_1.Map();
@@ -1591,7 +1337,351 @@ exports.Cell = Cell;
 
 
 /***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var is = Object.is || (function (a, b) {
+    return a === b ? a !== 0 || 1 / a == 1 / b : a != a && b != b;
+});
+exports.is = is;
+
+
+/***/ }),
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var global = Function('return this;')();
+function noop() { }
+var defaultHandler = function (type) {
+    var msg = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        msg[_i - 1] = arguments[_i];
+    }
+    var console = global.console;
+    (console && console[type] || noop).call(console || null, (type == 'error' ? msg.map(function (m) { return m === Object(m) && m.stack || m; }) : msg).join(' '));
+};
+var Logger = /** @class */ (function () {
+    function Logger(handler) {
+        this.handler = handler || defaultHandler;
+    }
+    Logger.prototype.log = function () {
+        var msg = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            msg[_i] = arguments[_i];
+        }
+        this.handler.apply(this, ['log'].concat(msg));
+    };
+    Logger.prototype.warn = function () {
+        var msg = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            msg[_i] = arguments[_i];
+        }
+        this.handler.apply(this, ['warn'].concat(msg));
+    };
+    Logger.prototype.error = function () {
+        var msg = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            msg[_i] = arguments[_i];
+        }
+        this.handler.apply(this, ['error'].concat(msg));
+    };
+    return Logger;
+}());
+exports.Logger = Logger;
+exports.logger = new Logger();
+exports.log = exports.logger.log.bind(exports.logger);
+exports.warn = exports.logger.warn.bind(exports.logger);
+exports.error = exports.logger.error.bind(exports.logger);
+
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var logger_1 = __webpack_require__(6);
+var global = Function('return this;')();
+var nextTick;
+exports.nextTick = nextTick;
+if (global.process && global.process.toString() == '[object process]' && global.process.nextTick) {
+    exports.nextTick = nextTick = global.process.nextTick;
+}
+else if (global.setImmediate) {
+    exports.nextTick = nextTick = function nextTick(callback) {
+        setImmediate(callback);
+    };
+}
+else if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
+    var prm_1 = Promise.resolve();
+    exports.nextTick = nextTick = function nextTick(callback) {
+        prm_1.then(function () {
+            callback();
+        });
+    };
+}
+else {
+    var queue_1;
+    global.addEventListener('message', function () {
+        if (queue_1) {
+            var track = queue_1;
+            queue_1 = null;
+            for (var i = 0, l = track.length; i < l; i++) {
+                try {
+                    track[i]();
+                }
+                catch (err) {
+                    logger_1.error(err);
+                }
+            }
+        }
+    });
+    exports.nextTick = nextTick = function nextTick(callback) {
+        if (queue_1) {
+            queue_1.push(callback);
+        }
+        else {
+            queue_1 = [callback];
+            postMessage('__tic__', '*');
+        }
+    };
+}
+
+
+/***/ }),
 /* 8 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+var logger_1 = __webpack_require__(6);
+var map_set_polyfill_1 = __webpack_require__(1);
+var currentlySubscribing = false;
+var transactionLevel = 0;
+var transactionEvents = new map_set_polyfill_1.Map();
+var EventEmitter = /** @class */ (function () {
+    function EventEmitter() {
+        this._events = new map_set_polyfill_1.Map();
+    }
+    Object.defineProperty(EventEmitter, "currentlySubscribing", {
+        get: function () {
+            return currentlySubscribing;
+        },
+        set: function (value) {
+            currentlySubscribing = value;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    EventEmitter.transact = function (callback) {
+        transactionLevel++;
+        try {
+            callback();
+        }
+        catch (err) {
+            logger_1.error(err);
+        }
+        if (--transactionLevel) {
+            return;
+        }
+        var events = transactionEvents;
+        transactionEvents = new map_set_polyfill_1.Map();
+        events.forEach(function (events, target) {
+            for (var type in events) {
+                target.handleEvent(events[type]);
+            }
+        });
+    };
+    EventEmitter.prototype.getEvents = function (type) {
+        var events;
+        if (type) {
+            events = this._events.get(type);
+            if (!events) {
+                return [];
+            }
+            return Array.isArray(events) ? events : [events];
+        }
+        events = Object.create(null);
+        this._events.forEach(function (typeEvents, type) {
+            events[type] = Array.isArray(typeEvents) ? typeEvents : [typeEvents];
+        });
+        return events;
+    };
+    EventEmitter.prototype.on = function (type, listener, context) {
+        if (typeof type == 'object') {
+            context = listener !== undefined ? listener : this;
+            var listeners = type;
+            for (type in listeners) {
+                this._on(type, listeners[type], context);
+            }
+        }
+        else {
+            this._on(type, listener, context !== undefined ? context : this);
+        }
+        return this;
+    };
+    EventEmitter.prototype.off = function (type, listener, context) {
+        if (type) {
+            if (typeof type == 'object') {
+                context = listener !== undefined ? listener : this;
+                var listeners = type;
+                for (type in listeners) {
+                    this._off(type, listeners[type], context);
+                }
+            }
+            else {
+                this._off(type, listener, context !== undefined ? context : this);
+            }
+        }
+        else {
+            this._events.clear();
+        }
+        return this;
+    };
+    EventEmitter.prototype._on = function (type, listener, context) {
+        var index = type.indexOf(':');
+        if (index != -1) {
+            var propName = type.slice(index + 1);
+            currentlySubscribing = true;
+            (this[propName + 'Cell'] || (this[propName], this[propName + 'Cell'])).on(type.slice(0, index), listener, context);
+            currentlySubscribing = false;
+        }
+        else {
+            var events = this._events.get(type);
+            var evt = { listener: listener, context: context };
+            if (!events) {
+                this._events.set(type, evt);
+            }
+            else if (Array.isArray(events)) {
+                events.push(evt);
+            }
+            else {
+                this._events.set(type, [events, evt]);
+            }
+        }
+    };
+    EventEmitter.prototype._off = function (type, listener, context) {
+        var index = type.indexOf(':');
+        if (index != -1) {
+            var propName = type.slice(index + 1);
+            (this[propName + 'Cell'] || (this[propName], this[propName + 'Cell'])).off(type.slice(0, index), listener, context);
+        }
+        else {
+            var events = this._events.get(type);
+            if (!events) {
+                return;
+            }
+            var evt = void 0;
+            if (!Array.isArray(events)) {
+                evt = events;
+            }
+            else if (events.length == 1) {
+                evt = events[0];
+            }
+            else {
+                for (var i = events.length; i;) {
+                    evt = events[--i];
+                    if (evt.listener == listener && evt.context === context) {
+                        events.splice(i, 1);
+                        break;
+                    }
+                }
+                return;
+            }
+            if (evt.listener == listener && evt.context === context) {
+                this._events.delete(type);
+            }
+        }
+    };
+    EventEmitter.prototype.once = function (type, listener, context) {
+        if (context === undefined) {
+            context = this;
+        }
+        function wrapper(evt) {
+            this._off(type, wrapper, context);
+            return listener.call(this, evt);
+        }
+        this._on(type, wrapper, context);
+        return wrapper;
+    };
+    EventEmitter.prototype.emit = function (evt, data) {
+        if (typeof evt == 'string') {
+            evt = {
+                target: this,
+                type: evt
+            };
+        }
+        else if (!evt.target) {
+            evt.target = this;
+        }
+        else if (evt.target != this) {
+            throw new TypeError('Event cannot be emitted on this object');
+        }
+        if (data) {
+            evt.data = data;
+        }
+        if (transactionLevel) {
+            var events = transactionEvents.get(this);
+            if (!events) {
+                events = Object.create(null);
+                transactionEvents.set(this, events);
+            }
+            (evt.data || (evt.data = {})).prev = events[evt.type] || null;
+            events[evt.type] = evt;
+        }
+        else {
+            this.handleEvent(evt);
+        }
+        return evt;
+    };
+    EventEmitter.prototype.handleEvent = function (evt) {
+        var events = this._events.get(evt.type);
+        if (!events) {
+            return;
+        }
+        if (Array.isArray(events)) {
+            var eventCount = events.length;
+            if (eventCount == 1) {
+                if (this._tryEventListener(events[0], evt) === false) {
+                    evt.propagationStopped = true;
+                }
+            }
+            else {
+                events = events.slice();
+                for (var i = 0; i < eventCount; i++) {
+                    if (this._tryEventListener(events[i], evt) === false) {
+                        evt.propagationStopped = true;
+                    }
+                }
+            }
+        }
+        else if (this._tryEventListener(events, evt) === false) {
+            evt.propagationStopped = true;
+        }
+    };
+    EventEmitter.prototype._tryEventListener = function (emEvt, evt) {
+        try {
+            return emEvt.listener.call(emEvt.context, evt);
+        }
+        catch (err) {
+            logger_1.error(err);
+        }
+    };
+    return EventEmitter;
+}());
+exports.EventEmitter = EventEmitter;
+
+
+/***/ }),
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1606,7 +1696,7 @@ WaitError.prototype = {
 
 
 /***/ }),
-/* 9 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1622,12 +1712,12 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var is_1 = __webpack_require__(3);
-var mixin_1 = __webpack_require__(10);
+var is_1 = __webpack_require__(5);
+var mixin_1 = __webpack_require__(11);
 var symbol_polyfill_1 = __webpack_require__(2);
-var EventEmitter_1 = __webpack_require__(0);
-var FreezableCollection_1 = __webpack_require__(5);
-var ObservableCollection_1 = __webpack_require__(6);
+var EventEmitter_1 = __webpack_require__(8);
+var FreezableCollection_1 = __webpack_require__(12);
+var ObservableCollection_1 = __webpack_require__(13);
 var splice = Array.prototype.splice;
 function defaultComparator(a, b) {
     return a < b ? -1 : a > b ? 1 : 0;
@@ -2001,7 +2091,7 @@ var ObservableList = /** @class */ (function (_super) {
         }
         items.splice(low, 0, this._registerValue(value));
     };
-    Object.defineProperty(ObservableList.prototype, "isFrozen", {
+    Object.defineProperty(ObservableList.prototype, "frozen", {
         get: function () {
             return false;
         },
@@ -2081,7 +2171,7 @@ ObservableList.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableList.pro
 
 
 /***/ }),
-/* 10 */
+/* 11 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2107,7 +2197,7 @@ exports.mixin = mixin;
 
 
 /***/ }),
-/* 11 */
+/* 12 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2123,13 +2213,131 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var is_1 = __webpack_require__(3);
+var EventEmitter_1 = __webpack_require__(8);
+var FreezableCollection = /** @class */ (function (_super) {
+    __extends(FreezableCollection, _super);
+    function FreezableCollection() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this._frozen = false;
+        return _this;
+    }
+    Object.defineProperty(FreezableCollection.prototype, "frozen", {
+        get: function () {
+            return this._frozen;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    FreezableCollection.prototype.freeze = function () {
+        this._frozen = true;
+        return this;
+    };
+    FreezableCollection.prototype.unfreeze = function () {
+        this._frozen = false;
+        return this;
+    };
+    FreezableCollection.prototype._throwIfFrozen = function (msg) {
+        if (this._frozen) {
+            throw new TypeError(msg || 'Frozen collection cannot be mutated');
+        }
+    };
+    return FreezableCollection;
+}(EventEmitter_1.EventEmitter));
+exports.FreezableCollection = FreezableCollection;
+
+
+/***/ }),
+/* 13 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
 var map_set_polyfill_1 = __webpack_require__(1);
-var mixin_1 = __webpack_require__(10);
+var EventEmitter_1 = __webpack_require__(8);
+var ObservableCollection = /** @class */ (function (_super) {
+    __extends(ObservableCollection, _super);
+    function ObservableCollection() {
+        var _this = _super !== null && _super.apply(this, arguments) || this;
+        _this._valueCounts = new map_set_polyfill_1.Map();
+        return _this;
+    }
+    Object.defineProperty(ObservableCollection.prototype, "adoptsValueChanges", {
+        get: function () {
+            return this._adoptsValueChanges;
+        },
+        enumerable: true,
+        configurable: true
+    });
+    ObservableCollection.prototype._onItemChange = function (evt) {
+        this.handleEvent(evt);
+    };
+    ObservableCollection.prototype._registerValue = function (value) {
+        var valueCounts = this._valueCounts;
+        var valueCount = valueCounts.get(value);
+        if (valueCount) {
+            valueCounts.set(value, valueCount + 1);
+        }
+        else {
+            valueCounts.set(value, 1);
+            if (this._adoptsValueChanges && value instanceof EventEmitter_1.EventEmitter) {
+                value.on('change', this._onItemChange, this);
+            }
+        }
+        return value;
+    };
+    ObservableCollection.prototype._unregisterValue = function (value) {
+        var valueCounts = this._valueCounts;
+        var valueCount = valueCounts.get(value);
+        if (valueCount == 1) {
+            valueCounts.delete(value);
+            if (this._adoptsValueChanges && value instanceof EventEmitter_1.EventEmitter) {
+                value.off('change', this._onItemChange, this);
+            }
+        }
+        else {
+            valueCounts.set(value, valueCount - 1);
+        }
+    };
+    return ObservableCollection;
+}(EventEmitter_1.EventEmitter));
+exports.ObservableCollection = ObservableCollection;
+
+
+/***/ }),
+/* 14 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = Object.setPrototypeOf ||
+        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    return function (d, b) {
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+Object.defineProperty(exports, "__esModule", { value: true });
+var is_1 = __webpack_require__(5);
+var map_set_polyfill_1 = __webpack_require__(1);
+var mixin_1 = __webpack_require__(11);
 var symbol_polyfill_1 = __webpack_require__(2);
-var EventEmitter_1 = __webpack_require__(0);
-var FreezableCollection_1 = __webpack_require__(5);
-var ObservableCollection_1 = __webpack_require__(6);
+var EventEmitter_1 = __webpack_require__(8);
+var FreezableCollection_1 = __webpack_require__(12);
+var ObservableCollection_1 = __webpack_require__(13);
 var ObservableMap = /** @class */ (function (_super) {
     __extends(ObservableMap, _super);
     function ObservableMap(entries, opts) {
@@ -2269,7 +2477,7 @@ var ObservableMap = /** @class */ (function (_super) {
         }
         return new this.constructor(entries || this, this._adoptsValueChanges);
     };
-    Object.defineProperty(ObservableMap.prototype, "isFrozen", {
+    Object.defineProperty(ObservableMap.prototype, "frozen", {
         get: function () {
             return false;
         },
@@ -2299,211 +2507,6 @@ exports.ObservableMap = ObservableMap;
 mixin_1.mixin(ObservableMap.prototype, FreezableCollection_1.FreezableCollection.prototype, ['constructor']);
 mixin_1.mixin(ObservableMap.prototype, ObservableCollection_1.ObservableCollection.prototype, ['constructor']);
 ObservableMap.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableMap.prototype.entries;
-
-
-/***/ }),
-/* 12 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var map_set_polyfill_1 = __webpack_require__(1);
-var object_assign_polyfill_1 = __webpack_require__(13);
-var symbol_polyfill_1 = __webpack_require__(2);
-var Cell_1 = __webpack_require__(7);
-var ObservableList_1 = __webpack_require__(9);
-var ObservableMap_1 = __webpack_require__(11);
-var EventEmitter_1 = __webpack_require__(0);
-exports.EventEmitter = EventEmitter_1.EventEmitter;
-var FreezableCollection_1 = __webpack_require__(5);
-exports.FreezableCollection = FreezableCollection_1.FreezableCollection;
-var ObservableCollection_1 = __webpack_require__(6);
-exports.ObservableCollection = ObservableCollection_1.ObservableCollection;
-var ObservableMap_2 = __webpack_require__(11);
-exports.ObservableMap = ObservableMap_2.ObservableMap;
-var ObservableList_2 = __webpack_require__(9);
-exports.ObservableList = ObservableList_2.ObservableList;
-var Cell_2 = __webpack_require__(7);
-exports.Cell = Cell_2.Cell;
-var WaitError_1 = __webpack_require__(8);
-exports.WaitError = WaitError_1.WaitError;
-var hasOwn = Object.prototype.hasOwnProperty;
-var slice = Array.prototype.slice;
-var global = Function('return this;')();
-function map(entries, opts) {
-    return new ObservableMap_1.ObservableMap(entries, opts);
-}
-exports.map = map;
-function list(items, opts) {
-    return new ObservableList_1.ObservableList(items, opts);
-}
-exports.list = list;
-exports.KEY_CELL_MAP = symbol_polyfill_1.Symbol('cellx.cellMap');
-function cellx(value, opts) {
-    if (!opts) {
-        opts = {};
-    }
-    var initialValue = value;
-    var cx = function (value) {
-        var context = this;
-        if (!context || context == global) {
-            context = cx;
-        }
-        if (!hasOwn.call(context, exports.KEY_CELL_MAP)) {
-            Object.defineProperty(context, exports.KEY_CELL_MAP, { value: new map_set_polyfill_1.Map() });
-        }
-        var cell = context[exports.KEY_CELL_MAP].get(cx);
-        if (!cell) {
-            if (value === 'dispose' && arguments.length >= 2) {
-                return;
-            }
-            cell = new Cell_1.Cell(initialValue, object_assign_polyfill_1.assign({ context: context }, opts));
-            context[exports.KEY_CELL_MAP].set(cx, cell);
-        }
-        switch (arguments.length) {
-            case 0: {
-                return cell.get();
-            }
-            case 1: {
-                cell.set(value);
-                return value;
-            }
-            default: {
-                var method = value;
-                switch (method) {
-                    case 'bind': {
-                        cx = cx.bind(context);
-                        cx.constructor = cellx;
-                        return cx;
-                    }
-                    case 'unwrap': {
-                        return cell;
-                    }
-                    default: {
-                        var result = Cell_1.Cell.prototype[method].apply(cell, slice.call(arguments, 1));
-                        return result === cell ? cx : result;
-                    }
-                }
-            }
-        }
-    };
-    cx.constructor = cellx;
-    if (opts.onChange || opts.onError) {
-        cx.call(opts.context || global);
-    }
-    return cx;
-}
-exports.cellx = cellx;
-function defineObservableProperty(obj, name, value) {
-    var cellName = name + 'Cell';
-    Object.defineProperty(obj, cellName, {
-        configurable: true,
-        enumerable: false,
-        writable: true,
-        value: value instanceof Cell_1.Cell ? value : new Cell_1.Cell(value, { context: obj })
-    });
-    Object.defineProperty(obj, name, {
-        configurable: true,
-        enumerable: true,
-        get: function () {
-            return this[cellName].get();
-        },
-        set: function (value) {
-            this[cellName].set(value);
-        }
-    });
-    return obj;
-}
-exports.defineObservableProperty = defineObservableProperty;
-function defineObservableProperties(obj, props) {
-    Object.keys(props).forEach(function (name) {
-        defineObservableProperty(obj, name, props[name]);
-    });
-    return obj;
-}
-exports.defineObservableProperties = defineObservableProperties;
-function define(obj, name, value) {
-    if (typeof name == 'string') {
-        defineObservableProperty(obj, name, value);
-    }
-    else {
-        defineObservableProperties(obj, name);
-    }
-    return obj;
-}
-exports.define = define;
-
-
-/***/ }),
-/* 13 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var assign = Object.assign || (function (target, source) {
-    for (var name_1 in source) {
-        target[name_1] = source[name_1];
-    }
-    return target;
-});
-exports.assign = assign;
-
-
-/***/ }),
-/* 14 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-var logger_1 = __webpack_require__(4);
-var global = Function('return this;')();
-var nextTick;
-exports.nextTick = nextTick;
-if (global.process && global.process.toString() == '[object process]' && global.process.nextTick) {
-    exports.nextTick = nextTick = global.process.nextTick;
-}
-else if (global.setImmediate) {
-    exports.nextTick = nextTick = function nextTick(callback) {
-        setImmediate(callback);
-    };
-}
-else if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
-    var prm_1 = Promise.resolve();
-    exports.nextTick = nextTick = function nextTick(callback) {
-        prm_1.then(function () {
-            callback();
-        });
-    };
-}
-else {
-    var queue_1;
-    global.addEventListener('message', function () {
-        if (queue_1) {
-            var track = queue_1;
-            queue_1 = null;
-            for (var i = 0, l = track.length; i < l; i++) {
-                try {
-                    track[i]();
-                }
-                catch (err) {
-                    logger_1.error(err);
-                }
-            }
-        }
-    });
-    exports.nextTick = nextTick = function nextTick(callback) {
-        if (queue_1) {
-            queue_1.push(callback);
-        }
-        else {
-            queue_1 = [callback];
-            postMessage('__tic__', '*');
-        }
-    };
-}
 
 
 /***/ })

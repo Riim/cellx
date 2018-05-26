@@ -2,7 +2,8 @@ export interface IEvent<T extends EventEmitter = EventEmitter> {
     target: T;
     type: string;
     bubbles?: boolean;
-    isPropagationStopped?: boolean;
+    defaultPrevented?: boolean;
+    propagationStopped?: boolean;
     data: {
         [name: string]: any;
     };
@@ -36,7 +37,8 @@ export declare class EventEmitter {
         target?: EventEmitter;
         type: string;
         bubbles?: boolean;
-        isPropagationStopped?: boolean;
+        defaultPrevented?: boolean;
+        propagationStopped?: boolean;
         data?: {
             [name: string]: any;
         };

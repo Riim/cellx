@@ -527,8 +527,8 @@ export class ObservableList<T = any> extends EventEmitter
 	}
 
 	// FreezableCollection
-	_isFrozen: boolean;
-	get isFrozen(): boolean {
+	_frozen: boolean;
+	get frozen(): boolean {
 		return false;
 	}
 	freeze(): this {

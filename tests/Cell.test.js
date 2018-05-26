@@ -1,4 +1,4 @@
-let { EventEmitter, ObservableList, Cell, define } = require('../dist/cellx.umd');
+let { EventEmitter, ObservableList, Cell, define } = require('../dist/cellx');
 
 describe('Cell', () => {
 	test('.afterRelease()', () => {

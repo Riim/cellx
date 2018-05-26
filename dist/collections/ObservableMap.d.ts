@@ -23,8 +23,8 @@ export declare class ObservableMap<K = any, V = any> extends EventEmitter implem
     values(): Iterator<V>;
     entries(): Iterator<[K, V]>;
     clone(deep?: boolean): ObservableMap<K, V>;
-    _isFrozen: boolean;
-    readonly isFrozen: boolean;
+    _frozen: boolean;
+    readonly frozen: boolean;
     freeze(): this;
     unfreeze(): this;
     _throwIfFrozen(msg?: string): void;

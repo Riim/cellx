@@ -389,7 +389,7 @@ var ObservableList = /** @class */ (function (_super) {
         }
         items.splice(low, 0, this._registerValue(value));
     };
-    Object.defineProperty(ObservableList.prototype, "isFrozen", {
+    Object.defineProperty(ObservableList.prototype, "frozen", {
         get: function () {
             return false;
         },

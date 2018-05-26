@@ -1,4 +1,4 @@
-let { Cell, cellx } = require('../dist/cellx.umd');
+let { Cell, cellx } = require('../dist/cellx');
 
 describe('cellx', () => {
 	test('#get()', () => {

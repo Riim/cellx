@@ -9,13 +9,15 @@ module.exports = () => {
 	];
 
 	return {
+		mode: 'none',
+
 		entry: {
 			cellx: './src/cellx.ts'
 		},
 
 		output: {
-			filename: '[name].umd.js',
 			path: path.join(__dirname, 'dist'),
+			filename: '[name].umd.js',
 			library: '[name]',
 			libraryTarget: 'umd'
 		},
@@ -37,8 +39,10 @@ module.exports = () => {
 		},
 
 		resolve: {
-			extensions: ['.ts', '.tsx', '.js', '.jsx']
+			extensions: ['.ts', '.js']
 		},
+
+		context: __dirname,
 
 		plugins,
 
@@ -46,9 +50,9 @@ module.exports = () => {
 			console: false,
 			global: false,
 			process: false,
-			Buffer: false,
 			__filename: false,
 			__dirname: false,
+			Buffer: false,
 			setImmediate: false
 		}
 	};

@@ -156,7 +156,7 @@ var ObservableMap = /** @class */ (function (_super) {
         }
         return new this.constructor(entries || this, this._adoptsValueChanges);
     };
-    Object.defineProperty(ObservableMap.prototype, "isFrozen", {
+    Object.defineProperty(ObservableMap.prototype, "frozen", {
         get: function () {
             return false;
         },

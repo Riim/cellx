@@ -5,7 +5,8 @@ export interface IEvent<T extends EventEmitter = EventEmitter> {
 	target: T;
 	type: string;
 	bubbles?: boolean;
-	isPropagationStopped?: boolean;
+	defaultPrevented?: boolean;
+	propagationStopped?: boolean;
 	data: {
 		[name: string]: any;
 	};
@@ -216,11 +217,12 @@ export class EventEmitter {
 					target?: EventEmitter;
 					type: string;
 					bubbles?: boolean;
-					isPropagationStopped?: boolean;
+					defaultPrevented?: boolean;
+					propagationStopped?: boolean;
 					data?: {
 						[name: string]: any;
 					};
-				}
+			  }
 			| string,
 		data?: { [name: string]: any }
 	): IEvent {
@@ -268,19 +270,19 @@ export class EventEmitter {
 
 			if (eventCount == 1) {
 				if (this._tryEventListener(events[0], evt) === false) {
-					evt.isPropagationStopped = true;
+					evt.propagationStopped = true;
 				}
 			} else {
 				events = events.slice();
 
 				for (let i = 0; i < eventCount; i++) {
 					if (this._tryEventListener(events[i], evt) === false) {
-						evt.isPropagationStopped = true;
+						evt.propagationStopped = true;
 					}
 				}
 			}
 		} else if (this._tryEventListener(events, evt) === false) {
-			evt.isPropagationStopped = true;
+			evt.propagationStopped = true;
 		}
 	}
 

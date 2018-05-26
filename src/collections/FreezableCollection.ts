@@ -1,23 +1,23 @@
 import { EventEmitter } from '../EventEmitter';
 
 export class FreezableCollection extends EventEmitter {
-	_isFrozen = false;
-	get isFrozen(): boolean {
-		return this._isFrozen;
+	_frozen = false;
+	get frozen(): boolean {
+		return this._frozen;
 	}
 
 	freeze(): this {
-		this._isFrozen = true;
+		this._frozen = true;
 		return this;
 	}
 
 	unfreeze(): this {
-		this._isFrozen = false;
+		this._frozen = false;
 		return this;
 	}
 
 	_throwIfFrozen(msg?: string) {
-		if (this._isFrozen) {
+		if (this._frozen) {
 			throw new TypeError(msg || 'Frozen collection cannot be mutated');
 		}
 	}

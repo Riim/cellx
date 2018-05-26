@@ -1,6 +1,5 @@
 {
 	"compilerOptions": {
-		"allowSyntheticDefaultImports": true,
 		"declaration": true,
 		"experimentalDecorators": true,
 		"lib": ["dom", "es2017"],

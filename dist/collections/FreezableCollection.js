@@ -15,26 +15,26 @@ var FreezableCollection = /** @class */ (function (_super) {
     __extends(FreezableCollection, _super);
     function FreezableCollection() {
         var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this._isFrozen = false;
+        _this._frozen = false;
         return _this;
     }
-    Object.defineProperty(FreezableCollection.prototype, "isFrozen", {
+    Object.defineProperty(FreezableCollection.prototype, "frozen", {
         get: function () {
-            return this._isFrozen;
+            return this._frozen;
         },
         enumerable: true,
         configurable: true
     });
     FreezableCollection.prototype.freeze = function () {
-        this._isFrozen = true;
+        this._frozen = true;
         return this;
     };
     FreezableCollection.prototype.unfreeze = function () {
-        this._isFrozen = false;
+        this._frozen = false;
         return this;
     };
     FreezableCollection.prototype._throwIfFrozen = function (msg) {
-        if (this._isFrozen) {
+        if (this._frozen) {
             throw new TypeError(msg || 'Frozen collection cannot be mutated');
         }
     };
