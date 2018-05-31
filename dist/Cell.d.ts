@@ -1,6 +1,6 @@
 import { EventEmitter, IEvent, TListener } from './EventEmitter';
 export declare type TCellPull<T> = (cell: Cell<T>, next: any) => any;
-export interface ICellOptions<T> {
+export interface ICellOptions<T, M> {
     debugKey?: string;
     context?: object;
     get?: (value: any) => T;
@@ -8,6 +8,7 @@ export interface ICellOptions<T> {
     merge?: (next: T, value: any) => any;
     put?: (cell: Cell<T>, next: any, value: any) => void;
     reap?: () => void;
+    meta?: M;
     onChange?: TListener;
     onError?: TListener;
 }
@@ -26,7 +27,7 @@ export interface ICellErrorEvent<T extends EventEmitter = EventEmitter> extends 
     };
 }
 export declare type TCellEvent<T extends EventEmitter = EventEmitter> = ICellChangeEvent<T> | ICellErrorEvent<T>;
-export declare class Cell<T = any> extends EventEmitter {
+export declare class Cell<T = any, M = any> extends EventEmitter {
     static readonly currentlyPulling: boolean;
     static autorun(callback: Function, context?: any): () => void;
     static forceRelease(): void;
@@ -39,6 +40,7 @@ export declare class Cell<T = any> extends EventEmitter {
     _merge: ((next: T, value: any) => any) | null;
     _put: (cell: Cell<T>, next: any, value: any) => void;
     _reap: (() => void) | null;
+    meta: M | null;
     _value: any;
     _fixedValue: any;
     _error: Error | null;
@@ -57,7 +59,7 @@ export declare class Cell<T = any> extends EventEmitter {
     _prevChangeEvent: IEvent | null;
     _changeEvent: IEvent | null;
     _lastErrorEvent: IEvent<this> | null;
-    constructor(value: T | TCellPull<T>, opts?: ICellOptions<T>);
+    constructor(value: T | TCellPull<T>, options?: ICellOptions<T, M>);
     on(type: string, listener: TListener, context?: any): this;
     on(listeners: {
         [type: string]: TListener;
@@ -79,7 +81,7 @@ export declare class Cell<T = any> extends EventEmitter {
     _onValueChange(evt: IEvent): void;
     get(): T;
     pull(): boolean;
-    _$pull(): any;
+    _pull$(): any;
     getError(): Error | null;
     isPending(): boolean;
     set(value: T): this;

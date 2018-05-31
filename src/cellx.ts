@@ -42,16 +42,16 @@ const global = Function('return this;')();
 
 export function map<K = any, V = any>(
 	entries?: TObservableMapEntries<K, V> | null,
-	opts?: IObservableMapOptions | boolean
+	options?: IObservableMapOptions | boolean
 ): ObservableMap<K, V> {
-	return new ObservableMap(entries, opts);
+	return new ObservableMap(entries, options);
 }
 
 export function list<T = any>(
 	items?: TObservableListItems<T> | null,
-	opts?: IObservableListOptions<T> | boolean
+	options?: IObservableListOptions<T> | boolean
 ): ObservableList<T> {
-	return new ObservableList(items, opts);
+	return new ObservableList(items, options);
 }
 
 export interface ICellx<T> {
@@ -92,9 +92,12 @@ export interface ICellx<T> {
 
 export const KEY_CELL_MAP = Symbol('cellx.cellMap');
 
-export function cellx<T = any>(value: T | TCellPull<T>, opts?: ICellOptions<T>): ICellx<T> {
-	if (!opts) {
-		opts = {};
+export function cellx<T = any, M = any>(
+	value: T | TCellPull<T>,
+	options?: ICellOptions<T, M>
+): ICellx<T> {
+	if (!options) {
+		options = {};
 	}
 
 	let initialValue = value;
@@ -117,7 +120,7 @@ export function cellx<T = any>(value: T | TCellPull<T>, opts?: ICellOptions<T>):
 				return;
 			}
 
-			cell = new Cell(initialValue, assign<any, any>({ context }, opts));
+			cell = new Cell(initialValue, assign<any, any>({ context }, options));
 
 			context[KEY_CELL_MAP].set(cx, cell);
 		}
@@ -152,8 +155,8 @@ export function cellx<T = any>(value: T | TCellPull<T>, opts?: ICellOptions<T>):
 	};
 	cx.constructor = cellx;
 
-	if (opts.onChange || opts.onError) {
-		cx.call(opts.context || global);
+	if (options.onChange || options.onError) {
+		cx.call(options.context || global);
 	}
 
 	return cx;

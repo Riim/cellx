@@ -8,7 +8,7 @@ import { WaitError } from './WaitError';
 
 export type TCellPull<T> = (cell: Cell<T>, next: any) => any;
 
-export interface ICellOptions<T> {
+export interface ICellOptions<T, M> {
 	debugKey?: string;
 	context?: object;
 	get?: (value: any) => T;
@@ -16,6 +16,7 @@ export interface ICellOptions<T> {
 	merge?: (next: T, value: any) => any;
 	put?: (cell: Cell<T>, next: any, value: any) => void;
 	reap?: () => void;
+	meta?: M;
 	onChange?: TListener;
 	onError?: TListener;
 }
@@ -207,7 +208,7 @@ function defaultPut(cell: Cell, value: any) {
 	cell.push(value);
 }
 
-export class Cell<T = any> extends EventEmitter {
+export class Cell<T = any, M = any> extends EventEmitter {
 	static get currentlyPulling(): boolean {
 		return !!currentCell;
 	}
@@ -256,6 +257,8 @@ export class Cell<T = any> extends EventEmitter {
 
 	_reap: (() => void) | null;
 
+	meta: M | null;
+
 	_value: any;
 	_fixedValue: any;
 
@@ -284,21 +287,23 @@ export class Cell<T = any> extends EventEmitter {
 
 	_lastErrorEvent: IEvent<this> | null = null;
 
-	constructor(value: T | TCellPull<T>, opts?: ICellOptions<T>) {
+	constructor(value: T | TCellPull<T>, options?: ICellOptions<T, M>) {
 		super();
 
-		this.debugKey = opts && opts.debugKey;
+		this.debugKey = options && options.debugKey;
 
-		this.context = (opts && opts.context) || this;
+		this.context = (options && options.context) || this;
 
 		this._pull = typeof value == 'function' ? value : null;
-		this._get = (opts && opts.get) || null;
+		this._get = (options && options.get) || null;
 
-		this._validate = (opts && opts.validate) || null;
-		this._merge = (opts && opts.merge) || null;
-		this._put = (opts && opts.put) || defaultPut;
+		this._validate = (options && options.validate) || null;
+		this._merge = (options && options.merge) || null;
+		this._put = (options && options.put) || defaultPut;
 
-		this._reap = (opts && opts.reap) || null;
+		this._reap = (options && options.reap) || null;
+
+		this.meta = (options && options.meta) || null;
 
 		if (this._pull) {
 			this._fixedValue = this._value = undefined;
@@ -317,12 +322,12 @@ export class Cell<T = any> extends EventEmitter {
 			}
 		}
 
-		if (opts) {
-			if (opts.onChange) {
-				this.on('change', opts.onChange);
+		if (options) {
+			if (options.onChange) {
+				this.on('change', options.onChange);
 			}
-			if (opts.onError) {
-				this.on('error', opts.onError);
+			if (options.onError) {
+				this.on('error', options.onError);
 			}
 		}
 	}
@@ -468,7 +473,7 @@ export class Cell<T = any> extends EventEmitter {
 		}
 
 		if (this._version < releaseVersion) {
-			let value = this._$pull();
+			let value = this._pull$();
 
 			if (deps || this._dependencies || !(this._state & STATE_INITED)) {
 				if (value === $error) {
@@ -546,7 +551,7 @@ export class Cell<T = any> extends EventEmitter {
 				let prevDeps = this._dependencies;
 
 				if (prevDeps !== null) {
-					let value = this._$pull();
+					let value = this._pull$();
 					let deps = this._dependencies;
 
 					if (prevDeps || deps || !(this._state & STATE_INITED)) {
@@ -613,7 +618,7 @@ export class Cell<T = any> extends EventEmitter {
 			prevDeps = this._dependencies;
 			prevLevel = this._level;
 
-			value = this._$pull();
+			value = this._pull$();
 
 			let deps = this._dependencies;
 			let newDepCount = 0;
@@ -652,7 +657,7 @@ export class Cell<T = any> extends EventEmitter {
 				return false;
 			}
 		} else {
-			value = this._$pull();
+			value = this._pull$();
 		}
 
 		if (value === $error) {
@@ -663,7 +668,7 @@ export class Cell<T = any> extends EventEmitter {
 		return this._push(value, false, true);
 	}
 
-	_$pull(): any {
+	_pull$(): any {
 		if (this._state & STATE_CURRENTLY_PULLING) {
 			throw new TypeError('Circular pulling detected');
 		}

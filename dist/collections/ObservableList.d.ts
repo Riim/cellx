@@ -14,7 +14,7 @@ export declare class ObservableList<T = any> extends EventEmitter implements Fre
     readonly length: number;
     _comparator: TComparator<T> | null;
     _sorted: boolean;
-    constructor(items?: TObservableListItems<T> | null, opts?: IObservableListOptions<T> | boolean);
+    constructor(items?: TObservableListItems<T> | null, options?: IObservableListOptions<T> | boolean);
     _validateIndex(index: number | undefined, allowEndIndex?: boolean): number | undefined;
     contains(value: T): boolean;
     indexOf(value: T, fromIndex?: number): number;

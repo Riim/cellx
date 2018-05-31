@@ -23,18 +23,18 @@ exports.WaitError = WaitError_1.WaitError;
 var hasOwn = Object.prototype.hasOwnProperty;
 var slice = Array.prototype.slice;
 var global = Function('return this;')();
-function map(entries, opts) {
-    return new ObservableMap_1.ObservableMap(entries, opts);
+function map(entries, options) {
+    return new ObservableMap_1.ObservableMap(entries, options);
 }
 exports.map = map;
-function list(items, opts) {
-    return new ObservableList_1.ObservableList(items, opts);
+function list(items, options) {
+    return new ObservableList_1.ObservableList(items, options);
 }
 exports.list = list;
 exports.KEY_CELL_MAP = symbol_polyfill_1.Symbol('cellx.cellMap');
-function cellx(value, opts) {
-    if (!opts) {
-        opts = {};
+function cellx(value, options) {
+    if (!options) {
+        options = {};
     }
     var initialValue = value;
     var cx = function (value) {
@@ -50,7 +50,7 @@ function cellx(value, opts) {
             if (value === 'dispose' && arguments.length >= 2) {
                 return;
             }
-            cell = new Cell_1.Cell(initialValue, object_assign_polyfill_1.assign({ context: context }, opts));
+            cell = new Cell_1.Cell(initialValue, object_assign_polyfill_1.assign({ context: context }, options));
             context[exports.KEY_CELL_MAP].set(cx, cell);
         }
         switch (arguments.length) {
@@ -81,8 +81,8 @@ function cellx(value, opts) {
         }
     };
     cx.constructor = cellx;
-    if (opts.onChange || opts.onError) {
-        cx.call(opts.context || global);
+    if (options.onChange || options.onError) {
+        cx.call(options.context || global);
     }
     return cx;
 }

@@ -11,7 +11,7 @@ export declare class ObservableMap<K = any, V = any> extends EventEmitter implem
     _entries: Map<K, V>;
     _size: number;
     readonly size: number;
-    constructor(entries?: TObservableMapEntries<K, V> | null, opts?: IObservableMapOptions | boolean);
+    constructor(entries?: TObservableMapEntries<K, V> | null, options?: IObservableMapOptions | boolean);
     has(key: K): boolean;
     contains(value: V): boolean;
     get(key: K): V | undefined;

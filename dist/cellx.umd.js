@@ -109,18 +109,18 @@ exports.WaitError = WaitError_1.WaitError;
 var hasOwn = Object.prototype.hasOwnProperty;
 var slice = Array.prototype.slice;
 var global = Function('return this;')();
-function map(entries, opts) {
-    return new ObservableMap_1.ObservableMap(entries, opts);
+function map(entries, options) {
+    return new ObservableMap_1.ObservableMap(entries, options);
 }
 exports.map = map;
-function list(items, opts) {
-    return new ObservableList_1.ObservableList(items, opts);
+function list(items, options) {
+    return new ObservableList_1.ObservableList(items, options);
 }
 exports.list = list;
 exports.KEY_CELL_MAP = symbol_polyfill_1.Symbol('cellx.cellMap');
-function cellx(value, opts) {
-    if (!opts) {
-        opts = {};
+function cellx(value, options) {
+    if (!options) {
+        options = {};
     }
     var initialValue = value;
     var cx = function (value) {
@@ -136,7 +136,7 @@ function cellx(value, opts) {
             if (value === 'dispose' && arguments.length >= 2) {
                 return;
             }
-            cell = new Cell_1.Cell(initialValue, object_assign_polyfill_1.assign({ context: context }, opts));
+            cell = new Cell_1.Cell(initialValue, object_assign_polyfill_1.assign({ context: context }, options));
             context[exports.KEY_CELL_MAP].set(cx, cell);
         }
         switch (arguments.length) {
@@ -167,8 +167,8 @@ function cellx(value, opts) {
         }
     };
     cx.constructor = cellx;
-    if (opts.onChange || opts.onError) {
-        cx.call(opts.context || global);
+    if (options.onChange || options.onError) {
+        cx.call(options.context || global);
     }
     return cx;
 }
@@ -703,7 +703,7 @@ function defaultPut(cell, value) {
 }
 var Cell = /** @class */ (function (_super) {
     __extends(Cell, _super);
-    function Cell(value, opts) {
+    function Cell(value, options) {
         var _this = _super.call(this) || this;
         _this._error = null;
         _this._pushingIndex = 0;
@@ -721,14 +721,15 @@ var Cell = /** @class */ (function (_super) {
         _this._prevChangeEvent = null;
         _this._changeEvent = null;
         _this._lastErrorEvent = null;
-        _this.debugKey = opts && opts.debugKey;
-        _this.context = (opts && opts.context) || _this;
+        _this.debugKey = options && options.debugKey;
+        _this.context = (options && options.context) || _this;
         _this._pull = typeof value == 'function' ? value : null;
-        _this._get = (opts && opts.get) || null;
-        _this._validate = (opts && opts.validate) || null;
-        _this._merge = (opts && opts.merge) || null;
-        _this._put = (opts && opts.put) || defaultPut;
-        _this._reap = (opts && opts.reap) || null;
+        _this._get = (options && options.get) || null;
+        _this._validate = (options && options.validate) || null;
+        _this._merge = (options && options.merge) || null;
+        _this._put = (options && options.put) || defaultPut;
+        _this._reap = (options && options.reap) || null;
+        _this.meta = (options && options.meta) || null;
         if (_this._pull) {
             _this._fixedValue = _this._value = undefined;
         }
@@ -744,12 +745,12 @@ var Cell = /** @class */ (function (_super) {
                 value.on('change', _this._onValueChange, _this);
             }
         }
-        if (opts) {
-            if (opts.onChange) {
-                _this.on('change', opts.onChange);
+        if (options) {
+            if (options.onChange) {
+                _this.on('change', options.onChange);
             }
-            if (opts.onError) {
-                _this.on('error', opts.onError);
+            if (options.onError) {
+                _this.on('error', options.onError);
             }
         }
         return _this;
@@ -887,7 +888,7 @@ var Cell = /** @class */ (function (_super) {
             return;
         }
         if (this._version < releaseVersion) {
-            var value = this._$pull();
+            var value = this._pull$();
             if (deps || this._dependencies || !(this._state & STATE_INITED)) {
                 if (value === $error) {
                     this._fail($error.error, false);
@@ -951,7 +952,7 @@ var Cell = /** @class */ (function (_super) {
                 releaseVersion + +releasePlanned + +(currentlyRelease != 0)) {
                 var prevDeps = this._dependencies;
                 if (prevDeps !== null) {
-                    var value = this._$pull();
+                    var value = this._pull$();
                     var deps = this._dependencies;
                     if (prevDeps || deps || !(this._state & STATE_INITED)) {
                         if (deps && this._state & STATE_HAS_FOLLOWERS) {
@@ -1005,7 +1006,7 @@ var Cell = /** @class */ (function (_super) {
         if (this._state & STATE_HAS_FOLLOWERS) {
             prevDeps = this._dependencies;
             prevLevel = this._level;
-            value = this._$pull();
+            value = this._pull$();
             var deps = this._dependencies;
             var newDepCount = 0;
             if (deps) {
@@ -1038,7 +1039,7 @@ var Cell = /** @class */ (function (_super) {
             }
         }
         else {
-            value = this._$pull();
+            value = this._pull$();
         }
         if (value === $error) {
             this._fail($error.error, false);
@@ -1046,7 +1047,7 @@ var Cell = /** @class */ (function (_super) {
         }
         return this._push(value, false, true);
     };
-    Cell.prototype._$pull = function () {
+    Cell.prototype._pull$ = function () {
         if (this._state & STATE_CURRENTLY_PULLING) {
             throw new TypeError('Circular pulling detected');
         }
@@ -1724,18 +1725,18 @@ function defaultComparator(a, b) {
 }
 var ObservableList = /** @class */ (function (_super) {
     __extends(ObservableList, _super);
-    function ObservableList(items, opts) {
+    function ObservableList(items, options) {
         var _this = _super.call(this) || this;
         _this._items = [];
         _this._length = 0;
         FreezableCollection_1.FreezableCollection.call(_this);
         ObservableCollection_1.ObservableCollection.call(_this);
-        if (typeof opts == 'boolean') {
-            opts = { adoptsValueChanges: opts };
+        if (typeof options == 'boolean') {
+            options = { adoptsValueChanges: options };
         }
-        _this._adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
-        if (opts && (opts.sorted || (opts.comparator && opts.sorted !== false))) {
-            _this._comparator = opts.comparator || defaultComparator;
+        _this._adoptsValueChanges = !!(options && options.adoptsValueChanges);
+        if (options && (options.sorted || (options.comparator && options.sorted !== false))) {
+            _this._comparator = options.comparator || defaultComparator;
             _this._sorted = true;
         }
         else {
@@ -2340,15 +2341,15 @@ var FreezableCollection_1 = __webpack_require__(12);
 var ObservableCollection_1 = __webpack_require__(13);
 var ObservableMap = /** @class */ (function (_super) {
     __extends(ObservableMap, _super);
-    function ObservableMap(entries, opts) {
+    function ObservableMap(entries, options) {
         var _this = _super.call(this) || this;
         _this._entries = new map_set_polyfill_1.Map();
         FreezableCollection_1.FreezableCollection.call(_this);
         ObservableCollection_1.ObservableCollection.call(_this);
-        if (typeof opts == 'boolean') {
-            opts = { adoptsValueChanges: opts };
+        if (typeof options == 'boolean') {
+            options = { adoptsValueChanges: options };
         }
-        _this._adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
+        _this._adoptsValueChanges = !!(options && options.adoptsValueChanges);
         if (entries) {
             var mapEntries_1 = _this._entries;
             if (entries instanceof map_set_polyfill_1.Map || entries instanceof ObservableMap) {

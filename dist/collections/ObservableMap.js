@@ -19,15 +19,15 @@ var FreezableCollection_1 = require("./FreezableCollection");
 var ObservableCollection_1 = require("./ObservableCollection");
 var ObservableMap = /** @class */ (function (_super) {
     __extends(ObservableMap, _super);
-    function ObservableMap(entries, opts) {
+    function ObservableMap(entries, options) {
         var _this = _super.call(this) || this;
         _this._entries = new map_set_polyfill_1.Map();
         FreezableCollection_1.FreezableCollection.call(_this);
         ObservableCollection_1.ObservableCollection.call(_this);
-        if (typeof opts == 'boolean') {
-            opts = { adoptsValueChanges: opts };
+        if (typeof options == 'boolean') {
+            options = { adoptsValueChanges: options };
         }
-        _this._adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
+        _this._adoptsValueChanges = !!(options && options.adoptsValueChanges);
         if (entries) {
             var mapEntries_1 = _this._entries;
             if (entries instanceof map_set_polyfill_1.Map || entries instanceof ObservableMap) {

@@ -27,17 +27,17 @@ export class ObservableMap<K = any, V = any> extends EventEmitter
 
 	constructor(
 		entries?: TObservableMapEntries<K, V> | null,
-		opts?: IObservableMapOptions | boolean
+		options?: IObservableMapOptions | boolean
 	) {
 		super();
 		FreezableCollection.call(this);
 		ObservableCollection.call(this);
 
-		if (typeof opts == 'boolean') {
-			opts = { adoptsValueChanges: opts };
+		if (typeof options == 'boolean') {
+			options = { adoptsValueChanges: options };
 		}
 
-		this._adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
+		this._adoptsValueChanges = !!(options && options.adoptsValueChanges);
 
 		if (entries) {
 			let mapEntries = this._entries;

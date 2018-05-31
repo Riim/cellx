@@ -35,20 +35,20 @@ export class ObservableList<T = any> extends EventEmitter
 
 	constructor(
 		items?: TObservableListItems<T> | null,
-		opts?: IObservableListOptions<T> | boolean
+		options?: IObservableListOptions<T> | boolean
 	) {
 		super();
 		FreezableCollection.call(this);
 		ObservableCollection.call(this);
 
-		if (typeof opts == 'boolean') {
-			opts = { adoptsValueChanges: opts };
+		if (typeof options == 'boolean') {
+			options = { adoptsValueChanges: options };
 		}
 
-		this._adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
+		this._adoptsValueChanges = !!(options && options.adoptsValueChanges);
 
-		if (opts && (opts.sorted || (opts.comparator && opts.sorted !== false))) {
-			this._comparator = opts.comparator || defaultComparator;
+		if (options && (options.sorted || (options.comparator && options.sorted !== false))) {
+			this._comparator = options.comparator || defaultComparator;
 			this._sorted = true;
 		} else {
 			this._comparator = null;

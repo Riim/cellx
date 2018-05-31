@@ -22,18 +22,18 @@ function defaultComparator(a, b) {
 }
 var ObservableList = /** @class */ (function (_super) {
     __extends(ObservableList, _super);
-    function ObservableList(items, opts) {
+    function ObservableList(items, options) {
         var _this = _super.call(this) || this;
         _this._items = [];
         _this._length = 0;
         FreezableCollection_1.FreezableCollection.call(_this);
         ObservableCollection_1.ObservableCollection.call(_this);
-        if (typeof opts == 'boolean') {
-            opts = { adoptsValueChanges: opts };
+        if (typeof options == 'boolean') {
+            options = { adoptsValueChanges: options };
         }
-        _this._adoptsValueChanges = !!(opts && opts.adoptsValueChanges);
-        if (opts && (opts.sorted || (opts.comparator && opts.sorted !== false))) {
-            _this._comparator = opts.comparator || defaultComparator;
+        _this._adoptsValueChanges = !!(options && options.adoptsValueChanges);
+        if (options && (options.sorted || (options.comparator && options.sorted !== false))) {
+            _this._comparator = options.comparator || defaultComparator;
             _this._sorted = true;
         }
         else {
