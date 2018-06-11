@@ -1,9 +1,7 @@
 import { is } from '@riim/is';
 import { Map } from '@riim/map-set-polyfill';
-import { mixin } from '@riim/mixin';
 import { Symbol } from '@riim/symbol-polyfill';
 import { EventEmitter } from '../EventEmitter';
-import { FreezableCollection } from './FreezableCollection';
 
 export type TObservableMapEntries<K, V> =
 	| Array<[K, V]>
@@ -11,7 +9,7 @@ export type TObservableMapEntries<K, V> =
 	| Map<K, V>
 	| ObservableMap<K, V>;
 
-export class ObservableMap<K = any, V = any> extends EventEmitter implements FreezableCollection {
+export class ObservableMap<K = any, V = any> extends EventEmitter {
 	_entries = new Map<K, V>();
 
 	get size(): number {
@@ -20,7 +18,6 @@ export class ObservableMap<K = any, V = any> extends EventEmitter implements Fre
 
 	constructor(entries?: TObservableMapEntries<K, V> | null) {
 		super();
-		FreezableCollection.call(this);
 
 		if (entries) {
 			let mapEntries = this._entries;
@@ -60,10 +57,6 @@ export class ObservableMap<K = any, V = any> extends EventEmitter implements Fre
 			if (is(value, prev)) {
 				return this;
 			}
-
-			this._throwIfFrozen();
-		} else {
-			this._throwIfFrozen();
 		}
 
 		entries.set(key, value);
@@ -81,8 +74,6 @@ export class ObservableMap<K = any, V = any> extends EventEmitter implements Fre
 		let entries = this._entries;
 
 		if (entries.has(key)) {
-			this._throwIfFrozen();
-
 			let value = entries.get(key);
 
 			entries.delete(key);
@@ -100,8 +91,6 @@ export class ObservableMap<K = any, V = any> extends EventEmitter implements Fre
 
 	clear(): this {
 		if (this._entries.size) {
-			this._throwIfFrozen();
-
 			this._entries.clear();
 			this.emit('change', { subtype: 'clear' });
 		}
@@ -145,17 +134,4 @@ export class ObservableMap<K = any, V = any> extends EventEmitter implements Fre
 	}
 }
 
-mixin(ObservableMap.prototype, FreezableCollection.prototype, ['constructor']);
-
 ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;
-
-declare module './ObservableMap' {
-	/* tslint:disable-next-line */
-	interface ObservableMap {
-		_frozen: boolean;
-		readonly frozen: boolean;
-		freeze(): this;
-		unfreeze(): this;
-		_throwIfFrozen(msg?: string): void;
-	}
-}

@@ -3,7 +3,6 @@ import { IObservableListOptions, ObservableList, TObservableListItems } from './
 import { ObservableMap, TObservableMapEntries } from './collections/ObservableMap';
 import { TListener } from './EventEmitter';
 export { IEvent, TListener, IRegisteredEvent, EventEmitter } from './EventEmitter';
-export { FreezableCollection } from './collections/FreezableCollection';
 export { TObservableMapEntries, ObservableMap } from './collections/ObservableMap';
 export { TComparator, TObservableListItems, IObservableListOptions, ObservableList } from './collections/ObservableList';
 export { TCellPull, ICellOptions, ICellChangeEvent, ICellErrorEvent, TCellEvent, Cell } from './Cell';

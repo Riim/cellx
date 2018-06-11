@@ -1,8 +1,6 @@
 import { is } from '@riim/is';
-import { mixin } from '@riim/mixin';
 import { Symbol } from '@riim/symbol-polyfill';
 import { EventEmitter } from '../EventEmitter';
-import { FreezableCollection } from './FreezableCollection';
 
 const splice = Array.prototype.splice;
 
@@ -19,7 +17,7 @@ function defaultComparator(a: any, b: any): number {
 	return a < b ? -1 : a > b ? 1 : 0;
 }
 
-export class ObservableList<T = any> extends EventEmitter implements FreezableCollection {
+export class ObservableList<T = any> extends EventEmitter {
 	_items: Array<T> = [];
 
 	get length(): number {
@@ -31,7 +29,6 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 
 	constructor(items?: TObservableListItems<T> | null, options?: IObservableListOptions<T>) {
 		super();
-		FreezableCollection.call(this);
 
 		if (options && (options.sorted || (options.comparator && options.sorted !== false))) {
 			this._comparator = options.comparator || defaultComparator;
@@ -120,8 +117,6 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 		index = this._validateIndex(index, true)!;
 
 		if (!is(value, this._items[index])) {
-			this._throwIfFrozen();
-
 			this._items[index] = value;
 			this.emit('change');
 		}
@@ -157,10 +152,6 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 			let value = values[--i - index];
 
 			if (!is(value, items[i])) {
-				if (!changed) {
-					this._throwIfFrozen();
-				}
-
 				items[i] = value;
 				changed = true;
 			}
@@ -174,8 +165,6 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 	}
 
 	add(value: T): this {
-		this._throwIfFrozen();
-
 		if (this._sorted) {
 			this._insertSortedValue(value);
 		} else {
@@ -193,8 +182,6 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 		}
 
 		if (values.length) {
-			this._throwIfFrozen();
-
 			if (this._sorted) {
 				for (let i = 0, l = values.length; i < l; i++) {
 					this._insertSortedValue(values[i]);
@@ -214,11 +201,7 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 			throw new TypeError('Cannot insert to sorted list');
 		}
 
-		index = this._validateIndex(index, true)!;
-
-		this._throwIfFrozen();
-
-		this._items.splice(index, 0, value);
+		this._items.splice(this._validateIndex(index, true)!, 0, value);
 		this.emit('change');
 
 		return this;
@@ -236,8 +219,6 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 		}
 
 		if (values.length) {
-			this._throwIfFrozen();
-
 			splice.apply(this._items, ([index, 0] as any).concat(values));
 			this.emit('change');
 		}
@@ -252,8 +233,6 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 			return false;
 		}
 
-		this._throwIfFrozen();
-
 		this._items.splice(index, 1);
 		this.emit('change');
 
@@ -266,10 +245,6 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 		let changed = false;
 
 		while ((index = items.indexOf(value, index)) != -1) {
-			if (!changed) {
-				this._throwIfFrozen();
-			}
-
 			items.splice(index, 1);
 			changed = true;
 		}
@@ -295,10 +270,6 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 			let index = items.indexOf(values[i], fromIndex);
 
 			if (index != -1) {
-				if (!changed) {
-					this._throwIfFrozen();
-				}
-
 				items.splice(index, 1);
 				changed = true;
 			}
@@ -325,10 +296,6 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 			let value = values[i];
 
 			for (let index = fromIndex; (index = items.indexOf(value, index)) != -1; ) {
-				if (!changed) {
-					this._throwIfFrozen();
-				}
-
 				items.splice(index, 1);
 				changed = true;
 			}
@@ -342,11 +309,7 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 	}
 
 	removeAt(index: number): T {
-		index = this._validateIndex(index)!;
-
-		this._throwIfFrozen();
-
-		let value = this._items.splice(index, 1)[0];
+		let value = this._items.splice(this._validateIndex(index)!, 1)[0];
 		this.emit('change');
 
 		return value;
@@ -371,8 +334,6 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 			}
 		}
 
-		this._throwIfFrozen();
-
 		let values = this._items.splice(index, count);
 		this.emit('change');
 
@@ -381,8 +342,6 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 
 	clear(): this {
 		if (this._items.length) {
-			this._throwIfFrozen();
-
 			this._items.length = 0;
 			this.emit('change', { subtype: 'clear' });
 		}
@@ -518,8 +477,6 @@ export class ObservableList<T = any> extends EventEmitter implements FreezableCo
 	};
 });
 
-mixin(ObservableList.prototype, FreezableCollection.prototype, ['constructor']);
-
 ObservableList.prototype[Symbol.iterator] = ObservableList.prototype.values;
 
 declare module './ObservableList' {
@@ -554,11 +511,5 @@ declare module './ObservableList' {
 		values(): Iterator<T>;
 
 		entries(): Iterator<[number, T]>;
-
-		_frozen: boolean;
-		readonly frozen: boolean;
-		freeze(): this;
-		unfreeze(): this;
-		_throwIfFrozen(msg?: string): void;
 	}
 }

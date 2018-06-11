@@ -106,12 +106,10 @@ var object_assign_polyfill_1 = __webpack_require__(3);
 var symbol_polyfill_1 = __webpack_require__(2);
 var Cell_1 = __webpack_require__(4);
 var ObservableList_1 = __webpack_require__(10);
-var ObservableMap_1 = __webpack_require__(13);
+var ObservableMap_1 = __webpack_require__(11);
 var EventEmitter_1 = __webpack_require__(8);
 exports.EventEmitter = EventEmitter_1.EventEmitter;
-var FreezableCollection_1 = __webpack_require__(12);
-exports.FreezableCollection = FreezableCollection_1.FreezableCollection;
-var ObservableMap_2 = __webpack_require__(13);
+var ObservableMap_2 = __webpack_require__(11);
 exports.ObservableMap = ObservableMap_2.ObservableMap;
 var ObservableList_2 = __webpack_require__(10);
 exports.ObservableList = ObservableList_2.ObservableList;
@@ -1727,10 +1725,8 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var is_1 = __webpack_require__(5);
-var mixin_1 = __webpack_require__(11);
 var symbol_polyfill_1 = __webpack_require__(2);
 var EventEmitter_1 = __webpack_require__(8);
-var FreezableCollection_1 = __webpack_require__(12);
 var splice = Array.prototype.splice;
 function defaultComparator(a, b) {
     return a < b ? -1 : a > b ? 1 : 0;
@@ -1740,7 +1736,6 @@ var ObservableList = /** @class */ (function (_super) {
     function ObservableList(items, options) {
         var _this = _super.call(this) || this;
         _this._items = [];
-        FreezableCollection_1.FreezableCollection.call(_this);
         if (options && (options.sorted || (options.comparator && options.sorted !== false))) {
             _this._comparator = options.comparator || defaultComparator;
             _this._sorted = true;
@@ -1816,7 +1811,6 @@ var ObservableList = /** @class */ (function (_super) {
         }
         index = this._validateIndex(index, true);
         if (!is_1.is(value, this._items[index])) {
-            this._throwIfFrozen();
             this._items[index] = value;
             this.emit('change');
         }
@@ -1842,9 +1836,6 @@ var ObservableList = /** @class */ (function (_super) {
         for (var i = index + valueCount; i > index;) {
             var value = values[--i - index];
             if (!is_1.is(value, items[i])) {
-                if (!changed) {
-                    this._throwIfFrozen();
-                }
                 items[i] = value;
                 changed = true;
             }
@@ -1855,7 +1846,6 @@ var ObservableList = /** @class */ (function (_super) {
         return this;
     };
     ObservableList.prototype.add = function (value) {
-        this._throwIfFrozen();
         if (this._sorted) {
             this._insertSortedValue(value);
         }
@@ -1870,7 +1860,6 @@ var ObservableList = /** @class */ (function (_super) {
             values = values._items.slice();
         }
         if (values.length) {
-            this._throwIfFrozen();
             if (this._sorted) {
                 for (var i = 0, l = values.length; i < l; i++) {
                     this._insertSortedValue(values[i]);
@@ -1887,9 +1876,7 @@ var ObservableList = /** @class */ (function (_super) {
         if (this._sorted) {
             throw new TypeError('Cannot insert to sorted list');
         }
-        index = this._validateIndex(index, true);
-        this._throwIfFrozen();
-        this._items.splice(index, 0, value);
+        this._items.splice(this._validateIndex(index, true), 0, value);
         this.emit('change');
         return this;
     };
@@ -1902,7 +1889,6 @@ var ObservableList = /** @class */ (function (_super) {
             values = values._items;
         }
         if (values.length) {
-            this._throwIfFrozen();
             splice.apply(this._items, [index, 0].concat(values));
             this.emit('change');
         }
@@ -1913,7 +1899,6 @@ var ObservableList = /** @class */ (function (_super) {
         if (index == -1) {
             return false;
         }
-        this._throwIfFrozen();
         this._items.splice(index, 1);
         this.emit('change');
         return true;
@@ -1923,9 +1908,6 @@ var ObservableList = /** @class */ (function (_super) {
         var items = this._items;
         var changed = false;
         while ((index = items.indexOf(value, index)) != -1) {
-            if (!changed) {
-                this._throwIfFrozen();
-            }
             items.splice(index, 1);
             changed = true;
         }
@@ -1944,9 +1926,6 @@ var ObservableList = /** @class */ (function (_super) {
         for (var i = 0, l = values.length; i < l; i++) {
             var index = items.indexOf(values[i], fromIndex);
             if (index != -1) {
-                if (!changed) {
-                    this._throwIfFrozen();
-                }
                 items.splice(index, 1);
                 changed = true;
             }
@@ -1966,9 +1945,6 @@ var ObservableList = /** @class */ (function (_super) {
         for (var i = 0, l = values.length; i < l; i++) {
             var value = values[i];
             for (var index = fromIndex; (index = items.indexOf(value, index)) != -1;) {
-                if (!changed) {
-                    this._throwIfFrozen();
-                }
                 items.splice(index, 1);
                 changed = true;
             }
@@ -1979,9 +1955,7 @@ var ObservableList = /** @class */ (function (_super) {
         return changed;
     };
     ObservableList.prototype.removeAt = function (index) {
-        index = this._validateIndex(index);
-        this._throwIfFrozen();
-        var value = this._items.splice(index, 1)[0];
+        var value = this._items.splice(this._validateIndex(index), 1)[0];
         this.emit('change');
         return value;
     };
@@ -2001,14 +1975,12 @@ var ObservableList = /** @class */ (function (_super) {
                 throw new RangeError('Sum of "index" and "count" out of valid range');
             }
         }
-        this._throwIfFrozen();
         var values = this._items.splice(index, count);
         this.emit('change');
         return values;
     };
     ObservableList.prototype.clear = function () {
         if (this._items.length) {
-            this._throwIfFrozen();
             this._items.length = 0;
             this.emit('change', { subtype: 'clear' });
         }
@@ -2116,88 +2088,11 @@ exports.ObservableList = ObservableList;
         };
     };
 });
-mixin_1.mixin(ObservableList.prototype, FreezableCollection_1.FreezableCollection.prototype, ['constructor']);
 ObservableList.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableList.prototype.values;
 
 
 /***/ }),
 /* 11 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-function mixin(target, sources, skipProperties) {
-    if (!Array.isArray(sources)) {
-        sources = [sources];
-    }
-    for (var i = 0, l = sources.length; i < l; i++) {
-        var source = sources[i];
-        var names = Object.getOwnPropertyNames(source);
-        for (var j = 0, m = names.length; j < m; j++) {
-            var name_1 = names[j];
-            if (!skipProperties || skipProperties.indexOf(name_1) == -1) {
-                Object.defineProperty(target, name_1, Object.getOwnPropertyDescriptor(source, name_1));
-            }
-        }
-    }
-    return target;
-}
-exports.mixin = mixin;
-
-
-/***/ }),
-/* 12 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
-var EventEmitter_1 = __webpack_require__(8);
-var FreezableCollection = /** @class */ (function (_super) {
-    __extends(FreezableCollection, _super);
-    function FreezableCollection() {
-        var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this._frozen = false;
-        return _this;
-    }
-    Object.defineProperty(FreezableCollection.prototype, "frozen", {
-        get: function () {
-            return this._frozen;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    FreezableCollection.prototype.freeze = function () {
-        this._frozen = true;
-        return this;
-    };
-    FreezableCollection.prototype.unfreeze = function () {
-        this._frozen = false;
-        return this;
-    };
-    FreezableCollection.prototype._throwIfFrozen = function (msg) {
-        if (this._frozen) {
-            throw new TypeError(msg || 'Frozen collection cannot be mutated');
-        }
-    };
-    return FreezableCollection;
-}(EventEmitter_1.EventEmitter));
-exports.FreezableCollection = FreezableCollection;
-
-
-/***/ }),
-/* 13 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2215,16 +2110,13 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var is_1 = __webpack_require__(5);
 var map_set_polyfill_1 = __webpack_require__(1);
-var mixin_1 = __webpack_require__(11);
 var symbol_polyfill_1 = __webpack_require__(2);
 var EventEmitter_1 = __webpack_require__(8);
-var FreezableCollection_1 = __webpack_require__(12);
 var ObservableMap = /** @class */ (function (_super) {
     __extends(ObservableMap, _super);
     function ObservableMap(entries) {
         var _this = _super.call(this) || this;
         _this._entries = new map_set_polyfill_1.Map();
-        FreezableCollection_1.FreezableCollection.call(_this);
         if (entries) {
             var mapEntries_1 = _this._entries;
             if (entries instanceof map_set_polyfill_1.Map || entries instanceof ObservableMap) {
@@ -2267,10 +2159,6 @@ var ObservableMap = /** @class */ (function (_super) {
             if (is_1.is(value, prev)) {
                 return this;
             }
-            this._throwIfFrozen();
-        }
-        else {
-            this._throwIfFrozen();
         }
         entries.set(key, value);
         this.emit('change', {
@@ -2284,7 +2172,6 @@ var ObservableMap = /** @class */ (function (_super) {
     ObservableMap.prototype.delete = function (key) {
         var entries = this._entries;
         if (entries.has(key)) {
-            this._throwIfFrozen();
             var value = entries.get(key);
             entries.delete(key);
             this.emit('change', {
@@ -2298,7 +2185,6 @@ var ObservableMap = /** @class */ (function (_super) {
     };
     ObservableMap.prototype.clear = function () {
         if (this._entries.size) {
-            this._throwIfFrozen();
             this._entries.clear();
             this.emit('change', { subtype: 'clear' });
         }
@@ -2334,7 +2220,6 @@ var ObservableMap = /** @class */ (function (_super) {
     return ObservableMap;
 }(EventEmitter_1.EventEmitter));
 exports.ObservableMap = ObservableMap;
-mixin_1.mixin(ObservableMap.prototype, FreezableCollection_1.FreezableCollection.prototype, ['constructor']);
 ObservableMap.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableMap.prototype.entries;
 
 

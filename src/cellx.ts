@@ -12,7 +12,6 @@ import { ObservableMap, TObservableMapEntries } from './collections/ObservableMa
 import { TListener } from './EventEmitter';
 
 export { IEvent, TListener, IRegisteredEvent, EventEmitter } from './EventEmitter';
-export { FreezableCollection } from './collections/FreezableCollection';
 export { TObservableMapEntries, ObservableMap } from './collections/ObservableMap';
 export {
 	TComparator,

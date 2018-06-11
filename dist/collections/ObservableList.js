@@ -11,10 +11,8 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var is_1 = require("@riim/is");
-var mixin_1 = require("@riim/mixin");
 var symbol_polyfill_1 = require("@riim/symbol-polyfill");
 var EventEmitter_1 = require("../EventEmitter");
-var FreezableCollection_1 = require("./FreezableCollection");
 var splice = Array.prototype.splice;
 function defaultComparator(a, b) {
     return a < b ? -1 : a > b ? 1 : 0;
@@ -24,7 +22,6 @@ var ObservableList = /** @class */ (function (_super) {
     function ObservableList(items, options) {
         var _this = _super.call(this) || this;
         _this._items = [];
-        FreezableCollection_1.FreezableCollection.call(_this);
         if (options && (options.sorted || (options.comparator && options.sorted !== false))) {
             _this._comparator = options.comparator || defaultComparator;
             _this._sorted = true;
@@ -100,7 +97,6 @@ var ObservableList = /** @class */ (function (_super) {
         }
         index = this._validateIndex(index, true);
         if (!is_1.is(value, this._items[index])) {
-            this._throwIfFrozen();
             this._items[index] = value;
             this.emit('change');
         }
@@ -126,9 +122,6 @@ var ObservableList = /** @class */ (function (_super) {
         for (var i = index + valueCount; i > index;) {
             var value = values[--i - index];
             if (!is_1.is(value, items[i])) {
-                if (!changed) {
-                    this._throwIfFrozen();
-                }
                 items[i] = value;
                 changed = true;
             }
@@ -139,7 +132,6 @@ var ObservableList = /** @class */ (function (_super) {
         return this;
     };
     ObservableList.prototype.add = function (value) {
-        this._throwIfFrozen();
         if (this._sorted) {
             this._insertSortedValue(value);
         }
@@ -154,7 +146,6 @@ var ObservableList = /** @class */ (function (_super) {
             values = values._items.slice();
         }
         if (values.length) {
-            this._throwIfFrozen();
             if (this._sorted) {
                 for (var i = 0, l = values.length; i < l; i++) {
                     this._insertSortedValue(values[i]);
@@ -171,9 +162,7 @@ var ObservableList = /** @class */ (function (_super) {
         if (this._sorted) {
             throw new TypeError('Cannot insert to sorted list');
         }
-        index = this._validateIndex(index, true);
-        this._throwIfFrozen();
-        this._items.splice(index, 0, value);
+        this._items.splice(this._validateIndex(index, true), 0, value);
         this.emit('change');
         return this;
     };
@@ -186,7 +175,6 @@ var ObservableList = /** @class */ (function (_super) {
             values = values._items;
         }
         if (values.length) {
-            this._throwIfFrozen();
             splice.apply(this._items, [index, 0].concat(values));
             this.emit('change');
         }
@@ -197,7 +185,6 @@ var ObservableList = /** @class */ (function (_super) {
         if (index == -1) {
             return false;
         }
-        this._throwIfFrozen();
         this._items.splice(index, 1);
         this.emit('change');
         return true;
@@ -207,9 +194,6 @@ var ObservableList = /** @class */ (function (_super) {
         var items = this._items;
         var changed = false;
         while ((index = items.indexOf(value, index)) != -1) {
-            if (!changed) {
-                this._throwIfFrozen();
-            }
             items.splice(index, 1);
             changed = true;
         }
@@ -228,9 +212,6 @@ var ObservableList = /** @class */ (function (_super) {
         for (var i = 0, l = values.length; i < l; i++) {
             var index = items.indexOf(values[i], fromIndex);
             if (index != -1) {
-                if (!changed) {
-                    this._throwIfFrozen();
-                }
                 items.splice(index, 1);
                 changed = true;
             }
@@ -250,9 +231,6 @@ var ObservableList = /** @class */ (function (_super) {
         for (var i = 0, l = values.length; i < l; i++) {
             var value = values[i];
             for (var index = fromIndex; (index = items.indexOf(value, index)) != -1;) {
-                if (!changed) {
-                    this._throwIfFrozen();
-                }
                 items.splice(index, 1);
                 changed = true;
             }
@@ -263,9 +241,7 @@ var ObservableList = /** @class */ (function (_super) {
         return changed;
     };
     ObservableList.prototype.removeAt = function (index) {
-        index = this._validateIndex(index);
-        this._throwIfFrozen();
-        var value = this._items.splice(index, 1)[0];
+        var value = this._items.splice(this._validateIndex(index), 1)[0];
         this.emit('change');
         return value;
     };
@@ -285,14 +261,12 @@ var ObservableList = /** @class */ (function (_super) {
                 throw new RangeError('Sum of "index" and "count" out of valid range');
             }
         }
-        this._throwIfFrozen();
         var values = this._items.splice(index, count);
         this.emit('change');
         return values;
     };
     ObservableList.prototype.clear = function () {
         if (this._items.length) {
-            this._throwIfFrozen();
             this._items.length = 0;
             this.emit('change', { subtype: 'clear' });
         }
@@ -400,5 +374,4 @@ exports.ObservableList = ObservableList;
         };
     };
 });
-mixin_1.mixin(ObservableList.prototype, FreezableCollection_1.FreezableCollection.prototype, ['constructor']);
 ObservableList.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableList.prototype.values;

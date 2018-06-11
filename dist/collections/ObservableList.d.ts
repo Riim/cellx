@@ -1,12 +1,11 @@
 import { EventEmitter } from '../EventEmitter';
-import { FreezableCollection } from './FreezableCollection';
 export declare type TObservableListItems<T> = Array<T> | ObservableList<T>;
 export declare type TComparator<T> = (a: T, b: T) => number;
 export interface IObservableListOptions<T> {
     comparator?: TComparator<T>;
     sorted?: boolean;
 }
-export declare class ObservableList<T = any> extends EventEmitter implements FreezableCollection {
+export declare class ObservableList<T = any> extends EventEmitter {
     _items: Array<T>;
     readonly length: number;
     _comparator: TComparator<T> | null;
@@ -52,10 +51,5 @@ declare module './ObservableList' {
         keys(): Iterator<number>;
         values(): Iterator<T>;
         entries(): Iterator<[number, T]>;
-        _frozen: boolean;
-        readonly frozen: boolean;
-        freeze(): this;
-        unfreeze(): this;
-        _throwIfFrozen(msg?: string): void;
     }
 }

@@ -12,16 +12,13 @@ var __extends = (this && this.__extends) || (function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 var is_1 = require("@riim/is");
 var map_set_polyfill_1 = require("@riim/map-set-polyfill");
-var mixin_1 = require("@riim/mixin");
 var symbol_polyfill_1 = require("@riim/symbol-polyfill");
 var EventEmitter_1 = require("../EventEmitter");
-var FreezableCollection_1 = require("./FreezableCollection");
 var ObservableMap = /** @class */ (function (_super) {
     __extends(ObservableMap, _super);
     function ObservableMap(entries) {
         var _this = _super.call(this) || this;
         _this._entries = new map_set_polyfill_1.Map();
-        FreezableCollection_1.FreezableCollection.call(_this);
         if (entries) {
             var mapEntries_1 = _this._entries;
             if (entries instanceof map_set_polyfill_1.Map || entries instanceof ObservableMap) {
@@ -64,10 +61,6 @@ var ObservableMap = /** @class */ (function (_super) {
             if (is_1.is(value, prev)) {
                 return this;
             }
-            this._throwIfFrozen();
-        }
-        else {
-            this._throwIfFrozen();
         }
         entries.set(key, value);
         this.emit('change', {
@@ -81,7 +74,6 @@ var ObservableMap = /** @class */ (function (_super) {
     ObservableMap.prototype.delete = function (key) {
         var entries = this._entries;
         if (entries.has(key)) {
-            this._throwIfFrozen();
             var value = entries.get(key);
             entries.delete(key);
             this.emit('change', {
@@ -95,7 +87,6 @@ var ObservableMap = /** @class */ (function (_super) {
     };
     ObservableMap.prototype.clear = function () {
         if (this._entries.size) {
-            this._throwIfFrozen();
             this._entries.clear();
             this.emit('change', { subtype: 'clear' });
         }
@@ -131,5 +122,4 @@ var ObservableMap = /** @class */ (function (_super) {
     return ObservableMap;
 }(EventEmitter_1.EventEmitter));
 exports.ObservableMap = ObservableMap;
-mixin_1.mixin(ObservableMap.prototype, FreezableCollection_1.FreezableCollection.prototype, ['constructor']);
 ObservableMap.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableMap.prototype.entries;

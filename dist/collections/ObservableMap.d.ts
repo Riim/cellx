@@ -1,9 +1,8 @@
 import { EventEmitter } from '../EventEmitter';
-import { FreezableCollection } from './FreezableCollection';
 export declare type TObservableMapEntries<K, V> = Array<[K, V]> | {
     [key: string]: V;
 } | Map<K, V> | ObservableMap<K, V>;
-export declare class ObservableMap<K = any, V = any> extends EventEmitter implements FreezableCollection {
+export declare class ObservableMap<K = any, V = any> extends EventEmitter {
     _entries: Map<K, V>;
     readonly size: number;
     constructor(entries?: TObservableMapEntries<K, V> | null);
@@ -17,13 +16,4 @@ export declare class ObservableMap<K = any, V = any> extends EventEmitter implem
     values(): Iterator<V>;
     entries(): Iterator<[K, V]>;
     clone(deep?: boolean): ObservableMap<K, V>;
-}
-declare module './ObservableMap' {
-    interface ObservableMap {
-        _frozen: boolean;
-        readonly frozen: boolean;
-        freeze(): this;
-        unfreeze(): this;
-        _throwIfFrozen(msg?: string): void;
-    }
 }
