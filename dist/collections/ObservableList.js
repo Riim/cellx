@@ -15,7 +15,6 @@ var mixin_1 = require("@riim/mixin");
 var symbol_polyfill_1 = require("@riim/symbol-polyfill");
 var EventEmitter_1 = require("../EventEmitter");
 var FreezableCollection_1 = require("./FreezableCollection");
-var ObservableCollection_1 = require("./ObservableCollection");
 var splice = Array.prototype.splice;
 function defaultComparator(a, b) {
     return a < b ? -1 : a > b ? 1 : 0;
@@ -25,13 +24,7 @@ var ObservableList = /** @class */ (function (_super) {
     function ObservableList(items, options) {
         var _this = _super.call(this) || this;
         _this._items = [];
-        _this._length = 0;
         FreezableCollection_1.FreezableCollection.call(_this);
-        ObservableCollection_1.ObservableCollection.call(_this);
-        if (typeof options == 'boolean') {
-            options = { adoptsValueChanges: options };
-        }
-        _this._adoptsValueChanges = !!(options && options.adoptsValueChanges);
         if (options && (options.sorted || (options.comparator && options.sorted !== false))) {
             _this._comparator = options.comparator || defaultComparator;
             _this._sorted = true;
@@ -41,13 +34,25 @@ var ObservableList = /** @class */ (function (_super) {
             _this._sorted = false;
         }
         if (items) {
-            _this._addRange(items);
+            if (_this._sorted) {
+                if (items instanceof ObservableList) {
+                    items = items._items.slice();
+                }
+                for (var i = 0, l = items.length; i < l; i++) {
+                    _this._insertSortedValue(items[i]);
+                }
+            }
+            else {
+                // [,].slice() // => [empty]
+                // [].push.apply(a = [], [,]), a // => [undefined]
+                _this._items.push.apply(_this._items, items instanceof ObservableList ? items._items : items);
+            }
         }
         return _this;
     }
     Object.defineProperty(ObservableList.prototype, "length", {
         get: function () {
-            return this._length;
+            return this._items.length;
         },
         enumerable: true,
         configurable: true
@@ -57,18 +62,18 @@ var ObservableList = /** @class */ (function (_super) {
             return index;
         }
         if (index < 0) {
-            index += this._length;
+            index += this._items.length;
             if (index < 0) {
                 throw new RangeError('Index out of valid range');
             }
         }
-        else if (index > this._length - (allowEndIndex ? 0 : 1)) {
+        else if (index > this._items.length - (allowEndIndex ? 0 : 1)) {
             throw new RangeError('Index out of valid range');
         }
         return index;
     };
     ObservableList.prototype.contains = function (value) {
-        return this._valueCounts.has(value);
+        return this._items.indexOf(value) != -1;
     };
     ObservableList.prototype.indexOf = function (value, fromIndex) {
         return this._items.indexOf(value, this._validateIndex(fromIndex, true));
@@ -81,28 +86,24 @@ var ObservableList = /** @class */ (function (_super) {
     };
     ObservableList.prototype.getRange = function (index, count) {
         index = this._validateIndex(index, true);
-        var items = this._items;
         if (count === undefined) {
-            return items.slice(index);
+            return this._items.slice(index);
         }
-        if (index + count > items.length) {
+        if (index + count > this._items.length) {
             throw new RangeError('Sum of "index" and "count" out of valid range');
         }
-        return items.slice(index, index + count);
+        return this._items.slice(index, index + count);
     };
     ObservableList.prototype.set = function (index, value) {
         if (this._sorted) {
             throw new TypeError('Cannot set to sorted list');
         }
         index = this._validateIndex(index, true);
-        var items = this._items;
-        if (is_1.is(value, items[index])) {
-            return this;
+        if (!is_1.is(value, this._items[index])) {
+            this._throwIfFrozen();
+            this._items[index] = value;
+            this.emit('change');
         }
-        this._throwIfFrozen();
-        this._unregisterValue(items[index]);
-        items[index] = this._registerValue(value);
-        this.emit('change');
         return this;
     };
     ObservableList.prototype.setRange = function (index, values) {
@@ -110,15 +111,15 @@ var ObservableList = /** @class */ (function (_super) {
             throw new TypeError('Cannot set to sorted list');
         }
         index = this._validateIndex(index, true);
+        if (values instanceof ObservableList) {
+            values = values._items.slice();
+        }
         var valueCount = values.length;
         if (!valueCount) {
             return this;
         }
-        if (index + valueCount > this._length) {
+        if (index + valueCount > this._items.length) {
             throw new RangeError('Sum of "index" and "values.length" out of valid range');
-        }
-        if (values instanceof ObservableList) {
-            values = values._items.slice();
         }
         var items = this._items;
         var changed = false;
@@ -128,8 +129,7 @@ var ObservableList = /** @class */ (function (_super) {
                 if (!changed) {
                     this._throwIfFrozen();
                 }
-                this._unregisterValue(items[i]);
-                items[i] = this._registerValue(value);
+                items[i] = value;
                 changed = true;
             }
         }
@@ -144,38 +144,28 @@ var ObservableList = /** @class */ (function (_super) {
             this._insertSortedValue(value);
         }
         else {
-            this._items.push(this._registerValue(value));
+            this._items.push(value);
         }
-        this._length++;
         this.emit('change');
         return this;
     };
     ObservableList.prototype.addRange = function (values) {
-        if (values.length) {
-            this._throwIfFrozen();
-            this._addRange(values);
-            this.emit('change');
-        }
-        return this;
-    };
-    ObservableList.prototype._addRange = function (values) {
         if (values instanceof ObservableList) {
             values = values._items.slice();
         }
-        var valueCount = values.length;
-        if (this._sorted) {
-            for (var i = 0; i < valueCount; i++) {
-                this._insertSortedValue(values[i]);
+        if (values.length) {
+            this._throwIfFrozen();
+            if (this._sorted) {
+                for (var i = 0, l = values.length; i < l; i++) {
+                    this._insertSortedValue(values[i]);
+                }
             }
-        }
-        else {
-            var items = this._items;
-            var itemCount = items.length;
-            for (var i = itemCount + valueCount; i > itemCount;) {
-                items[--i] = this._registerValue(values[i - itemCount]);
+            else {
+                this._items.push.apply(this._items, values);
             }
+            this.emit('change');
         }
-        this._length += valueCount;
+        return this;
     };
     ObservableList.prototype.insert = function (index, value) {
         if (this._sorted) {
@@ -183,8 +173,7 @@ var ObservableList = /** @class */ (function (_super) {
         }
         index = this._validateIndex(index, true);
         this._throwIfFrozen();
-        this._items.splice(index, 0, this._registerValue(value));
-        this._length++;
+        this._items.splice(index, 0, value);
         this.emit('change');
         return this;
     };
@@ -193,20 +182,14 @@ var ObservableList = /** @class */ (function (_super) {
             throw new TypeError('Cannot insert to sorted list');
         }
         index = this._validateIndex(index, true);
-        var valueCount = values.length;
-        if (!valueCount) {
-            return this;
-        }
-        this._throwIfFrozen();
         if (values instanceof ObservableList) {
             values = values._items;
         }
-        for (var i = valueCount; i;) {
-            this._registerValue(values[--i]);
+        if (values.length) {
+            this._throwIfFrozen();
+            splice.apply(this._items, [index, 0].concat(values));
+            this.emit('change');
         }
-        splice.apply(this._items, [index, 0].concat(values));
-        this._length += valueCount;
-        this.emit('change');
         return this;
     };
     ObservableList.prototype.remove = function (value, fromIndex) {
@@ -215,9 +198,7 @@ var ObservableList = /** @class */ (function (_super) {
             return false;
         }
         this._throwIfFrozen();
-        this._unregisterValue(value);
         this._items.splice(index, 1);
-        this._length--;
         this.emit('change');
         return true;
     };
@@ -229,12 +210,10 @@ var ObservableList = /** @class */ (function (_super) {
             if (!changed) {
                 this._throwIfFrozen();
             }
-            this._unregisterValue(value);
             items.splice(index, 1);
             changed = true;
         }
         if (changed) {
-            this._length = items.length;
             this.emit('change');
         }
         return changed;
@@ -247,19 +226,16 @@ var ObservableList = /** @class */ (function (_super) {
         var items = this._items;
         var changed = false;
         for (var i = 0, l = values.length; i < l; i++) {
-            var value = values[i];
-            var index = items.indexOf(value, fromIndex);
+            var index = items.indexOf(values[i], fromIndex);
             if (index != -1) {
                 if (!changed) {
                     this._throwIfFrozen();
                 }
-                this._unregisterValue(value);
                 items.splice(index, 1);
                 changed = true;
             }
         }
         if (changed) {
-            this._length = items.length;
             this.emit('change');
         }
         return changed;
@@ -277,13 +253,11 @@ var ObservableList = /** @class */ (function (_super) {
                 if (!changed) {
                     this._throwIfFrozen();
                 }
-                this._unregisterValue(value);
                 items.splice(index, 1);
                 changed = true;
             }
         }
         if (changed) {
-            this._length = items.length;
             this.emit('change');
         }
         return changed;
@@ -292,48 +266,36 @@ var ObservableList = /** @class */ (function (_super) {
         index = this._validateIndex(index);
         this._throwIfFrozen();
         var value = this._items.splice(index, 1)[0];
-        this._unregisterValue(value);
-        this._length--;
         this.emit('change');
         return value;
     };
     ObservableList.prototype.removeRange = function (index, count) {
         index = this._validateIndex(index, true);
-        var items = this._items;
         if (count === undefined) {
-            count = items.length - index;
+            count = this._items.length - index;
+            if (!count) {
+                return [];
+            }
         }
-        else if (index + count > items.length) {
-            throw new RangeError('"index" and "count" out of valid range');
-        }
-        if (!count) {
-            return [];
+        else {
+            if (!count) {
+                return [];
+            }
+            if (index + count > this._items.length) {
+                throw new RangeError('Sum of "index" and "count" out of valid range');
+            }
         }
         this._throwIfFrozen();
-        for (var i = index + count; i > index;) {
-            this._unregisterValue(items[--i]);
-        }
-        var values = items.splice(index, count);
-        this._length -= count;
+        var values = this._items.splice(index, count);
         this.emit('change');
         return values;
     };
     ObservableList.prototype.clear = function () {
-        if (!this._length) {
-            return this;
+        if (this._items.length) {
+            this._throwIfFrozen();
+            this._items.length = 0;
+            this.emit('change', { subtype: 'clear' });
         }
-        this._throwIfFrozen();
-        if (this._adoptsValueChanges) {
-            this._valueCounts.forEach(function (valueCount, value) {
-                if (value instanceof EventEmitter_1.EventEmitter) {
-                    value.off('change', this._onItemChange, this);
-                }
-            }, this);
-        }
-        this._valueCounts.clear();
-        this._items.length = 0;
-        this._length = 0;
-        this.emit('change', { subtype: 'clear' });
         return this;
     };
     ObservableList.prototype.join = function (separator) {
@@ -360,9 +322,8 @@ var ObservableList = /** @class */ (function (_super) {
     };
     ObservableList.prototype.clone = function (deep) {
         return new this.constructor(deep
-            ? this._items.map(function (item) { return (item.clone ? item.clone() : item); })
+            ? this._items.map(function (item) { return (item && item.clone ? item.clone(true) : item); })
             : this, {
-            adoptsValueChanges: this._adoptsValueChanges,
             comparator: this._comparator || undefined,
             sorted: this._sorted
         });
@@ -387,37 +348,11 @@ var ObservableList = /** @class */ (function (_super) {
                 low = mid + 1;
             }
         }
-        items.splice(low, 0, this._registerValue(value));
+        items.splice(low, 0, value);
     };
-    Object.defineProperty(ObservableList.prototype, "frozen", {
-        get: function () {
-            return false;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ObservableList.prototype.freeze = function () {
-        return this;
-    };
-    ObservableList.prototype.unfreeze = function () {
-        return this;
-    };
-    ObservableList.prototype._throwIfFrozen = function (msg) { };
-    Object.defineProperty(ObservableList.prototype, "adoptsValueChanges", {
-        get: function () {
-            return false;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ObservableList.prototype._onItemChange = function (evt) { };
-    ObservableList.prototype._registerValue = function (value) { };
-    ObservableList.prototype._unregisterValue = function (value) { };
     return ObservableList;
 }(EventEmitter_1.EventEmitter));
 exports.ObservableList = ObservableList;
-mixin_1.mixin(ObservableList.prototype, FreezableCollection_1.FreezableCollection.prototype, ['constructor']);
-mixin_1.mixin(ObservableList.prototype, ObservableCollection_1.ObservableCollection.prototype, ['constructor']);
 ['forEach', 'map', 'filter', 'every', 'some'].forEach(function (name) {
     ObservableList.prototype[name] = function (callback, context) {
         return this._items[name](function (item, index) {
@@ -465,4 +400,5 @@ mixin_1.mixin(ObservableList.prototype, ObservableCollection_1.ObservableCollect
         };
     };
 });
+mixin_1.mixin(ObservableList.prototype, FreezableCollection_1.FreezableCollection.prototype, ['constructor']);
 ObservableList.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableList.prototype.values;

@@ -17,24 +17,6 @@ describe('ObservableMap', () => {
 		expect(map.has('quux')).toBeTruthy();
 	});
 
-	test('#contains()', function() {
-		let map = new ObservableMap({
-			foo: 1,
-			bar: 2,
-			baz: 3
-		});
-
-		expect(map.contains(3)).toBeTruthy();
-		expect(map.contains(4)).toBeFalsy();
-		expect(map.contains(5)).toBeFalsy();
-
-		map.set('baz', 4).set('quux', 5);
-
-		expect(map.contains(3)).toBeFalsy();
-		expect(map.contains(4)).toBeTruthy();
-		expect(map.contains(5)).toBeTruthy();
-	});
-
 	test('#get()', function() {
 		let map = new ObservableMap({
 			foo: 1,
@@ -96,7 +78,6 @@ describe('ObservableMap', () => {
 
 		expect(map.clear()).toBe(map);
 		expect(map.has('foo')).toBeFalsy();
-		expect(map.contains('2')).toBeFalsy();
 		expect(map.size).toBe(0);
 	});
 
@@ -124,11 +105,10 @@ describe('ObservableMap', () => {
 
 		expect(map).not.toBe(copy);
 		expect(copy.has('foo')).toBeTruthy();
-		expect(copy.contains(2)).toBeTruthy();
 
 		map.set('quux', 4);
 
-		expect(copy.contains(4)).toBeFalsy();
+		expect(copy.has('quux')).toBeFalsy();
 		expect(copy.size).toBe(3);
 	});
 

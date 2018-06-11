@@ -8,17 +8,12 @@ import {
 	TCellPull
 	} from './Cell';
 import { IObservableListOptions, ObservableList, TObservableListItems } from './collections/ObservableList';
-import { IObservableMapOptions, ObservableMap, TObservableMapEntries } from './collections/ObservableMap';
+import { ObservableMap, TObservableMapEntries } from './collections/ObservableMap';
 import { TListener } from './EventEmitter';
 
 export { IEvent, TListener, IRegisteredEvent, EventEmitter } from './EventEmitter';
 export { FreezableCollection } from './collections/FreezableCollection';
-export { ObservableCollection } from './collections/ObservableCollection';
-export {
-	TObservableMapEntries,
-	IObservableMapOptions,
-	ObservableMap
-} from './collections/ObservableMap';
+export { TObservableMapEntries, ObservableMap } from './collections/ObservableMap';
 export {
 	TComparator,
 	TObservableListItems,
@@ -41,15 +36,14 @@ const slice = Array.prototype.slice;
 const global = Function('return this;')();
 
 export function map<K = any, V = any>(
-	entries?: TObservableMapEntries<K, V> | null,
-	options?: IObservableMapOptions | boolean
+	entries?: TObservableMapEntries<K, V> | null
 ): ObservableMap<K, V> {
-	return new ObservableMap(entries, options);
+	return new ObservableMap(entries);
 }
 
 export function list<T = any>(
 	items?: TObservableListItems<T> | null,
-	options?: IObservableListOptions<T> | boolean
+	options?: IObservableListOptions<T>
 ): ObservableList<T> {
 	return new ObservableList(items, options);
 }

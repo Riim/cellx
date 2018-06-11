@@ -1,16 +1,15 @@
 import { Cell, ICellOptions, TCellEvent, TCellPull } from './Cell';
 import { IObservableListOptions, ObservableList, TObservableListItems } from './collections/ObservableList';
-import { IObservableMapOptions, ObservableMap, TObservableMapEntries } from './collections/ObservableMap';
+import { ObservableMap, TObservableMapEntries } from './collections/ObservableMap';
 import { TListener } from './EventEmitter';
 export { IEvent, TListener, IRegisteredEvent, EventEmitter } from './EventEmitter';
 export { FreezableCollection } from './collections/FreezableCollection';
-export { ObservableCollection } from './collections/ObservableCollection';
-export { TObservableMapEntries, IObservableMapOptions, ObservableMap } from './collections/ObservableMap';
+export { TObservableMapEntries, ObservableMap } from './collections/ObservableMap';
 export { TComparator, TObservableListItems, IObservableListOptions, ObservableList } from './collections/ObservableList';
 export { TCellPull, ICellOptions, ICellChangeEvent, ICellErrorEvent, TCellEvent, Cell } from './Cell';
 export { WaitError } from './WaitError';
-export declare function map<K = any, V = any>(entries?: TObservableMapEntries<K, V> | null, options?: IObservableMapOptions | boolean): ObservableMap<K, V>;
-export declare function list<T = any>(items?: TObservableListItems<T> | null, options?: IObservableListOptions<T> | boolean): ObservableList<T>;
+export declare function map<K = any, V = any>(entries?: TObservableMapEntries<K, V> | null): ObservableMap<K, V>;
+export declare function list<T = any>(items?: TObservableListItems<T> | null, options?: IObservableListOptions<T>): ObservableList<T>;
 export interface ICellx<T> {
     (value?: T): T;
     (method: 'bind', $: any): ICellx<T>;

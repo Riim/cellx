@@ -16,25 +16,10 @@ Ultra-fast implementation of reactivity for javascript.
 
 ## Installation
 
-You can currently install the package as a npm package or bower component.
-
-### NPM
-
 The following command installs cellx as a npm package:
 ```
 npm install cellx --save
 ```
-
-### Bower
-
-The following command installs cellx as a bower component that can be used in the browser:
-```
-bower install cellx --save
-```
-
-## Browser support
-
-cellx supports IE9 and above and all modern browsers.
 
 ## Example
 

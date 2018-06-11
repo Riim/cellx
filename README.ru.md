@@ -4,23 +4,11 @@
 
 Сверхбыстрая реализация реактивности для javascript.
 
-## Где достать
+## Установка
 
-Установить через `npm`:
 ```
-npm install cellx --save
+npm install --save cellx
 ```
-
-или через `bower`:
-```
-bower install cellx --save
-```
-
-или скачать файлом: [ткнименя](https://raw.githubusercontent.com/Riim/cellx/master/cellx.js)
-
-## Поддержка браузеров
-
-Все актуальные, IE9+.
 
 ## Пример использования
 

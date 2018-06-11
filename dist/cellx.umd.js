@@ -46,17 +46,32 @@ return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// define getter function for harmony exports
 /******/ 	__webpack_require__.d = function(exports, name, getter) {
 /******/ 		if(!__webpack_require__.o(exports, name)) {
-/******/ 			Object.defineProperty(exports, name, {
-/******/ 				configurable: false,
-/******/ 				enumerable: true,
-/******/ 				get: getter
-/******/ 			});
+/******/ 			Object.defineProperty(exports, name, { enumerable: true, get: getter });
 /******/ 		}
 /******/ 	};
 /******/
 /******/ 	// define __esModule on exports
 /******/ 	__webpack_require__.r = function(exports) {
+/******/ 		if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 			Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 		}
 /******/ 		Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 	};
+/******/
+/******/ 	// create a fake namespace object
+/******/ 	// mode & 1: value is a module id, require it
+/******/ 	// mode & 2: merge all properties of value into the ns
+/******/ 	// mode & 4: return value when already ns object
+/******/ 	// mode & 8|1: behave like require
+/******/ 	__webpack_require__.t = function(value, mode) {
+/******/ 		if(mode & 1) value = __webpack_require__(value);
+/******/ 		if(mode & 8) return value;
+/******/ 		if((mode & 4) && typeof value === 'object' && value && value.__esModule) return value;
+/******/ 		var ns = Object.create(null);
+/******/ 		__webpack_require__.r(ns);
+/******/ 		Object.defineProperty(ns, 'default', { enumerable: true, value: value });
+/******/ 		if(mode & 2 && typeof value != 'string') for(var key in value) __webpack_require__.d(ns, key, function(key) { return value[key]; }.bind(null, key));
+/******/ 		return ns;
 /******/ 	};
 /******/
 /******/ 	// getDefaultExport function for compatibility with non-harmony modules
@@ -91,14 +106,12 @@ var object_assign_polyfill_1 = __webpack_require__(3);
 var symbol_polyfill_1 = __webpack_require__(2);
 var Cell_1 = __webpack_require__(4);
 var ObservableList_1 = __webpack_require__(10);
-var ObservableMap_1 = __webpack_require__(14);
+var ObservableMap_1 = __webpack_require__(13);
 var EventEmitter_1 = __webpack_require__(8);
 exports.EventEmitter = EventEmitter_1.EventEmitter;
 var FreezableCollection_1 = __webpack_require__(12);
 exports.FreezableCollection = FreezableCollection_1.FreezableCollection;
-var ObservableCollection_1 = __webpack_require__(13);
-exports.ObservableCollection = ObservableCollection_1.ObservableCollection;
-var ObservableMap_2 = __webpack_require__(14);
+var ObservableMap_2 = __webpack_require__(13);
 exports.ObservableMap = ObservableMap_2.ObservableMap;
 var ObservableList_2 = __webpack_require__(10);
 exports.ObservableList = ObservableList_2.ObservableList;
@@ -109,8 +122,8 @@ exports.WaitError = WaitError_1.WaitError;
 var hasOwn = Object.prototype.hasOwnProperty;
 var slice = Array.prototype.slice;
 var global = Function('return this;')();
-function map(entries, options) {
-    return new ObservableMap_1.ObservableMap(entries, options);
+function map(entries) {
+    return new ObservableMap_1.ObservableMap(entries);
 }
 exports.map = map;
 function list(items, options) {
@@ -1718,7 +1731,6 @@ var mixin_1 = __webpack_require__(11);
 var symbol_polyfill_1 = __webpack_require__(2);
 var EventEmitter_1 = __webpack_require__(8);
 var FreezableCollection_1 = __webpack_require__(12);
-var ObservableCollection_1 = __webpack_require__(13);
 var splice = Array.prototype.splice;
 function defaultComparator(a, b) {
     return a < b ? -1 : a > b ? 1 : 0;
@@ -1728,13 +1740,7 @@ var ObservableList = /** @class */ (function (_super) {
     function ObservableList(items, options) {
         var _this = _super.call(this) || this;
         _this._items = [];
-        _this._length = 0;
         FreezableCollection_1.FreezableCollection.call(_this);
-        ObservableCollection_1.ObservableCollection.call(_this);
-        if (typeof options == 'boolean') {
-            options = { adoptsValueChanges: options };
-        }
-        _this._adoptsValueChanges = !!(options && options.adoptsValueChanges);
         if (options && (options.sorted || (options.comparator && options.sorted !== false))) {
             _this._comparator = options.comparator || defaultComparator;
             _this._sorted = true;
@@ -1744,13 +1750,25 @@ var ObservableList = /** @class */ (function (_super) {
             _this._sorted = false;
         }
         if (items) {
-            _this._addRange(items);
+            if (_this._sorted) {
+                if (items instanceof ObservableList) {
+                    items = items._items.slice();
+                }
+                for (var i = 0, l = items.length; i < l; i++) {
+                    _this._insertSortedValue(items[i]);
+                }
+            }
+            else {
+                // [,].slice() // => [empty]
+                // [].push.apply(a = [], [,]), a // => [undefined]
+                _this._items.push.apply(_this._items, items instanceof ObservableList ? items._items : items);
+            }
         }
         return _this;
     }
     Object.defineProperty(ObservableList.prototype, "length", {
         get: function () {
-            return this._length;
+            return this._items.length;
         },
         enumerable: true,
         configurable: true
@@ -1760,18 +1778,18 @@ var ObservableList = /** @class */ (function (_super) {
             return index;
         }
         if (index < 0) {
-            index += this._length;
+            index += this._items.length;
             if (index < 0) {
                 throw new RangeError('Index out of valid range');
             }
         }
-        else if (index > this._length - (allowEndIndex ? 0 : 1)) {
+        else if (index > this._items.length - (allowEndIndex ? 0 : 1)) {
             throw new RangeError('Index out of valid range');
         }
         return index;
     };
     ObservableList.prototype.contains = function (value) {
-        return this._valueCounts.has(value);
+        return this._items.indexOf(value) != -1;
     };
     ObservableList.prototype.indexOf = function (value, fromIndex) {
         return this._items.indexOf(value, this._validateIndex(fromIndex, true));
@@ -1784,28 +1802,24 @@ var ObservableList = /** @class */ (function (_super) {
     };
     ObservableList.prototype.getRange = function (index, count) {
         index = this._validateIndex(index, true);
-        var items = this._items;
         if (count === undefined) {
-            return items.slice(index);
+            return this._items.slice(index);
         }
-        if (index + count > items.length) {
+        if (index + count > this._items.length) {
             throw new RangeError('Sum of "index" and "count" out of valid range');
         }
-        return items.slice(index, index + count);
+        return this._items.slice(index, index + count);
     };
     ObservableList.prototype.set = function (index, value) {
         if (this._sorted) {
             throw new TypeError('Cannot set to sorted list');
         }
         index = this._validateIndex(index, true);
-        var items = this._items;
-        if (is_1.is(value, items[index])) {
-            return this;
+        if (!is_1.is(value, this._items[index])) {
+            this._throwIfFrozen();
+            this._items[index] = value;
+            this.emit('change');
         }
-        this._throwIfFrozen();
-        this._unregisterValue(items[index]);
-        items[index] = this._registerValue(value);
-        this.emit('change');
         return this;
     };
     ObservableList.prototype.setRange = function (index, values) {
@@ -1813,15 +1827,15 @@ var ObservableList = /** @class */ (function (_super) {
             throw new TypeError('Cannot set to sorted list');
         }
         index = this._validateIndex(index, true);
+        if (values instanceof ObservableList) {
+            values = values._items.slice();
+        }
         var valueCount = values.length;
         if (!valueCount) {
             return this;
         }
-        if (index + valueCount > this._length) {
+        if (index + valueCount > this._items.length) {
             throw new RangeError('Sum of "index" and "values.length" out of valid range');
-        }
-        if (values instanceof ObservableList) {
-            values = values._items.slice();
         }
         var items = this._items;
         var changed = false;
@@ -1831,8 +1845,7 @@ var ObservableList = /** @class */ (function (_super) {
                 if (!changed) {
                     this._throwIfFrozen();
                 }
-                this._unregisterValue(items[i]);
-                items[i] = this._registerValue(value);
+                items[i] = value;
                 changed = true;
             }
         }
@@ -1847,38 +1860,28 @@ var ObservableList = /** @class */ (function (_super) {
             this._insertSortedValue(value);
         }
         else {
-            this._items.push(this._registerValue(value));
+            this._items.push(value);
         }
-        this._length++;
         this.emit('change');
         return this;
     };
     ObservableList.prototype.addRange = function (values) {
-        if (values.length) {
-            this._throwIfFrozen();
-            this._addRange(values);
-            this.emit('change');
-        }
-        return this;
-    };
-    ObservableList.prototype._addRange = function (values) {
         if (values instanceof ObservableList) {
             values = values._items.slice();
         }
-        var valueCount = values.length;
-        if (this._sorted) {
-            for (var i = 0; i < valueCount; i++) {
-                this._insertSortedValue(values[i]);
+        if (values.length) {
+            this._throwIfFrozen();
+            if (this._sorted) {
+                for (var i = 0, l = values.length; i < l; i++) {
+                    this._insertSortedValue(values[i]);
+                }
             }
-        }
-        else {
-            var items = this._items;
-            var itemCount = items.length;
-            for (var i = itemCount + valueCount; i > itemCount;) {
-                items[--i] = this._registerValue(values[i - itemCount]);
+            else {
+                this._items.push.apply(this._items, values);
             }
+            this.emit('change');
         }
-        this._length += valueCount;
+        return this;
     };
     ObservableList.prototype.insert = function (index, value) {
         if (this._sorted) {
@@ -1886,8 +1889,7 @@ var ObservableList = /** @class */ (function (_super) {
         }
         index = this._validateIndex(index, true);
         this._throwIfFrozen();
-        this._items.splice(index, 0, this._registerValue(value));
-        this._length++;
+        this._items.splice(index, 0, value);
         this.emit('change');
         return this;
     };
@@ -1896,20 +1898,14 @@ var ObservableList = /** @class */ (function (_super) {
             throw new TypeError('Cannot insert to sorted list');
         }
         index = this._validateIndex(index, true);
-        var valueCount = values.length;
-        if (!valueCount) {
-            return this;
-        }
-        this._throwIfFrozen();
         if (values instanceof ObservableList) {
             values = values._items;
         }
-        for (var i = valueCount; i;) {
-            this._registerValue(values[--i]);
+        if (values.length) {
+            this._throwIfFrozen();
+            splice.apply(this._items, [index, 0].concat(values));
+            this.emit('change');
         }
-        splice.apply(this._items, [index, 0].concat(values));
-        this._length += valueCount;
-        this.emit('change');
         return this;
     };
     ObservableList.prototype.remove = function (value, fromIndex) {
@@ -1918,9 +1914,7 @@ var ObservableList = /** @class */ (function (_super) {
             return false;
         }
         this._throwIfFrozen();
-        this._unregisterValue(value);
         this._items.splice(index, 1);
-        this._length--;
         this.emit('change');
         return true;
     };
@@ -1932,12 +1926,10 @@ var ObservableList = /** @class */ (function (_super) {
             if (!changed) {
                 this._throwIfFrozen();
             }
-            this._unregisterValue(value);
             items.splice(index, 1);
             changed = true;
         }
         if (changed) {
-            this._length = items.length;
             this.emit('change');
         }
         return changed;
@@ -1950,19 +1942,16 @@ var ObservableList = /** @class */ (function (_super) {
         var items = this._items;
         var changed = false;
         for (var i = 0, l = values.length; i < l; i++) {
-            var value = values[i];
-            var index = items.indexOf(value, fromIndex);
+            var index = items.indexOf(values[i], fromIndex);
             if (index != -1) {
                 if (!changed) {
                     this._throwIfFrozen();
                 }
-                this._unregisterValue(value);
                 items.splice(index, 1);
                 changed = true;
             }
         }
         if (changed) {
-            this._length = items.length;
             this.emit('change');
         }
         return changed;
@@ -1980,13 +1969,11 @@ var ObservableList = /** @class */ (function (_super) {
                 if (!changed) {
                     this._throwIfFrozen();
                 }
-                this._unregisterValue(value);
                 items.splice(index, 1);
                 changed = true;
             }
         }
         if (changed) {
-            this._length = items.length;
             this.emit('change');
         }
         return changed;
@@ -1995,48 +1982,36 @@ var ObservableList = /** @class */ (function (_super) {
         index = this._validateIndex(index);
         this._throwIfFrozen();
         var value = this._items.splice(index, 1)[0];
-        this._unregisterValue(value);
-        this._length--;
         this.emit('change');
         return value;
     };
     ObservableList.prototype.removeRange = function (index, count) {
         index = this._validateIndex(index, true);
-        var items = this._items;
         if (count === undefined) {
-            count = items.length - index;
+            count = this._items.length - index;
+            if (!count) {
+                return [];
+            }
         }
-        else if (index + count > items.length) {
-            throw new RangeError('"index" and "count" out of valid range');
-        }
-        if (!count) {
-            return [];
+        else {
+            if (!count) {
+                return [];
+            }
+            if (index + count > this._items.length) {
+                throw new RangeError('Sum of "index" and "count" out of valid range');
+            }
         }
         this._throwIfFrozen();
-        for (var i = index + count; i > index;) {
-            this._unregisterValue(items[--i]);
-        }
-        var values = items.splice(index, count);
-        this._length -= count;
+        var values = this._items.splice(index, count);
         this.emit('change');
         return values;
     };
     ObservableList.prototype.clear = function () {
-        if (!this._length) {
-            return this;
+        if (this._items.length) {
+            this._throwIfFrozen();
+            this._items.length = 0;
+            this.emit('change', { subtype: 'clear' });
         }
-        this._throwIfFrozen();
-        if (this._adoptsValueChanges) {
-            this._valueCounts.forEach(function (valueCount, value) {
-                if (value instanceof EventEmitter_1.EventEmitter) {
-                    value.off('change', this._onItemChange, this);
-                }
-            }, this);
-        }
-        this._valueCounts.clear();
-        this._items.length = 0;
-        this._length = 0;
-        this.emit('change', { subtype: 'clear' });
         return this;
     };
     ObservableList.prototype.join = function (separator) {
@@ -2063,9 +2038,8 @@ var ObservableList = /** @class */ (function (_super) {
     };
     ObservableList.prototype.clone = function (deep) {
         return new this.constructor(deep
-            ? this._items.map(function (item) { return (item.clone ? item.clone() : item); })
+            ? this._items.map(function (item) { return (item && item.clone ? item.clone(true) : item); })
             : this, {
-            adoptsValueChanges: this._adoptsValueChanges,
             comparator: this._comparator || undefined,
             sorted: this._sorted
         });
@@ -2090,37 +2064,11 @@ var ObservableList = /** @class */ (function (_super) {
                 low = mid + 1;
             }
         }
-        items.splice(low, 0, this._registerValue(value));
+        items.splice(low, 0, value);
     };
-    Object.defineProperty(ObservableList.prototype, "frozen", {
-        get: function () {
-            return false;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ObservableList.prototype.freeze = function () {
-        return this;
-    };
-    ObservableList.prototype.unfreeze = function () {
-        return this;
-    };
-    ObservableList.prototype._throwIfFrozen = function (msg) { };
-    Object.defineProperty(ObservableList.prototype, "adoptsValueChanges", {
-        get: function () {
-            return false;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ObservableList.prototype._onItemChange = function (evt) { };
-    ObservableList.prototype._registerValue = function (value) { };
-    ObservableList.prototype._unregisterValue = function (value) { };
     return ObservableList;
 }(EventEmitter_1.EventEmitter));
 exports.ObservableList = ObservableList;
-mixin_1.mixin(ObservableList.prototype, FreezableCollection_1.FreezableCollection.prototype, ['constructor']);
-mixin_1.mixin(ObservableList.prototype, ObservableCollection_1.ObservableCollection.prototype, ['constructor']);
 ['forEach', 'map', 'filter', 'every', 'some'].forEach(function (name) {
     ObservableList.prototype[name] = function (callback, context) {
         return this._items[name](function (item, index) {
@@ -2168,6 +2116,7 @@ mixin_1.mixin(ObservableList.prototype, ObservableCollection_1.ObservableCollect
         };
     };
 });
+mixin_1.mixin(ObservableList.prototype, FreezableCollection_1.FreezableCollection.prototype, ['constructor']);
 ObservableList.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableList.prototype.values;
 
 
@@ -2264,128 +2213,47 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var map_set_polyfill_1 = __webpack_require__(1);
-var EventEmitter_1 = __webpack_require__(8);
-var ObservableCollection = /** @class */ (function (_super) {
-    __extends(ObservableCollection, _super);
-    function ObservableCollection() {
-        var _this = _super !== null && _super.apply(this, arguments) || this;
-        _this._valueCounts = new map_set_polyfill_1.Map();
-        return _this;
-    }
-    Object.defineProperty(ObservableCollection.prototype, "adoptsValueChanges", {
-        get: function () {
-            return this._adoptsValueChanges;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ObservableCollection.prototype._onItemChange = function (evt) {
-        this.handleEvent(evt);
-    };
-    ObservableCollection.prototype._registerValue = function (value) {
-        var valueCounts = this._valueCounts;
-        var valueCount = valueCounts.get(value);
-        if (valueCount) {
-            valueCounts.set(value, valueCount + 1);
-        }
-        else {
-            valueCounts.set(value, 1);
-            if (this._adoptsValueChanges && value instanceof EventEmitter_1.EventEmitter) {
-                value.on('change', this._onItemChange, this);
-            }
-        }
-        return value;
-    };
-    ObservableCollection.prototype._unregisterValue = function (value) {
-        var valueCounts = this._valueCounts;
-        var valueCount = valueCounts.get(value);
-        if (valueCount == 1) {
-            valueCounts.delete(value);
-            if (this._adoptsValueChanges && value instanceof EventEmitter_1.EventEmitter) {
-                value.off('change', this._onItemChange, this);
-            }
-        }
-        else {
-            valueCounts.set(value, valueCount - 1);
-        }
-    };
-    return ObservableCollection;
-}(EventEmitter_1.EventEmitter));
-exports.ObservableCollection = ObservableCollection;
-
-
-/***/ }),
-/* 14 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
-Object.defineProperty(exports, "__esModule", { value: true });
 var is_1 = __webpack_require__(5);
 var map_set_polyfill_1 = __webpack_require__(1);
 var mixin_1 = __webpack_require__(11);
 var symbol_polyfill_1 = __webpack_require__(2);
 var EventEmitter_1 = __webpack_require__(8);
 var FreezableCollection_1 = __webpack_require__(12);
-var ObservableCollection_1 = __webpack_require__(13);
 var ObservableMap = /** @class */ (function (_super) {
     __extends(ObservableMap, _super);
-    function ObservableMap(entries, options) {
+    function ObservableMap(entries) {
         var _this = _super.call(this) || this;
         _this._entries = new map_set_polyfill_1.Map();
         FreezableCollection_1.FreezableCollection.call(_this);
-        ObservableCollection_1.ObservableCollection.call(_this);
-        if (typeof options == 'boolean') {
-            options = { adoptsValueChanges: options };
-        }
-        _this._adoptsValueChanges = !!(options && options.adoptsValueChanges);
         if (entries) {
             var mapEntries_1 = _this._entries;
             if (entries instanceof map_set_polyfill_1.Map || entries instanceof ObservableMap) {
                 (entries instanceof map_set_polyfill_1.Map ? entries : entries._entries).forEach(function (value, key) {
-                    mapEntries_1.set(key, this._registerValue(value));
-                }, _this);
+                    mapEntries_1.set(key, value);
+                });
             }
             else if (Array.isArray(entries)) {
                 for (var i = 0, l = entries.length; i < l; i++) {
-                    mapEntries_1.set(entries[i][0], _this._registerValue(entries[i][1]));
+                    mapEntries_1.set(entries[i][0], entries[i][1]);
                 }
             }
             else {
                 for (var key in entries) {
-                    mapEntries_1.set(key, _this._registerValue(entries[key]));
+                    mapEntries_1.set(key, entries[key]);
                 }
             }
-            _this._size = mapEntries_1.size;
-        }
-        else {
-            _this._size = 0;
         }
         return _this;
     }
     Object.defineProperty(ObservableMap.prototype, "size", {
         get: function () {
-            return this._size;
+            return this._entries.size;
         },
         enumerable: true,
         configurable: true
     });
     ObservableMap.prototype.has = function (key) {
         return this._entries.has(key);
-    };
-    ObservableMap.prototype.contains = function (value) {
-        return this._valueCounts.has(value);
     };
     ObservableMap.prototype.get = function (key) {
         return this._entries.get(key);
@@ -2400,15 +2268,11 @@ var ObservableMap = /** @class */ (function (_super) {
                 return this;
             }
             this._throwIfFrozen();
-            this._unregisterValue(prev);
         }
         else {
             this._throwIfFrozen();
         }
-        entries.set(key, this._registerValue(value));
-        if (!hasKey) {
-            this._size++;
-        }
+        entries.set(key, value);
         this.emit('change', {
             subtype: hasKey ? 'update' : 'add',
             key: key,
@@ -2419,39 +2283,25 @@ var ObservableMap = /** @class */ (function (_super) {
     };
     ObservableMap.prototype.delete = function (key) {
         var entries = this._entries;
-        if (!entries.has(key)) {
-            return false;
+        if (entries.has(key)) {
+            this._throwIfFrozen();
+            var value = entries.get(key);
+            entries.delete(key);
+            this.emit('change', {
+                subtype: 'delete',
+                key: key,
+                value: value
+            });
+            return true;
         }
-        this._throwIfFrozen();
-        var value = entries.get(key);
-        this._unregisterValue(value);
-        entries.delete(key);
-        this._size--;
-        this.emit('change', {
-            subtype: 'delete',
-            key: key,
-            value: value
-        });
-        return true;
+        return false;
     };
     ObservableMap.prototype.clear = function () {
-        if (!this._size) {
-            return this;
+        if (this._entries.size) {
+            this._throwIfFrozen();
+            this._entries.clear();
+            this.emit('change', { subtype: 'clear' });
         }
-        this._throwIfFrozen();
-        if (this._adoptsValueChanges) {
-            this._valueCounts.forEach(function (valueCount, value) {
-                if (value instanceof EventEmitter_1.EventEmitter) {
-                    value.off('change', this._onItemChange, this);
-                }
-            }, this);
-        }
-        this._entries.clear();
-        this._valueCounts.clear();
-        this._size = 0;
-        this.emit('change', {
-            subtype: 'clear'
-        });
         return this;
     };
     ObservableMap.prototype.forEach = function (callback, context) {
@@ -2473,40 +2323,18 @@ var ObservableMap = /** @class */ (function (_super) {
         if (deep) {
             entries = [];
             this._entries.forEach(function (value, key) {
-                entries.push([key, value.clone ? value.clone() : value]);
+                entries.push([
+                    key,
+                    value && value.clone ? value.clone(true) : value
+                ]);
             });
         }
-        return new this.constructor(entries || this, this._adoptsValueChanges);
+        return new this.constructor(entries || this);
     };
-    Object.defineProperty(ObservableMap.prototype, "frozen", {
-        get: function () {
-            return false;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ObservableMap.prototype.freeze = function () {
-        return this;
-    };
-    ObservableMap.prototype.unfreeze = function () {
-        return this;
-    };
-    ObservableMap.prototype._throwIfFrozen = function (msg) { };
-    Object.defineProperty(ObservableMap.prototype, "adoptsValueChanges", {
-        get: function () {
-            return false;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ObservableMap.prototype._onItemChange = function (evt) { };
-    ObservableMap.prototype._registerValue = function (value) { };
-    ObservableMap.prototype._unregisterValue = function (value) { };
     return ObservableMap;
 }(EventEmitter_1.EventEmitter));
 exports.ObservableMap = ObservableMap;
 mixin_1.mixin(ObservableMap.prototype, FreezableCollection_1.FreezableCollection.prototype, ['constructor']);
-mixin_1.mixin(ObservableMap.prototype, ObservableCollection_1.ObservableCollection.prototype, ['constructor']);
 ObservableMap.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableMap.prototype.entries;
 
 

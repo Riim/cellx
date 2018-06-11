@@ -1,20 +1,17 @@
-import { EventEmitter, IEvent } from '../EventEmitter';
+import { EventEmitter } from '../EventEmitter';
 import { FreezableCollection } from './FreezableCollection';
-import { ObservableCollection } from './ObservableCollection';
-export declare type TComparator<T> = (a: T, b: T) => number;
 export declare type TObservableListItems<T> = Array<T> | ObservableList<T>;
+export declare type TComparator<T> = (a: T, b: T) => number;
 export interface IObservableListOptions<T> {
-    adoptsValueChanges?: boolean;
     comparator?: TComparator<T>;
     sorted?: boolean;
 }
-export declare class ObservableList<T = any> extends EventEmitter implements FreezableCollection, ObservableCollection<T> {
+export declare class ObservableList<T = any> extends EventEmitter implements FreezableCollection {
     _items: Array<T>;
-    _length: number;
     readonly length: number;
     _comparator: TComparator<T> | null;
     _sorted: boolean;
-    constructor(items?: TObservableListItems<T> | null, options?: IObservableListOptions<T> | boolean);
+    constructor(items?: TObservableListItems<T> | null, options?: IObservableListOptions<T>);
     _validateIndex(index: number | undefined, allowEndIndex?: boolean): number | undefined;
     contains(value: T): boolean;
     indexOf(value: T, fromIndex?: number): number;
@@ -25,7 +22,6 @@ export declare class ObservableList<T = any> extends EventEmitter implements Fre
     setRange(index: number, values: TObservableListItems<T>): this;
     add(value: T): this;
     addRange(values: TObservableListItems<T>): this;
-    _addRange(values: TObservableListItems<T>): void;
     insert(index: number, value: T): this;
     insertRange(index: number, values: TObservableListItems<T>): this;
     remove(value: T, fromIndex?: number): boolean;
@@ -42,19 +38,8 @@ export declare class ObservableList<T = any> extends EventEmitter implements Fre
     toArray(): Array<T>;
     toString(): string;
     _insertSortedValue(value: T): void;
-    _frozen: boolean;
-    readonly frozen: boolean;
-    freeze(): this;
-    unfreeze(): this;
-    _throwIfFrozen(msg?: string): void;
-    _adoptsValueChanges: boolean;
-    readonly adoptsValueChanges: boolean;
-    _valueCounts: Map<any, number>;
-    _onItemChange(evt: IEvent): void;
-    _registerValue(value: any): any;
-    _unregisterValue(value: any): void;
 }
-declare module '../collections/ObservableList' {
+declare module './ObservableList' {
     interface ObservableList<T = any> {
         forEach(callback: (item: T, index: number, list: this) => void, context?: any): void;
         map<R>(callback: (item: T, index: number, list: this) => R, context?: any): Array<R>;
@@ -67,5 +52,10 @@ declare module '../collections/ObservableList' {
         keys(): Iterator<number>;
         values(): Iterator<T>;
         entries(): Iterator<[number, T]>;
+        _frozen: boolean;
+        readonly frozen: boolean;
+        freeze(): this;
+        unfreeze(): this;
+        _throwIfFrozen(msg?: string): void;
     }
 }

@@ -1,18 +1,16 @@
 import { is } from '@riim/is';
 import { mixin } from '@riim/mixin';
 import { Symbol } from '@riim/symbol-polyfill';
-import { EventEmitter, IEvent } from '../EventEmitter';
+import { EventEmitter } from '../EventEmitter';
 import { FreezableCollection } from './FreezableCollection';
-import { ObservableCollection } from './ObservableCollection';
 
 const splice = Array.prototype.splice;
 
-export type TComparator<T> = (a: T, b: T) => number;
-
 export type TObservableListItems<T> = Array<T> | ObservableList<T>;
 
+export type TComparator<T> = (a: T, b: T) => number;
+
 export interface IObservableListOptions<T> {
-	adoptsValueChanges?: boolean;
 	comparator?: TComparator<T>;
 	sorted?: boolean;
 }
@@ -21,31 +19,19 @@ function defaultComparator(a: any, b: any): number {
 	return a < b ? -1 : a > b ? 1 : 0;
 }
 
-export class ObservableList<T = any> extends EventEmitter
-	implements FreezableCollection, ObservableCollection<T> {
+export class ObservableList<T = any> extends EventEmitter implements FreezableCollection {
 	_items: Array<T> = [];
 
-	_length = 0;
 	get length(): number {
-		return this._length;
+		return this._items.length;
 	}
 
 	_comparator: TComparator<T> | null;
 	_sorted: boolean;
 
-	constructor(
-		items?: TObservableListItems<T> | null,
-		options?: IObservableListOptions<T> | boolean
-	) {
+	constructor(items?: TObservableListItems<T> | null, options?: IObservableListOptions<T>) {
 		super();
 		FreezableCollection.call(this);
-		ObservableCollection.call(this);
-
-		if (typeof options == 'boolean') {
-			options = { adoptsValueChanges: options };
-		}
-
-		this._adoptsValueChanges = !!(options && options.adoptsValueChanges);
 
 		if (options && (options.sorted || (options.comparator && options.sorted !== false))) {
 			this._comparator = options.comparator || defaultComparator;
@@ -56,7 +42,22 @@ export class ObservableList<T = any> extends EventEmitter
 		}
 
 		if (items) {
-			this._addRange(items);
+			if (this._sorted) {
+				if (items instanceof ObservableList) {
+					items = items._items.slice();
+				}
+
+				for (let i = 0, l = items.length; i < l; i++) {
+					this._insertSortedValue(items[i]);
+				}
+			} else {
+				// [,].slice() // => [empty]
+				// [].push.apply(a = [], [,]), a // => [undefined]
+				this._items.push.apply(
+					this._items,
+					items instanceof ObservableList ? items._items : items
+				);
+			}
 		}
 	}
 
@@ -66,12 +67,12 @@ export class ObservableList<T = any> extends EventEmitter
 		}
 
 		if (index < 0) {
-			index += this._length;
+			index += this._items.length;
 
 			if (index < 0) {
 				throw new RangeError('Index out of valid range');
 			}
-		} else if (index > this._length - (allowEndIndex ? 0 : 1)) {
+		} else if (index > this._items.length - (allowEndIndex ? 0 : 1)) {
 			throw new RangeError('Index out of valid range');
 		}
 
@@ -79,7 +80,7 @@ export class ObservableList<T = any> extends EventEmitter
 	}
 
 	contains(value: T): boolean {
-		return this._valueCounts.has(value);
+		return this._items.indexOf(value) != -1;
 	}
 
 	indexOf(value: T, fromIndex?: number): number {
@@ -100,17 +101,15 @@ export class ObservableList<T = any> extends EventEmitter
 	getRange(index: number, count?: number): Array<T> {
 		index = this._validateIndex(index, true)!;
 
-		let items = this._items;
-
 		if (count === undefined) {
-			return items.slice(index);
+			return this._items.slice(index);
 		}
 
-		if (index + count > items.length) {
+		if (index + count > this._items.length) {
 			throw new RangeError('Sum of "index" and "count" out of valid range');
 		}
 
-		return items.slice(index, index + count);
+		return this._items.slice(index, index + count);
 	}
 
 	set(index: number, value: T): this {
@@ -120,18 +119,12 @@ export class ObservableList<T = any> extends EventEmitter
 
 		index = this._validateIndex(index, true)!;
 
-		let items = this._items;
+		if (!is(value, this._items[index])) {
+			this._throwIfFrozen();
 
-		if (is(value, items[index])) {
-			return this;
+			this._items[index] = value;
+			this.emit('change');
 		}
-
-		this._throwIfFrozen();
-
-		this._unregisterValue(items[index]);
-		items[index] = this._registerValue(value);
-
-		this.emit('change');
 
 		return this;
 	}
@@ -143,18 +136,18 @@ export class ObservableList<T = any> extends EventEmitter
 
 		index = this._validateIndex(index, true)!;
 
+		if (values instanceof ObservableList) {
+			values = values._items.slice();
+		}
+
 		let valueCount = values.length;
 
 		if (!valueCount) {
 			return this;
 		}
 
-		if (index + valueCount > this._length) {
+		if (index + valueCount > this._items.length) {
 			throw new RangeError('Sum of "index" and "values.length" out of valid range');
-		}
-
-		if (values instanceof ObservableList) {
-			values = values._items.slice();
 		}
 
 		let items = this._items;
@@ -168,9 +161,7 @@ export class ObservableList<T = any> extends EventEmitter
 					this._throwIfFrozen();
 				}
 
-				this._unregisterValue(items[i]);
-				items[i] = this._registerValue(value);
-
+				items[i] = value;
 				changed = true;
 			}
 		}
@@ -188,10 +179,8 @@ export class ObservableList<T = any> extends EventEmitter
 		if (this._sorted) {
 			this._insertSortedValue(value);
 		} else {
-			this._items.push(this._registerValue(value));
+			this._items.push(value);
 		}
-
-		this._length++;
 
 		this.emit('change');
 
@@ -199,37 +188,25 @@ export class ObservableList<T = any> extends EventEmitter
 	}
 
 	addRange(values: TObservableListItems<T>): this {
-		if (values.length) {
-			this._throwIfFrozen();
-
-			this._addRange(values);
-			this.emit('change');
-		}
-
-		return this;
-	}
-
-	_addRange(values: TObservableListItems<T>) {
 		if (values instanceof ObservableList) {
 			values = values._items.slice();
 		}
 
-		let valueCount = values.length;
+		if (values.length) {
+			this._throwIfFrozen();
 
-		if (this._sorted) {
-			for (let i = 0; i < valueCount; i++) {
-				this._insertSortedValue(values[i]);
+			if (this._sorted) {
+				for (let i = 0, l = values.length; i < l; i++) {
+					this._insertSortedValue(values[i]);
+				}
+			} else {
+				this._items.push.apply(this._items, values);
 			}
-		} else {
-			let items = this._items;
-			let itemCount = items.length;
 
-			for (let i = itemCount + valueCount; i > itemCount; ) {
-				items[--i] = this._registerValue(values[i - itemCount]);
-			}
+			this.emit('change');
 		}
 
-		this._length += valueCount;
+		return this;
 	}
 
 	insert(index: number, value: T): this {
@@ -241,9 +218,7 @@ export class ObservableList<T = any> extends EventEmitter
 
 		this._throwIfFrozen();
 
-		this._items.splice(index, 0, this._registerValue(value));
-		this._length++;
-
+		this._items.splice(index, 0, value);
 		this.emit('change');
 
 		return this;
@@ -256,26 +231,16 @@ export class ObservableList<T = any> extends EventEmitter
 
 		index = this._validateIndex(index, true)!;
 
-		let valueCount = values.length;
-
-		if (!valueCount) {
-			return this;
-		}
-
-		this._throwIfFrozen();
-
 		if (values instanceof ObservableList) {
 			values = values._items;
 		}
 
-		for (let i = valueCount; i; ) {
-			this._registerValue(values[--i]);
+		if (values.length) {
+			this._throwIfFrozen();
+
+			splice.apply(this._items, ([index, 0] as any).concat(values));
+			this.emit('change');
 		}
-
-		splice.apply(this._items, ([index, 0] as any).concat(values));
-		this._length += valueCount;
-
-		this.emit('change');
 
 		return this;
 	}
@@ -289,10 +254,7 @@ export class ObservableList<T = any> extends EventEmitter
 
 		this._throwIfFrozen();
 
-		this._unregisterValue(value);
 		this._items.splice(index, 1);
-		this._length--;
-
 		this.emit('change');
 
 		return true;
@@ -308,14 +270,11 @@ export class ObservableList<T = any> extends EventEmitter
 				this._throwIfFrozen();
 			}
 
-			this._unregisterValue(value);
 			items.splice(index, 1);
-
 			changed = true;
 		}
 
 		if (changed) {
-			this._length = items.length;
 			this.emit('change');
 		}
 
@@ -333,23 +292,19 @@ export class ObservableList<T = any> extends EventEmitter
 		let changed = false;
 
 		for (let i = 0, l = values.length; i < l; i++) {
-			let value = values[i];
-			let index = items.indexOf(value, fromIndex);
+			let index = items.indexOf(values[i], fromIndex);
 
 			if (index != -1) {
 				if (!changed) {
 					this._throwIfFrozen();
 				}
 
-				this._unregisterValue(value);
 				items.splice(index, 1);
-
 				changed = true;
 			}
 		}
 
 		if (changed) {
-			this._length = items.length;
 			this.emit('change');
 		}
 
@@ -374,15 +329,12 @@ export class ObservableList<T = any> extends EventEmitter
 					this._throwIfFrozen();
 				}
 
-				this._unregisterValue(value);
 				items.splice(index, 1);
-
 				changed = true;
 			}
 		}
 
 		if (changed) {
-			this._length = items.length;
 			this.emit('change');
 		}
 
@@ -395,10 +347,6 @@ export class ObservableList<T = any> extends EventEmitter
 		this._throwIfFrozen();
 
 		let value = this._items.splice(index, 1)[0];
-
-		this._unregisterValue(value);
-		this._length--;
-
 		this.emit('change');
 
 		return value;
@@ -407,51 +355,37 @@ export class ObservableList<T = any> extends EventEmitter
 	removeRange(index: number, count?: number): Array<T> {
 		index = this._validateIndex(index, true)!;
 
-		let items = this._items;
-
 		if (count === undefined) {
-			count = items.length - index;
-		} else if (index + count > items.length) {
-			throw new RangeError('"index" and "count" out of valid range');
-		}
+			count = this._items.length - index;
 
-		if (!count) {
-			return [];
+			if (!count) {
+				return [];
+			}
+		} else {
+			if (!count) {
+				return [];
+			}
+
+			if (index + count > this._items.length) {
+				throw new RangeError('Sum of "index" and "count" out of valid range');
+			}
 		}
 
 		this._throwIfFrozen();
 
-		for (let i = index + count; i > index; ) {
-			this._unregisterValue(items[--i]);
-		}
-		let values = items.splice(index, count);
-		this._length -= count;
-
+		let values = this._items.splice(index, count);
 		this.emit('change');
 
 		return values;
 	}
 
 	clear(): this {
-		if (!this._length) {
-			return this;
+		if (this._items.length) {
+			this._throwIfFrozen();
+
+			this._items.length = 0;
+			this.emit('change', { subtype: 'clear' });
 		}
-
-		this._throwIfFrozen();
-
-		if (this._adoptsValueChanges) {
-			this._valueCounts.forEach(function(valueCount, value) {
-				if (value instanceof EventEmitter) {
-					value.off('change', this._onItemChange, this);
-				}
-			}, this);
-		}
-
-		this._valueCounts.clear();
-		this._items.length = 0;
-		this._length = 0;
-
-		this.emit('change', { subtype: 'clear' });
 
 		return this;
 	}
@@ -489,10 +423,11 @@ export class ObservableList<T = any> extends EventEmitter
 	clone(deep?: boolean): ObservableList<T> {
 		return new (this.constructor as typeof ObservableList)(
 			deep
-				? this._items.map(item => ((item as any).clone ? (item as any).clone() : item))
+				? this._items.map(
+						item => (item && (item as any).clone ? (item as any).clone(true) : item)
+				  )
 				: this,
 			{
-				adoptsValueChanges: this._adoptsValueChanges,
 				comparator: this._comparator || undefined,
 				sorted: this._sorted
 			}
@@ -523,35 +458,9 @@ export class ObservableList<T = any> extends EventEmitter
 			}
 		}
 
-		items.splice(low, 0, this._registerValue(value));
+		items.splice(low, 0, value);
 	}
-
-	// FreezableCollection
-	_frozen: boolean;
-	get frozen(): boolean {
-		return false;
-	}
-	freeze(): this {
-		return this;
-	}
-	unfreeze(): this {
-		return this;
-	}
-	_throwIfFrozen(msg?: string) {}
-
-	// ObservableCollection
-	_adoptsValueChanges: boolean;
-	get adoptsValueChanges(): boolean {
-		return false;
-	}
-	_valueCounts: Map<any, number>;
-	_onItemChange(evt: IEvent) {}
-	_registerValue(value: any): any {}
-	_unregisterValue(value: any) {}
 }
-
-mixin(ObservableList.prototype, FreezableCollection.prototype, ['constructor']);
-mixin(ObservableList.prototype, ObservableCollection.prototype, ['constructor']);
 
 ['forEach', 'map', 'filter', 'every', 'some'].forEach(name => {
 	ObservableList.prototype[name] = function(callback: Function, context?: any) {
@@ -609,7 +518,11 @@ mixin(ObservableList.prototype, ObservableCollection.prototype, ['constructor'])
 	};
 });
 
-declare module '../collections/ObservableList' {
+mixin(ObservableList.prototype, FreezableCollection.prototype, ['constructor']);
+
+ObservableList.prototype[Symbol.iterator] = ObservableList.prototype.values;
+
+declare module './ObservableList' {
 	/* tslint:disable-next-line */
 	interface ObservableList<T = any> {
 		forEach(callback: (item: T, index: number, list: this) => void, context?: any): void;
@@ -641,7 +554,11 @@ declare module '../collections/ObservableList' {
 		values(): Iterator<T>;
 
 		entries(): Iterator<[number, T]>;
+
+		_frozen: boolean;
+		readonly frozen: boolean;
+		freeze(): this;
+		unfreeze(): this;
+		_throwIfFrozen(msg?: string): void;
 	}
 }
-
-ObservableList.prototype[Symbol.iterator] = ObservableList.prototype.values;

@@ -1,19 +1,13 @@
-import { EventEmitter, IEvent } from '../EventEmitter';
+import { EventEmitter } from '../EventEmitter';
 import { FreezableCollection } from './FreezableCollection';
-import { ObservableCollection } from './ObservableCollection';
 export declare type TObservableMapEntries<K, V> = Array<[K, V]> | {
     [key: string]: V;
 } | Map<K, V> | ObservableMap<K, V>;
-export interface IObservableMapOptions {
-    adoptsValueChanges?: boolean;
-}
-export declare class ObservableMap<K = any, V = any> extends EventEmitter implements FreezableCollection, ObservableCollection<V> {
+export declare class ObservableMap<K = any, V = any> extends EventEmitter implements FreezableCollection {
     _entries: Map<K, V>;
-    _size: number;
     readonly size: number;
-    constructor(entries?: TObservableMapEntries<K, V> | null, options?: IObservableMapOptions | boolean);
+    constructor(entries?: TObservableMapEntries<K, V> | null);
     has(key: K): boolean;
-    contains(value: V): boolean;
     get(key: K): V | undefined;
     set(key: K, value: V): this;
     delete(key: K): boolean;
@@ -23,15 +17,13 @@ export declare class ObservableMap<K = any, V = any> extends EventEmitter implem
     values(): Iterator<V>;
     entries(): Iterator<[K, V]>;
     clone(deep?: boolean): ObservableMap<K, V>;
-    _frozen: boolean;
-    readonly frozen: boolean;
-    freeze(): this;
-    unfreeze(): this;
-    _throwIfFrozen(msg?: string): void;
-    _adoptsValueChanges: boolean;
-    readonly adoptsValueChanges: boolean;
-    _valueCounts: Map<any, number>;
-    _onItemChange(evt: IEvent): void;
-    _registerValue(value: any): any;
-    _unregisterValue(value: any): void;
+}
+declare module './ObservableMap' {
+    interface ObservableMap {
+        _frozen: boolean;
+        readonly frozen: boolean;
+        freeze(): this;
+        unfreeze(): this;
+        _throwIfFrozen(msg?: string): void;
+    }
 }

@@ -16,54 +16,41 @@ var mixin_1 = require("@riim/mixin");
 var symbol_polyfill_1 = require("@riim/symbol-polyfill");
 var EventEmitter_1 = require("../EventEmitter");
 var FreezableCollection_1 = require("./FreezableCollection");
-var ObservableCollection_1 = require("./ObservableCollection");
 var ObservableMap = /** @class */ (function (_super) {
     __extends(ObservableMap, _super);
-    function ObservableMap(entries, options) {
+    function ObservableMap(entries) {
         var _this = _super.call(this) || this;
         _this._entries = new map_set_polyfill_1.Map();
         FreezableCollection_1.FreezableCollection.call(_this);
-        ObservableCollection_1.ObservableCollection.call(_this);
-        if (typeof options == 'boolean') {
-            options = { adoptsValueChanges: options };
-        }
-        _this._adoptsValueChanges = !!(options && options.adoptsValueChanges);
         if (entries) {
             var mapEntries_1 = _this._entries;
             if (entries instanceof map_set_polyfill_1.Map || entries instanceof ObservableMap) {
                 (entries instanceof map_set_polyfill_1.Map ? entries : entries._entries).forEach(function (value, key) {
-                    mapEntries_1.set(key, this._registerValue(value));
-                }, _this);
+                    mapEntries_1.set(key, value);
+                });
             }
             else if (Array.isArray(entries)) {
                 for (var i = 0, l = entries.length; i < l; i++) {
-                    mapEntries_1.set(entries[i][0], _this._registerValue(entries[i][1]));
+                    mapEntries_1.set(entries[i][0], entries[i][1]);
                 }
             }
             else {
                 for (var key in entries) {
-                    mapEntries_1.set(key, _this._registerValue(entries[key]));
+                    mapEntries_1.set(key, entries[key]);
                 }
             }
-            _this._size = mapEntries_1.size;
-        }
-        else {
-            _this._size = 0;
         }
         return _this;
     }
     Object.defineProperty(ObservableMap.prototype, "size", {
         get: function () {
-            return this._size;
+            return this._entries.size;
         },
         enumerable: true,
         configurable: true
     });
     ObservableMap.prototype.has = function (key) {
         return this._entries.has(key);
-    };
-    ObservableMap.prototype.contains = function (value) {
-        return this._valueCounts.has(value);
     };
     ObservableMap.prototype.get = function (key) {
         return this._entries.get(key);
@@ -78,15 +65,11 @@ var ObservableMap = /** @class */ (function (_super) {
                 return this;
             }
             this._throwIfFrozen();
-            this._unregisterValue(prev);
         }
         else {
             this._throwIfFrozen();
         }
-        entries.set(key, this._registerValue(value));
-        if (!hasKey) {
-            this._size++;
-        }
+        entries.set(key, value);
         this.emit('change', {
             subtype: hasKey ? 'update' : 'add',
             key: key,
@@ -97,39 +80,25 @@ var ObservableMap = /** @class */ (function (_super) {
     };
     ObservableMap.prototype.delete = function (key) {
         var entries = this._entries;
-        if (!entries.has(key)) {
-            return false;
+        if (entries.has(key)) {
+            this._throwIfFrozen();
+            var value = entries.get(key);
+            entries.delete(key);
+            this.emit('change', {
+                subtype: 'delete',
+                key: key,
+                value: value
+            });
+            return true;
         }
-        this._throwIfFrozen();
-        var value = entries.get(key);
-        this._unregisterValue(value);
-        entries.delete(key);
-        this._size--;
-        this.emit('change', {
-            subtype: 'delete',
-            key: key,
-            value: value
-        });
-        return true;
+        return false;
     };
     ObservableMap.prototype.clear = function () {
-        if (!this._size) {
-            return this;
+        if (this._entries.size) {
+            this._throwIfFrozen();
+            this._entries.clear();
+            this.emit('change', { subtype: 'clear' });
         }
-        this._throwIfFrozen();
-        if (this._adoptsValueChanges) {
-            this._valueCounts.forEach(function (valueCount, value) {
-                if (value instanceof EventEmitter_1.EventEmitter) {
-                    value.off('change', this._onItemChange, this);
-                }
-            }, this);
-        }
-        this._entries.clear();
-        this._valueCounts.clear();
-        this._size = 0;
-        this.emit('change', {
-            subtype: 'clear'
-        });
         return this;
     };
     ObservableMap.prototype.forEach = function (callback, context) {
@@ -151,38 +120,16 @@ var ObservableMap = /** @class */ (function (_super) {
         if (deep) {
             entries = [];
             this._entries.forEach(function (value, key) {
-                entries.push([key, value.clone ? value.clone() : value]);
+                entries.push([
+                    key,
+                    value && value.clone ? value.clone(true) : value
+                ]);
             });
         }
-        return new this.constructor(entries || this, this._adoptsValueChanges);
+        return new this.constructor(entries || this);
     };
-    Object.defineProperty(ObservableMap.prototype, "frozen", {
-        get: function () {
-            return false;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ObservableMap.prototype.freeze = function () {
-        return this;
-    };
-    ObservableMap.prototype.unfreeze = function () {
-        return this;
-    };
-    ObservableMap.prototype._throwIfFrozen = function (msg) { };
-    Object.defineProperty(ObservableMap.prototype, "adoptsValueChanges", {
-        get: function () {
-            return false;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ObservableMap.prototype._onItemChange = function (evt) { };
-    ObservableMap.prototype._registerValue = function (value) { };
-    ObservableMap.prototype._unregisterValue = function (value) { };
     return ObservableMap;
 }(EventEmitter_1.EventEmitter));
 exports.ObservableMap = ObservableMap;
 mixin_1.mixin(ObservableMap.prototype, FreezableCollection_1.FreezableCollection.prototype, ['constructor']);
-mixin_1.mixin(ObservableMap.prototype, ObservableCollection_1.ObservableCollection.prototype, ['constructor']);
 ObservableMap.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableMap.prototype.entries;

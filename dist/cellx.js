@@ -10,8 +10,6 @@ var EventEmitter_1 = require("./EventEmitter");
 exports.EventEmitter = EventEmitter_1.EventEmitter;
 var FreezableCollection_1 = require("./collections/FreezableCollection");
 exports.FreezableCollection = FreezableCollection_1.FreezableCollection;
-var ObservableCollection_1 = require("./collections/ObservableCollection");
-exports.ObservableCollection = ObservableCollection_1.ObservableCollection;
 var ObservableMap_2 = require("./collections/ObservableMap");
 exports.ObservableMap = ObservableMap_2.ObservableMap;
 var ObservableList_2 = require("./collections/ObservableList");
@@ -23,8 +21,8 @@ exports.WaitError = WaitError_1.WaitError;
 var hasOwn = Object.prototype.hasOwnProperty;
 var slice = Array.prototype.slice;
 var global = Function('return this;')();
-function map(entries, options) {
-    return new ObservableMap_1.ObservableMap(entries, options);
+function map(entries) {
+    return new ObservableMap_1.ObservableMap(entries);
 }
 exports.map = map;
 function list(items, options) {
