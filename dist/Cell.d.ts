@@ -39,6 +39,8 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     _validate: ((next: T, value: any) => void) | null;
     _merge: ((next: T, value: any) => any) | null;
     _put: (cell: Cell<T>, next: any, value: any) => void;
+    _onFulfilled: ((value: any) => void) | null;
+    _onRejected: ((err: Error) => void) | null;
     _reap: (() => void) | null;
     meta: M | null;
     _value: any;
@@ -86,14 +88,18 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     isPending(): boolean;
     set(value: T): this;
     push(value: any): this;
-    _push(value: any, external: boolean, pulling: boolean): boolean;
+    _push(value: any, public$: boolean, pulling: boolean): boolean;
+    _fulfill(value: any): void;
     fail(err: any): this;
-    _fail(err: any, external: boolean): void;
+    _fail(err: any, public$: boolean, pulling: boolean): void;
+    _setError(err: Error | null, reject: boolean): void;
+    _handleErrorEvent(evt: IEvent<this>, err: Error | null): void;
+    _reject(err: Error): void;
     wait(): void;
     _addToRelease(): void;
-    _setError(err: Error | null): void;
-    _handleErrorEvent(evt: IEvent<this>): void;
     _resolvePending(): void;
+    then<U = any>(onFulfilled: ((value: T) => U) | null, onRejected?: (err: Error) => U): Promise<U>;
+    catch<U = any>(onRejected: (err: Error) => U): Promise<U>;
     reap(): this;
     dispose(): this;
 }

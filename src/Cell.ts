@@ -67,7 +67,9 @@ const STATE_ACTIVE = 1 << 1;
 const STATE_HAS_FOLLOWERS = 1 << 2;
 const STATE_CURRENTLY_PULLING = 1 << 3;
 const STATE_PENDING = 1 << 4;
-const STATE_CAN_CANCEL_CHANGE = 1 << 5;
+const STATE_FULFILLED = 1 << 5;
+const STATE_REJECTED = 1 << 6;
+const STATE_CAN_CANCEL_CHANGE = 1 << 7;
 
 function release(force?: boolean) {
 	if (!releasePlanned && !force) {
@@ -255,6 +257,9 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	_merge: ((next: T, value: any) => any) | null;
 	_put: (cell: Cell<T>, next: any, value: any) => void;
 
+	_onFulfilled: ((value: any) => void) | null;
+	_onRejected: ((err: Error) => void) | null;
+
 	_reap: (() => void) | null;
 
 	meta: M | null;
@@ -300,6 +305,8 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		this._validate = (options && options.validate) || null;
 		this._merge = (options && options.merge) || null;
 		this._put = (options && options.put) || defaultPut;
+
+		this._onFulfilled = this._onRejected = null;
 
 		this._reap = (options && options.reap) || null;
 
@@ -477,7 +484,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 			if (deps || this._dependencies || !(this._state & STATE_INITED)) {
 				if (value === $error) {
-					this._fail($error.error, false);
+					this._fail($error.error, false, false);
 				} else {
 					this._push(value, false, false);
 				}
@@ -566,7 +573,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 						}
 
 						if (value === $error) {
-							this._fail($error.error, false);
+							this._fail($error.error, false, false);
 						} else {
 							this._push(value, false, false);
 						}
@@ -661,7 +668,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 
 		if (value === $error) {
-			this._fail($error.error, false);
+			this._fail($error.error, false, true);
 			return true;
 		}
 
@@ -680,6 +687,8 @@ export class Cell<T = any, M = any> extends EventEmitter {
 				this._selfPendingStatusCell.set(true);
 			}
 			this._state |= STATE_PENDING;
+
+			this._state &= ~(STATE_FULFILLED | STATE_REJECTED);
 		}
 
 		let prevCell = currentCell;
@@ -791,7 +800,9 @@ export class Cell<T = any, M = any> extends EventEmitter {
 					return true;
 				}
 
-				this.get();
+				try {
+					this.get();
+				} catch {}
 
 				let deps = this._dependencies;
 
@@ -827,6 +838,8 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 		this._state |= STATE_PENDING;
 
+		this._state &= ~(STATE_FULFILLED | STATE_REJECTED);
+
 		if (this._put.length >= 3) {
 			this._put.call(this.context, this, value, this._value);
 		} else {
@@ -841,22 +854,22 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		return this;
 	}
 
-	_push(value: any, external: boolean, pulling: boolean): boolean {
-		if (external || (!currentlyRelease && pulling)) {
+	_push(value: any, public$: boolean, pulling: boolean): boolean {
+		if (public$ || (!currentlyRelease && pulling)) {
 			this._pushingIndex = ++pushingIndexCounter;
 		}
 
 		this._state |= STATE_INITED;
 
 		if (this._error) {
-			this._setError(null);
+			this._setError(null, false);
 		}
 
 		let prevValue = this._value;
 
 		if (is(value, prevValue)) {
-			if (external || (currentlyRelease && pulling)) {
-				this._resolvePending();
+			if (public$ || (currentlyRelease && pulling)) {
+				this._fulfill(value);
 			}
 
 			return false;
@@ -906,7 +919,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 				this._addToRelease();
 			}
 		} else {
-			if (external || (!currentlyRelease && pulling)) {
+			if (public$ || (!currentlyRelease && pulling)) {
 				releaseVersion++;
 			}
 
@@ -914,19 +927,31 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			this._version = releaseVersion + +(currentlyRelease != 0);
 		}
 
-		if (external || (currentlyRelease && pulling)) {
-			this._resolvePending();
+		if (public$ || (currentlyRelease && pulling)) {
+			this._fulfill(value);
 		}
 
 		return true;
 	}
 
+	_fulfill(value: any) {
+		this._resolvePending();
+
+		if (!(this._state & STATE_FULFILLED)) {
+			this._state |= STATE_FULFILLED;
+
+			if (this._onFulfilled) {
+				this._onFulfilled(value);
+			}
+		}
+	}
+
 	fail(err: any): this {
-		this._fail(err, true);
+		this._fail(err, true, false);
 		return this;
 	}
 
-	_fail(err: any, external: boolean) {
+	_fail(err: any, public$: boolean, pulling: boolean) {
 		if (!(err instanceof WaitError)) {
 			if (this.debugKey) {
 				error('[' + this.debugKey + ']', err);
@@ -939,10 +964,59 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			}
 		}
 
-		this._setError(err);
+		this._setError(err, public$ || (currentlyRelease != 0 && pulling));
+	}
 
-		if (external) {
-			this._resolvePending();
+	_setError(err: Error | null, reject: boolean) {
+		this._error = err;
+		if (this._selfErrorCell) {
+			this._selfErrorCell.set(err);
+		}
+
+		if (err) {
+			this._errorIndex = ++errorIndexCounter;
+
+			this._handleErrorEvent(
+				{
+					target: this,
+					type: 'error',
+					data: {
+						error: err
+					}
+				},
+				reject ? err : null
+			);
+		}
+	}
+
+	_handleErrorEvent(evt: IEvent<this>, err: Error | null) {
+		if (this._lastErrorEvent === evt) {
+			return;
+		}
+
+		this._lastErrorEvent = evt;
+		this.handleEvent(evt);
+
+		if (err) {
+			this._reject(err);
+		}
+
+		let reactions = this._reactions;
+
+		for (let i = reactions.length; i; ) {
+			reactions[--i]._handleErrorEvent(evt, err);
+		}
+	}
+
+	_reject(err: Error) {
+		this._resolvePending();
+
+		if (!(err instanceof WaitError) && !(this._state & STATE_REJECTED)) {
+			this._state |= STATE_REJECTED;
+
+			if (this._onRejected) {
+				this._onRejected(err);
+			}
 		}
 	}
 
@@ -976,40 +1050,6 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 	}
 
-	_setError(err: Error | null) {
-		this._error = err;
-		if (this._selfErrorCell) {
-			this._selfErrorCell.set(err);
-		}
-
-		if (err) {
-			this._errorIndex = ++errorIndexCounter;
-
-			this._handleErrorEvent({
-				target: this,
-				type: 'error',
-				data: {
-					error: err
-				}
-			});
-		}
-	}
-
-	_handleErrorEvent(evt: IEvent<this>) {
-		if (this._lastErrorEvent === evt) {
-			return;
-		}
-
-		this._lastErrorEvent = evt;
-		this.handleEvent(evt);
-
-		let reactions = this._reactions;
-
-		for (let i = reactions.length; i; ) {
-			reactions[--i]._handleErrorEvent(evt);
-		}
-	}
-
 	_resolvePending() {
 		if (this._state & STATE_PENDING) {
 			if (this._selfPendingStatusCell) {
@@ -1017,6 +1057,47 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			}
 			this._state ^= STATE_PENDING;
 		}
+	}
+
+	then<U = any>(
+		onFulfilled: ((value: T) => U) | null,
+		onRejected?: (err: Error) => U
+	): Promise<U> {
+		let listener = () => {};
+		this.on('change', listener);
+
+		if (!this._pull || this._state & STATE_FULFILLED) {
+			this.off('change', listener);
+			return Promise.resolve(this._get ? this._get(this._value) : this._value).then(
+				onFulfilled
+			);
+		}
+		if (this._state & STATE_REJECTED) {
+			this.off('change', listener);
+			return Promise.reject(this._error).catch(onRejected);
+		}
+
+		let cell = this;
+
+		let promise = new Promise((resolve, reject) => {
+			cell._onFulfilled = value => {
+				cell._onFulfilled = cell._onRejected = null;
+				this.off('change', listener);
+				resolve(cell._get ? cell._get(value) : value);
+			};
+
+			cell._onRejected = err => {
+				cell._onFulfilled = cell._onRejected = null;
+				this.off('change', listener);
+				reject(err);
+			};
+		}).then(onFulfilled, onRejected);
+
+		return promise;
+	}
+
+	catch<U = any>(onRejected: (err: Error) => U): Promise<U> {
+		return this.then(null, onRejected);
 	}
 
 	reap(): this {

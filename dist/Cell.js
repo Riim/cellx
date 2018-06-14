@@ -35,7 +35,9 @@ var STATE_ACTIVE = 1 << 1;
 var STATE_HAS_FOLLOWERS = 1 << 2;
 var STATE_CURRENTLY_PULLING = 1 << 3;
 var STATE_PENDING = 1 << 4;
-var STATE_CAN_CANCEL_CHANGE = 1 << 5;
+var STATE_FULFILLED = 1 << 5;
+var STATE_REJECTED = 1 << 6;
+var STATE_CAN_CANCEL_CHANGE = 1 << 7;
 function release(force) {
     if (!releasePlanned && !force) {
         return;
@@ -167,6 +169,7 @@ var Cell = /** @class */ (function (_super) {
         _this._validate = (options && options.validate) || null;
         _this._merge = (options && options.merge) || null;
         _this._put = (options && options.put) || defaultPut;
+        _this._onFulfilled = _this._onRejected = null;
         _this._reap = (options && options.reap) || null;
         _this.meta = (options && options.meta) || null;
         if (_this._pull) {
@@ -330,7 +333,7 @@ var Cell = /** @class */ (function (_super) {
             var value = this._pull$();
             if (deps || this._dependencies || !(this._state & STATE_INITED)) {
                 if (value === $error) {
-                    this._fail($error.error, false);
+                    this._fail($error.error, false, false);
                 }
                 else {
                     this._push(value, false, false);
@@ -402,7 +405,7 @@ var Cell = /** @class */ (function (_super) {
                             this._state |= STATE_ACTIVE;
                         }
                         if (value === $error) {
-                            this._fail($error.error, false);
+                            this._fail($error.error, false, false);
                         }
                         else {
                             this._push(value, false, false);
@@ -481,7 +484,7 @@ var Cell = /** @class */ (function (_super) {
             value = this._pull$();
         }
         if (value === $error) {
-            this._fail($error.error, false);
+            this._fail($error.error, false, true);
             return true;
         }
         return this._push(value, false, true);
@@ -496,6 +499,7 @@ var Cell = /** @class */ (function (_super) {
                 this._selfPendingStatusCell.set(true);
             }
             this._state |= STATE_PENDING;
+            this._state &= ~(STATE_FULFILLED | STATE_REJECTED);
         }
         var prevCell = currentCell;
         currentCell = this;
@@ -574,7 +578,10 @@ var Cell = /** @class */ (function (_super) {
                 if (this._selfPendingStatusCell.get()) {
                     return true;
                 }
-                this.get();
+                try {
+                    this.get();
+                }
+                catch (_a) { }
                 var deps = this._dependencies;
                 if (deps) {
                     var i = deps.length;
@@ -602,6 +609,7 @@ var Cell = /** @class */ (function (_super) {
             this._selfPendingStatusCell.set(true);
         }
         this._state |= STATE_PENDING;
+        this._state &= ~(STATE_FULFILLED | STATE_REJECTED);
         if (this._put.length >= 3) {
             this._put.call(this.context, this, value, this._value);
         }
@@ -614,18 +622,18 @@ var Cell = /** @class */ (function (_super) {
         this._push(value, true, false);
         return this;
     };
-    Cell.prototype._push = function (value, external, pulling) {
-        if (external || (!currentlyRelease && pulling)) {
+    Cell.prototype._push = function (value, public$, pulling) {
+        if (public$ || (!currentlyRelease && pulling)) {
             this._pushingIndex = ++pushingIndexCounter;
         }
         this._state |= STATE_INITED;
         if (this._error) {
-            this._setError(null);
+            this._setError(null, false);
         }
         var prevValue = this._value;
         if (is_1.is(value, prevValue)) {
-            if (external || (currentlyRelease && pulling)) {
-                this._resolvePending();
+            if (public$ || (currentlyRelease && pulling)) {
+                this._fulfill(value);
             }
             return false;
         }
@@ -671,22 +679,31 @@ var Cell = /** @class */ (function (_super) {
             }
         }
         else {
-            if (external || (!currentlyRelease && pulling)) {
+            if (public$ || (!currentlyRelease && pulling)) {
                 releaseVersion++;
             }
             this._fixedValue = value;
             this._version = releaseVersion + +(currentlyRelease != 0);
         }
-        if (external || (currentlyRelease && pulling)) {
-            this._resolvePending();
+        if (public$ || (currentlyRelease && pulling)) {
+            this._fulfill(value);
         }
         return true;
     };
+    Cell.prototype._fulfill = function (value) {
+        this._resolvePending();
+        if (!(this._state & STATE_FULFILLED)) {
+            this._state |= STATE_FULFILLED;
+            if (this._onFulfilled) {
+                this._onFulfilled(value);
+            }
+        }
+    };
     Cell.prototype.fail = function (err) {
-        this._fail(err, true);
+        this._fail(err, true, false);
         return this;
     };
-    Cell.prototype._fail = function (err, external) {
+    Cell.prototype._fail = function (err, public$, pulling) {
         if (!(err instanceof WaitError_1.WaitError)) {
             if (this.debugKey) {
                 logger_1.error('[' + this.debugKey + ']', err);
@@ -698,9 +715,45 @@ var Cell = /** @class */ (function (_super) {
                 err = new Error(String(err));
             }
         }
-        this._setError(err);
-        if (external) {
-            this._resolvePending();
+        this._setError(err, public$ || (currentlyRelease != 0 && pulling));
+    };
+    Cell.prototype._setError = function (err, reject) {
+        this._error = err;
+        if (this._selfErrorCell) {
+            this._selfErrorCell.set(err);
+        }
+        if (err) {
+            this._errorIndex = ++errorIndexCounter;
+            this._handleErrorEvent({
+                target: this,
+                type: 'error',
+                data: {
+                    error: err
+                }
+            }, reject ? err : null);
+        }
+    };
+    Cell.prototype._handleErrorEvent = function (evt, err) {
+        if (this._lastErrorEvent === evt) {
+            return;
+        }
+        this._lastErrorEvent = evt;
+        this.handleEvent(evt);
+        if (err) {
+            this._reject(err);
+        }
+        var reactions = this._reactions;
+        for (var i = reactions.length; i;) {
+            reactions[--i]._handleErrorEvent(evt, err);
+        }
+    };
+    Cell.prototype._reject = function (err) {
+        this._resolvePending();
+        if (!(err instanceof WaitError_1.WaitError) && !(this._state & STATE_REJECTED)) {
+            this._state |= STATE_REJECTED;
+            if (this._onRejected) {
+                this._onRejected(err);
+            }
         }
     };
     Cell.prototype.wait = function () {
@@ -725,33 +778,6 @@ var Cell = /** @class */ (function (_super) {
             next_tick_1.nextTick(release);
         }
     };
-    Cell.prototype._setError = function (err) {
-        this._error = err;
-        if (this._selfErrorCell) {
-            this._selfErrorCell.set(err);
-        }
-        if (err) {
-            this._errorIndex = ++errorIndexCounter;
-            this._handleErrorEvent({
-                target: this,
-                type: 'error',
-                data: {
-                    error: err
-                }
-            });
-        }
-    };
-    Cell.prototype._handleErrorEvent = function (evt) {
-        if (this._lastErrorEvent === evt) {
-            return;
-        }
-        this._lastErrorEvent = evt;
-        this.handleEvent(evt);
-        var reactions = this._reactions;
-        for (var i = reactions.length; i;) {
-            reactions[--i]._handleErrorEvent(evt);
-        }
-    };
     Cell.prototype._resolvePending = function () {
         if (this._state & STATE_PENDING) {
             if (this._selfPendingStatusCell) {
@@ -759,6 +785,36 @@ var Cell = /** @class */ (function (_super) {
             }
             this._state ^= STATE_PENDING;
         }
+    };
+    Cell.prototype.then = function (onFulfilled, onRejected) {
+        var _this = this;
+        var listener = function () { };
+        this.on('change', listener);
+        if (!this._pull || this._state & STATE_FULFILLED) {
+            this.off('change', listener);
+            return Promise.resolve(this._get ? this._get(this._value) : this._value).then(onFulfilled);
+        }
+        if (this._state & STATE_REJECTED) {
+            this.off('change', listener);
+            return Promise.reject(this._error).catch(onRejected);
+        }
+        var cell = this;
+        var promise = new Promise(function (resolve, reject) {
+            cell._onFulfilled = function (value) {
+                cell._onFulfilled = cell._onRejected = null;
+                _this.off('change', listener);
+                resolve(cell._get ? cell._get(value) : value);
+            };
+            cell._onRejected = function (err) {
+                cell._onFulfilled = cell._onRejected = null;
+                _this.off('change', listener);
+                reject(err);
+            };
+        }).then(onFulfilled, onRejected);
+        return promise;
+    };
+    Cell.prototype.catch = function (onRejected) {
+        return this.then(null, onRejected);
     };
     Cell.prototype.reap = function () {
         this.off();
