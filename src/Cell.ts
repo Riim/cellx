@@ -42,7 +42,7 @@ export type TCellEvent<T extends EventEmitter = EventEmitter> =
 	| ICellErrorEvent<T>;
 
 const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
-const KEY_WRAPPERS = Symbol('cellx.wrappers');
+const KEY_WRAPPERS = Symbol('cellx[wrappers]');
 
 const releasePlan = new Map<number, Array<Cell>>();
 let releasePlanIndex = MAX_SAFE_INTEGER;
@@ -921,32 +921,6 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		return true;
 	}
 
-	_addToRelease() {
-		let level = this._level;
-
-		if (level <= this._levelInRelease) {
-			return;
-		}
-
-		let queue: Array<Cell>;
-
-		(releasePlan.get(level) || (releasePlan.set(level, (queue = [])), queue)).push(this);
-
-		if (releasePlanIndex > level) {
-			releasePlanIndex = level;
-		}
-		if (releasePlanToIndex < level) {
-			releasePlanToIndex = level;
-		}
-
-		this._levelInRelease = level;
-
-		if (!releasePlanned && !currentlyRelease) {
-			releasePlanned = true;
-			nextTick(release);
-		}
-	}
-
 	fail(err: any): this {
 		this._fail(err, true);
 		return this;
@@ -974,6 +948,32 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 	wait() {
 		throw new (WaitError as any)();
+	}
+
+	_addToRelease() {
+		let level = this._level;
+
+		if (level <= this._levelInRelease) {
+			return;
+		}
+
+		let queue: Array<Cell>;
+
+		(releasePlan.get(level) || (releasePlan.set(level, (queue = [])), queue)).push(this);
+
+		if (releasePlanIndex > level) {
+			releasePlanIndex = level;
+		}
+		if (releasePlanToIndex < level) {
+			releasePlanToIndex = level;
+		}
+
+		this._levelInRelease = level;
+
+		if (!releasePlanned && !currentlyRelease) {
+			releasePlanned = true;
+			nextTick(release);
+		}
 	}
 
 	_setError(err: Error | null) {

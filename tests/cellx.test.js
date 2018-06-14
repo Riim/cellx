@@ -15,6 +15,13 @@ describe('cellx', () => {
 		expect(a()).toBe(2);
 	});
 
+	test('#cell()', () => {
+		let a = cellx(1);
+		let aa = a('cell', 0);
+
+		expect(aa).toBeInstanceOf(Cell);
+	});
+
 	test('#bind()', () => {
 		let c;
 		let getA = jest.fn(function() {
@@ -28,13 +35,6 @@ describe('cellx', () => {
 
 		expect(getA).toHaveBeenCalledTimes(1);
 		expect(c).toBe(context);
-	});
-
-	test('#unwrap()', () => {
-		let a = cellx(1);
-		let aa = a('unwrap', 0);
-
-		expect(aa).toBeInstanceOf(Cell);
 	});
 
 	test('позволяет использование в прототипе', () => {

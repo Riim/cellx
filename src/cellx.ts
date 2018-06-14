@@ -1,5 +1,4 @@
 import { Map } from '@riim/map-set-polyfill';
-import { assign } from '@riim/object-assign-polyfill';
 import { Symbol } from '@riim/symbol-polyfill';
 import {
 	Cell,
@@ -50,8 +49,8 @@ export function list<T = any>(
 export interface ICellx<T> {
 	(value?: T): T;
 
-	(method: 'bind', $: any): ICellx<T>;
-	(method: 'unwrap', $: any): Cell<T>;
+	(method: 'cell', _: any): Cell<T>;
+	(method: 'bind', _: any): ICellx<T>;
 
 	(
 		method:
@@ -64,26 +63,32 @@ export interface ICellx<T> {
 	): Cell<T>;
 	(
 		method: 'subscribe' | 'unsubscribe',
-		listener: (err: Error | void, evt: TCellEvent) => boolean | void,
+		listener: (err: Error | null, evt: TCellEvent) => any,
 		context?: any
 	): Cell<T>;
 
-	(method: 'pull', $: any): boolean;
-	(method: 'getError', $: any): Error;
+	(method: 'pull', _: any): boolean;
+	(method: 'getError', _: any): Error | null;
+	// tslint:disable-next-line
+	(method: 'isPending', _: any): boolean;
+
 	// tslint:disable-next-line
 	(method: 'push', value: any): Cell<T>;
 	// tslint:disable-next-line
 	(method: 'fail', err: any): Cell<T>;
 
+	<U = any>(
+		method: 'then',
+		onFulfilled: ((value: T) => U) | null,
+		onRejected?: (err: Error) => U
+	): Promise<U>;
+	<U = any>(method: 'catch', onRejected: (err: Error) => U): Promise<U>;
+
 	// tslint:disable-next-line
-	(method: 'isPending', $: any): boolean;
-	(method: 'then', onFulfilled: (value: T) => any, onRejected?: (err: any) => any): Promise<any>;
-	(method: 'catch', onRejected: (err: any) => any): Promise<any>;
-	// tslint:disable-next-line
-	(method: 'reap' | 'dispose', $: any): Cell<T>;
+	(method: 'reap' | 'dispose', _: any): Cell<T>;
 }
 
-export const KEY_CELL_MAP = Symbol('cellx.cellMap');
+export const KEY_CELL_MAP = Symbol('cellx[cellMap]');
 
 export function cellx<T = any, M = any>(
 	value: T | TCellPull<T>,
@@ -103,7 +108,7 @@ export function cellx<T = any, M = any>(
 		}
 
 		if (!hasOwn.call(context, KEY_CELL_MAP)) {
-			Object.defineProperty(context, KEY_CELL_MAP, { value: new Map() });
+			context[KEY_CELL_MAP] = new Map();
 		}
 
 		let cell = context[KEY_CELL_MAP].get(cx);
@@ -113,7 +118,10 @@ export function cellx<T = any, M = any>(
 				return;
 			}
 
-			cell = new Cell(initialValue, assign<any, any>({ context }, options));
+			cell = new Cell(initialValue, {
+				__proto__: options,
+				context
+			} as any);
 
 			context[KEY_CELL_MAP].set(cx, cell);
 		}
@@ -126,25 +134,23 @@ export function cellx<T = any, M = any>(
 				cell.set(value);
 				return value;
 			}
-			default: {
-				let method = value;
+		}
 
-				switch (method) {
-					case 'bind': {
-						cx = cx.bind(context);
-						cx.constructor = cellx;
-						return cx;
-					}
-					case 'unwrap': {
-						return cell;
-					}
-					default: {
-						let result = Cell.prototype[method].apply(cell, slice.call(arguments, 1));
-						return result === cell ? cx : result;
-					}
-				}
+		let method = value;
+
+		switch (method) {
+			case 'cell': {
+				return cell;
+			}
+			case 'bind': {
+				cx = cx.bind(context);
+				cx.constructor = cellx;
+				return cx;
 			}
 		}
+
+		let result = Cell.prototype[method].apply(cell, slice.call(arguments, 1));
+		return result === cell ? cx : result;
 	};
 	cx.constructor = cellx;
 

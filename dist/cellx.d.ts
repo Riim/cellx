@@ -11,18 +11,18 @@ export declare function map<K = any, V = any>(entries?: TObservableMapEntries<K,
 export declare function list<T = any>(items?: TObservableListItems<T> | null, options?: IObservableListOptions<T>): ObservableList<T>;
 export interface ICellx<T> {
     (value?: T): T;
-    (method: 'bind', $: any): ICellx<T>;
-    (method: 'unwrap', $: any): Cell<T>;
+    (method: 'cell', _: any): Cell<T>;
+    (method: 'bind', _: any): ICellx<T>;
     (method: 'addChangeListener' | 'removeChangeListener' | 'addErrorListener' | 'removeErrorListener', listener: TListener, context?: any): Cell<T>;
-    (method: 'subscribe' | 'unsubscribe', listener: (err: Error | void, evt: TCellEvent) => boolean | void, context?: any): Cell<T>;
-    (method: 'pull', $: any): boolean;
-    (method: 'getError', $: any): Error;
+    (method: 'subscribe' | 'unsubscribe', listener: (err: Error | null, evt: TCellEvent) => any, context?: any): Cell<T>;
+    (method: 'pull', _: any): boolean;
+    (method: 'getError', _: any): Error | null;
+    (method: 'isPending', _: any): boolean;
     (method: 'push', value: any): Cell<T>;
     (method: 'fail', err: any): Cell<T>;
-    (method: 'isPending', $: any): boolean;
-    (method: 'then', onFulfilled: (value: T) => any, onRejected?: (err: any) => any): Promise<any>;
-    (method: 'catch', onRejected: (err: any) => any): Promise<any>;
-    (method: 'reap' | 'dispose', $: any): Cell<T>;
+    <U = any>(method: 'then', onFulfilled: ((value: T) => U) | null, onRejected?: (err: Error) => U): Promise<U>;
+    <U = any>(method: 'catch', onRejected: (err: Error) => U): Promise<U>;
+    (method: 'reap' | 'dispose', _: any): Cell<T>;
 }
 export declare const KEY_CELL_MAP: symbol;
 export declare function cellx<T = any, M = any>(value: T | TCellPull<T>, options?: ICellOptions<T, M>): ICellx<T>;

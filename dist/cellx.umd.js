@@ -102,20 +102,19 @@ return /******/ (function(modules) { // webpackBootstrap
 
 Object.defineProperty(exports, "__esModule", { value: true });
 var map_set_polyfill_1 = __webpack_require__(1);
-var object_assign_polyfill_1 = __webpack_require__(3);
 var symbol_polyfill_1 = __webpack_require__(2);
-var Cell_1 = __webpack_require__(4);
-var ObservableList_1 = __webpack_require__(10);
-var ObservableMap_1 = __webpack_require__(11);
-var EventEmitter_1 = __webpack_require__(8);
+var Cell_1 = __webpack_require__(3);
+var ObservableList_1 = __webpack_require__(9);
+var ObservableMap_1 = __webpack_require__(10);
+var EventEmitter_1 = __webpack_require__(7);
 exports.EventEmitter = EventEmitter_1.EventEmitter;
-var ObservableMap_2 = __webpack_require__(11);
+var ObservableMap_2 = __webpack_require__(10);
 exports.ObservableMap = ObservableMap_2.ObservableMap;
-var ObservableList_2 = __webpack_require__(10);
+var ObservableList_2 = __webpack_require__(9);
 exports.ObservableList = ObservableList_2.ObservableList;
-var Cell_2 = __webpack_require__(4);
+var Cell_2 = __webpack_require__(3);
 exports.Cell = Cell_2.Cell;
-var WaitError_1 = __webpack_require__(9);
+var WaitError_1 = __webpack_require__(8);
 exports.WaitError = WaitError_1.WaitError;
 var hasOwn = Object.prototype.hasOwnProperty;
 var slice = Array.prototype.slice;
@@ -128,7 +127,7 @@ function list(items, options) {
     return new ObservableList_1.ObservableList(items, options);
 }
 exports.list = list;
-exports.KEY_CELL_MAP = symbol_polyfill_1.Symbol('cellx.cellMap');
+exports.KEY_CELL_MAP = symbol_polyfill_1.Symbol('cellx[cellMap]');
 function cellx(value, options) {
     if (!options) {
         options = {};
@@ -140,14 +139,17 @@ function cellx(value, options) {
             context = cx;
         }
         if (!hasOwn.call(context, exports.KEY_CELL_MAP)) {
-            Object.defineProperty(context, exports.KEY_CELL_MAP, { value: new map_set_polyfill_1.Map() });
+            context[exports.KEY_CELL_MAP] = new map_set_polyfill_1.Map();
         }
         var cell = context[exports.KEY_CELL_MAP].get(cx);
         if (!cell) {
             if (value === 'dispose' && arguments.length >= 2) {
                 return;
             }
-            cell = new Cell_1.Cell(initialValue, object_assign_polyfill_1.assign({ context: context }, options));
+            cell = new Cell_1.Cell(initialValue, {
+                __proto__: options,
+                context: context
+            });
             context[exports.KEY_CELL_MAP].set(cx, cell);
         }
         switch (arguments.length) {
@@ -158,24 +160,20 @@ function cellx(value, options) {
                 cell.set(value);
                 return value;
             }
-            default: {
-                var method = value;
-                switch (method) {
-                    case 'bind': {
-                        cx = cx.bind(context);
-                        cx.constructor = cellx;
-                        return cx;
-                    }
-                    case 'unwrap': {
-                        return cell;
-                    }
-                    default: {
-                        var result = Cell_1.Cell.prototype[method].apply(cell, slice.call(arguments, 1));
-                        return result === cell ? cx : result;
-                    }
-                }
+        }
+        var method = value;
+        switch (method) {
+            case 'cell': {
+                return cell;
+            }
+            case 'bind': {
+                cx = cx.bind(context);
+                cx.constructor = cellx;
+                return cx;
             }
         }
+        var result = Cell_1.Cell.prototype[method].apply(cell, slice.call(arguments, 1));
+        return result === cell ? cx : result;
     };
     cx.constructor = cellx;
     if (options.onChange || options.onError) {
@@ -555,22 +553,6 @@ if (!Symbol) {
 
 "use strict";
 
-Object.defineProperty(exports, "__esModule", { value: true });
-var assign = Object.assign || (function (target, source) {
-    for (var name_1 in source) {
-        target[name_1] = source[name_1];
-    }
-    return target;
-});
-exports.assign = assign;
-
-
-/***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = Object.setPrototypeOf ||
         ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
@@ -582,15 +564,15 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var is_1 = __webpack_require__(5);
-var logger_1 = __webpack_require__(6);
+var is_1 = __webpack_require__(4);
+var logger_1 = __webpack_require__(5);
 var map_set_polyfill_1 = __webpack_require__(1);
-var next_tick_1 = __webpack_require__(7);
+var next_tick_1 = __webpack_require__(6);
 var symbol_polyfill_1 = __webpack_require__(2);
-var EventEmitter_1 = __webpack_require__(8);
-var WaitError_1 = __webpack_require__(9);
+var EventEmitter_1 = __webpack_require__(7);
+var WaitError_1 = __webpack_require__(8);
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
-var KEY_WRAPPERS = symbol_polyfill_1.Symbol('cellx.wrappers');
+var KEY_WRAPPERS = symbol_polyfill_1.Symbol('cellx[wrappers]');
 var releasePlan = new map_set_polyfill_1.Map();
 var releasePlanIndex = MAX_SAFE_INTEGER;
 var releasePlanToIndex = -1;
@@ -1254,25 +1236,6 @@ var Cell = /** @class */ (function (_super) {
         }
         return true;
     };
-    Cell.prototype._addToRelease = function () {
-        var level = this._level;
-        if (level <= this._levelInRelease) {
-            return;
-        }
-        var queue;
-        (releasePlan.get(level) || (releasePlan.set(level, (queue = [])), queue)).push(this);
-        if (releasePlanIndex > level) {
-            releasePlanIndex = level;
-        }
-        if (releasePlanToIndex < level) {
-            releasePlanToIndex = level;
-        }
-        this._levelInRelease = level;
-        if (!releasePlanned && !currentlyRelease) {
-            releasePlanned = true;
-            next_tick_1.nextTick(release);
-        }
-    };
     Cell.prototype.fail = function (err) {
         this._fail(err, true);
         return this;
@@ -1296,6 +1259,25 @@ var Cell = /** @class */ (function (_super) {
     };
     Cell.prototype.wait = function () {
         throw new WaitError_1.WaitError();
+    };
+    Cell.prototype._addToRelease = function () {
+        var level = this._level;
+        if (level <= this._levelInRelease) {
+            return;
+        }
+        var queue;
+        (releasePlan.get(level) || (releasePlan.set(level, (queue = [])), queue)).push(this);
+        if (releasePlanIndex > level) {
+            releasePlanIndex = level;
+        }
+        if (releasePlanToIndex < level) {
+            releasePlanToIndex = level;
+        }
+        this._levelInRelease = level;
+        if (!releasePlanned && !currentlyRelease) {
+            releasePlanned = true;
+            next_tick_1.nextTick(release);
+        }
     };
     Cell.prototype._setError = function (err) {
         this._error = err;
@@ -1349,7 +1331,7 @@ exports.Cell = Cell;
 
 
 /***/ }),
-/* 5 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1362,7 +1344,7 @@ exports.is = is;
 
 
 /***/ }),
-/* 6 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1413,13 +1395,13 @@ exports.error = exports.logger.error.bind(exports.logger);
 
 
 /***/ }),
-/* 7 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var logger_1 = __webpack_require__(6);
+var logger_1 = __webpack_require__(5);
 var global = Function('return this;')();
 var nextTick;
 exports.nextTick = nextTick;
@@ -1468,13 +1450,13 @@ else {
 
 
 /***/ }),
-/* 8 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var logger_1 = __webpack_require__(6);
+var logger_1 = __webpack_require__(5);
 var map_set_polyfill_1 = __webpack_require__(1);
 var currentlySubscribing = false;
 var transactionLevel = 0;
@@ -1693,7 +1675,7 @@ exports.EventEmitter = EventEmitter;
 
 
 /***/ }),
-/* 9 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1708,7 +1690,7 @@ WaitError.prototype = {
 
 
 /***/ }),
-/* 10 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1724,9 +1706,9 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var is_1 = __webpack_require__(5);
+var is_1 = __webpack_require__(4);
 var symbol_polyfill_1 = __webpack_require__(2);
-var EventEmitter_1 = __webpack_require__(8);
+var EventEmitter_1 = __webpack_require__(7);
 var splice = Array.prototype.splice;
 function defaultComparator(a, b) {
     return a < b ? -1 : a > b ? 1 : 0;
@@ -2092,7 +2074,7 @@ ObservableList.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableList.pro
 
 
 /***/ }),
-/* 11 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -2108,10 +2090,10 @@ var __extends = (this && this.__extends) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-var is_1 = __webpack_require__(5);
+var is_1 = __webpack_require__(4);
 var map_set_polyfill_1 = __webpack_require__(1);
 var symbol_polyfill_1 = __webpack_require__(2);
-var EventEmitter_1 = __webpack_require__(8);
+var EventEmitter_1 = __webpack_require__(7);
 var ObservableMap = /** @class */ (function (_super) {
     __extends(ObservableMap, _super);
     function ObservableMap(entries) {

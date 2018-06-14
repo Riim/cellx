@@ -87,10 +87,10 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     set(value: T): this;
     push(value: any): this;
     _push(value: any, external: boolean, pulling: boolean): boolean;
-    _addToRelease(): void;
     fail(err: any): this;
     _fail(err: any, external: boolean): void;
     wait(): void;
+    _addToRelease(): void;
     _setError(err: Error | null): void;
     _handleErrorEvent(evt: IEvent<this>): void;
     _resolvePending(): void;

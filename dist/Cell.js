@@ -18,7 +18,7 @@ var symbol_polyfill_1 = require("@riim/symbol-polyfill");
 var EventEmitter_1 = require("./EventEmitter");
 var WaitError_1 = require("./WaitError");
 var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
-var KEY_WRAPPERS = symbol_polyfill_1.Symbol('cellx.wrappers');
+var KEY_WRAPPERS = symbol_polyfill_1.Symbol('cellx[wrappers]');
 var releasePlan = new map_set_polyfill_1.Map();
 var releasePlanIndex = MAX_SAFE_INTEGER;
 var releasePlanToIndex = -1;
@@ -682,25 +682,6 @@ var Cell = /** @class */ (function (_super) {
         }
         return true;
     };
-    Cell.prototype._addToRelease = function () {
-        var level = this._level;
-        if (level <= this._levelInRelease) {
-            return;
-        }
-        var queue;
-        (releasePlan.get(level) || (releasePlan.set(level, (queue = [])), queue)).push(this);
-        if (releasePlanIndex > level) {
-            releasePlanIndex = level;
-        }
-        if (releasePlanToIndex < level) {
-            releasePlanToIndex = level;
-        }
-        this._levelInRelease = level;
-        if (!releasePlanned && !currentlyRelease) {
-            releasePlanned = true;
-            next_tick_1.nextTick(release);
-        }
-    };
     Cell.prototype.fail = function (err) {
         this._fail(err, true);
         return this;
@@ -724,6 +705,25 @@ var Cell = /** @class */ (function (_super) {
     };
     Cell.prototype.wait = function () {
         throw new WaitError_1.WaitError();
+    };
+    Cell.prototype._addToRelease = function () {
+        var level = this._level;
+        if (level <= this._levelInRelease) {
+            return;
+        }
+        var queue;
+        (releasePlan.get(level) || (releasePlan.set(level, (queue = [])), queue)).push(this);
+        if (releasePlanIndex > level) {
+            releasePlanIndex = level;
+        }
+        if (releasePlanToIndex < level) {
+            releasePlanToIndex = level;
+        }
+        this._levelInRelease = level;
+        if (!releasePlanned && !currentlyRelease) {
+            releasePlanned = true;
+            next_tick_1.nextTick(release);
+        }
     };
     Cell.prototype._setError = function (err) {
         this._error = err;

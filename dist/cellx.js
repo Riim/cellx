@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 var map_set_polyfill_1 = require("@riim/map-set-polyfill");
-var object_assign_polyfill_1 = require("@riim/object-assign-polyfill");
 var symbol_polyfill_1 = require("@riim/symbol-polyfill");
 var Cell_1 = require("./Cell");
 var ObservableList_1 = require("./collections/ObservableList");
@@ -27,7 +26,7 @@ function list(items, options) {
     return new ObservableList_1.ObservableList(items, options);
 }
 exports.list = list;
-exports.KEY_CELL_MAP = symbol_polyfill_1.Symbol('cellx.cellMap');
+exports.KEY_CELL_MAP = symbol_polyfill_1.Symbol('cellx[cellMap]');
 function cellx(value, options) {
     if (!options) {
         options = {};
@@ -39,14 +38,17 @@ function cellx(value, options) {
             context = cx;
         }
         if (!hasOwn.call(context, exports.KEY_CELL_MAP)) {
-            Object.defineProperty(context, exports.KEY_CELL_MAP, { value: new map_set_polyfill_1.Map() });
+            context[exports.KEY_CELL_MAP] = new map_set_polyfill_1.Map();
         }
         var cell = context[exports.KEY_CELL_MAP].get(cx);
         if (!cell) {
             if (value === 'dispose' && arguments.length >= 2) {
                 return;
             }
-            cell = new Cell_1.Cell(initialValue, object_assign_polyfill_1.assign({ context: context }, options));
+            cell = new Cell_1.Cell(initialValue, {
+                __proto__: options,
+                context: context
+            });
             context[exports.KEY_CELL_MAP].set(cx, cell);
         }
         switch (arguments.length) {
@@ -57,24 +59,20 @@ function cellx(value, options) {
                 cell.set(value);
                 return value;
             }
-            default: {
-                var method = value;
-                switch (method) {
-                    case 'bind': {
-                        cx = cx.bind(context);
-                        cx.constructor = cellx;
-                        return cx;
-                    }
-                    case 'unwrap': {
-                        return cell;
-                    }
-                    default: {
-                        var result = Cell_1.Cell.prototype[method].apply(cell, slice.call(arguments, 1));
-                        return result === cell ? cx : result;
-                    }
-                }
+        }
+        var method = value;
+        switch (method) {
+            case 'cell': {
+                return cell;
+            }
+            case 'bind': {
+                cx = cx.bind(context);
+                cx.constructor = cellx;
+                return cx;
             }
         }
+        var result = Cell_1.Cell.prototype[method].apply(cell, slice.call(arguments, 1));
+        return result === cell ? cx : result;
     };
     cx.constructor = cellx;
     if (options.onChange || options.onError) {
