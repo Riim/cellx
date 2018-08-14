@@ -227,16 +227,18 @@ exports.define = define;
 /***/ (function(module, exports, __webpack_require__) {
 
 var global = Function('return this;')();
-var Symbol =  true ? __webpack_require__(2).Symbol : undefined;
-
-var hasOwn = Object.prototype.hasOwnProperty;
-
-var KEY_MAP_ID = Symbol('map-id');
-var mapIdCounter = 0;
+var Symbol =  true
+	? __webpack_require__(2).Symbol
+	: undefined;
 
 var Map = global.Map;
 
 if (!Map || Map.toString().indexOf('[native code]') == -1 || !new Map([[1, 1]]).size) {
+	var hasOwn = Object.prototype.hasOwnProperty;
+
+	var KEY_MAP_ID = Symbol('mapId');
+	var mapIdCounter = 0;
+
 	var entryStub = {
 		value: undefined
 	};
@@ -260,15 +262,15 @@ if (!Map || Map.toString().indexOf('[native code]') == -1 || !new Map([[1, 1]]).
 	Map.prototype = {
 		constructor: Map,
 
-		has: function has(key) {
+		has: function(key) {
 			return !!this._entries[this._getValueStamp(key)];
 		},
 
-		get: function get(key) {
+		get: function(key) {
 			return (this._entries[this._getValueStamp(key)] || entryStub).value;
 		},
 
-		set: function set(key, value) {
+		set: function(key, value) {
 			var entries = this._entries;
 			var keyStamp = this._getValueStamp(key);
 
@@ -295,7 +297,7 @@ if (!Map || Map.toString().indexOf('[native code]') == -1 || !new Map([[1, 1]]).
 			return this;
 		},
 
-		delete: function delete_(key) {
+		delete: function(key) {
 			var keyStamp = this._getValueStamp(key);
 			var entry = this._entries[keyStamp];
 
@@ -329,7 +331,7 @@ if (!Map || Map.toString().indexOf('[native code]') == -1 || !new Map([[1, 1]]).
 			return true;
 		},
 
-		clear: function clear() {
+		clear: function() {
 			var entries = this._entries;
 
 			for (var stamp in entries) {
@@ -344,7 +346,7 @@ if (!Map || Map.toString().indexOf('[native code]') == -1 || !new Map([[1, 1]]).
 			this.size = 0;
 		},
 
-		forEach: function forEach(callback, context) {
+		forEach: function(callback, context) {
 			var entry = this._first;
 
 			while (entry) {
@@ -356,11 +358,11 @@ if (!Map || Map.toString().indexOf('[native code]') == -1 || !new Map([[1, 1]]).
 			}
 		},
 
-		toString: function toString() {
+		toString: function() {
 			return '[object Map]';
 		},
 
-		_getValueStamp: function _getValueStamp(value) {
+		_getValueStamp: function(value) {
 			switch (typeof value) {
 				case 'undefined': {
 					return 'undefined';
@@ -386,7 +388,7 @@ if (!Map || Map.toString().indexOf('[native code]') == -1 || !new Map([[1, 1]]).
 			return this._getObjectStamp(value);
 		},
 
-		_getObjectStamp: function _getObjectStamp(obj) {
+		_getObjectStamp: function(obj) {
 			if (!hasOwn.call(obj, KEY_MAP_ID)) {
 				if (!Object.isExtensible(obj)) {
 					var stamps = this._objectStamps;
@@ -414,13 +416,13 @@ if (!Map || Map.toString().indexOf('[native code]') == -1 || !new Map([[1, 1]]).
 	};
 
 	[
-		['keys', function keys(entry) {
+		['keys', function(entry) {
 			return entry.key;
 		}],
-		['values', function values(entry) {
+		['values', function(entry) {
 			return entry.value;
 		}],
-		['entries', function entries(entry) {
+		['entries', function(entry) {
 			return [entry.key, entry.value];
 		}]
 	].forEach(function(settings) {
@@ -481,17 +483,17 @@ if (!Set || Set.toString().indexOf('[native code]') == -1 || !new Set([1]).size)
 	Set.prototype = {
 		constructor: Set,
 
-		has: function has(value) {
+		has: function(value) {
 			return this._values.has(value);
 		},
 
-		add: function add(value) {
+		add: function(value) {
 			this._values.set(value, value);
 			this.size = this._values.size;
 			return this;
 		},
 
-		delete: function _delete(value) {
+		delete: function(value) {
 			if (this._values.delete(value)) {
 				this.size--;
 				return true;
@@ -500,12 +502,12 @@ if (!Set || Set.toString().indexOf('[native code]') == -1 || !new Set([1]).size)
 			return false;
 		},
 
-		clear: function clear() {
+		clear: function() {
 			this._values.clear();
 			this.size = 0;
 		},
 
-		forEach: function forEach(callback, context) {
+		forEach: function(callback, context) {
 			this._values.forEach(function(value) {
 				callback.call(context, value, value, this);
 			}, this);
@@ -534,9 +536,9 @@ if (true) {
 var global = Function('return this;')();
 var Symbol = global.Symbol;
 
-var idCounter = 0;
-
 if (!Symbol) {
+	var idCounter = 0;
+
 	Symbol = function Symbol(key) {
 		return '__' + key + '_' + Math.floor(Math.random() * 1e9) + '_' + (++idCounter) + '__';
 	};
@@ -554,9 +556,12 @@ if (!Symbol) {
 "use strict";
 
 var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    }
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -1393,10 +1398,7 @@ exports.Cell = Cell;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var is = Object.is || (function (a, b) {
-    return a === b ? a !== 0 || 1 / a == 1 / b : a != a && b != b;
-});
-exports.is = is;
+exports.is = Object.is || (function (a, b) { return (a === b ? a !== 0 || 1 / a == 1 / b : a != a && b != b); });
 
 
 /***/ }),
@@ -1406,15 +1408,13 @@ exports.is = is;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var global = Function('return this;')();
 function noop() { }
 var defaultHandler = function (type) {
     var msg = [];
     for (var _i = 1; _i < arguments.length; _i++) {
         msg[_i - 1] = arguments[_i];
     }
-    var console = global.console;
-    (console && console[type] || noop).call(console || null, (type == 'error' ? msg.map(function (m) { return m === Object(m) && m.stack || m; }) : msg).join(' '));
+    (console[type] || noop).apply(console, type == 'error' ? msg.map(function (m) { return (m && typeof m == 'object' && m.stack) || m; }) : msg);
 };
 var Logger = /** @class */ (function () {
     function Logger(handler) {
@@ -1444,7 +1444,7 @@ var Logger = /** @class */ (function () {
     return Logger;
 }());
 exports.Logger = Logger;
-exports.logger = new Logger();
+exports.logger = (Logger.$instance = new Logger());
 exports.log = exports.logger.log.bind(exports.logger);
 exports.warn = exports.logger.warn.bind(exports.logger);
 exports.error = exports.logger.error.bind(exports.logger);
@@ -1465,13 +1465,13 @@ if (global.process && global.process.toString() == '[object process]' && global.
     exports.nextTick = nextTick = global.process.nextTick;
 }
 else if (global.setImmediate) {
-    exports.nextTick = nextTick = function nextTick(callback) {
+    exports.nextTick = nextTick = function (callback) {
         setImmediate(callback);
     };
 }
 else if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
     var prm_1 = Promise.resolve();
-    exports.nextTick = nextTick = function nextTick(callback) {
+    exports.nextTick = nextTick = function (callback) {
         prm_1.then(function () {
             callback();
         });
@@ -1493,7 +1493,7 @@ else {
             }
         }
     });
-    exports.nextTick = nextTick = function nextTick(callback) {
+    exports.nextTick = nextTick = function (callback) {
         if (queue_1) {
             queue_1.push(callback);
         }
@@ -1752,9 +1752,12 @@ WaitError.prototype = {
 "use strict";
 
 var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    }
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }
@@ -2136,9 +2139,12 @@ ObservableList.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableList.pro
 "use strict";
 
 var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    }
     return function (d, b) {
         extendStatics(d, b);
         function __() { this.constructor = d; }

@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.7.92",
+  "version": "1.7.93",
   "description": "",
   "main": "dist/cellx.js",
   "typings": "dist/cellx.d.ts",
@@ -23,22 +23,21 @@
   },
   "homepage": "https://github.com/Riim/cellx",
   "devDependencies": {
-    "ajv": "^6.5.1",
-    "awesome-typescript-loader": "^5.0.0",
-    "jest": "^23.1.0",
-    "tslint": "^5.10.0",
+    "ajv": "^6.5.2",
+    "awesome-typescript-loader": "^5.2.0",
+    "jest": "^23.5.0",
+    "tslint": "^5.11.0",
     "tslint-loader": "^3.6.0",
-    "typescript": "^2.9.2",
-    "webpack": "^4.12.0",
-    "webpack-cli": "^3.0.6"
+    "typescript": "^3.0.1",
+    "webpack": "^4.16.5",
+    "webpack-cli": "^3.1.0"
   },
   "dependencies": {
-    "@riim/is": "^1.0.0",
-    "@riim/logger": "^1.0.1",
-    "@riim/map-set-polyfill": "^1.0.1",
-    "@riim/mixin": "^1.0.0",
-    "@riim/next-tick": "^1.0.1",
-    "@riim/symbol-polyfill": "^1.0.1"
+    "@riim/is": "^1.0.1",
+    "@riim/logger": "^1.0.2",
+    "@riim/map-set-polyfill": "^1.0.2",
+    "@riim/next-tick": "^1.0.2",
+    "@riim/symbol-polyfill": "^1.0.5"
   },
   "jest": {
     "testEnvironment": "node",
