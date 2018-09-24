@@ -1,14 +1,14 @@
 import { EventEmitter } from '../EventEmitter';
 export declare type TObservableListItems<T> = Array<T> | ObservableList<T>;
-export declare type TComparator<T> = (a: T, b: T) => number;
+export declare type TObservableListItemComparator<T> = (a: T, b: T) => number;
 export interface IObservableListOptions<T> {
-    comparator?: TComparator<T>;
+    comparator?: TObservableListItemComparator<T>;
     sorted?: boolean;
 }
 export declare class ObservableList<T = any> extends EventEmitter {
     _items: Array<T>;
     readonly length: number;
-    _comparator: TComparator<T> | null;
+    _comparator: TObservableListItemComparator<T> | null;
     _sorted: boolean;
     constructor(items?: TObservableListItems<T> | null, options?: IObservableListOptions<T>);
     _validateIndex(index: number | undefined, allowEndIndex?: boolean): number | undefined;
@@ -19,14 +19,13 @@ export declare class ObservableList<T = any> extends EventEmitter {
     getRange(index: number, count?: number): Array<T>;
     set(index: number, value: T): this;
     setRange(index: number, values: TObservableListItems<T>): this;
-    add(value: T): this;
-    addRange(values: TObservableListItems<T>): this;
+    add(value: T, unique?: boolean): this;
+    addRange(values: TObservableListItems<T>, unique?: boolean): this;
     insert(index: number, value: T): this;
     insertRange(index: number, values: TObservableListItems<T>): this;
     remove(value: T, fromIndex?: number): boolean;
     removeAll(value: T, fromIndex?: number): boolean;
     removeEach(values: TObservableListItems<T>, fromIndex?: number): boolean;
-    removeAllEach(values: TObservableListItems<T>, fromIndex?: number): boolean;
     removeAt(index: number): T;
     removeRange(index: number, count?: number): Array<T>;
     clear(): this;

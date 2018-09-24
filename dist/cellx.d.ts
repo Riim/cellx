@@ -4,7 +4,7 @@ import { ObservableMap, TObservableMapEntries } from './collections/ObservableMa
 import { TListener } from './EventEmitter';
 export { IEvent, TListener, IRegisteredEvent, EventEmitter } from './EventEmitter';
 export { TObservableMapEntries, ObservableMap } from './collections/ObservableMap';
-export { TComparator, TObservableListItems, IObservableListOptions, ObservableList } from './collections/ObservableList';
+export { TObservableListItemComparator, TObservableListItems, IObservableListOptions, ObservableList } from './collections/ObservableList';
 export { TCellPull, ICellOptions, ICellChangeEvent, ICellErrorEvent, TCellEvent, Cell } from './Cell';
 export { WaitError } from './WaitError';
 export declare function map<K = any, V = any>(entries?: TObservableMapEntries<K, V> | null): ObservableMap<K, V>;

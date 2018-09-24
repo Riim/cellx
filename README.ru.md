@@ -34,7 +34,7 @@ user.lastName('Пёс');
 // => 'fullName: Шарик Пёс'
 ```
 
-Несмотря на то, что изменились две зависимости ячейки `fullName`, обработчик её изменения сработал только один раз.  
+Несмотря на то, что изменились две зависимости ячейки `fullName`, обработчик её изменения сработал только один раз.
 Важной особенностью cellx-а является то, что он старается максимально избавиться как от лишних вызовов
 обработчиков изменений, так и от лишних вызовов расчётных формул зависимых ячеек. В сочетании с ещё некоторыми оптимизациями это приводит к идеальной скорости расчёта сложнейших сеток зависимостей.
 
@@ -60,7 +60,7 @@ user.lastName('Пёс');
 | [MobX](https://mobxjs.github.io/mobx/)                  |     <~1 |                               <~1 |                                 <~1 |       2 |       3 |      40 | RangeError: Maximum call stack size exceeded | RangeError: Maximum call stack size exceeded |
 | [Matreshka.js](https://matreshka.io/)                   |      11 |                              1150 |                              143000 | >300000 | >300000 | >300000 |                                      >300000 |                                      >300000 |
 
-Исходники теста можно найти в папке [perf](https://github.com/Riim/cellx/tree/master/perf).  
+Исходники теста можно найти в папке [perf](https://github.com/Riim/cellx/tree/master/perf).
 Плотность связей в реальных приложениях обычно ниже чем в данном тесте, то есть если в тесте определённая задержка
 появляется на 100 вычисляемых ячейках (25 слоёв), то в реальном приложении подобная задержка будет либо
 на большем числе ячеек, либо в формулах ячеек будут какие-то сложные расчёты (например, вычисление одного массива
@@ -697,11 +697,11 @@ console.log(list.toArray());
 
 ##### add
 
-Сигнатура вызова: `(value) -> cellx.ObservableList;`.
+Сигнатура вызова: `(value, unique?: boolean) -> cellx.ObservableList;`.
 
 ##### addRange
 
-Сигнатура вызова: `(values: Array) -> cellx.ObservableList;`.
+Сигнатура вызова: `(values: Array, unique?: boolean) -> cellx.ObservableList;`.
 
 ##### insert
 
@@ -724,10 +724,6 @@ console.log(list.toArray());
 Удаляет все вхождениия `values` в списке.
 
 ##### removeEach
-
-Сигнатура вызова: `(values: Array, fromIndex?: int) -> boolean;`.
-
-##### removeAllEach
 
 Сигнатура вызова: `(values: Array, fromIndex?: int) -> boolean;`.
 

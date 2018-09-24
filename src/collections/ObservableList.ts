@@ -2,20 +2,21 @@ import { is } from '@riim/is';
 import { Symbol } from '@riim/symbol-polyfill';
 import { EventEmitter } from '../EventEmitter';
 
+const push = Array.prototype.push;
 const splice = Array.prototype.splice;
 
 export type TObservableListItems<T> = Array<T> | ObservableList<T>;
 
-export type TComparator<T> = (a: T, b: T) => number;
+export type TObservableListItemComparator<T> = (a: T, b: T) => number;
 
 export interface IObservableListOptions<T> {
-	comparator?: TComparator<T>;
+	comparator?: TObservableListItemComparator<T>;
 	sorted?: boolean;
 }
 
-function defaultComparator(a: any, b: any): number {
+const defaultComparator: TObservableListItemComparator<any> = (a, b) => {
 	return a < b ? -1 : a > b ? 1 : 0;
-}
+};
 
 export class ObservableList<T = any> extends EventEmitter {
 	_items: Array<T> = [];
@@ -24,7 +25,7 @@ export class ObservableList<T = any> extends EventEmitter {
 		return this._items.length;
 	}
 
-	_comparator: TComparator<T> | null;
+	_comparator: TObservableListItemComparator<T> | null;
 	_sorted: boolean;
 
 	constructor(items?: TObservableListItems<T> | null, options?: IObservableListOptions<T>) {
@@ -41,19 +42,14 @@ export class ObservableList<T = any> extends EventEmitter {
 		if (items) {
 			if (this._sorted) {
 				if (items instanceof ObservableList) {
-					items = items._items.slice();
+					items = items._items;
 				}
 
 				for (let i = 0, l = items.length; i < l; i++) {
 					this._insertSortedValue(items[i]);
 				}
 			} else {
-				// [,].slice() // => [empty]
-				// [].push.apply(a = [], [,]), a // => [undefined]
-				this._items.push.apply(
-					this._items,
-					items instanceof ObservableList ? items._items : items
-				);
+				push.apply(this._items, items instanceof ObservableList ? items._items : items);
 			}
 		}
 	}
@@ -132,7 +128,7 @@ export class ObservableList<T = any> extends EventEmitter {
 		index = this._validateIndex(index, true)!;
 
 		if (values instanceof ObservableList) {
-			values = values._items.slice();
+			values = values._items;
 		}
 
 		let valueCount = values.length;
@@ -164,7 +160,11 @@ export class ObservableList<T = any> extends EventEmitter {
 		return this;
 	}
 
-	add(value: T): this {
+	add(value: T, unique?: boolean): this {
+		if (unique && this._items.indexOf(value) != -1) {
+			return this;
+		}
+
 		if (this._sorted) {
 			this._insertSortedValue(value);
 		} else {
@@ -176,21 +176,45 @@ export class ObservableList<T = any> extends EventEmitter {
 		return this;
 	}
 
-	addRange(values: TObservableListItems<T>): this {
+	addRange(values: TObservableListItems<T>, unique?: boolean): this {
 		if (values instanceof ObservableList) {
-			values = values._items.slice();
+			values = values._items;
 		}
 
 		if (values.length) {
-			if (this._sorted) {
+			if (unique) {
+				let items = this._items;
+				let sorted = this._sorted;
+				let changed = false;
+
 				for (let i = 0, l = values.length; i < l; i++) {
-					this._insertSortedValue(values[i]);
+					let value = values[i];
+
+					if (items.indexOf(value) == -1) {
+						if (sorted) {
+							this._insertSortedValue(value);
+						} else {
+							items.push(value);
+						}
+
+						changed = true;
+					}
+				}
+
+				if (changed) {
+					this.emit('change');
 				}
 			} else {
-				this._items.push.apply(this._items, values);
-			}
+				if (this._sorted) {
+					for (let i = 0, l = values.length; i < l; i++) {
+						this._insertSortedValue(values[i]);
+					}
+				} else {
+					push.apply(this._items, values);
+				}
 
-			this.emit('change');
+				this.emit('change');
+			}
 		}
 
 		return this;
@@ -270,32 +294,6 @@ export class ObservableList<T = any> extends EventEmitter {
 			let index = items.indexOf(values[i], fromIndex);
 
 			if (index != -1) {
-				items.splice(index, 1);
-				changed = true;
-			}
-		}
-
-		if (changed) {
-			this.emit('change');
-		}
-
-		return changed;
-	}
-
-	removeAllEach(values: TObservableListItems<T>, fromIndex?: number): boolean {
-		fromIndex = this._validateIndex(fromIndex, true);
-
-		if (values instanceof ObservableList) {
-			values = values._items.slice();
-		}
-
-		let items = this._items;
-		let changed = false;
-
-		for (let i = 0, l = values.length; i < l; i++) {
-			let value = values[i];
-
-			for (let index = fromIndex; (index = items.indexOf(value, index)) != -1; ) {
 				items.splice(index, 1);
 				changed = true;
 			}

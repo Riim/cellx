@@ -45,7 +45,7 @@ user.lastName('Dog');
 // => 'fullName: Sharik Dog'
 ```
 
-Despite the fact that the two dependencies of the cell `fullName` has been changed, event handler worked only once.  
+Despite the fact that the two dependencies of the cell `fullName` has been changed, event handler worked only once.
 Important feature of cellx is that it tries to get rid of unnecessary calls
 of the event handlers as well as of unnecessary calls of the dependent cells calculation formulas.
 In combination with some special optimizations, this leads to an ideal speed of calculation of
@@ -73,7 +73,7 @@ Test results (in milliseconds) for different number of layers (for Google Chrome
 | [MobX](https://mobxjs.github.io/mobx/)                  |     <~1 |                               <~1 |                                 <~1 |       2 |       3 |      40 | RangeError: Maximum call stack size exceeded | RangeError: Maximum call stack size exceeded |
 | [Matreshka.js](https://matreshka.io/)                   |      11 |                              1150 |                              143000 | >300000 | >300000 | >300000 |                                      >300000 |                                      >300000 |
 
-Test sources can be found in the folder [perf](https://github.com/Riim/cellx/tree/master/perf).  
+Test sources can be found in the folder [perf](https://github.com/Riim/cellx/tree/master/perf).
 Density of connections in real applications is usually lower than in the present test, that is,
 if a certain delay in the test is visible in 100 calculated cells (25 layers), in a real application,
 this delay will either be visible in the greater number of cells, or cells formulas will include
@@ -711,11 +711,11 @@ Type signature: `(index: int, values: Array) -> cellx.ObservableList;`.
 
 ##### add
 
-Type signature: `(value) -> cellx.ObservableList;`.
+Type signature: `(value, unique?: boolean) -> cellx.ObservableList;`.
 
 ##### addRange
 
-Type signature: `(values: Array) -> cellx.ObservableList;`.
+Type signature: `(values: Array, unique?: boolean) -> cellx.ObservableList;`.
 
 ##### insert
 
@@ -738,10 +738,6 @@ Type signature: `(value, fromIndex?: int) -> boolean;`.
 It removes all occurrences of `value` list.
 
 ##### removeEach
-
-Type signature: `(values: Array, fromIndex?: int) -> boolean;`.
-
-##### removeAllEach
 
 Type signature: `(values: Array, fromIndex?: int) -> boolean;`.
 

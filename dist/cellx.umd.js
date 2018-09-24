@@ -1768,10 +1768,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var is_1 = __webpack_require__(4);
 var symbol_polyfill_1 = __webpack_require__(2);
 var EventEmitter_1 = __webpack_require__(7);
+var push = Array.prototype.push;
 var splice = Array.prototype.splice;
-function defaultComparator(a, b) {
+var defaultComparator = function (a, b) {
     return a < b ? -1 : a > b ? 1 : 0;
-}
+};
 var ObservableList = /** @class */ (function (_super) {
     __extends(ObservableList, _super);
     function ObservableList(items, options) {
@@ -1788,16 +1789,14 @@ var ObservableList = /** @class */ (function (_super) {
         if (items) {
             if (_this._sorted) {
                 if (items instanceof ObservableList) {
-                    items = items._items.slice();
+                    items = items._items;
                 }
                 for (var i = 0, l = items.length; i < l; i++) {
                     _this._insertSortedValue(items[i]);
                 }
             }
             else {
-                // [,].slice() // => [empty]
-                // [].push.apply(a = [], [,]), a // => [undefined]
-                _this._items.push.apply(_this._items, items instanceof ObservableList ? items._items : items);
+                push.apply(_this._items, items instanceof ObservableList ? items._items : items);
             }
         }
         return _this;
@@ -1863,7 +1862,7 @@ var ObservableList = /** @class */ (function (_super) {
         }
         index = this._validateIndex(index, true);
         if (values instanceof ObservableList) {
-            values = values._items.slice();
+            values = values._items;
         }
         var valueCount = values.length;
         if (!valueCount) {
@@ -1886,7 +1885,10 @@ var ObservableList = /** @class */ (function (_super) {
         }
         return this;
     };
-    ObservableList.prototype.add = function (value) {
+    ObservableList.prototype.add = function (value, unique) {
+        if (unique && this._items.indexOf(value) != -1) {
+            return this;
+        }
         if (this._sorted) {
             this._insertSortedValue(value);
         }
@@ -1896,20 +1898,42 @@ var ObservableList = /** @class */ (function (_super) {
         this.emit('change');
         return this;
     };
-    ObservableList.prototype.addRange = function (values) {
+    ObservableList.prototype.addRange = function (values, unique) {
         if (values instanceof ObservableList) {
-            values = values._items.slice();
+            values = values._items;
         }
         if (values.length) {
-            if (this._sorted) {
+            if (unique) {
+                var items = this._items;
+                var sorted = this._sorted;
+                var changed = false;
                 for (var i = 0, l = values.length; i < l; i++) {
-                    this._insertSortedValue(values[i]);
+                    var value = values[i];
+                    if (items.indexOf(value) == -1) {
+                        if (sorted) {
+                            this._insertSortedValue(value);
+                        }
+                        else {
+                            items.push(value);
+                        }
+                        changed = true;
+                    }
+                }
+                if (changed) {
+                    this.emit('change');
                 }
             }
             else {
-                this._items.push.apply(this._items, values);
+                if (this._sorted) {
+                    for (var i = 0, l = values.length; i < l; i++) {
+                        this._insertSortedValue(values[i]);
+                    }
+                }
+                else {
+                    push.apply(this._items, values);
+                }
+                this.emit('change');
             }
-            this.emit('change');
         }
         return this;
     };
@@ -1967,25 +1991,6 @@ var ObservableList = /** @class */ (function (_super) {
         for (var i = 0, l = values.length; i < l; i++) {
             var index = items.indexOf(values[i], fromIndex);
             if (index != -1) {
-                items.splice(index, 1);
-                changed = true;
-            }
-        }
-        if (changed) {
-            this.emit('change');
-        }
-        return changed;
-    };
-    ObservableList.prototype.removeAllEach = function (values, fromIndex) {
-        fromIndex = this._validateIndex(fromIndex, true);
-        if (values instanceof ObservableList) {
-            values = values._items.slice();
-        }
-        var items = this._items;
-        var changed = false;
-        for (var i = 0, l = values.length; i < l; i++) {
-            var value = values[i];
-            for (var index = fromIndex; (index = items.indexOf(value, index)) != -1;) {
                 items.splice(index, 1);
                 changed = true;
             }

@@ -67,11 +67,26 @@ describe('ObservableList', () => {
 		expect(list.get(-1)).toBe(4);
 	});
 
+	test('#add(unique = true)', () => {
+		let list = new ObservableList([1, 2, 3, 2, 1]);
+
+		expect(list.add(3, true)).toBe(list);
+		expect(list.get(-1)).toBe(1);
+	});
+
 	test('#addRange()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
 		expect(list.addRange([4, 5])).toBe(list);
 		expect(list.getRange(-2)).toEqual([4, 5]);
+	});
+
+	test('#addRange(unique = true)', () => {
+		let list = new ObservableList([1, 2, 3, 2, 1]);
+
+		expect(list.addRange([3, 4, 2, 5], true)).toBe(list);
+		expect(list.getRange(-3)).toEqual([1, 4, 5]);
+		expect(list.length).toBe(7);
 	});
 
 	test('#insert()', () => {
@@ -109,14 +124,6 @@ describe('ObservableList', () => {
 		expect(list.removeEach([2, 3, 1], 1)).toBeTruthy();
 		expect(list.removeEach([1], 1)).toBeFalsy();
 		expect(list.toArray()).toEqual([1, 2]);
-	});
-
-	test('#removeAllEach()', () => {
-		let list = new ObservableList([1, 2, 3, 2, 1]);
-
-		expect(list.removeAllEach([2, 3, 1], 1)).toBeTruthy();
-		expect(list.removeAllEach([2])).toBeFalsy();
-		expect(list.toArray()).toEqual([1]);
 	});
 
 	test('#removeAt()', () => {

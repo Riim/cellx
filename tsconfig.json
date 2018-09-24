@@ -4,6 +4,7 @@
 		"experimentalDecorators": true,
 		"lib": ["dom", "es2017"],
 		"module": "commonjs",
+		"newLine": "lf",
 		"noImplicitAny": true,
 		"noImplicitReturns": true,
 		"noUnusedLocals": true,

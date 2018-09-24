@@ -13,7 +13,7 @@ import { TListener } from './EventEmitter';
 export { IEvent, TListener, IRegisteredEvent, EventEmitter } from './EventEmitter';
 export { TObservableMapEntries, ObservableMap } from './collections/ObservableMap';
 export {
-	TComparator,
+	TObservableListItemComparator,
 	TObservableListItems,
 	IObservableListOptions,
 	ObservableList
