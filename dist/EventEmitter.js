@@ -1,25 +1,18 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var logger_1 = require("@riim/logger");
-var map_set_polyfill_1 = require("@riim/map-set-polyfill");
-var currentlySubscribing = false;
-var transactionLevel = 0;
-var transactionEvents = new map_set_polyfill_1.Map();
-var EventEmitter = /** @class */ (function () {
-    function EventEmitter() {
-        this._events = new map_set_polyfill_1.Map();
+const logger_1 = require("@riim/logger");
+const map_set_polyfill_1 = require("@riim/map-set-polyfill");
+let currentlySubscribing = false;
+let transactionLevel = 0;
+let transactionEvents = new map_set_polyfill_1.Map();
+class EventEmitter {
+    static get currentlySubscribing() {
+        return currentlySubscribing;
     }
-    Object.defineProperty(EventEmitter, "currentlySubscribing", {
-        get: function () {
-            return currentlySubscribing;
-        },
-        set: function (value) {
-            currentlySubscribing = value;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    EventEmitter.transact = function (callback) {
+    static set currentlySubscribing(value) {
+        currentlySubscribing = value;
+    }
+    static transact(callback) {
         transactionLevel++;
         try {
             callback();
@@ -30,16 +23,19 @@ var EventEmitter = /** @class */ (function () {
         if (--transactionLevel) {
             return;
         }
-        var events = transactionEvents;
+        let events = transactionEvents;
         transactionEvents = new map_set_polyfill_1.Map();
-        events.forEach(function (events, target) {
-            for (var type in events) {
+        events.forEach((events, target) => {
+            for (let type in events) {
                 target.handleEvent(events[type]);
             }
         });
-    };
-    EventEmitter.prototype.getEvents = function (type) {
-        var events;
+    }
+    constructor() {
+        this._events = new map_set_polyfill_1.Map();
+    }
+    getEvents(type) {
+        let events;
         if (type) {
             events = this._events.get(type);
             if (!events) {
@@ -48,15 +44,15 @@ var EventEmitter = /** @class */ (function () {
             return Array.isArray(events) ? events : [events];
         }
         events = Object.create(null);
-        this._events.forEach(function (typeEvents, type) {
+        this._events.forEach((typeEvents, type) => {
             events[type] = Array.isArray(typeEvents) ? typeEvents : [typeEvents];
         });
         return events;
-    };
-    EventEmitter.prototype.on = function (type, listener, context) {
+    }
+    on(type, listener, context) {
         if (typeof type == 'object') {
             context = listener !== undefined ? listener : this;
-            var listeners = type;
+            let listeners = type;
             for (type in listeners) {
                 this._on(type, listeners[type], context);
             }
@@ -65,12 +61,12 @@ var EventEmitter = /** @class */ (function () {
             this._on(type, listener, context !== undefined ? context : this);
         }
         return this;
-    };
-    EventEmitter.prototype.off = function (type, listener, context) {
+    }
+    off(type, listener, context) {
         if (type) {
             if (typeof type == 'object') {
                 context = listener !== undefined ? listener : this;
-                var listeners = type;
+                let listeners = type;
                 for (type in listeners) {
                     this._off(type, listeners[type], context);
                 }
@@ -83,18 +79,18 @@ var EventEmitter = /** @class */ (function () {
             this._events.clear();
         }
         return this;
-    };
-    EventEmitter.prototype._on = function (type, listener, context) {
-        var index = type.indexOf(':');
+    }
+    _on(type, listener, context) {
+        let index = type.indexOf(':');
         if (index != -1) {
-            var propName = type.slice(index + 1);
+            let propName = type.slice(index + 1);
             currentlySubscribing = true;
             (this[propName + 'Cell'] || (this[propName], this[propName + 'Cell'])).on(type.slice(0, index), listener, context);
             currentlySubscribing = false;
         }
         else {
-            var events = this._events.get(type);
-            var evt = { listener: listener, context: context };
+            let events = this._events.get(type);
+            let evt = { listener, context };
             if (!events) {
                 this._events.set(type, evt);
             }
@@ -105,19 +101,19 @@ var EventEmitter = /** @class */ (function () {
                 this._events.set(type, [events, evt]);
             }
         }
-    };
-    EventEmitter.prototype._off = function (type, listener, context) {
-        var index = type.indexOf(':');
+    }
+    _off(type, listener, context) {
+        let index = type.indexOf(':');
         if (index != -1) {
-            var propName = type.slice(index + 1);
+            let propName = type.slice(index + 1);
             (this[propName + 'Cell'] || (this[propName], this[propName + 'Cell'])).off(type.slice(0, index), listener, context);
         }
         else {
-            var events = this._events.get(type);
+            let events = this._events.get(type);
             if (!events) {
                 return;
             }
-            var evt = void 0;
+            let evt;
             if (!Array.isArray(events)) {
                 evt = events;
             }
@@ -125,7 +121,7 @@ var EventEmitter = /** @class */ (function () {
                 evt = events[0];
             }
             else {
-                for (var i = events.length; i;) {
+                for (let i = events.length; i;) {
                     evt = events[--i];
                     if (evt.listener == listener && evt.context === context) {
                         events.splice(i, 1);
@@ -138,8 +134,8 @@ var EventEmitter = /** @class */ (function () {
                 this._events.delete(type);
             }
         }
-    };
-    EventEmitter.prototype.once = function (type, listener, context) {
+    }
+    once(type, listener, context) {
         if (context === undefined) {
             context = this;
         }
@@ -149,8 +145,8 @@ var EventEmitter = /** @class */ (function () {
         }
         this._on(type, wrapper, context);
         return wrapper;
-    };
-    EventEmitter.prototype.emit = function (evt, data) {
+    }
+    emit(evt, data) {
         if (typeof evt == 'string') {
             evt = {
                 target: this,
@@ -167,7 +163,7 @@ var EventEmitter = /** @class */ (function () {
             evt.data = data;
         }
         if (transactionLevel) {
-            var events = transactionEvents.get(this);
+            let events = transactionEvents.get(this);
             if (!events) {
                 events = Object.create(null);
                 transactionEvents.set(this, events);
@@ -179,14 +175,14 @@ var EventEmitter = /** @class */ (function () {
             this.handleEvent(evt);
         }
         return evt;
-    };
-    EventEmitter.prototype.handleEvent = function (evt) {
-        var events = this._events.get(evt.type);
+    }
+    handleEvent(evt) {
+        let events = this._events.get(evt.type);
         if (!events) {
             return;
         }
         if (Array.isArray(events)) {
-            var eventCount = events.length;
+            let eventCount = events.length;
             if (eventCount == 1) {
                 if (this._tryEventListener(events[0], evt) === false) {
                     evt.propagationStopped = true;
@@ -194,7 +190,7 @@ var EventEmitter = /** @class */ (function () {
             }
             else {
                 events = events.slice();
-                for (var i = 0; i < eventCount; i++) {
+                for (let i = 0; i < eventCount; i++) {
                     if (this._tryEventListener(events[i], evt) === false) {
                         evt.propagationStopped = true;
                     }
@@ -204,15 +200,14 @@ var EventEmitter = /** @class */ (function () {
         else if (this._tryEventListener(events, evt) === false) {
             evt.propagationStopped = true;
         }
-    };
-    EventEmitter.prototype._tryEventListener = function (emEvt, evt) {
+    }
+    _tryEventListener(emEvt, evt) {
         try {
             return emEvt.listener.call(emEvt.context, evt);
         }
         catch (err) {
             logger_1.error(err);
         }
-    };
-    return EventEmitter;
-}());
+    }
+}
 exports.EventEmitter = EventEmitter;

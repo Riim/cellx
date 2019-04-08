@@ -1,64 +1,45 @@
 "use strict";
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    }
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
-var is_1 = require("@riim/is");
-var map_set_polyfill_1 = require("@riim/map-set-polyfill");
-var symbol_polyfill_1 = require("@riim/symbol-polyfill");
-var EventEmitter_1 = require("../EventEmitter");
-var ObservableMap = /** @class */ (function (_super) {
-    __extends(ObservableMap, _super);
-    function ObservableMap(entries) {
-        var _this = _super.call(this) || this;
-        _this._entries = new map_set_polyfill_1.Map();
+const is_1 = require("@riim/is");
+const map_set_polyfill_1 = require("@riim/map-set-polyfill");
+const symbol_polyfill_1 = require("@riim/symbol-polyfill");
+const EventEmitter_1 = require("../EventEmitter");
+class ObservableMap extends EventEmitter_1.EventEmitter {
+    constructor(entries) {
+        super();
+        this._entries = new map_set_polyfill_1.Map();
         if (entries) {
-            var mapEntries_1 = _this._entries;
+            let mapEntries = this._entries;
             if (entries instanceof map_set_polyfill_1.Map || entries instanceof ObservableMap) {
-                (entries instanceof map_set_polyfill_1.Map ? entries : entries._entries).forEach(function (value, key) {
-                    mapEntries_1.set(key, value);
+                (entries instanceof map_set_polyfill_1.Map ? entries : entries._entries).forEach((value, key) => {
+                    mapEntries.set(key, value);
                 });
             }
             else if (Array.isArray(entries)) {
-                for (var i = 0, l = entries.length; i < l; i++) {
-                    mapEntries_1.set(entries[i][0], entries[i][1]);
+                for (let i = 0, l = entries.length; i < l; i++) {
+                    mapEntries.set(entries[i][0], entries[i][1]);
                 }
             }
             else {
-                for (var key in entries) {
-                    mapEntries_1.set(key, entries[key]);
+                for (let key in entries) {
+                    mapEntries.set(key, entries[key]);
                 }
             }
         }
-        return _this;
     }
-    Object.defineProperty(ObservableMap.prototype, "size", {
-        get: function () {
-            return this._entries.size;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ObservableMap.prototype.has = function (key) {
+    get size() {
+        return this._entries.size;
+    }
+    has(key) {
         return this._entries.has(key);
-    };
-    ObservableMap.prototype.get = function (key) {
+    }
+    get(key) {
         return this._entries.get(key);
-    };
-    ObservableMap.prototype.set = function (key, value) {
-        var entries = this._entries;
-        var hasKey = entries.has(key);
-        var prev;
+    }
+    set(key, value) {
+        let entries = this._entries;
+        let hasKey = entries.has(key);
+        let prev;
         if (hasKey) {
             prev = entries.get(key);
             if (is_1.is(value, prev)) {
@@ -68,52 +49,52 @@ var ObservableMap = /** @class */ (function (_super) {
         entries.set(key, value);
         this.emit('change', {
             subtype: hasKey ? 'update' : 'add',
-            key: key,
+            key,
             prevValue: prev,
-            value: value
+            value
         });
         return this;
-    };
-    ObservableMap.prototype.delete = function (key) {
-        var entries = this._entries;
+    }
+    delete(key) {
+        let entries = this._entries;
         if (entries.has(key)) {
-            var value = entries.get(key);
+            let value = entries.get(key);
             entries.delete(key);
             this.emit('change', {
                 subtype: 'delete',
-                key: key,
-                value: value
+                key,
+                value
             });
             return true;
         }
         return false;
-    };
-    ObservableMap.prototype.clear = function () {
+    }
+    clear() {
         if (this._entries.size) {
             this._entries.clear();
             this.emit('change', { subtype: 'clear' });
         }
         return this;
-    };
-    ObservableMap.prototype.forEach = function (callback, context) {
+    }
+    forEach(callback, context) {
         this._entries.forEach(function (value, key) {
             callback.call(context, value, key, this);
         }, this);
-    };
-    ObservableMap.prototype.keys = function () {
+    }
+    keys() {
         return this._entries.keys();
-    };
-    ObservableMap.prototype.values = function () {
+    }
+    values() {
         return this._entries.values();
-    };
-    ObservableMap.prototype.entries = function () {
+    }
+    entries() {
         return this._entries.entries();
-    };
-    ObservableMap.prototype.clone = function (deep) {
-        var entries;
+    }
+    clone(deep) {
+        let entries;
         if (deep) {
             entries = [];
-            this._entries.forEach(function (value, key) {
+            this._entries.forEach((value, key) => {
                 entries.push([
                     key,
                     value && value.clone ? value.clone(true) : value
@@ -121,8 +102,7 @@ var ObservableMap = /** @class */ (function (_super) {
             });
         }
         return new this.constructor(entries || this);
-    };
-    return ObservableMap;
-}(EventEmitter_1.EventEmitter));
+    }
+}
 exports.ObservableMap = ObservableMap;
 ObservableMap.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableMap.prototype.entries;

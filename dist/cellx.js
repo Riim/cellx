@@ -1,10 +1,10 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-var map_set_polyfill_1 = require("@riim/map-set-polyfill");
-var symbol_polyfill_1 = require("@riim/symbol-polyfill");
-var Cell_1 = require("./Cell");
-var ObservableList_1 = require("./collections/ObservableList");
-var ObservableMap_1 = require("./collections/ObservableMap");
+const map_set_polyfill_1 = require("@riim/map-set-polyfill");
+const symbol_polyfill_1 = require("@riim/symbol-polyfill");
+const Cell_1 = require("./Cell");
+const ObservableList_1 = require("./collections/ObservableList");
+const ObservableMap_1 = require("./collections/ObservableMap");
 var EventEmitter_1 = require("./EventEmitter");
 exports.EventEmitter = EventEmitter_1.EventEmitter;
 var ObservableMap_2 = require("./collections/ObservableMap");
@@ -15,9 +15,9 @@ var Cell_2 = require("./Cell");
 exports.Cell = Cell_2.Cell;
 var WaitError_1 = require("./WaitError");
 exports.WaitError = WaitError_1.WaitError;
-var hasOwn = Object.prototype.hasOwnProperty;
-var slice = Array.prototype.slice;
-var global = Function('return this;')();
+const hasOwn = Object.prototype.hasOwnProperty;
+const slice = Array.prototype.slice;
+const global_ = Function('return this;')();
 function map(entries) {
     return new ObservableMap_1.ObservableMap(entries);
 }
@@ -31,23 +31,23 @@ function cellx(value, options) {
     if (!options) {
         options = {};
     }
-    var initialValue = value;
-    var cx = function (value) {
-        var context = this;
-        if (!context || context == global) {
+    let initialValue = value;
+    let cx = function (value) {
+        let context = this;
+        if (!context || context == global_) {
             context = cx;
         }
         if (!hasOwn.call(context, exports.KEY_CELL_MAP)) {
             context[exports.KEY_CELL_MAP] = new map_set_polyfill_1.Map();
         }
-        var cell = context[exports.KEY_CELL_MAP].get(cx);
+        let cell = context[exports.KEY_CELL_MAP].get(cx);
         if (!cell) {
             if (value === 'dispose' && arguments.length >= 2) {
                 return;
             }
             cell = new Cell_1.Cell(initialValue, {
                 __proto__: options,
-                context: context
+                context
             });
             context[exports.KEY_CELL_MAP].set(cx, cell);
         }
@@ -60,7 +60,7 @@ function cellx(value, options) {
                 return value;
             }
         }
-        var method = value;
+        let method = value;
         switch (method) {
             case 'cell': {
                 return cell;
@@ -71,18 +71,18 @@ function cellx(value, options) {
                 return cx;
             }
         }
-        var result = Cell_1.Cell.prototype[method].apply(cell, slice.call(arguments, 1));
+        let result = Cell_1.Cell.prototype[method].apply(cell, slice.call(arguments, 1));
         return result === cell ? cx : result;
     };
     cx.constructor = cellx;
     if (options.onChange || options.onError) {
-        cx.call(options.context || global);
+        cx.call(options.context || global_);
     }
     return cx;
 }
 exports.cellx = cellx;
 function defineObservableProperty(obj, name, value) {
-    var cellName = name + 'Cell';
+    let cellName = name + 'Cell';
     Object.defineProperty(obj, cellName, {
         configurable: true,
         enumerable: false,
@@ -92,10 +92,10 @@ function defineObservableProperty(obj, name, value) {
     Object.defineProperty(obj, name, {
         configurable: true,
         enumerable: true,
-        get: function () {
+        get() {
             return this[cellName].get();
         },
-        set: function (value) {
+        set(value) {
             this[cellName].set(value);
         }
     });
@@ -103,7 +103,7 @@ function defineObservableProperty(obj, name, value) {
 }
 exports.defineObservableProperty = defineObservableProperty;
 function defineObservableProperties(obj, props) {
-    Object.keys(props).forEach(function (name) {
+    Object.keys(props).forEach(name => {
         defineObservableProperty(obj, name, props[name]);
     });
     return obj;

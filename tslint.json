@@ -5,6 +5,7 @@
     "arrow-parens": false,
     "ban-types": false,
     "forin": false,
+    "function-constructor": false,
     "indent": false,
     "max-classes-per-file": false,
     "max-line-length": false,

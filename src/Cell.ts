@@ -299,7 +299,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 		this.context = (options && options.context) || this;
 
-		this._pull = typeof value == 'function' ? value : null;
+		this._pull = typeof value == 'function' ? (value as any) : null;
 		this._get = (options && options.get) || null;
 
 		this._validate = (options && options.validate) || null;
@@ -737,48 +737,49 @@ export class Cell<T = any, M = any> extends EventEmitter {
 				debugKey ? { debugKey: debugKey + '._selfErrorCell' } : undefined
 			);
 
-			errorCell = this._errorCell = new Cell<Error | null>(function(this: Cell) {
-				this.get();
+			errorCell = this._errorCell = new Cell<Error | null>(
+				function(this: Cell) {
+					this.get();
 
-				let err = this._selfErrorCell!.get();
-				let errorIndex: number;
+					let err = this._selfErrorCell!.get();
+					let errorIndex: number;
 
-				if (err) {
-					errorIndex = this._errorIndex;
+					if (err) {
+						errorIndex = this._errorIndex;
 
-					if (errorIndex == errorIndexCounter) {
-						return err;
-					}
-				}
-
-				let deps = this._dependencies;
-
-				if (deps) {
-					let i = deps.length;
-
-					do {
-						let dep = deps[--i];
-						let depError = dep.getError();
-
-						if (depError) {
-							let depErrorIndex = dep._errorIndex;
-
-							if (depErrorIndex == errorIndexCounter) {
-								return depError;
-							}
-
-							if (!err || errorIndex! < depErrorIndex) {
-								err = depError;
-								errorIndex = depErrorIndex;
-							}
+						if (errorIndex == errorIndexCounter) {
+							return err;
 						}
-					} while (i);
-				}
+					}
 
-				return err;
-			}, debugKey
-				? { debugKey: debugKey + '._errorCell', context: this }
-				: { context: this });
+					let deps = this._dependencies;
+
+					if (deps) {
+						let i = deps.length;
+
+						do {
+							let dep = deps[--i];
+							let depError = dep.getError();
+
+							if (depError) {
+								let depErrorIndex = dep._errorIndex;
+
+								if (depErrorIndex == errorIndexCounter) {
+									return depError;
+								}
+
+								if (!err || errorIndex! < depErrorIndex) {
+									err = depError;
+									errorIndex = depErrorIndex;
+								}
+							}
+						} while (i);
+					}
+
+					return err;
+				},
+				debugKey ? { debugKey: debugKey + '._errorCell', context: this } : { context: this }
+			);
 		}
 
 		return errorCell.get();
@@ -795,31 +796,34 @@ export class Cell<T = any, M = any> extends EventEmitter {
 				debugKey ? { debugKey: debugKey + '._selfPendingStatusCell' } : undefined
 			);
 
-			pendingStatusCell = this._pendingStatusCell = new Cell<boolean>(function(this: Cell) {
-				if (this._selfPendingStatusCell!.get()) {
-					return true;
-				}
+			pendingStatusCell = this._pendingStatusCell = new Cell<boolean>(
+				function(this: Cell) {
+					if (this._selfPendingStatusCell!.get()) {
+						return true;
+					}
 
-				try {
-					this.get();
-				} catch {}
+					try {
+						this.get();
+					} catch {}
 
-				let deps = this._dependencies;
+					let deps = this._dependencies;
 
-				if (deps) {
-					let i = deps.length;
+					if (deps) {
+						let i = deps.length;
 
-					do {
-						if (deps[--i].isPending()) {
-							return true;
-						}
-					} while (i);
-				}
+						do {
+							if (deps[--i].isPending()) {
+								return true;
+							}
+						} while (i);
+					}
 
-				return false;
-			}, debugKey
-				? { debugKey: debugKey + '._pendingStatusCell', context: this }
-				: { context: this });
+					return false;
+				},
+				debugKey
+					? { debugKey: debugKey + '._pendingStatusCell', context: this }
+					: { context: this }
+			);
 		}
 
 		return pendingStatusCell.get();

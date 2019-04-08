@@ -1,62 +1,43 @@
 "use strict";
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    }
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
-var is_1 = require("@riim/is");
-var symbol_polyfill_1 = require("@riim/symbol-polyfill");
-var EventEmitter_1 = require("../EventEmitter");
-var push = Array.prototype.push;
-var splice = Array.prototype.splice;
-var defaultComparator = function (a, b) {
+const is_1 = require("@riim/is");
+const symbol_polyfill_1 = require("@riim/symbol-polyfill");
+const EventEmitter_1 = require("../EventEmitter");
+const push = Array.prototype.push;
+const splice = Array.prototype.splice;
+const defaultComparator = (a, b) => {
     return a < b ? -1 : a > b ? 1 : 0;
 };
-var ObservableList = /** @class */ (function (_super) {
-    __extends(ObservableList, _super);
-    function ObservableList(items, options) {
-        var _this = _super.call(this) || this;
-        _this._items = [];
+class ObservableList extends EventEmitter_1.EventEmitter {
+    constructor(items, options) {
+        super();
+        this._items = [];
         if (options && (options.sorted || (options.comparator && options.sorted !== false))) {
-            _this._comparator = options.comparator || defaultComparator;
-            _this._sorted = true;
+            this._comparator = options.comparator || defaultComparator;
+            this._sorted = true;
         }
         else {
-            _this._comparator = null;
-            _this._sorted = false;
+            this._comparator = null;
+            this._sorted = false;
         }
         if (items) {
-            if (_this._sorted) {
+            if (this._sorted) {
                 if (items instanceof ObservableList) {
                     items = items._items;
                 }
-                for (var i = 0, l = items.length; i < l; i++) {
-                    _this._insertSortedValue(items[i]);
+                for (let i = 0, l = items.length; i < l; i++) {
+                    this._insertSortedValue(items[i]);
                 }
             }
             else {
-                push.apply(_this._items, items instanceof ObservableList ? items._items : items);
+                push.apply(this._items, items instanceof ObservableList ? items._items : items);
             }
         }
-        return _this;
     }
-    Object.defineProperty(ObservableList.prototype, "length", {
-        get: function () {
-            return this._items.length;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ObservableList.prototype._validateIndex = function (index, allowEndIndex) {
+    get length() {
+        return this._items.length;
+    }
+    _validateIndex(index, allowEndIndex) {
         if (index === undefined) {
             return index;
         }
@@ -70,20 +51,20 @@ var ObservableList = /** @class */ (function (_super) {
             throw new RangeError('Index out of valid range');
         }
         return index;
-    };
-    ObservableList.prototype.contains = function (value) {
+    }
+    contains(value) {
         return this._items.indexOf(value) != -1;
-    };
-    ObservableList.prototype.indexOf = function (value, fromIndex) {
+    }
+    indexOf(value, fromIndex) {
         return this._items.indexOf(value, this._validateIndex(fromIndex, true));
-    };
-    ObservableList.prototype.lastIndexOf = function (value, fromIndex) {
+    }
+    lastIndexOf(value, fromIndex) {
         return this._items.lastIndexOf(value, fromIndex === undefined ? -1 : this._validateIndex(fromIndex, true));
-    };
-    ObservableList.prototype.get = function (index) {
+    }
+    get(index) {
         return this._items[this._validateIndex(index, true)];
-    };
-    ObservableList.prototype.getRange = function (index, count) {
+    }
+    getRange(index, count) {
         index = this._validateIndex(index, true);
         if (count === undefined) {
             return this._items.slice(index);
@@ -92,8 +73,8 @@ var ObservableList = /** @class */ (function (_super) {
             throw new RangeError('Sum of "index" and "count" out of valid range');
         }
         return this._items.slice(index, index + count);
-    };
-    ObservableList.prototype.set = function (index, value) {
+    }
+    set(index, value) {
         if (this._sorted) {
             throw new TypeError('Cannot set to sorted list');
         }
@@ -103,8 +84,8 @@ var ObservableList = /** @class */ (function (_super) {
             this.emit('change');
         }
         return this;
-    };
-    ObservableList.prototype.setRange = function (index, values) {
+    }
+    setRange(index, values) {
         if (this._sorted) {
             throw new TypeError('Cannot set to sorted list');
         }
@@ -112,17 +93,17 @@ var ObservableList = /** @class */ (function (_super) {
         if (values instanceof ObservableList) {
             values = values._items;
         }
-        var valueCount = values.length;
+        let valueCount = values.length;
         if (!valueCount) {
             return this;
         }
         if (index + valueCount > this._items.length) {
             throw new RangeError('Sum of "index" and "values.length" out of valid range');
         }
-        var items = this._items;
-        var changed = false;
-        for (var i = index + valueCount; i > index;) {
-            var value = values[--i - index];
+        let items = this._items;
+        let changed = false;
+        for (let i = index + valueCount; i > index;) {
+            let value = values[--i - index];
             if (!is_1.is(value, items[i])) {
                 items[i] = value;
                 changed = true;
@@ -132,8 +113,8 @@ var ObservableList = /** @class */ (function (_super) {
             this.emit('change');
         }
         return this;
-    };
-    ObservableList.prototype.add = function (value, unique) {
+    }
+    add(value, unique) {
         if (unique && this._items.indexOf(value) != -1) {
             return this;
         }
@@ -145,18 +126,18 @@ var ObservableList = /** @class */ (function (_super) {
         }
         this.emit('change');
         return this;
-    };
-    ObservableList.prototype.addRange = function (values, unique) {
+    }
+    addRange(values, unique) {
         if (values instanceof ObservableList) {
             values = values._items;
         }
         if (values.length) {
             if (unique) {
-                var items = this._items;
-                var sorted = this._sorted;
-                var changed = false;
-                for (var i = 0, l = values.length; i < l; i++) {
-                    var value = values[i];
+                let items = this._items;
+                let sorted = this._sorted;
+                let changed = false;
+                for (let i = 0, l = values.length; i < l; i++) {
+                    let value = values[i];
                     if (items.indexOf(value) == -1) {
                         if (sorted) {
                             this._insertSortedValue(value);
@@ -173,7 +154,7 @@ var ObservableList = /** @class */ (function (_super) {
             }
             else {
                 if (this._sorted) {
-                    for (var i = 0, l = values.length; i < l; i++) {
+                    for (let i = 0, l = values.length; i < l; i++) {
                         this._insertSortedValue(values[i]);
                     }
                 }
@@ -184,16 +165,16 @@ var ObservableList = /** @class */ (function (_super) {
             }
         }
         return this;
-    };
-    ObservableList.prototype.insert = function (index, value) {
+    }
+    insert(index, value) {
         if (this._sorted) {
             throw new TypeError('Cannot insert to sorted list');
         }
         this._items.splice(this._validateIndex(index, true), 0, value);
         this.emit('change');
         return this;
-    };
-    ObservableList.prototype.insertRange = function (index, values) {
+    }
+    insertRange(index, values) {
         if (this._sorted) {
             throw new TypeError('Cannot insert to sorted list');
         }
@@ -206,20 +187,20 @@ var ObservableList = /** @class */ (function (_super) {
             this.emit('change');
         }
         return this;
-    };
-    ObservableList.prototype.remove = function (value, fromIndex) {
-        var index = this._items.indexOf(value, this._validateIndex(fromIndex, true));
+    }
+    remove(value, fromIndex) {
+        let index = this._items.indexOf(value, this._validateIndex(fromIndex, true));
         if (index == -1) {
             return false;
         }
         this._items.splice(index, 1);
         this.emit('change');
         return true;
-    };
-    ObservableList.prototype.removeAll = function (value, fromIndex) {
-        var index = this._validateIndex(fromIndex, true);
-        var items = this._items;
-        var changed = false;
+    }
+    removeAll(value, fromIndex) {
+        let index = this._validateIndex(fromIndex, true);
+        let items = this._items;
+        let changed = false;
         while ((index = items.indexOf(value, index)) != -1) {
             items.splice(index, 1);
             changed = true;
@@ -228,16 +209,16 @@ var ObservableList = /** @class */ (function (_super) {
             this.emit('change');
         }
         return changed;
-    };
-    ObservableList.prototype.removeEach = function (values, fromIndex) {
+    }
+    removeEach(values, fromIndex) {
         fromIndex = this._validateIndex(fromIndex, true);
         if (values instanceof ObservableList) {
             values = values._items.slice();
         }
-        var items = this._items;
-        var changed = false;
-        for (var i = 0, l = values.length; i < l; i++) {
-            var index = items.indexOf(values[i], fromIndex);
+        let items = this._items;
+        let changed = false;
+        for (let i = 0, l = values.length; i < l; i++) {
+            let index = items.indexOf(values[i], fromIndex);
             if (index != -1) {
                 items.splice(index, 1);
                 changed = true;
@@ -247,13 +228,13 @@ var ObservableList = /** @class */ (function (_super) {
             this.emit('change');
         }
         return changed;
-    };
-    ObservableList.prototype.removeAt = function (index) {
-        var value = this._items.splice(this._validateIndex(index), 1)[0];
+    }
+    removeAt(index) {
+        let value = this._items.splice(this._validateIndex(index), 1)[0];
         this.emit('change');
         return value;
-    };
-    ObservableList.prototype.removeRange = function (index, count) {
+    }
+    removeRange(index, count) {
         index = this._validateIndex(index, true);
         if (count === undefined) {
             count = this._items.length - index;
@@ -269,60 +250,60 @@ var ObservableList = /** @class */ (function (_super) {
                 throw new RangeError('Sum of "index" and "count" out of valid range');
             }
         }
-        var values = this._items.splice(index, count);
+        let values = this._items.splice(index, count);
         this.emit('change');
         return values;
-    };
-    ObservableList.prototype.clear = function () {
+    }
+    clear() {
         if (this._items.length) {
             this._items.length = 0;
             this.emit('change', { subtype: 'clear' });
         }
         return this;
-    };
-    ObservableList.prototype.join = function (separator) {
+    }
+    join(separator) {
         return this._items.join(separator);
-    };
-    ObservableList.prototype.find = function (callback, context) {
-        var items = this._items;
-        for (var i = 0, l = items.length; i < l; i++) {
-            var item = items[i];
+    }
+    find(callback, context) {
+        let items = this._items;
+        for (let i = 0, l = items.length; i < l; i++) {
+            let item = items[i];
             if (callback.call(context, item, i, this)) {
                 return item;
             }
         }
         return;
-    };
-    ObservableList.prototype.findIndex = function (callback, context) {
-        var items = this._items;
-        for (var i = 0, l = items.length; i < l; i++) {
+    }
+    findIndex(callback, context) {
+        let items = this._items;
+        for (let i = 0, l = items.length; i < l; i++) {
             if (callback.call(context, items[i], i, this)) {
                 return i;
             }
         }
         return -1;
-    };
-    ObservableList.prototype.clone = function (deep) {
+    }
+    clone(deep) {
         return new this.constructor(deep
-            ? this._items.map(function (item) { return (item && item.clone ? item.clone(true) : item); })
+            ? this._items.map(item => item && item.clone ? item.clone(true) : item)
             : this, {
             comparator: this._comparator || undefined,
             sorted: this._sorted
         });
-    };
-    ObservableList.prototype.toArray = function () {
+    }
+    toArray() {
         return this._items.slice();
-    };
-    ObservableList.prototype.toString = function () {
+    }
+    toString() {
         return this._items.join();
-    };
-    ObservableList.prototype._insertSortedValue = function (value) {
-        var items = this._items;
-        var comparator = this._comparator;
-        var low = 0;
-        var high = items.length;
+    }
+    _insertSortedValue(value) {
+        let items = this._items;
+        let comparator = this._comparator;
+        let low = 0;
+        let high = items.length;
         while (low != high) {
-            var mid = (low + high) >> 1;
+            let mid = (low + high) >> 1;
             if (comparator(value, items[mid]) < 0) {
                 high = mid;
             }
@@ -331,20 +312,19 @@ var ObservableList = /** @class */ (function (_super) {
             }
         }
         items.splice(low, 0, value);
-    };
-    return ObservableList;
-}(EventEmitter_1.EventEmitter));
+    }
+}
 exports.ObservableList = ObservableList;
-['forEach', 'map', 'filter', 'every', 'some'].forEach(function (name) {
+['forEach', 'map', 'filter', 'every', 'some'].forEach(name => {
     ObservableList.prototype[name] = function (callback, context) {
         return this._items[name](function (item, index) {
             return callback.call(context, item, index, this);
         }, this);
     };
 });
-['reduce', 'reduceRight'].forEach(function (name) {
+['reduce', 'reduceRight'].forEach(name => {
     ObservableList.prototype[name] = function (callback, initialValue) {
-        var list = this;
+        let list = this;
         function wrapper(accumulator, item, index) {
             return callback(accumulator, item, index, list);
         }
@@ -354,17 +334,17 @@ exports.ObservableList = ObservableList;
     };
 });
 [
-    ['keys', function (index) { return index; }],
-    ['values', function (index, item) { return item; }],
-    ['entries', function (index, item) { return [index, item]; }]
-].forEach(function (settings) {
-    var getStepValue = settings[1];
+    ['keys', (index) => index],
+    ['values', (index, item) => item],
+    ['entries', (index, item) => [index, item]]
+].forEach((settings) => {
+    let getStepValue = settings[1];
     ObservableList.prototype[settings[0]] = function () {
-        var items = this._items;
-        var index = 0;
-        var done = false;
+        let items = this._items;
+        let index = 0;
+        let done = false;
         return {
-            next: function () {
+            next() {
                 if (!done) {
                     if (index < items.length) {
                         return {

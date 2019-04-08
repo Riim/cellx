@@ -101,11 +101,11 @@ return /******/ (function(modules) { // webpackBootstrap
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var map_set_polyfill_1 = __webpack_require__(1);
-var symbol_polyfill_1 = __webpack_require__(2);
-var Cell_1 = __webpack_require__(3);
-var ObservableList_1 = __webpack_require__(9);
-var ObservableMap_1 = __webpack_require__(10);
+const map_set_polyfill_1 = __webpack_require__(1);
+const symbol_polyfill_1 = __webpack_require__(2);
+const Cell_1 = __webpack_require__(3);
+const ObservableList_1 = __webpack_require__(9);
+const ObservableMap_1 = __webpack_require__(10);
 var EventEmitter_1 = __webpack_require__(7);
 exports.EventEmitter = EventEmitter_1.EventEmitter;
 var ObservableMap_2 = __webpack_require__(10);
@@ -116,9 +116,9 @@ var Cell_2 = __webpack_require__(3);
 exports.Cell = Cell_2.Cell;
 var WaitError_1 = __webpack_require__(8);
 exports.WaitError = WaitError_1.WaitError;
-var hasOwn = Object.prototype.hasOwnProperty;
-var slice = Array.prototype.slice;
-var global = Function('return this;')();
+const hasOwn = Object.prototype.hasOwnProperty;
+const slice = Array.prototype.slice;
+const global_ = Function('return this;')();
 function map(entries) {
     return new ObservableMap_1.ObservableMap(entries);
 }
@@ -132,23 +132,23 @@ function cellx(value, options) {
     if (!options) {
         options = {};
     }
-    var initialValue = value;
-    var cx = function (value) {
-        var context = this;
-        if (!context || context == global) {
+    let initialValue = value;
+    let cx = function (value) {
+        let context = this;
+        if (!context || context == global_) {
             context = cx;
         }
         if (!hasOwn.call(context, exports.KEY_CELL_MAP)) {
             context[exports.KEY_CELL_MAP] = new map_set_polyfill_1.Map();
         }
-        var cell = context[exports.KEY_CELL_MAP].get(cx);
+        let cell = context[exports.KEY_CELL_MAP].get(cx);
         if (!cell) {
             if (value === 'dispose' && arguments.length >= 2) {
                 return;
             }
             cell = new Cell_1.Cell(initialValue, {
                 __proto__: options,
-                context: context
+                context
             });
             context[exports.KEY_CELL_MAP].set(cx, cell);
         }
@@ -161,7 +161,7 @@ function cellx(value, options) {
                 return value;
             }
         }
-        var method = value;
+        let method = value;
         switch (method) {
             case 'cell': {
                 return cell;
@@ -172,18 +172,18 @@ function cellx(value, options) {
                 return cx;
             }
         }
-        var result = Cell_1.Cell.prototype[method].apply(cell, slice.call(arguments, 1));
+        let result = Cell_1.Cell.prototype[method].apply(cell, slice.call(arguments, 1));
         return result === cell ? cx : result;
     };
     cx.constructor = cellx;
     if (options.onChange || options.onError) {
-        cx.call(options.context || global);
+        cx.call(options.context || global_);
     }
     return cx;
 }
 exports.cellx = cellx;
 function defineObservableProperty(obj, name, value) {
-    var cellName = name + 'Cell';
+    let cellName = name + 'Cell';
     Object.defineProperty(obj, cellName, {
         configurable: true,
         enumerable: false,
@@ -193,10 +193,10 @@ function defineObservableProperty(obj, name, value) {
     Object.defineProperty(obj, name, {
         configurable: true,
         enumerable: true,
-        get: function () {
+        get() {
             return this[cellName].get();
         },
-        set: function (value) {
+        set(value) {
             this[cellName].set(value);
         }
     });
@@ -204,7 +204,7 @@ function defineObservableProperty(obj, name, value) {
 }
 exports.defineObservableProperty = defineObservableProperty;
 function defineObservableProperties(obj, props) {
-    Object.keys(props).forEach(function (name) {
+    Object.keys(props).forEach(name => {
         defineObservableProperty(obj, name, props[name]);
     });
     return obj;
@@ -555,57 +555,44 @@ if (!Symbol) {
 
 "use strict";
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    }
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
-var is_1 = __webpack_require__(4);
-var logger_1 = __webpack_require__(5);
-var map_set_polyfill_1 = __webpack_require__(1);
-var next_tick_1 = __webpack_require__(6);
-var symbol_polyfill_1 = __webpack_require__(2);
-var EventEmitter_1 = __webpack_require__(7);
-var WaitError_1 = __webpack_require__(8);
-var MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
-var KEY_WRAPPERS = symbol_polyfill_1.Symbol('cellx[wrappers]');
-var releasePlan = new map_set_polyfill_1.Map();
-var releasePlanIndex = MAX_SAFE_INTEGER;
-var releasePlanToIndex = -1;
-var releasePlanned = false;
-var currentlyRelease = 0;
-var currentCell = null;
-var $error = { error: null };
-var pushingIndexCounter = 0;
-var errorIndexCounter = 0;
-var releaseVersion = 1;
-var afterRelease;
-var STATE_INITED = 1;
-var STATE_ACTIVE = 1 << 1;
-var STATE_HAS_FOLLOWERS = 1 << 2;
-var STATE_CURRENTLY_PULLING = 1 << 3;
-var STATE_PENDING = 1 << 4;
-var STATE_FULFILLED = 1 << 5;
-var STATE_REJECTED = 1 << 6;
-var STATE_CAN_CANCEL_CHANGE = 1 << 7;
+const is_1 = __webpack_require__(4);
+const logger_1 = __webpack_require__(5);
+const map_set_polyfill_1 = __webpack_require__(1);
+const next_tick_1 = __webpack_require__(6);
+const symbol_polyfill_1 = __webpack_require__(2);
+const EventEmitter_1 = __webpack_require__(7);
+const WaitError_1 = __webpack_require__(8);
+const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
+const KEY_WRAPPERS = symbol_polyfill_1.Symbol('cellx[wrappers]');
+const releasePlan = new map_set_polyfill_1.Map();
+let releasePlanIndex = MAX_SAFE_INTEGER;
+let releasePlanToIndex = -1;
+let releasePlanned = false;
+let currentlyRelease = 0;
+let currentCell = null;
+const $error = { error: null };
+let pushingIndexCounter = 0;
+let errorIndexCounter = 0;
+let releaseVersion = 1;
+let afterRelease;
+const STATE_INITED = 1;
+const STATE_ACTIVE = 1 << 1;
+const STATE_HAS_FOLLOWERS = 1 << 2;
+const STATE_CURRENTLY_PULLING = 1 << 3;
+const STATE_PENDING = 1 << 4;
+const STATE_FULFILLED = 1 << 5;
+const STATE_REJECTED = 1 << 6;
+const STATE_CAN_CANCEL_CHANGE = 1 << 7;
 function release(force) {
     if (!releasePlanned && !force) {
         return;
     }
     releasePlanned = false;
     currentlyRelease++;
-    var queue = releasePlan.get(releasePlanIndex);
+    let queue = releasePlan.get(releasePlanIndex);
     for (;;) {
-        var cell = queue && queue.shift();
+        let cell = queue && queue.shift();
         if (!cell) {
             if (releasePlanIndex == releasePlanToIndex) {
                 break;
@@ -613,9 +600,9 @@ function release(force) {
             queue = releasePlan.get(++releasePlanIndex);
             continue;
         }
-        var prevReleasePlanIndex = void 0;
-        var level = cell._level;
-        var changeEvent = cell._changeEvent;
+        let prevReleasePlanIndex;
+        let level = cell._level;
+        let changeEvent = cell._changeEvent;
         if (changeEvent) {
             prevReleasePlanIndex = releasePlanIndex;
         }
@@ -649,10 +636,10 @@ function release(force) {
         if (changeEvent) {
             cell._fixedValue = cell._value;
             cell._changeEvent = null;
-            var pushingIndex = cell._pushingIndex;
-            var reactions = cell._reactions;
-            for (var i = 0, l = reactions.length; i < l; i++) {
-                var reaction = reactions[i];
+            let pushingIndex = cell._pushingIndex;
+            let reactions = cell._reactions;
+            for (let i = 0, l = reactions.length; i < l; i++) {
+                let reaction = reactions[i];
                 if (reaction._level <= level) {
                     reaction._level = level + 1;
                 }
@@ -684,10 +671,10 @@ function release(force) {
         releasePlanToIndex = -1;
         releaseVersion++;
         if (afterRelease) {
-            var after = afterRelease;
+            let after = afterRelease;
             afterRelease = null;
-            for (var i = 0, l = after.length; i < l; i++) {
-                var callback = after[i];
+            for (let i = 0, l = after.length; i < l; i++) {
+                let callback = after[i];
                 if (typeof callback == 'function') {
                     callback();
                 }
@@ -701,119 +688,112 @@ function release(force) {
 function defaultPut(cell, value) {
     cell.push(value);
 }
-var Cell = /** @class */ (function (_super) {
-    __extends(Cell, _super);
-    function Cell(value, options) {
-        var _this = _super.call(this) || this;
-        _this._error = null;
-        _this._pushingIndex = 0;
-        _this._errorIndex = 0;
-        _this._version = 0;
-        _this._dependencies = undefined;
-        _this._reactions = [];
-        _this._level = 0;
-        _this._levelInRelease = -1;
-        _this._selfPendingStatusCell = null;
-        _this._pendingStatusCell = null;
-        _this._selfErrorCell = null;
-        _this._errorCell = null;
-        _this._state = STATE_CAN_CANCEL_CHANGE;
-        _this._prevChangeEvent = null;
-        _this._changeEvent = null;
-        _this._lastErrorEvent = null;
-        _this.debugKey = options && options.debugKey;
-        _this.context = (options && options.context) || _this;
-        _this._pull = typeof value == 'function' ? value : null;
-        _this._get = (options && options.get) || null;
-        _this._validate = (options && options.validate) || null;
-        _this._merge = (options && options.merge) || null;
-        _this._put = (options && options.put) || defaultPut;
-        _this._onFulfilled = _this._onRejected = null;
-        _this._reap = (options && options.reap) || null;
-        _this.meta = (options && options.meta) || null;
-        if (_this._pull) {
-            _this._fixedValue = _this._value = undefined;
+class Cell extends EventEmitter_1.EventEmitter {
+    constructor(value, options) {
+        super();
+        this._error = null;
+        this._pushingIndex = 0;
+        this._errorIndex = 0;
+        this._version = 0;
+        this._dependencies = undefined;
+        this._reactions = [];
+        this._level = 0;
+        this._levelInRelease = -1;
+        this._selfPendingStatusCell = null;
+        this._pendingStatusCell = null;
+        this._selfErrorCell = null;
+        this._errorCell = null;
+        this._state = STATE_CAN_CANCEL_CHANGE;
+        this._prevChangeEvent = null;
+        this._changeEvent = null;
+        this._lastErrorEvent = null;
+        this.debugKey = options && options.debugKey;
+        this.context = (options && options.context) || this;
+        this._pull = typeof value == 'function' ? value : null;
+        this._get = (options && options.get) || null;
+        this._validate = (options && options.validate) || null;
+        this._merge = (options && options.merge) || null;
+        this._put = (options && options.put) || defaultPut;
+        this._onFulfilled = this._onRejected = null;
+        this._reap = (options && options.reap) || null;
+        this.meta = (options && options.meta) || null;
+        if (this._pull) {
+            this._fixedValue = this._value = undefined;
         }
         else {
-            if (_this._validate) {
-                _this._validate(value, undefined);
+            if (this._validate) {
+                this._validate(value, undefined);
             }
-            if (_this._merge) {
-                value = _this._merge(value, undefined);
+            if (this._merge) {
+                value = this._merge(value, undefined);
             }
-            _this._fixedValue = _this._value = value;
+            this._fixedValue = this._value = value;
             if (value instanceof EventEmitter_1.EventEmitter) {
-                value.on('change', _this._onValueChange, _this);
+                value.on('change', this._onValueChange, this);
             }
         }
         if (options) {
             if (options.onChange) {
-                _this.on('change', options.onChange);
+                this.on('change', options.onChange);
             }
             if (options.onError) {
-                _this.on('error', options.onError);
+                this.on('error', options.onError);
             }
         }
-        return _this;
     }
-    Object.defineProperty(Cell, "currentlyPulling", {
-        get: function () {
-            return !!currentCell;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    Cell.autorun = function (callback, context) {
-        var disposer;
+    static get currentlyPulling() {
+        return !!currentCell;
+    }
+    static autorun(callback, context) {
+        let disposer;
         new Cell(function () {
-            var _this = this;
             if (!disposer) {
-                disposer = function () {
-                    _this.dispose();
+                disposer = () => {
+                    this.dispose();
                 };
             }
             callback.call(context, disposer);
         }, {
-            onChange: function () { }
+            onChange() { }
         });
         return disposer;
-    };
-    Cell.forceRelease = function () {
+    }
+    static forceRelease() {
         if (releasePlanned || currentlyRelease) {
             release(true);
         }
-    };
-    Cell.afterRelease = function (callback) {
+    }
+    static afterRelease(callback) {
         (afterRelease || (afterRelease = [])).push(callback);
-    };
-    Cell.prototype.on = function (type, listener, context) {
+    }
+    on(type, listener, context) {
         if (releasePlanned || currentlyRelease) {
             release(true);
         }
         this._activate();
         if (typeof type == 'object') {
-            _super.prototype.on.call(this, type, listener !== undefined ? listener : this.context);
+            super.on(type, listener !== undefined ? listener : this.context);
         }
         else {
-            _super.prototype.on.call(this, type, listener, context !== undefined ? context : this.context);
+            super.on(type, listener, context !== undefined ? context : this.context);
         }
         this._state |= STATE_HAS_FOLLOWERS;
         return this;
-    };
-    Cell.prototype.off = function (type, listener, context) {
+    }
+    off(type, listener, context) {
         if (releasePlanned || currentlyRelease) {
             release(true);
         }
         if (type) {
             if (typeof type == 'object') {
-                _super.prototype.off.call(this, type, listener !== undefined ? listener : this.context);
+                super.off(type, listener !== undefined ? listener : this.context);
             }
             else {
-                _super.prototype.off.call(this, type, listener, context !== undefined ? context : this.context);
+                super.off(type, listener, context !== undefined ? context : this.context);
             }
         }
         else {
-            _super.prototype.off.call(this);
+            super.off();
         }
         if (!this._reactions.length &&
             !this._events.has('change') &&
@@ -826,21 +806,21 @@ var Cell = /** @class */ (function (_super) {
             }
         }
         return this;
-    };
-    Cell.prototype.addChangeListener = function (listener, context) {
+    }
+    addChangeListener(listener, context) {
         return this.on('change', listener, context !== undefined ? context : this.context);
-    };
-    Cell.prototype.removeChangeListener = function (listener, context) {
+    }
+    removeChangeListener(listener, context) {
         return this.off('change', listener, context !== undefined ? context : this.context);
-    };
-    Cell.prototype.addErrorListener = function (listener, context) {
+    }
+    addErrorListener(listener, context) {
         return this.on('error', listener, context !== undefined ? context : this.context);
-    };
-    Cell.prototype.removeErrorListener = function (listener, context) {
+    }
+    removeErrorListener(listener, context) {
         return this.off('error', listener, context !== undefined ? context : this.context);
-    };
-    Cell.prototype.subscribe = function (listener, context) {
-        var wrappers = listener[KEY_WRAPPERS] || (listener[KEY_WRAPPERS] = new map_set_polyfill_1.Map());
+    }
+    subscribe(listener, context) {
+        let wrappers = listener[KEY_WRAPPERS] || (listener[KEY_WRAPPERS] = new map_set_polyfill_1.Map());
         if (wrappers.has(this)) {
             return this;
         }
@@ -852,10 +832,10 @@ var Cell = /** @class */ (function (_super) {
             context = this.context;
         }
         return this.on('change', wrapper, context).on('error', wrapper, context);
-    };
-    Cell.prototype.unsubscribe = function (listener, context) {
-        var wrappers = listener[KEY_WRAPPERS];
-        var wrapper = wrappers && wrappers.get(this);
+    }
+    unsubscribe(listener, context) {
+        let wrappers = listener[KEY_WRAPPERS];
+        let wrapper = wrappers && wrappers.get(this);
         if (!wrapper) {
             return this;
         }
@@ -864,13 +844,13 @@ var Cell = /** @class */ (function (_super) {
             context = this.context;
         }
         return this.off('change', wrapper, context).off('error', wrapper, context);
-    };
-    Cell.prototype._addReaction = function (reaction) {
+    }
+    _addReaction(reaction) {
         this._activate();
         this._reactions.push(reaction);
         this._state |= STATE_HAS_FOLLOWERS;
-    };
-    Cell.prototype._deleteReaction = function (reaction) {
+    }
+    _deleteReaction(reaction) {
         this._reactions.splice(this._reactions.indexOf(reaction), 1);
         if (!this._reactions.length && !this._events.has('change') && !this._events.has('error')) {
             this._state ^= STATE_HAS_FOLLOWERS;
@@ -879,17 +859,17 @@ var Cell = /** @class */ (function (_super) {
                 this._reap.call(this.context);
             }
         }
-    };
-    Cell.prototype._activate = function () {
+    }
+    _activate() {
         if (!this._pull || this._state & STATE_ACTIVE) {
             return;
         }
-        var deps = this._dependencies;
+        let deps = this._dependencies;
         if (deps === null) {
             return;
         }
         if (this._version < releaseVersion) {
-            var value = this._pull$();
+            let value = this._pull$();
             if (deps || this._dependencies || !(this._state & STATE_INITED)) {
                 if (value === $error) {
                     this._fail($error.error, false, false);
@@ -901,19 +881,19 @@ var Cell = /** @class */ (function (_super) {
             deps = this._dependencies;
         }
         if (deps) {
-            var i = deps.length;
+            let i = deps.length;
             do {
                 deps[--i]._addReaction(this);
             } while (i);
             this._state |= STATE_ACTIVE;
         }
-    };
-    Cell.prototype._deactivate = function () {
+    }
+    _deactivate() {
         if (!(this._state & STATE_ACTIVE)) {
             return;
         }
-        var deps = this._dependencies;
-        var i = deps.length;
+        let deps = this._dependencies;
+        let i = deps.length;
         do {
             deps[--i]._deleteReaction(this);
         } while (i);
@@ -922,11 +902,11 @@ var Cell = /** @class */ (function (_super) {
             this._changeEvent = null;
         }
         this._state ^= STATE_ACTIVE;
-    };
-    Cell.prototype._onValueChange = function (evt) {
+    }
+    _onValueChange(evt) {
         this._pushingIndex = ++pushingIndexCounter;
         if (this._state & STATE_HAS_FOLLOWERS) {
-            var changeEvent = ((evt.data || (evt.data = {})).prevEvent = this._changeEvent);
+            let changeEvent = ((evt.data || (evt.data = {})).prevEvent = this._changeEvent);
             this._changeEvent = evt;
             if (changeEvent) {
                 if (this._value === this._fixedValue) {
@@ -941,8 +921,8 @@ var Cell = /** @class */ (function (_super) {
         else {
             this._version = ++releaseVersion + +(currentlyRelease != 0);
         }
-    };
-    Cell.prototype.get = function () {
+    }
+    get() {
         if (this._pull) {
             if (this._state & STATE_ACTIVE) {
                 if (releasePlanned || (currentlyRelease && !currentCell)) {
@@ -951,13 +931,13 @@ var Cell = /** @class */ (function (_super) {
             }
             else if (this._version <
                 releaseVersion + +releasePlanned + +(currentlyRelease != 0)) {
-                var prevDeps = this._dependencies;
+                let prevDeps = this._dependencies;
                 if (prevDeps !== null) {
-                    var value = this._pull$();
-                    var deps = this._dependencies;
+                    let value = this._pull$();
+                    let deps = this._dependencies;
                     if (prevDeps || deps || !(this._state & STATE_INITED)) {
                         if (deps && this._state & STATE_HAS_FOLLOWERS) {
-                            var i = deps.length;
+                            let i = deps.length;
                             do {
                                 deps[--i]._addReaction(this);
                             } while (i);
@@ -974,8 +954,8 @@ var Cell = /** @class */ (function (_super) {
             }
         }
         if (currentCell) {
-            var currentCellDeps = currentCell._dependencies;
-            var level = this._level;
+            let currentCellDeps = currentCell._dependencies;
+            let level = this._level;
             if (currentCellDeps) {
                 if (currentCellDeps.indexOf(this) == -1) {
                     currentCellDeps.push(this);
@@ -993,27 +973,27 @@ var Cell = /** @class */ (function (_super) {
             throw this._error;
         }
         return this._get ? this._get(this._value) : this._value;
-    };
-    Cell.prototype.pull = function () {
+    }
+    pull() {
         if (!this._pull) {
             return false;
         }
         if (releasePlanned) {
             release();
         }
-        var prevDeps;
-        var prevLevel;
-        var value;
+        let prevDeps;
+        let prevLevel;
+        let value;
         if (this._state & STATE_HAS_FOLLOWERS) {
             prevDeps = this._dependencies;
             prevLevel = this._level;
             value = this._pull$();
-            var deps = this._dependencies;
-            var newDepCount = 0;
+            let deps = this._dependencies;
+            let newDepCount = 0;
             if (deps) {
-                var i = deps.length;
+                let i = deps.length;
                 do {
-                    var dep = deps[--i];
+                    let dep = deps[--i];
                     if (!prevDeps || prevDeps.indexOf(dep) == -1) {
                         dep._addReaction(this);
                         newDepCount++;
@@ -1021,8 +1001,8 @@ var Cell = /** @class */ (function (_super) {
                 } while (i);
             }
             if (prevDeps && (deps ? deps.length - newDepCount : 0) < prevDeps.length) {
-                for (var i = prevDeps.length; i;) {
-                    var prevDep = prevDeps[--i];
+                for (let i = prevDeps.length; i;) {
+                    let prevDep = prevDeps[--i];
                     if (!deps || deps.indexOf(prevDep) == -1) {
                         prevDep._deleteReaction(this);
                     }
@@ -1047,12 +1027,12 @@ var Cell = /** @class */ (function (_super) {
             return true;
         }
         return this._push(value, false, true);
-    };
-    Cell.prototype._pull$ = function () {
+    }
+    _pull$() {
         if (this._state & STATE_CURRENTLY_PULLING) {
             throw new TypeError('Circular pulling detected');
         }
-        var pull = this._pull;
+        let pull = this._pull;
         if (pull.length) {
             if (this._selfPendingStatusCell) {
                 this._selfPendingStatusCell.set(true);
@@ -1060,7 +1040,7 @@ var Cell = /** @class */ (function (_super) {
             this._state |= STATE_PENDING;
             this._state &= ~(STATE_FULFILLED | STATE_REJECTED);
         }
-        var prevCell = currentCell;
+        let prevCell = currentCell;
         currentCell = this;
         this._dependencies = null;
         this._level = 0;
@@ -1077,40 +1057,40 @@ var Cell = /** @class */ (function (_super) {
         finally {
             currentCell = prevCell;
             this._version = releaseVersion + +(currentlyRelease != 0);
-            var pendingStatusCell = this._pendingStatusCell;
+            let pendingStatusCell = this._pendingStatusCell;
             if (pendingStatusCell && pendingStatusCell._state & STATE_ACTIVE) {
                 pendingStatusCell.pull();
             }
-            var errorCell = this._errorCell;
+            let errorCell = this._errorCell;
             if (errorCell && errorCell._state & STATE_ACTIVE) {
                 errorCell.pull();
             }
             this._state ^= STATE_CURRENTLY_PULLING;
         }
-    };
-    Cell.prototype.getError = function () {
-        var errorCell = this._errorCell;
+    }
+    getError() {
+        let errorCell = this._errorCell;
         if (!errorCell) {
-            var debugKey = this.debugKey;
+            let debugKey = this.debugKey;
             this._selfErrorCell = new Cell(this._error, debugKey ? { debugKey: debugKey + '._selfErrorCell' } : undefined);
             errorCell = this._errorCell = new Cell(function () {
                 this.get();
-                var err = this._selfErrorCell.get();
-                var errorIndex;
+                let err = this._selfErrorCell.get();
+                let errorIndex;
                 if (err) {
                     errorIndex = this._errorIndex;
                     if (errorIndex == errorIndexCounter) {
                         return err;
                     }
                 }
-                var deps = this._dependencies;
+                let deps = this._dependencies;
                 if (deps) {
-                    var i = deps.length;
+                    let i = deps.length;
                     do {
-                        var dep = deps[--i];
-                        var depError = dep.getError();
+                        let dep = deps[--i];
+                        let depError = dep.getError();
                         if (depError) {
-                            var depErrorIndex = dep._errorIndex;
+                            let depErrorIndex = dep._errorIndex;
                             if (depErrorIndex == errorIndexCounter) {
                                 return depError;
                             }
@@ -1122,16 +1102,14 @@ var Cell = /** @class */ (function (_super) {
                     } while (i);
                 }
                 return err;
-            }, debugKey
-                ? { debugKey: debugKey + '._errorCell', context: this }
-                : { context: this });
+            }, debugKey ? { debugKey: debugKey + '._errorCell', context: this } : { context: this });
         }
         return errorCell.get();
-    };
-    Cell.prototype.isPending = function () {
-        var pendingStatusCell = this._pendingStatusCell;
+    }
+    isPending() {
+        let pendingStatusCell = this._pendingStatusCell;
         if (!pendingStatusCell) {
-            var debugKey = this.debugKey;
+            let debugKey = this.debugKey;
             this._selfPendingStatusCell = new Cell(!!(this._state & STATE_PENDING), debugKey ? { debugKey: debugKey + '._selfPendingStatusCell' } : undefined);
             pendingStatusCell = this._pendingStatusCell = new Cell(function () {
                 if (this._selfPendingStatusCell.get()) {
@@ -1141,9 +1119,9 @@ var Cell = /** @class */ (function (_super) {
                     this.get();
                 }
                 catch (_a) { }
-                var deps = this._dependencies;
+                let deps = this._dependencies;
                 if (deps) {
-                    var i = deps.length;
+                    let i = deps.length;
                     do {
                         if (deps[--i].isPending()) {
                             return true;
@@ -1156,8 +1134,8 @@ var Cell = /** @class */ (function (_super) {
                 : { context: this });
         }
         return pendingStatusCell.get();
-    };
-    Cell.prototype.set = function (value) {
+    }
+    set(value) {
         if (this._validate) {
             this._validate(value, this._value);
         }
@@ -1176,12 +1154,12 @@ var Cell = /** @class */ (function (_super) {
             this._put.call(this.context, this, value);
         }
         return this;
-    };
-    Cell.prototype.push = function (value) {
+    }
+    push(value) {
         this._push(value, true, false);
         return this;
-    };
-    Cell.prototype._push = function (value, public$, pulling) {
+    }
+    _push(value, public$, pulling) {
         if (public$ || (!currentlyRelease && pulling)) {
             this._pushingIndex = ++pushingIndexCounter;
         }
@@ -1189,7 +1167,7 @@ var Cell = /** @class */ (function (_super) {
         if (this._error) {
             this._setError(null, false);
         }
-        var prevValue = this._value;
+        let prevValue = this._value;
         if (is_1.is(value, prevValue)) {
             if (public$ || (currentlyRelease && pulling)) {
                 this._fulfill(value);
@@ -1204,7 +1182,7 @@ var Cell = /** @class */ (function (_super) {
             value.on('change', this._onValueChange, this);
         }
         if (this._state & STATE_HAS_FOLLOWERS) {
-            var changeEvent = this._changeEvent || this._prevChangeEvent;
+            let changeEvent = this._changeEvent || this._prevChangeEvent;
             if (changeEvent) {
                 if (is_1.is(value, this._fixedValue) && this._state & STATE_CAN_CANCEL_CHANGE) {
                     this._levelInRelease = -1;
@@ -1216,8 +1194,8 @@ var Cell = /** @class */ (function (_super) {
                         type: 'change',
                         data: {
                             prevEvent: changeEvent,
-                            prevValue: prevValue,
-                            value: value
+                            prevValue,
+                            value
                         }
                     };
                 }
@@ -1230,8 +1208,8 @@ var Cell = /** @class */ (function (_super) {
                     type: 'change',
                     data: {
                         prevEvent: null,
-                        prevValue: prevValue,
-                        value: value
+                        prevValue,
+                        value
                     }
                 };
                 this._addToRelease();
@@ -1248,8 +1226,8 @@ var Cell = /** @class */ (function (_super) {
             this._fulfill(value);
         }
         return true;
-    };
-    Cell.prototype._fulfill = function (value) {
+    }
+    _fulfill(value) {
         this._resolvePending();
         if (!(this._state & STATE_FULFILLED)) {
             this._state |= STATE_FULFILLED;
@@ -1257,12 +1235,12 @@ var Cell = /** @class */ (function (_super) {
                 this._onFulfilled(value);
             }
         }
-    };
-    Cell.prototype.fail = function (err) {
+    }
+    fail(err) {
         this._fail(err, true, false);
         return this;
-    };
-    Cell.prototype._fail = function (err, public$, pulling) {
+    }
+    _fail(err, public$, pulling) {
         if (!(err instanceof WaitError_1.WaitError)) {
             if (this.debugKey) {
                 logger_1.error('[' + this.debugKey + ']', err);
@@ -1275,8 +1253,8 @@ var Cell = /** @class */ (function (_super) {
             }
         }
         this._setError(err, public$ || (currentlyRelease != 0 && pulling));
-    };
-    Cell.prototype._setError = function (err, reject) {
+    }
+    _setError(err, reject) {
         this._error = err;
         if (this._selfErrorCell) {
             this._selfErrorCell.set(err);
@@ -1291,8 +1269,8 @@ var Cell = /** @class */ (function (_super) {
                 }
             }, reject ? err : null);
         }
-    };
-    Cell.prototype._handleErrorEvent = function (evt, err) {
+    }
+    _handleErrorEvent(evt, err) {
         if (this._lastErrorEvent === evt) {
             return;
         }
@@ -1301,12 +1279,12 @@ var Cell = /** @class */ (function (_super) {
         if (err) {
             this._reject(err);
         }
-        var reactions = this._reactions;
-        for (var i = reactions.length; i;) {
+        let reactions = this._reactions;
+        for (let i = reactions.length; i;) {
             reactions[--i]._handleErrorEvent(evt, err);
         }
-    };
-    Cell.prototype._reject = function (err) {
+    }
+    _reject(err) {
         this._resolvePending();
         if (!(err instanceof WaitError_1.WaitError) && !(this._state & STATE_REJECTED)) {
             this._state |= STATE_REJECTED;
@@ -1314,16 +1292,16 @@ var Cell = /** @class */ (function (_super) {
                 this._onRejected(err);
             }
         }
-    };
-    Cell.prototype.wait = function () {
+    }
+    wait() {
         throw new WaitError_1.WaitError();
-    };
-    Cell.prototype._addToRelease = function () {
-        var level = this._level;
+    }
+    _addToRelease() {
+        let level = this._level;
         if (level <= this._levelInRelease) {
             return;
         }
-        var queue;
+        let queue;
         (releasePlan.get(level) || (releasePlan.set(level, (queue = [])), queue)).push(this);
         if (releasePlanIndex > level) {
             releasePlanIndex = level;
@@ -1336,18 +1314,17 @@ var Cell = /** @class */ (function (_super) {
             releasePlanned = true;
             next_tick_1.nextTick(release);
         }
-    };
-    Cell.prototype._resolvePending = function () {
+    }
+    _resolvePending() {
         if (this._state & STATE_PENDING) {
             if (this._selfPendingStatusCell) {
                 this._selfPendingStatusCell.set(false);
             }
             this._state ^= STATE_PENDING;
         }
-    };
-    Cell.prototype.then = function (onFulfilled, onRejected) {
-        var _this = this;
-        var listener = function () { };
+    }
+    then(onFulfilled, onRejected) {
+        let listener = () => { };
         this.on('change', listener);
         if (!this._pull || this._state & STATE_FULFILLED) {
             this.off('change', listener);
@@ -1357,37 +1334,36 @@ var Cell = /** @class */ (function (_super) {
             this.off('change', listener);
             return Promise.reject(this._error).catch(onRejected);
         }
-        var cell = this;
-        var promise = new Promise(function (resolve, reject) {
-            cell._onFulfilled = function (value) {
+        let cell = this;
+        let promise = new Promise((resolve, reject) => {
+            cell._onFulfilled = value => {
                 cell._onFulfilled = cell._onRejected = null;
-                _this.off('change', listener);
+                this.off('change', listener);
                 resolve(cell._get ? cell._get(value) : value);
             };
-            cell._onRejected = function (err) {
+            cell._onRejected = err => {
                 cell._onFulfilled = cell._onRejected = null;
-                _this.off('change', listener);
+                this.off('change', listener);
                 reject(err);
             };
         }).then(onFulfilled, onRejected);
         return promise;
-    };
-    Cell.prototype.catch = function (onRejected) {
+    }
+    catch(onRejected) {
         return this.then(null, onRejected);
-    };
-    Cell.prototype.reap = function () {
+    }
+    reap() {
         this.off();
-        var reactions = this._reactions;
-        for (var i = reactions.length; i;) {
+        let reactions = this._reactions;
+        for (let i = reactions.length; i;) {
             reactions[--i].reap();
         }
         return this;
-    };
-    Cell.prototype.dispose = function () {
+    }
+    dispose() {
         return this.reap();
-    };
-    return Cell;
-}(EventEmitter_1.EventEmitter));
+    }
+}
 exports.Cell = Cell;
 
 
@@ -1457,33 +1433,34 @@ exports.error = exports.logger.error.bind(exports.logger);
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var logger_1 = __webpack_require__(5);
-var global = Function('return this;')();
-var nextTick;
-exports.nextTick = nextTick;
-if (global.process && global.process.toString() == '[object process]' && global.process.nextTick) {
-    exports.nextTick = nextTick = global.process.nextTick;
-}
-else if (global.setImmediate) {
-    exports.nextTick = nextTick = function (callback) {
-        setImmediate(callback);
-    };
-}
-else if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
-    var prm_1 = Promise.resolve();
-    exports.nextTick = nextTick = function (callback) {
-        prm_1.then(function () {
-            callback();
-        });
-    };
-}
-else {
-    var queue_1;
-    global.addEventListener('message', function () {
-        if (queue_1) {
-            var track = queue_1;
-            queue_1 = null;
-            for (var i = 0, l = track.length; i < l; i++) {
+const logger_1 = __webpack_require__(5);
+exports.nextTick = (() => {
+    const global = Function('return this;')();
+    if (global.process &&
+        global.process.toString() == '[object process]' &&
+        global.process.nextTick) {
+        return global.process.nextTick;
+    }
+    if (global.setImmediate && global.setImmediate.toString().indexOf('[native code]') != -1) {
+        const setImmediate = global.setImmediate;
+        return (cb) => {
+            setImmediate(cb);
+        };
+    }
+    if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
+        const prm = Promise.resolve();
+        return (cb) => {
+            prm.then(() => {
+                cb();
+            });
+        };
+    }
+    let queue;
+    global.addEventListener('message', () => {
+        if (queue) {
+            let track = queue;
+            queue = null;
+            for (let i = 0, l = track.length; i < l; i++) {
                 try {
                     track[i]();
                 }
@@ -1493,16 +1470,16 @@ else {
             }
         }
     });
-    exports.nextTick = nextTick = function (callback) {
-        if (queue_1) {
-            queue_1.push(callback);
+    return (cb) => {
+        if (queue) {
+            queue.push(cb);
         }
         else {
-            queue_1 = [callback];
+            queue = [cb];
             postMessage('__tic__', '*');
         }
     };
-}
+})();
 
 
 /***/ }),
@@ -1512,26 +1489,19 @@ else {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-var logger_1 = __webpack_require__(5);
-var map_set_polyfill_1 = __webpack_require__(1);
-var currentlySubscribing = false;
-var transactionLevel = 0;
-var transactionEvents = new map_set_polyfill_1.Map();
-var EventEmitter = /** @class */ (function () {
-    function EventEmitter() {
-        this._events = new map_set_polyfill_1.Map();
+const logger_1 = __webpack_require__(5);
+const map_set_polyfill_1 = __webpack_require__(1);
+let currentlySubscribing = false;
+let transactionLevel = 0;
+let transactionEvents = new map_set_polyfill_1.Map();
+class EventEmitter {
+    static get currentlySubscribing() {
+        return currentlySubscribing;
     }
-    Object.defineProperty(EventEmitter, "currentlySubscribing", {
-        get: function () {
-            return currentlySubscribing;
-        },
-        set: function (value) {
-            currentlySubscribing = value;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    EventEmitter.transact = function (callback) {
+    static set currentlySubscribing(value) {
+        currentlySubscribing = value;
+    }
+    static transact(callback) {
         transactionLevel++;
         try {
             callback();
@@ -1542,16 +1512,19 @@ var EventEmitter = /** @class */ (function () {
         if (--transactionLevel) {
             return;
         }
-        var events = transactionEvents;
+        let events = transactionEvents;
         transactionEvents = new map_set_polyfill_1.Map();
-        events.forEach(function (events, target) {
-            for (var type in events) {
+        events.forEach((events, target) => {
+            for (let type in events) {
                 target.handleEvent(events[type]);
             }
         });
-    };
-    EventEmitter.prototype.getEvents = function (type) {
-        var events;
+    }
+    constructor() {
+        this._events = new map_set_polyfill_1.Map();
+    }
+    getEvents(type) {
+        let events;
         if (type) {
             events = this._events.get(type);
             if (!events) {
@@ -1560,15 +1533,15 @@ var EventEmitter = /** @class */ (function () {
             return Array.isArray(events) ? events : [events];
         }
         events = Object.create(null);
-        this._events.forEach(function (typeEvents, type) {
+        this._events.forEach((typeEvents, type) => {
             events[type] = Array.isArray(typeEvents) ? typeEvents : [typeEvents];
         });
         return events;
-    };
-    EventEmitter.prototype.on = function (type, listener, context) {
+    }
+    on(type, listener, context) {
         if (typeof type == 'object') {
             context = listener !== undefined ? listener : this;
-            var listeners = type;
+            let listeners = type;
             for (type in listeners) {
                 this._on(type, listeners[type], context);
             }
@@ -1577,12 +1550,12 @@ var EventEmitter = /** @class */ (function () {
             this._on(type, listener, context !== undefined ? context : this);
         }
         return this;
-    };
-    EventEmitter.prototype.off = function (type, listener, context) {
+    }
+    off(type, listener, context) {
         if (type) {
             if (typeof type == 'object') {
                 context = listener !== undefined ? listener : this;
-                var listeners = type;
+                let listeners = type;
                 for (type in listeners) {
                     this._off(type, listeners[type], context);
                 }
@@ -1595,18 +1568,18 @@ var EventEmitter = /** @class */ (function () {
             this._events.clear();
         }
         return this;
-    };
-    EventEmitter.prototype._on = function (type, listener, context) {
-        var index = type.indexOf(':');
+    }
+    _on(type, listener, context) {
+        let index = type.indexOf(':');
         if (index != -1) {
-            var propName = type.slice(index + 1);
+            let propName = type.slice(index + 1);
             currentlySubscribing = true;
             (this[propName + 'Cell'] || (this[propName], this[propName + 'Cell'])).on(type.slice(0, index), listener, context);
             currentlySubscribing = false;
         }
         else {
-            var events = this._events.get(type);
-            var evt = { listener: listener, context: context };
+            let events = this._events.get(type);
+            let evt = { listener, context };
             if (!events) {
                 this._events.set(type, evt);
             }
@@ -1617,19 +1590,19 @@ var EventEmitter = /** @class */ (function () {
                 this._events.set(type, [events, evt]);
             }
         }
-    };
-    EventEmitter.prototype._off = function (type, listener, context) {
-        var index = type.indexOf(':');
+    }
+    _off(type, listener, context) {
+        let index = type.indexOf(':');
         if (index != -1) {
-            var propName = type.slice(index + 1);
+            let propName = type.slice(index + 1);
             (this[propName + 'Cell'] || (this[propName], this[propName + 'Cell'])).off(type.slice(0, index), listener, context);
         }
         else {
-            var events = this._events.get(type);
+            let events = this._events.get(type);
             if (!events) {
                 return;
             }
-            var evt = void 0;
+            let evt;
             if (!Array.isArray(events)) {
                 evt = events;
             }
@@ -1637,7 +1610,7 @@ var EventEmitter = /** @class */ (function () {
                 evt = events[0];
             }
             else {
-                for (var i = events.length; i;) {
+                for (let i = events.length; i;) {
                     evt = events[--i];
                     if (evt.listener == listener && evt.context === context) {
                         events.splice(i, 1);
@@ -1650,8 +1623,8 @@ var EventEmitter = /** @class */ (function () {
                 this._events.delete(type);
             }
         }
-    };
-    EventEmitter.prototype.once = function (type, listener, context) {
+    }
+    once(type, listener, context) {
         if (context === undefined) {
             context = this;
         }
@@ -1661,8 +1634,8 @@ var EventEmitter = /** @class */ (function () {
         }
         this._on(type, wrapper, context);
         return wrapper;
-    };
-    EventEmitter.prototype.emit = function (evt, data) {
+    }
+    emit(evt, data) {
         if (typeof evt == 'string') {
             evt = {
                 target: this,
@@ -1679,7 +1652,7 @@ var EventEmitter = /** @class */ (function () {
             evt.data = data;
         }
         if (transactionLevel) {
-            var events = transactionEvents.get(this);
+            let events = transactionEvents.get(this);
             if (!events) {
                 events = Object.create(null);
                 transactionEvents.set(this, events);
@@ -1691,14 +1664,14 @@ var EventEmitter = /** @class */ (function () {
             this.handleEvent(evt);
         }
         return evt;
-    };
-    EventEmitter.prototype.handleEvent = function (evt) {
-        var events = this._events.get(evt.type);
+    }
+    handleEvent(evt) {
+        let events = this._events.get(evt.type);
         if (!events) {
             return;
         }
         if (Array.isArray(events)) {
-            var eventCount = events.length;
+            let eventCount = events.length;
             if (eventCount == 1) {
                 if (this._tryEventListener(events[0], evt) === false) {
                     evt.propagationStopped = true;
@@ -1706,7 +1679,7 @@ var EventEmitter = /** @class */ (function () {
             }
             else {
                 events = events.slice();
-                for (var i = 0; i < eventCount; i++) {
+                for (let i = 0; i < eventCount; i++) {
                     if (this._tryEventListener(events[i], evt) === false) {
                         evt.propagationStopped = true;
                     }
@@ -1716,17 +1689,16 @@ var EventEmitter = /** @class */ (function () {
         else if (this._tryEventListener(events, evt) === false) {
             evt.propagationStopped = true;
         }
-    };
-    EventEmitter.prototype._tryEventListener = function (emEvt, evt) {
+    }
+    _tryEventListener(emEvt, evt) {
         try {
             return emEvt.listener.call(emEvt.context, evt);
         }
         catch (err) {
             logger_1.error(err);
         }
-    };
-    return EventEmitter;
-}());
+    }
+}
 exports.EventEmitter = EventEmitter;
 
 
@@ -1751,64 +1723,45 @@ WaitError.prototype = {
 
 "use strict";
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    }
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
-var is_1 = __webpack_require__(4);
-var symbol_polyfill_1 = __webpack_require__(2);
-var EventEmitter_1 = __webpack_require__(7);
-var push = Array.prototype.push;
-var splice = Array.prototype.splice;
-var defaultComparator = function (a, b) {
+const is_1 = __webpack_require__(4);
+const symbol_polyfill_1 = __webpack_require__(2);
+const EventEmitter_1 = __webpack_require__(7);
+const push = Array.prototype.push;
+const splice = Array.prototype.splice;
+const defaultComparator = (a, b) => {
     return a < b ? -1 : a > b ? 1 : 0;
 };
-var ObservableList = /** @class */ (function (_super) {
-    __extends(ObservableList, _super);
-    function ObservableList(items, options) {
-        var _this = _super.call(this) || this;
-        _this._items = [];
+class ObservableList extends EventEmitter_1.EventEmitter {
+    constructor(items, options) {
+        super();
+        this._items = [];
         if (options && (options.sorted || (options.comparator && options.sorted !== false))) {
-            _this._comparator = options.comparator || defaultComparator;
-            _this._sorted = true;
+            this._comparator = options.comparator || defaultComparator;
+            this._sorted = true;
         }
         else {
-            _this._comparator = null;
-            _this._sorted = false;
+            this._comparator = null;
+            this._sorted = false;
         }
         if (items) {
-            if (_this._sorted) {
+            if (this._sorted) {
                 if (items instanceof ObservableList) {
                     items = items._items;
                 }
-                for (var i = 0, l = items.length; i < l; i++) {
-                    _this._insertSortedValue(items[i]);
+                for (let i = 0, l = items.length; i < l; i++) {
+                    this._insertSortedValue(items[i]);
                 }
             }
             else {
-                push.apply(_this._items, items instanceof ObservableList ? items._items : items);
+                push.apply(this._items, items instanceof ObservableList ? items._items : items);
             }
         }
-        return _this;
     }
-    Object.defineProperty(ObservableList.prototype, "length", {
-        get: function () {
-            return this._items.length;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ObservableList.prototype._validateIndex = function (index, allowEndIndex) {
+    get length() {
+        return this._items.length;
+    }
+    _validateIndex(index, allowEndIndex) {
         if (index === undefined) {
             return index;
         }
@@ -1822,20 +1775,20 @@ var ObservableList = /** @class */ (function (_super) {
             throw new RangeError('Index out of valid range');
         }
         return index;
-    };
-    ObservableList.prototype.contains = function (value) {
+    }
+    contains(value) {
         return this._items.indexOf(value) != -1;
-    };
-    ObservableList.prototype.indexOf = function (value, fromIndex) {
+    }
+    indexOf(value, fromIndex) {
         return this._items.indexOf(value, this._validateIndex(fromIndex, true));
-    };
-    ObservableList.prototype.lastIndexOf = function (value, fromIndex) {
+    }
+    lastIndexOf(value, fromIndex) {
         return this._items.lastIndexOf(value, fromIndex === undefined ? -1 : this._validateIndex(fromIndex, true));
-    };
-    ObservableList.prototype.get = function (index) {
+    }
+    get(index) {
         return this._items[this._validateIndex(index, true)];
-    };
-    ObservableList.prototype.getRange = function (index, count) {
+    }
+    getRange(index, count) {
         index = this._validateIndex(index, true);
         if (count === undefined) {
             return this._items.slice(index);
@@ -1844,8 +1797,8 @@ var ObservableList = /** @class */ (function (_super) {
             throw new RangeError('Sum of "index" and "count" out of valid range');
         }
         return this._items.slice(index, index + count);
-    };
-    ObservableList.prototype.set = function (index, value) {
+    }
+    set(index, value) {
         if (this._sorted) {
             throw new TypeError('Cannot set to sorted list');
         }
@@ -1855,8 +1808,8 @@ var ObservableList = /** @class */ (function (_super) {
             this.emit('change');
         }
         return this;
-    };
-    ObservableList.prototype.setRange = function (index, values) {
+    }
+    setRange(index, values) {
         if (this._sorted) {
             throw new TypeError('Cannot set to sorted list');
         }
@@ -1864,17 +1817,17 @@ var ObservableList = /** @class */ (function (_super) {
         if (values instanceof ObservableList) {
             values = values._items;
         }
-        var valueCount = values.length;
+        let valueCount = values.length;
         if (!valueCount) {
             return this;
         }
         if (index + valueCount > this._items.length) {
             throw new RangeError('Sum of "index" and "values.length" out of valid range');
         }
-        var items = this._items;
-        var changed = false;
-        for (var i = index + valueCount; i > index;) {
-            var value = values[--i - index];
+        let items = this._items;
+        let changed = false;
+        for (let i = index + valueCount; i > index;) {
+            let value = values[--i - index];
             if (!is_1.is(value, items[i])) {
                 items[i] = value;
                 changed = true;
@@ -1884,8 +1837,8 @@ var ObservableList = /** @class */ (function (_super) {
             this.emit('change');
         }
         return this;
-    };
-    ObservableList.prototype.add = function (value, unique) {
+    }
+    add(value, unique) {
         if (unique && this._items.indexOf(value) != -1) {
             return this;
         }
@@ -1897,18 +1850,18 @@ var ObservableList = /** @class */ (function (_super) {
         }
         this.emit('change');
         return this;
-    };
-    ObservableList.prototype.addRange = function (values, unique) {
+    }
+    addRange(values, unique) {
         if (values instanceof ObservableList) {
             values = values._items;
         }
         if (values.length) {
             if (unique) {
-                var items = this._items;
-                var sorted = this._sorted;
-                var changed = false;
-                for (var i = 0, l = values.length; i < l; i++) {
-                    var value = values[i];
+                let items = this._items;
+                let sorted = this._sorted;
+                let changed = false;
+                for (let i = 0, l = values.length; i < l; i++) {
+                    let value = values[i];
                     if (items.indexOf(value) == -1) {
                         if (sorted) {
                             this._insertSortedValue(value);
@@ -1925,7 +1878,7 @@ var ObservableList = /** @class */ (function (_super) {
             }
             else {
                 if (this._sorted) {
-                    for (var i = 0, l = values.length; i < l; i++) {
+                    for (let i = 0, l = values.length; i < l; i++) {
                         this._insertSortedValue(values[i]);
                     }
                 }
@@ -1936,16 +1889,16 @@ var ObservableList = /** @class */ (function (_super) {
             }
         }
         return this;
-    };
-    ObservableList.prototype.insert = function (index, value) {
+    }
+    insert(index, value) {
         if (this._sorted) {
             throw new TypeError('Cannot insert to sorted list');
         }
         this._items.splice(this._validateIndex(index, true), 0, value);
         this.emit('change');
         return this;
-    };
-    ObservableList.prototype.insertRange = function (index, values) {
+    }
+    insertRange(index, values) {
         if (this._sorted) {
             throw new TypeError('Cannot insert to sorted list');
         }
@@ -1958,20 +1911,20 @@ var ObservableList = /** @class */ (function (_super) {
             this.emit('change');
         }
         return this;
-    };
-    ObservableList.prototype.remove = function (value, fromIndex) {
-        var index = this._items.indexOf(value, this._validateIndex(fromIndex, true));
+    }
+    remove(value, fromIndex) {
+        let index = this._items.indexOf(value, this._validateIndex(fromIndex, true));
         if (index == -1) {
             return false;
         }
         this._items.splice(index, 1);
         this.emit('change');
         return true;
-    };
-    ObservableList.prototype.removeAll = function (value, fromIndex) {
-        var index = this._validateIndex(fromIndex, true);
-        var items = this._items;
-        var changed = false;
+    }
+    removeAll(value, fromIndex) {
+        let index = this._validateIndex(fromIndex, true);
+        let items = this._items;
+        let changed = false;
         while ((index = items.indexOf(value, index)) != -1) {
             items.splice(index, 1);
             changed = true;
@@ -1980,16 +1933,16 @@ var ObservableList = /** @class */ (function (_super) {
             this.emit('change');
         }
         return changed;
-    };
-    ObservableList.prototype.removeEach = function (values, fromIndex) {
+    }
+    removeEach(values, fromIndex) {
         fromIndex = this._validateIndex(fromIndex, true);
         if (values instanceof ObservableList) {
             values = values._items.slice();
         }
-        var items = this._items;
-        var changed = false;
-        for (var i = 0, l = values.length; i < l; i++) {
-            var index = items.indexOf(values[i], fromIndex);
+        let items = this._items;
+        let changed = false;
+        for (let i = 0, l = values.length; i < l; i++) {
+            let index = items.indexOf(values[i], fromIndex);
             if (index != -1) {
                 items.splice(index, 1);
                 changed = true;
@@ -1999,13 +1952,13 @@ var ObservableList = /** @class */ (function (_super) {
             this.emit('change');
         }
         return changed;
-    };
-    ObservableList.prototype.removeAt = function (index) {
-        var value = this._items.splice(this._validateIndex(index), 1)[0];
+    }
+    removeAt(index) {
+        let value = this._items.splice(this._validateIndex(index), 1)[0];
         this.emit('change');
         return value;
-    };
-    ObservableList.prototype.removeRange = function (index, count) {
+    }
+    removeRange(index, count) {
         index = this._validateIndex(index, true);
         if (count === undefined) {
             count = this._items.length - index;
@@ -2021,60 +1974,60 @@ var ObservableList = /** @class */ (function (_super) {
                 throw new RangeError('Sum of "index" and "count" out of valid range');
             }
         }
-        var values = this._items.splice(index, count);
+        let values = this._items.splice(index, count);
         this.emit('change');
         return values;
-    };
-    ObservableList.prototype.clear = function () {
+    }
+    clear() {
         if (this._items.length) {
             this._items.length = 0;
             this.emit('change', { subtype: 'clear' });
         }
         return this;
-    };
-    ObservableList.prototype.join = function (separator) {
+    }
+    join(separator) {
         return this._items.join(separator);
-    };
-    ObservableList.prototype.find = function (callback, context) {
-        var items = this._items;
-        for (var i = 0, l = items.length; i < l; i++) {
-            var item = items[i];
+    }
+    find(callback, context) {
+        let items = this._items;
+        for (let i = 0, l = items.length; i < l; i++) {
+            let item = items[i];
             if (callback.call(context, item, i, this)) {
                 return item;
             }
         }
         return;
-    };
-    ObservableList.prototype.findIndex = function (callback, context) {
-        var items = this._items;
-        for (var i = 0, l = items.length; i < l; i++) {
+    }
+    findIndex(callback, context) {
+        let items = this._items;
+        for (let i = 0, l = items.length; i < l; i++) {
             if (callback.call(context, items[i], i, this)) {
                 return i;
             }
         }
         return -1;
-    };
-    ObservableList.prototype.clone = function (deep) {
+    }
+    clone(deep) {
         return new this.constructor(deep
-            ? this._items.map(function (item) { return (item && item.clone ? item.clone(true) : item); })
+            ? this._items.map(item => item && item.clone ? item.clone(true) : item)
             : this, {
             comparator: this._comparator || undefined,
             sorted: this._sorted
         });
-    };
-    ObservableList.prototype.toArray = function () {
+    }
+    toArray() {
         return this._items.slice();
-    };
-    ObservableList.prototype.toString = function () {
+    }
+    toString() {
         return this._items.join();
-    };
-    ObservableList.prototype._insertSortedValue = function (value) {
-        var items = this._items;
-        var comparator = this._comparator;
-        var low = 0;
-        var high = items.length;
+    }
+    _insertSortedValue(value) {
+        let items = this._items;
+        let comparator = this._comparator;
+        let low = 0;
+        let high = items.length;
         while (low != high) {
-            var mid = (low + high) >> 1;
+            let mid = (low + high) >> 1;
             if (comparator(value, items[mid]) < 0) {
                 high = mid;
             }
@@ -2083,20 +2036,19 @@ var ObservableList = /** @class */ (function (_super) {
             }
         }
         items.splice(low, 0, value);
-    };
-    return ObservableList;
-}(EventEmitter_1.EventEmitter));
+    }
+}
 exports.ObservableList = ObservableList;
-['forEach', 'map', 'filter', 'every', 'some'].forEach(function (name) {
+['forEach', 'map', 'filter', 'every', 'some'].forEach(name => {
     ObservableList.prototype[name] = function (callback, context) {
         return this._items[name](function (item, index) {
             return callback.call(context, item, index, this);
         }, this);
     };
 });
-['reduce', 'reduceRight'].forEach(function (name) {
+['reduce', 'reduceRight'].forEach(name => {
     ObservableList.prototype[name] = function (callback, initialValue) {
-        var list = this;
+        let list = this;
         function wrapper(accumulator, item, index) {
             return callback(accumulator, item, index, list);
         }
@@ -2106,17 +2058,17 @@ exports.ObservableList = ObservableList;
     };
 });
 [
-    ['keys', function (index) { return index; }],
-    ['values', function (index, item) { return item; }],
-    ['entries', function (index, item) { return [index, item]; }]
-].forEach(function (settings) {
-    var getStepValue = settings[1];
+    ['keys', (index) => index],
+    ['values', (index, item) => item],
+    ['entries', (index, item) => [index, item]]
+].forEach((settings) => {
+    let getStepValue = settings[1];
     ObservableList.prototype[settings[0]] = function () {
-        var items = this._items;
-        var index = 0;
-        var done = false;
+        let items = this._items;
+        let index = 0;
+        let done = false;
         return {
-            next: function () {
+            next() {
                 if (!done) {
                     if (index < items.length) {
                         return {
@@ -2143,66 +2095,47 @@ ObservableList.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableList.pro
 
 "use strict";
 
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = function (d, b) {
-        extendStatics = Object.setPrototypeOf ||
-            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-            function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-        return extendStatics(d, b);
-    }
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 Object.defineProperty(exports, "__esModule", { value: true });
-var is_1 = __webpack_require__(4);
-var map_set_polyfill_1 = __webpack_require__(1);
-var symbol_polyfill_1 = __webpack_require__(2);
-var EventEmitter_1 = __webpack_require__(7);
-var ObservableMap = /** @class */ (function (_super) {
-    __extends(ObservableMap, _super);
-    function ObservableMap(entries) {
-        var _this = _super.call(this) || this;
-        _this._entries = new map_set_polyfill_1.Map();
+const is_1 = __webpack_require__(4);
+const map_set_polyfill_1 = __webpack_require__(1);
+const symbol_polyfill_1 = __webpack_require__(2);
+const EventEmitter_1 = __webpack_require__(7);
+class ObservableMap extends EventEmitter_1.EventEmitter {
+    constructor(entries) {
+        super();
+        this._entries = new map_set_polyfill_1.Map();
         if (entries) {
-            var mapEntries_1 = _this._entries;
+            let mapEntries = this._entries;
             if (entries instanceof map_set_polyfill_1.Map || entries instanceof ObservableMap) {
-                (entries instanceof map_set_polyfill_1.Map ? entries : entries._entries).forEach(function (value, key) {
-                    mapEntries_1.set(key, value);
+                (entries instanceof map_set_polyfill_1.Map ? entries : entries._entries).forEach((value, key) => {
+                    mapEntries.set(key, value);
                 });
             }
             else if (Array.isArray(entries)) {
-                for (var i = 0, l = entries.length; i < l; i++) {
-                    mapEntries_1.set(entries[i][0], entries[i][1]);
+                for (let i = 0, l = entries.length; i < l; i++) {
+                    mapEntries.set(entries[i][0], entries[i][1]);
                 }
             }
             else {
-                for (var key in entries) {
-                    mapEntries_1.set(key, entries[key]);
+                for (let key in entries) {
+                    mapEntries.set(key, entries[key]);
                 }
             }
         }
-        return _this;
     }
-    Object.defineProperty(ObservableMap.prototype, "size", {
-        get: function () {
-            return this._entries.size;
-        },
-        enumerable: true,
-        configurable: true
-    });
-    ObservableMap.prototype.has = function (key) {
+    get size() {
+        return this._entries.size;
+    }
+    has(key) {
         return this._entries.has(key);
-    };
-    ObservableMap.prototype.get = function (key) {
+    }
+    get(key) {
         return this._entries.get(key);
-    };
-    ObservableMap.prototype.set = function (key, value) {
-        var entries = this._entries;
-        var hasKey = entries.has(key);
-        var prev;
+    }
+    set(key, value) {
+        let entries = this._entries;
+        let hasKey = entries.has(key);
+        let prev;
         if (hasKey) {
             prev = entries.get(key);
             if (is_1.is(value, prev)) {
@@ -2212,52 +2145,52 @@ var ObservableMap = /** @class */ (function (_super) {
         entries.set(key, value);
         this.emit('change', {
             subtype: hasKey ? 'update' : 'add',
-            key: key,
+            key,
             prevValue: prev,
-            value: value
+            value
         });
         return this;
-    };
-    ObservableMap.prototype.delete = function (key) {
-        var entries = this._entries;
+    }
+    delete(key) {
+        let entries = this._entries;
         if (entries.has(key)) {
-            var value = entries.get(key);
+            let value = entries.get(key);
             entries.delete(key);
             this.emit('change', {
                 subtype: 'delete',
-                key: key,
-                value: value
+                key,
+                value
             });
             return true;
         }
         return false;
-    };
-    ObservableMap.prototype.clear = function () {
+    }
+    clear() {
         if (this._entries.size) {
             this._entries.clear();
             this.emit('change', { subtype: 'clear' });
         }
         return this;
-    };
-    ObservableMap.prototype.forEach = function (callback, context) {
+    }
+    forEach(callback, context) {
         this._entries.forEach(function (value, key) {
             callback.call(context, value, key, this);
         }, this);
-    };
-    ObservableMap.prototype.keys = function () {
+    }
+    keys() {
         return this._entries.keys();
-    };
-    ObservableMap.prototype.values = function () {
+    }
+    values() {
         return this._entries.values();
-    };
-    ObservableMap.prototype.entries = function () {
+    }
+    entries() {
         return this._entries.entries();
-    };
-    ObservableMap.prototype.clone = function (deep) {
-        var entries;
+    }
+    clone(deep) {
+        let entries;
         if (deep) {
             entries = [];
-            this._entries.forEach(function (value, key) {
+            this._entries.forEach((value, key) => {
                 entries.push([
                     key,
                     value && value.clone ? value.clone(true) : value
@@ -2265,9 +2198,8 @@ var ObservableMap = /** @class */ (function (_super) {
             });
         }
         return new this.constructor(entries || this);
-    };
-    return ObservableMap;
-}(EventEmitter_1.EventEmitter));
+    }
+}
 exports.ObservableMap = ObservableMap;
 ObservableMap.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableMap.prototype.entries;
 

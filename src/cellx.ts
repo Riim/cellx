@@ -31,7 +31,7 @@ export { WaitError } from './WaitError';
 const hasOwn = Object.prototype.hasOwnProperty;
 const slice = Array.prototype.slice;
 
-const global = Function('return this;')();
+const global_ = Function('return this;')();
 
 export function map<K = any, V = any>(
 	entries?: TObservableMapEntries<K, V> | null
@@ -103,7 +103,7 @@ export function cellx<T = any, M = any>(
 	let cx = function(value: any) {
 		let context = this;
 
-		if (!context || context == global) {
+		if (!context || context == global_) {
 			context = cx;
 		}
 
@@ -155,7 +155,7 @@ export function cellx<T = any, M = any>(
 	cx.constructor = cellx;
 
 	if (options.onChange || options.onError) {
-		cx.call(options.context || global);
+		cx.call(options.context || global_);
 	}
 
 	return cx;
