@@ -4,9 +4,7 @@ export interface IEvent<T extends EventEmitter = EventEmitter> {
     bubbles?: boolean;
     defaultPrevented?: boolean;
     propagationStopped?: boolean;
-    data: {
-        [name: string]: any;
-    };
+    data: Record<string, any>;
 }
 export declare type TListener<T extends EventEmitter = EventEmitter> = (evt: IEvent<T>) => any;
 export interface IRegisteredEvent {
@@ -18,18 +16,12 @@ export declare class EventEmitter {
     static transact(callback: Function): void;
     _events: Map<string, IRegisteredEvent | Array<IRegisteredEvent>>;
     constructor();
-    getEvents(): {
-        [type: string]: Array<IRegisteredEvent>;
-    };
+    getEvents(): Record<string, Array<IRegisteredEvent>>;
     getEvents(type: string): Array<IRegisteredEvent>;
     on(type: string, listener: TListener, context?: any): this;
-    on(listeners: {
-        [type: string]: TListener;
-    }, context?: any): this;
+    on(listeners: Record<string, TListener>, context?: any): this;
     off(type: string, listener: TListener, context?: any): this;
-    off(listeners?: {
-        [type: string]: TListener;
-    }, context?: any): this;
+    off(listeners?: Record<string, TListener>, context?: any): this;
     _on(type: string, listener: TListener, context: any): void;
     _off(type: string, listener: TListener, context: any): void;
     once(type: string, listener: TListener, context?: any): TListener;
@@ -39,12 +31,8 @@ export declare class EventEmitter {
         bubbles?: boolean;
         defaultPrevented?: boolean;
         propagationStopped?: boolean;
-        data?: {
-            [name: string]: any;
-        };
-    } | string, data?: {
-        [name: string]: any;
-    }): IEvent;
+        data?: Record<string, any>;
+    } | string, data?: Record<string, any>): IEvent;
     handleEvent(evt: IEvent): void;
     _tryEventListener(emEvt: IRegisteredEvent, evt: IEvent): any;
 }

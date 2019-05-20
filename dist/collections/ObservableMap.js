@@ -4,6 +4,7 @@ const is_1 = require("@riim/is");
 const map_set_polyfill_1 = require("@riim/map-set-polyfill");
 const symbol_polyfill_1 = require("@riim/symbol-polyfill");
 const EventEmitter_1 = require("../EventEmitter");
+const hasOwn = Object.prototype.hasOwnProperty;
 class ObservableMap extends EventEmitter_1.EventEmitter {
     constructor(entries) {
         super();
@@ -22,7 +23,9 @@ class ObservableMap extends EventEmitter_1.EventEmitter {
             }
             else {
                 for (let key in entries) {
-                    mapEntries.set(key, entries[key]);
+                    if (hasOwn.call(entries, key)) {
+                        mapEntries.set(key, entries[key]);
+                    }
                 }
             }
         }

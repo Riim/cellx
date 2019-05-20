@@ -2,9 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const logger_1 = require("@riim/logger");
 const map_set_polyfill_1 = require("@riim/map-set-polyfill");
+const hasOwn = Object.prototype.hasOwnProperty;
 let currentlySubscribing = false;
 let transactionLevel = 0;
-let transactionEvents = new map_set_polyfill_1.Map();
+let transactionEvents = [];
 class EventEmitter {
     static get currentlySubscribing() {
         return currentlySubscribing;
@@ -24,12 +25,10 @@ class EventEmitter {
             return;
         }
         let events = transactionEvents;
-        transactionEvents = new map_set_polyfill_1.Map();
-        events.forEach((events, target) => {
-            for (let type in events) {
-                target.handleEvent(events[type]);
-            }
-        });
+        transactionEvents = [];
+        for (let evt of events) {
+            evt.target.handleEvent(evt);
+        }
     }
     constructor() {
         this._events = new map_set_polyfill_1.Map();
@@ -43,7 +42,7 @@ class EventEmitter {
             }
             return Array.isArray(events) ? events : [events];
         }
-        events = Object.create(null);
+        events = { __proto__: null };
         this._events.forEach((typeEvents, type) => {
             events[type] = Array.isArray(typeEvents) ? typeEvents : [typeEvents];
         });
@@ -54,7 +53,9 @@ class EventEmitter {
             context = listener !== undefined ? listener : this;
             let listeners = type;
             for (type in listeners) {
-                this._on(type, listeners[type], context);
+                if (hasOwn.call(listeners, type)) {
+                    this._on(type, listeners[type], context);
+                }
             }
         }
         else {
@@ -68,7 +69,9 @@ class EventEmitter {
                 context = listener !== undefined ? listener : this;
                 let listeners = type;
                 for (type in listeners) {
-                    this._off(type, listeners[type], context);
+                    if (hasOwn.call(listeners, type)) {
+                        this._off(type, listeners[type], context);
+                    }
                 }
             }
             else {
@@ -163,13 +166,19 @@ class EventEmitter {
             evt.data = data;
         }
         if (transactionLevel) {
-            let events = transactionEvents.get(this);
-            if (!events) {
-                events = Object.create(null);
-                transactionEvents.set(this, events);
+            for (let i = transactionEvents.length;;) {
+                if (!i) {
+                    (evt.data || (evt.data = {})).prevEvent = null;
+                    transactionEvents.push(evt);
+                    break;
+                }
+                let event = transactionEvents[--i];
+                if (event.target == this && event.type == evt.type) {
+                    (evt.data || (evt.data = {})).prevEvent = event;
+                    transactionEvents[i] = evt;
+                    break;
+                }
             }
-            (evt.data || (evt.data = {})).prev = events[evt.type] || null;
-            events[evt.type] = evt;
         }
         else {
             this.handleEvent(evt);

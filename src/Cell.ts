@@ -1,6 +1,6 @@
 import { is } from '@riim/is';
-import { error } from '@riim/logger';
-import { Map } from '@riim/map-set-polyfill';
+import { error, warn } from '@riim/logger';
+import { Map, Set } from '@riim/map-set-polyfill';
 import { nextTick } from '@riim/next-tick';
 import { Symbol } from '@riim/symbol-polyfill';
 import { EventEmitter, IEvent, TListener } from './EventEmitter';
@@ -51,16 +51,18 @@ let releasePlanToIndex = -1;
 let releasePlanned = false;
 let currentlyRelease = 0;
 
+const releasedCells = new Set();
+
+let releaseVersion = 1;
+
+let afterRelease: Array<Function | [Cell, any]> | null;
+
 let currentCell: Cell | null = null;
 
 const $error: { error: Error | null } = { error: null };
 
 let pushingIndexCounter = 0;
 let errorIndexCounter = 0;
-
-let releaseVersion = 1;
-
-let afterRelease: Array<Function | [Cell, any]> | null;
 
 const STATE_INITED = 1;
 const STATE_ACTIVE = 1 << 1;
@@ -116,6 +118,14 @@ function release(force?: boolean) {
 			prevReleasePlanIndex = releasePlanIndex;
 
 			cell.pull();
+
+			if (releasedCells.has(cell)) {
+				if (Cell.debug) {
+					warn('Multiple cell pull in release', cell);
+				}
+			} else {
+				releasedCells.add(cell);
+			}
 
 			if (releasePlanIndex < prevReleasePlanIndex) {
 				queue!.unshift(cell);
@@ -186,6 +196,7 @@ function release(force?: boolean) {
 	if (!--currentlyRelease) {
 		releasePlanIndex = MAX_SAFE_INTEGER;
 		releasePlanToIndex = -1;
+		releasedCells.clear();
 		releaseVersion++;
 
 		if (afterRelease) {
@@ -211,6 +222,8 @@ function defaultPut(cell: Cell, value: any) {
 }
 
 export class Cell<T = any, M = any> extends EventEmitter {
+	static debug = false;
+
 	static get currentlyPulling(): boolean {
 		return !!currentCell;
 	}

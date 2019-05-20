@@ -14,12 +14,13 @@ let releasePlanIndex = MAX_SAFE_INTEGER;
 let releasePlanToIndex = -1;
 let releasePlanned = false;
 let currentlyRelease = 0;
+const releasedCells = new map_set_polyfill_1.Set();
+let releaseVersion = 1;
+let afterRelease;
 let currentCell = null;
 const $error = { error: null };
 let pushingIndexCounter = 0;
 let errorIndexCounter = 0;
-let releaseVersion = 1;
-let afterRelease;
 const STATE_INITED = 1;
 const STATE_ACTIVE = 1 << 1;
 const STATE_HAS_FOLLOWERS = 1 << 2;
@@ -62,6 +63,14 @@ function release(force) {
             }
             prevReleasePlanIndex = releasePlanIndex;
             cell.pull();
+            if (releasedCells.has(cell)) {
+                if (Cell.debug) {
+                    logger_1.warn('Multiple cell pull in release', cell);
+                }
+            }
+            else {
+                releasedCells.add(cell);
+            }
             if (releasePlanIndex < prevReleasePlanIndex) {
                 queue.unshift(cell);
                 queue = releasePlan.get(releasePlanIndex);
@@ -113,12 +122,13 @@ function release(force) {
     if (!--currentlyRelease) {
         releasePlanIndex = MAX_SAFE_INTEGER;
         releasePlanToIndex = -1;
+        releasedCells.clear();
         releaseVersion++;
         if (afterRelease) {
-            let after = afterRelease;
+            let afterRelease_ = afterRelease;
             afterRelease = null;
-            for (let i = 0, l = after.length; i < l; i++) {
-                let callback = after[i];
+            for (let i = 0, l = afterRelease_.length; i < l; i++) {
+                let callback = afterRelease_[i];
                 if (typeof callback == 'function') {
                     callback();
                 }
@@ -152,7 +162,7 @@ class Cell extends EventEmitter_1.EventEmitter {
         this._changeEvent = null;
         this._lastErrorEvent = null;
         this.debugKey = options && options.debugKey;
-        this.context = (options && options.context) || this;
+        this.context = options && options.context !== undefined ? options.context : this;
         this._pull = typeof value == 'function' ? value : null;
         this._get = (options && options.get) || null;
         this._validate = (options && options.validate) || null;
@@ -808,4 +818,5 @@ class Cell extends EventEmitter_1.EventEmitter {
         return this.reap();
     }
 }
+Cell.debug = false;
 exports.Cell = Cell;

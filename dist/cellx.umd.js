@@ -570,12 +570,13 @@ let releasePlanIndex = MAX_SAFE_INTEGER;
 let releasePlanToIndex = -1;
 let releasePlanned = false;
 let currentlyRelease = 0;
+const releasedCells = new map_set_polyfill_1.Set();
+let releaseVersion = 1;
+let afterRelease;
 let currentCell = null;
 const $error = { error: null };
 let pushingIndexCounter = 0;
 let errorIndexCounter = 0;
-let releaseVersion = 1;
-let afterRelease;
 const STATE_INITED = 1;
 const STATE_ACTIVE = 1 << 1;
 const STATE_HAS_FOLLOWERS = 1 << 2;
@@ -618,6 +619,14 @@ function release(force) {
             }
             prevReleasePlanIndex = releasePlanIndex;
             cell.pull();
+            if (releasedCells.has(cell)) {
+                if (Cell.debug) {
+                    logger_1.warn('Multiple cell pull in release', cell);
+                }
+            }
+            else {
+                releasedCells.add(cell);
+            }
             if (releasePlanIndex < prevReleasePlanIndex) {
                 queue.unshift(cell);
                 queue = releasePlan.get(releasePlanIndex);
@@ -669,12 +678,13 @@ function release(force) {
     if (!--currentlyRelease) {
         releasePlanIndex = MAX_SAFE_INTEGER;
         releasePlanToIndex = -1;
+        releasedCells.clear();
         releaseVersion++;
         if (afterRelease) {
-            let after = afterRelease;
+            let afterRelease_ = afterRelease;
             afterRelease = null;
-            for (let i = 0, l = after.length; i < l; i++) {
-                let callback = after[i];
+            for (let i = 0, l = afterRelease_.length; i < l; i++) {
+                let callback = afterRelease_[i];
                 if (typeof callback == 'function') {
                     callback();
                 }
@@ -708,7 +718,7 @@ class Cell extends EventEmitter_1.EventEmitter {
         this._changeEvent = null;
         this._lastErrorEvent = null;
         this.debugKey = options && options.debugKey;
-        this.context = (options && options.context) || this;
+        this.context = options && options.context !== undefined ? options.context : this;
         this._pull = typeof value == 'function' ? value : null;
         this._get = (options && options.get) || null;
         this._validate = (options && options.validate) || null;
@@ -1364,6 +1374,7 @@ class Cell extends EventEmitter_1.EventEmitter {
         return this.reap();
     }
 }
+Cell.debug = false;
 exports.Cell = Cell;
 
 
@@ -1491,9 +1502,10 @@ exports.nextTick = (() => {
 Object.defineProperty(exports, "__esModule", { value: true });
 const logger_1 = __webpack_require__(5);
 const map_set_polyfill_1 = __webpack_require__(1);
+const hasOwn = Object.prototype.hasOwnProperty;
 let currentlySubscribing = false;
 let transactionLevel = 0;
-let transactionEvents = new map_set_polyfill_1.Map();
+let transactionEvents = [];
 class EventEmitter {
     static get currentlySubscribing() {
         return currentlySubscribing;
@@ -1513,12 +1525,10 @@ class EventEmitter {
             return;
         }
         let events = transactionEvents;
-        transactionEvents = new map_set_polyfill_1.Map();
-        events.forEach((events, target) => {
-            for (let type in events) {
-                target.handleEvent(events[type]);
-            }
-        });
+        transactionEvents = [];
+        for (let evt of events) {
+            evt.target.handleEvent(evt);
+        }
     }
     constructor() {
         this._events = new map_set_polyfill_1.Map();
@@ -1532,7 +1542,7 @@ class EventEmitter {
             }
             return Array.isArray(events) ? events : [events];
         }
-        events = Object.create(null);
+        events = { __proto__: null };
         this._events.forEach((typeEvents, type) => {
             events[type] = Array.isArray(typeEvents) ? typeEvents : [typeEvents];
         });
@@ -1543,7 +1553,9 @@ class EventEmitter {
             context = listener !== undefined ? listener : this;
             let listeners = type;
             for (type in listeners) {
-                this._on(type, listeners[type], context);
+                if (hasOwn.call(listeners, type)) {
+                    this._on(type, listeners[type], context);
+                }
             }
         }
         else {
@@ -1557,7 +1569,9 @@ class EventEmitter {
                 context = listener !== undefined ? listener : this;
                 let listeners = type;
                 for (type in listeners) {
-                    this._off(type, listeners[type], context);
+                    if (hasOwn.call(listeners, type)) {
+                        this._off(type, listeners[type], context);
+                    }
                 }
             }
             else {
@@ -1652,13 +1666,19 @@ class EventEmitter {
             evt.data = data;
         }
         if (transactionLevel) {
-            let events = transactionEvents.get(this);
-            if (!events) {
-                events = Object.create(null);
-                transactionEvents.set(this, events);
+            for (let i = transactionEvents.length;;) {
+                if (!i) {
+                    (evt.data || (evt.data = {})).prevEvent = null;
+                    transactionEvents.push(evt);
+                    break;
+                }
+                let event = transactionEvents[--i];
+                if (event.target == this && event.type == evt.type) {
+                    (evt.data || (evt.data = {})).prevEvent = event;
+                    transactionEvents[i] = evt;
+                    break;
+                }
             }
-            (evt.data || (evt.data = {})).prev = events[evt.type] || null;
-            events[evt.type] = evt;
         }
         else {
             this.handleEvent(evt);
@@ -2100,6 +2120,7 @@ const is_1 = __webpack_require__(4);
 const map_set_polyfill_1 = __webpack_require__(1);
 const symbol_polyfill_1 = __webpack_require__(2);
 const EventEmitter_1 = __webpack_require__(7);
+const hasOwn = Object.prototype.hasOwnProperty;
 class ObservableMap extends EventEmitter_1.EventEmitter {
     constructor(entries) {
         super();
@@ -2118,7 +2139,9 @@ class ObservableMap extends EventEmitter_1.EventEmitter {
             }
             else {
                 for (let key in entries) {
-                    mapEntries.set(key, entries[key]);
+                    if (hasOwn.call(entries, key)) {
+                        mapEntries.set(key, entries[key]);
+                    }
                 }
             }
         }

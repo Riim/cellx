@@ -1,7 +1,5 @@
 import { EventEmitter } from '../EventEmitter';
-export declare type TObservableMapEntries<K, V> = Array<[K, V]> | {
-    [key: string]: V;
-} | Map<K, V> | ObservableMap<K, V>;
+export declare type TObservableMapEntries<K, V> = Array<[K, V]> | Record<string, V> | Map<K, V> | ObservableMap<K, V>;
 export declare class ObservableMap<K = any, V = any> extends EventEmitter {
     _entries: Map<K, V>;
     readonly size: number;

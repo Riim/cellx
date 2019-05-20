@@ -28,6 +28,7 @@ export interface ICellErrorEvent<T extends EventEmitter = EventEmitter> extends 
 }
 export declare type TCellEvent<T extends EventEmitter = EventEmitter> = ICellChangeEvent<T> | ICellErrorEvent<T>;
 export declare class Cell<T = any, M = any> extends EventEmitter {
+    static debug: boolean;
     static readonly currentlyPulling: boolean;
     static autorun(callback: Function, context?: any): () => void;
     static forceRelease(): void;
@@ -63,13 +64,9 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     _lastErrorEvent: IEvent<this> | null;
     constructor(value: T | TCellPull<T>, options?: ICellOptions<T, M>);
     on(type: string, listener: TListener, context?: any): this;
-    on(listeners: {
-        [type: string]: TListener;
-    }, context?: any): this;
+    on(listeners: Record<string, TListener>, context?: any): this;
     off(type: string, listener: TListener, context?: any): this;
-    off(listeners?: {
-        [type: string]: TListener;
-    }, context?: any): this;
+    off(listeners?: Record<string, TListener>, context?: any): this;
     addChangeListener(listener: TListener, context?: any): this;
     removeChangeListener(listener: TListener, context?: any): this;
     addErrorListener(listener: TListener, context?: any): this;
