@@ -189,12 +189,12 @@ function release(force?: boolean) {
 		releaseVersion++;
 
 		if (afterRelease) {
-			let after = afterRelease;
+			let afterRelease_ = afterRelease;
 
 			afterRelease = null;
 
-			for (let i = 0, l = after.length; i < l; i++) {
-				let callback = after[i];
+			for (let i = 0, l = afterRelease_.length; i < l; i++) {
+				let callback = afterRelease_[i];
 
 				if (typeof callback == 'function') {
 					callback();
@@ -297,7 +297,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 		this.debugKey = options && options.debugKey;
 
-		this.context = (options && options.context) || this;
+		this.context = options && options.context !== undefined ? options.context : this;
 
 		this._pull = typeof value == 'function' ? (value as any) : null;
 		this._get = (options && options.get) || null;
@@ -340,8 +340,8 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	}
 
 	on(type: string, listener: TListener, context?: any): this;
-	on(listeners: { [type: string]: TListener }, context?: any): this;
-	on(type: string | { [type: string]: TListener }, listener?: any, context?: any) {
+	on(listeners: Record<string, TListener>, context?: any): this;
+	on(type: string | Record<string, TListener>, listener?: any, context?: any) {
 		if (releasePlanned || currentlyRelease) {
 			release(true);
 		}
@@ -360,8 +360,8 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	}
 
 	off(type: string, listener: TListener, context?: any): this;
-	off(listeners?: { [type: string]: TListener }, context?: any): this;
-	off(type?: string | { [type: string]: TListener }, listener?: any, context?: any) {
+	off(listeners?: Record<string, TListener>, context?: any): this;
+	off(type?: string | Record<string, TListener>, listener?: any, context?: any) {
 		if (releasePlanned || currentlyRelease) {
 			release(true);
 		}

@@ -1,15 +1,15 @@
 import { error } from '@riim/logger';
 import { Map } from '@riim/map-set-polyfill';
 
+const hasOwn = Object.prototype.hasOwnProperty;
+
 export interface IEvent<T extends EventEmitter = EventEmitter> {
 	target: T;
 	type: string;
 	bubbles?: boolean;
 	defaultPrevented?: boolean;
 	propagationStopped?: boolean;
-	data: {
-		[name: string]: any;
-	};
+	data: Record<string, any>;
 }
 
 export type TListener<T extends EventEmitter = EventEmitter> = (evt: IEvent<T>) => any;
@@ -22,7 +22,7 @@ export interface IRegisteredEvent {
 let currentlySubscribing = false;
 
 let transactionLevel = 0;
-let transactionEvents = new Map<EventEmitter, { [type: string]: IEvent }>();
+let transactionEvents: Array<IEvent> = [];
 
 export class EventEmitter {
 	static get currentlySubscribing(): boolean {
@@ -47,13 +47,11 @@ export class EventEmitter {
 
 		let events = transactionEvents;
 
-		transactionEvents = new Map();
+		transactionEvents = [];
 
-		events.forEach((events, target) => {
-			for (let type in events) {
-				target.handleEvent(events[type]);
-			}
-		});
+		for (let evt of events) {
+			evt.target.handleEvent(evt);
+		}
 	}
 
 	_events: Map<string, IRegisteredEvent | Array<IRegisteredEvent>>;
@@ -62,7 +60,7 @@ export class EventEmitter {
 		this._events = new Map();
 	}
 
-	getEvents(): { [type: string]: Array<IRegisteredEvent> };
+	getEvents(): Record<string, Array<IRegisteredEvent>>;
 	getEvents(type: string): Array<IRegisteredEvent>;
 	getEvents(type?: string) {
 		let events: any;
@@ -77,7 +75,7 @@ export class EventEmitter {
 			return Array.isArray(events) ? events : [events];
 		}
 
-		events = Object.create(null);
+		events = { __proto__: null };
 
 		this._events.forEach((typeEvents, type) => {
 			events[type] = Array.isArray(typeEvents) ? typeEvents : [typeEvents];
@@ -87,15 +85,17 @@ export class EventEmitter {
 	}
 
 	on(type: string, listener: TListener, context?: any): this;
-	on(listeners: { [type: string]: TListener }, context?: any): this;
-	on(type: string | { [type: string]: TListener }, listener?: any, context?: any) {
+	on(listeners: Record<string, TListener>, context?: any): this;
+	on(type: string | Record<string, TListener>, listener?: any, context?: any) {
 		if (typeof type == 'object') {
 			context = listener !== undefined ? listener : this;
 
 			let listeners = type;
 
 			for (type in listeners) {
-				this._on(type, listeners[type], context);
+				if (hasOwn.call(listeners, type)) {
+					this._on(type, listeners[type], context);
+				}
 			}
 		} else {
 			this._on(type, listener, context !== undefined ? context : this);
@@ -105,8 +105,8 @@ export class EventEmitter {
 	}
 
 	off(type: string, listener: TListener, context?: any): this;
-	off(listeners?: { [type: string]: TListener }, context?: any): this;
-	off(type?: string | { [type: string]: TListener }, listener?: any, context?: any) {
+	off(listeners?: Record<string, TListener>, context?: any): this;
+	off(type?: string | Record<string, TListener>, listener?: any, context?: any) {
 		if (type) {
 			if (typeof type == 'object') {
 				context = listener !== undefined ? listener : this;
@@ -114,7 +114,9 @@ export class EventEmitter {
 				let listeners = type;
 
 				for (type in listeners) {
-					this._off(type, listeners[type], context);
+					if (hasOwn.call(listeners, type)) {
+						this._off(type, listeners[type], context);
+					}
 				}
 			} else {
 				this._off(type, listener, context !== undefined ? context : this);
@@ -219,12 +221,10 @@ export class EventEmitter {
 					bubbles?: boolean;
 					defaultPrevented?: boolean;
 					propagationStopped?: boolean;
-					data?: {
-						[name: string]: any;
-					};
+					data?: Record<string, any>;
 			  }
 			| string,
-		data?: { [name: string]: any }
+		data?: Record<string, any>
 	): IEvent {
 		if (typeof evt == 'string') {
 			evt = {
@@ -242,15 +242,21 @@ export class EventEmitter {
 		}
 
 		if (transactionLevel) {
-			let events = transactionEvents.get(this);
+			for (let i = transactionEvents.length; ; ) {
+				if (!i) {
+					(evt.data || (evt.data = {})).prevEvent = null;
+					transactionEvents.push(evt as IEvent);
+					break;
+				}
 
-			if (!events) {
-				events = Object.create(null) as { [type: string]: IEvent };
-				transactionEvents.set(this, events);
+				let event = transactionEvents[--i];
+
+				if (event.target == this && event.type == evt.type) {
+					(evt.data || (evt.data = {})).prevEvent = event;
+					transactionEvents[i] = evt as IEvent;
+					break;
+				}
 			}
-
-			(evt.data || (evt.data = {})).prev = events[evt.type] || null;
-			events[evt.type] = evt as IEvent;
 		} else {
 			this.handleEvent(evt as IEvent);
 		}

@@ -3,9 +3,11 @@ import { Map } from '@riim/map-set-polyfill';
 import { Symbol } from '@riim/symbol-polyfill';
 import { EventEmitter } from '../EventEmitter';
 
+const hasOwn = Object.prototype.hasOwnProperty;
+
 export type TObservableMapEntries<K, V> =
 	| Array<[K, V]>
-	| { [key: string]: V }
+	| Record<string, V>
 	| Map<K, V>
 	| ObservableMap<K, V>;
 
@@ -32,7 +34,9 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 				}
 			} else {
 				for (let key in entries) {
-					mapEntries.set(key as any, entries[key]);
+					if (hasOwn.call(entries, key)) {
+						mapEntries.set(key as any, entries[key]);
+					}
 				}
 			}
 		}

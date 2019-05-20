@@ -193,7 +193,7 @@ export function defineObservableProperty<T extends object = object>(
 
 export function defineObservableProperties<T extends object = object>(
 	obj: T,
-	props: { [name: string]: string }
+	props: Record<string, any>
 ): T {
 	Object.keys(props).forEach(name => {
 		defineObservableProperty(obj, name, props[name]);
@@ -203,8 +203,8 @@ export function defineObservableProperties<T extends object = object>(
 }
 
 export function define<T extends object = object>(obj: T, name: string, value: any): T;
-export function define<T extends object = object>(obj: T, props: { [name: string]: any }): T;
-export function define(obj: object, name: string | { [name: string]: any }, value?: any) {
+export function define<T extends object = object>(obj: T, props: Record<string, any>): T;
+export function define(obj: object, name: string | Record<string, any>, value?: any) {
 	if (typeof name == 'string') {
 		defineObservableProperty(obj, name, value);
 	} else {
