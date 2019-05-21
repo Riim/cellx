@@ -659,13 +659,11 @@ describe('Cell', () => {
 		expect(b.get()).toBe(5);
 	});
 
-	test('минимум вызовов pull (2)', () => {
+	test('dispose отменяет вычисление', () => {
 		let a = new Cell({ x: 1 });
 		let b = new Cell(() => a.get(), {
 			onChange(evt) {
-				if (evt.data.value.x) {
-					c = new Cell(() => a.get().x);
-				} else {
+				if (!evt.data.value.x) {
 					c.dispose();
 				}
 			}
@@ -677,7 +675,7 @@ describe('Cell', () => {
 
 		Cell.forceRelease();
 
-		expect(getC).toHaveBeenCalledTimes(2);
+		expect(getC).toHaveBeenCalledTimes(1);
 	});
 
 	test('инициализация устанавливаемым значением вычисляемой ячейки', () => {

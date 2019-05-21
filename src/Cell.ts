@@ -355,7 +355,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	on(type: string, listener: TListener, context?: any): this;
 	on(listeners: Record<string, TListener>, context?: any): this;
 	on(type: string | Record<string, TListener>, listener?: any, context?: any) {
-		if (releasePlanned || currentlyRelease) {
+		if (releasePlanned || (currentlyRelease && this._level > releasePlanIndex)) {
 			release(true);
 		}
 
@@ -375,7 +375,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	off(type: string, listener: TListener, context?: any): this;
 	off(listeners?: Record<string, TListener>, context?: any): this;
 	off(type?: string | Record<string, TListener>, listener?: any, context?: any) {
-		if (releasePlanned || currentlyRelease) {
+		if (releasePlanned || (currentlyRelease && this._level > releasePlanIndex)) {
 			release(true);
 		}
 
@@ -561,7 +561,10 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	get(): T {
 		if (this._pull) {
 			if (this._state & STATE_ACTIVE) {
-				if (releasePlanned || (currentlyRelease && !currentCell)) {
+				if (
+					releasePlanned ||
+					(currentlyRelease && !currentCell && this._level > releasePlanIndex)
+				) {
 					release(true);
 				}
 			} else if (

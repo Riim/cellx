@@ -777,7 +777,7 @@ class Cell extends EventEmitter_1.EventEmitter {
         (afterRelease || (afterRelease = [])).push(callback);
     }
     on(type, listener, context) {
-        if (releasePlanned || currentlyRelease) {
+        if (releasePlanned || (currentlyRelease && this._level > releasePlanIndex)) {
             release(true);
         }
         this._activate();
@@ -791,7 +791,7 @@ class Cell extends EventEmitter_1.EventEmitter {
         return this;
     }
     off(type, listener, context) {
-        if (releasePlanned || currentlyRelease) {
+        if (releasePlanned || (currentlyRelease && this._level > releasePlanIndex)) {
             release(true);
         }
         if (type) {
@@ -935,7 +935,8 @@ class Cell extends EventEmitter_1.EventEmitter {
     get() {
         if (this._pull) {
             if (this._state & STATE_ACTIVE) {
-                if (releasePlanned || (currentlyRelease && !currentCell)) {
+                if (releasePlanned ||
+                    (currentlyRelease && !currentCell && this._level > releasePlanIndex)) {
                     release(true);
                 }
             }
