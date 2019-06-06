@@ -13,10 +13,10 @@ class EventEmitter {
     static set currentlySubscribing(value) {
         currentlySubscribing = value;
     }
-    static transact(callback) {
+    static transact(cb) {
         transactionLevel++;
         try {
-            callback();
+            cb();
         }
         catch (err) {
             logger_1.error(err);

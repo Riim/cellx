@@ -761,39 +761,39 @@ Type signature: `(separator?: string) -> string;`.
 
 ##### forEach
 
-Type signature: `(callback: (item, index: uint, list: cellx.ObservableList), context?);`.
+Type signature: `(cb: (item, index: uint, list: cellx.ObservableList), context?);`.
 
 ##### map
 
-Type signature: `(callback: (item, index: uint, list: cellx.ObservableList) -> *, context?) -> Array;`.
+Type signature: `(cb: (item, index: uint, list: cellx.ObservableList) -> *, context?) -> Array;`.
 
 ##### filter
 
-Type signature: `(callback: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> Array;`.
+Type signature: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> Array;`.
 
 ##### find
 
-Type signature: `(callback: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> *;`.
+Type signature: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> *;`.
 
 ##### findIndex
 
-Type signature: `(callback: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> int;`.
+Type signature: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> int;`.
 
 ##### every
 
-Type signature: `(callback: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> boolean;`.
+Type signature: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> boolean;`.
 
 ##### some
 
-Type signature: `(callback: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> boolean;`.
+Type signature: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> boolean;`.
 
 ##### reduce
 
-Type signature: `(callback: (accumulator, item, index: uint, list: cellx.ObservableList) -> *, initialValue?) -> *;`.
+Type signature: `(cb: (accumulator, item, index: uint, list: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
 ##### reduceRight
 
-Type signature: `(callback: (accumulator, item, index: uint, list: cellx.ObservableList) -> *, initialValue?) -> *;`.
+Type signature: `(cb: (accumulator, item, index: uint, list: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
 ##### clone
 

@@ -10,7 +10,8 @@
   "scripts": {
     "build": "rm -rf dist && webpack && tsc",
     "test": "rm -rf coverage && jest",
-    "coveralls": "cat coverage/lcov.info | node_modules/.bin/coveralls"
+    "coveralls": "cat coverage/lcov.info | node_modules/.bin/coveralls",
+    "debug": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand"
   },
   "repository": {
     "type": "git",
@@ -23,12 +24,14 @@
   },
   "homepage": "https://github.com/Riim/cellx",
   "devDependencies": {
+    "@types/jest": "^24.0.13",
     "awesome-typescript-loader": "^5.2.1",
     "jest": "^24.8.0",
-    "tslint": "^5.16.0",
+    "ts-jest": "^24.0.2",
+    "tslint": "^5.17.0",
     "tslint-loader": "^3.6.0",
-    "typescript": "^3.4.5",
-    "webpack": "^4.32.0",
+    "typescript": "^3.5.1",
+    "webpack": "^4.33.0",
     "webpack-cli": "^3.3.2"
   },
   "dependencies": {
@@ -39,8 +42,18 @@
     "@riim/symbol-polyfill": "^1.0.5"
   },
   "jest": {
-    "testEnvironment": "node",
     "collectCoverage": true,
-    "coverageDirectory": "coverage"
+    "coverageDirectory": "coverage",
+    "moduleFileExtensions": [
+      "ts",
+      "js",
+      "json",
+      "node"
+    ],
+    "testEnvironment": "node",
+    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(js|ts)$",
+    "transform": {
+      "^.+\\.ts$": "ts-jest"
+    }
   }
 }

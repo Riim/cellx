@@ -102,9 +102,9 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 		return this;
 	}
 
-	forEach(callback: (value: V, key: K, map: this) => void, context?: any) {
+	forEach(cb: (value: V, key: K, map: this) => void, context?: any) {
 		this._entries.forEach(function(value, key) {
-			callback.call(context, value, key, this);
+			cb.call(context, value, key, this);
 		}, this);
 	}
 

@@ -30,9 +30,10 @@ export declare type TCellEvent<T extends EventEmitter = EventEmitter> = ICellCha
 export declare class Cell<T = any, M = any> extends EventEmitter {
     static debug: boolean;
     static readonly currentlyPulling: boolean;
-    static autorun(callback: Function, context?: any): () => void;
+    static autorun(cb: Function, context?: any): () => void;
     static forceRelease(): void;
-    static afterRelease(callback: Function): void;
+    static release(): void;
+    static afterRelease(cb: Function): void;
     debugKey: string | undefined;
     context: object;
     _pull: TCellPull<T> | null;

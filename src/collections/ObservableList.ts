@@ -351,13 +351,13 @@ export class ObservableList<T = any> extends EventEmitter {
 		return this._items.join(separator);
 	}
 
-	find(callback: (item: T, index: number, list: this) => any, context?: any): T | undefined {
+	find(cb: (item: T, index: number, list: this) => any, context?: any): T | undefined {
 		let items = this._items;
 
 		for (let i = 0, l = items.length; i < l; i++) {
 			let item = items[i];
 
-			if (callback.call(context, item, i, this)) {
+			if (cb.call(context, item, i, this)) {
 				return item;
 			}
 		}
@@ -365,11 +365,11 @@ export class ObservableList<T = any> extends EventEmitter {
 		return;
 	}
 
-	findIndex(callback: (item: T, index: number, list: this) => any, context?: any): number {
+	findIndex(cb: (item: T, index: number, list: this) => any, context?: any): number {
 		let items = this._items;
 
 		for (let i = 0, l = items.length; i < l; i++) {
-			if (callback.call(context, items[i], i, this)) {
+			if (cb.call(context, items[i], i, this)) {
 				return i;
 			}
 		}
@@ -420,19 +420,19 @@ export class ObservableList<T = any> extends EventEmitter {
 }
 
 ['forEach', 'map', 'filter', 'every', 'some'].forEach(name => {
-	ObservableList.prototype[name] = function(callback: Function, context?: any) {
+	ObservableList.prototype[name] = function(cb: Function, context?: any) {
 		return this._items[name](function(item: any, index: number): any {
-			return callback.call(context, item, index, this);
+			return cb.call(context, item, index, this);
 		}, this);
 	};
 });
 
 ['reduce', 'reduceRight'].forEach(name => {
-	ObservableList.prototype[name] = function(callback: Function, initialValue?: any): any {
+	ObservableList.prototype[name] = function(cb: Function, initialValue?: any): any {
 		let list = this;
 
 		function wrapper(accumulator: any, item: any, index: number): any {
-			return callback(accumulator, item, index, list);
+			return cb(accumulator, item, index, list);
 		}
 
 		return arguments.length >= 2
@@ -480,27 +480,27 @@ ObservableList.prototype[Symbol.iterator] = ObservableList.prototype.values;
 declare module './ObservableList' {
 	/* tslint:disable-next-line */
 	interface ObservableList<T = any> {
-		forEach(callback: (item: T, index: number, list: this) => void, context?: any): void;
+		forEach(cb: (item: T, index: number, list: this) => void, context?: any): void;
 
-		map<R>(callback: (item: T, index: number, list: this) => R, context?: any): Array<R>;
+		map<R>(cb: (item: T, index: number, list: this) => R, context?: any): Array<R>;
 
 		filter<R extends T>(
-			callback: (item: T, index: number, list: this) => item is R,
+			cb: (item: T, index: number, list: this) => item is R,
 			context?: any
 		): Array<R>;
-		filter(callback: (item: T, index: number, list: this) => any, context?: any): Array<T>;
+		filter(cb: (item: T, index: number, list: this) => any, context?: any): Array<T>;
 
-		every(callback: (item: T, index: number, list: this) => any, context?: any): boolean;
+		every(cb: (item: T, index: number, list: this) => any, context?: any): boolean;
 
-		some(callback: (item: T, index: number, list: this) => any, context?: any): boolean;
+		some(cb: (item: T, index: number, list: this) => any, context?: any): boolean;
 
 		reduce<R = T>(
-			callback: (accumulator: R, item: T, index: number, list: this) => R,
+			cb: (accumulator: R, item: T, index: number, list: this) => R,
 			initialValue?: R
 		): R;
 
 		reduceRight<R = T>(
-			callback: (accumulator: R, item: T, index: number, list: this) => R,
+			cb: (accumulator: R, item: T, index: number, list: this) => R,
 			initialValue?: R
 		): R;
 

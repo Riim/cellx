@@ -684,12 +684,12 @@ function release(force) {
             let afterRelease_ = afterRelease;
             afterRelease = null;
             for (let i = 0, l = afterRelease_.length; i < l; i++) {
-                let callback = afterRelease_[i];
-                if (typeof callback == 'function') {
-                    callback();
+                let cb = afterRelease_[i];
+                if (typeof cb == 'function') {
+                    cb();
                 }
                 else {
-                    callback[0]._push(callback[1], true, false);
+                    cb[0]._push(cb[1], true, false);
                 }
             }
         }
@@ -754,7 +754,7 @@ class Cell extends EventEmitter_1.EventEmitter {
     static get currentlyPulling() {
         return !!currentCell;
     }
-    static autorun(callback, context) {
+    static autorun(cb, context) {
         let disposer;
         new Cell(function () {
             if (!disposer) {
@@ -762,7 +762,7 @@ class Cell extends EventEmitter_1.EventEmitter {
                     this.dispose();
                 };
             }
-            callback.call(context, disposer);
+            cb.call(context, disposer);
         }, {
             onChange() { }
         });
@@ -773,8 +773,11 @@ class Cell extends EventEmitter_1.EventEmitter {
             release(true);
         }
     }
-    static afterRelease(callback) {
-        (afterRelease || (afterRelease = [])).push(callback);
+    static release() {
+        this.forceRelease();
+    }
+    static afterRelease(cb) {
+        (afterRelease || (afterRelease = [])).push(cb);
     }
     on(type, listener, context) {
         if (releasePlanned || (currentlyRelease && this._level > releasePlanIndex)) {
@@ -979,9 +982,9 @@ class Cell extends EventEmitter_1.EventEmitter {
                 currentCell._dependencies = [this];
                 currentCell._level = level + 1;
             }
-        }
-        if (currentCell && this._error && this._error instanceof WaitError_1.WaitError) {
-            throw this._error;
+            if (this._error && this._error instanceof WaitError_1.WaitError) {
+                throw this._error;
+            }
         }
         return this._get ? this._get(this._value) : this._value;
     }
@@ -992,12 +995,10 @@ class Cell extends EventEmitter_1.EventEmitter {
         if (releasePlanned) {
             release();
         }
-        let prevDeps;
-        let prevLevel;
         let value;
         if (this._state & STATE_HAS_FOLLOWERS) {
-            prevDeps = this._dependencies;
-            prevLevel = this._level;
+            let prevDeps = this._dependencies;
+            let prevLevel = this._level;
             value = this._pull$();
             let deps = this._dependencies;
             let newDepCount = 0;
@@ -1514,10 +1515,10 @@ class EventEmitter {
     static set currentlySubscribing(value) {
         currentlySubscribing = value;
     }
-    static transact(callback) {
+    static transact(cb) {
         transactionLevel++;
         try {
-            callback();
+            cb();
         }
         catch (err) {
             logger_1.error(err);
@@ -2009,20 +2010,20 @@ class ObservableList extends EventEmitter_1.EventEmitter {
     join(separator) {
         return this._items.join(separator);
     }
-    find(callback, context) {
+    find(cb, context) {
         let items = this._items;
         for (let i = 0, l = items.length; i < l; i++) {
             let item = items[i];
-            if (callback.call(context, item, i, this)) {
+            if (cb.call(context, item, i, this)) {
                 return item;
             }
         }
         return;
     }
-    findIndex(callback, context) {
+    findIndex(cb, context) {
         let items = this._items;
         for (let i = 0, l = items.length; i < l; i++) {
-            if (callback.call(context, items[i], i, this)) {
+            if (cb.call(context, items[i], i, this)) {
                 return i;
             }
         }
@@ -2061,17 +2062,17 @@ class ObservableList extends EventEmitter_1.EventEmitter {
 }
 exports.ObservableList = ObservableList;
 ['forEach', 'map', 'filter', 'every', 'some'].forEach(name => {
-    ObservableList.prototype[name] = function (callback, context) {
+    ObservableList.prototype[name] = function (cb, context) {
         return this._items[name](function (item, index) {
-            return callback.call(context, item, index, this);
+            return cb.call(context, item, index, this);
         }, this);
     };
 });
 ['reduce', 'reduceRight'].forEach(name => {
-    ObservableList.prototype[name] = function (callback, initialValue) {
+    ObservableList.prototype[name] = function (cb, initialValue) {
         let list = this;
         function wrapper(accumulator, item, index) {
-            return callback(accumulator, item, index, list);
+            return cb(accumulator, item, index, list);
         }
         return arguments.length >= 2
             ? this._items[name](wrapper, initialValue)
@@ -2196,9 +2197,9 @@ class ObservableMap extends EventEmitter_1.EventEmitter {
         }
         return this;
     }
-    forEach(callback, context) {
+    forEach(cb, context) {
         this._entries.forEach(function (value, key) {
-            callback.call(context, value, key, this);
+            cb.call(context, value, key, this);
         }, this);
     }
     keys() {

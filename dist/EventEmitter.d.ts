@@ -13,7 +13,7 @@ export interface IRegisteredEvent {
 }
 export declare class EventEmitter {
     static currentlySubscribing: boolean;
-    static transact(callback: Function): void;
+    static transact(cb: Function): void;
     _events: Map<string, IRegisteredEvent | Array<IRegisteredEvent>>;
     constructor();
     getEvents(): Record<string, Array<IRegisteredEvent>>;

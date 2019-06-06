@@ -9,7 +9,7 @@ export declare class ObservableMap<K = any, V = any> extends EventEmitter {
     set(key: K, value: V): this;
     delete(key: K): boolean;
     clear(): this;
-    forEach(callback: (value: V, key: K, map: this) => void, context?: any): void;
+    forEach(cb: (value: V, key: K, map: this) => void, context?: any): void;
     keys(): Iterator<K>;
     values(): Iterator<V>;
     entries(): Iterator<[K, V]>;

@@ -747,39 +747,39 @@ console.log(list.toArray());
 
 ##### forEach
 
-Сигнатура вызова: `(callback: (item, index: uint, list: cellx.ObservableList), context?);`.
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList), context?);`.
 
 ##### map
 
-Сигнатура вызова: `(callback: (item, index: uint, list: cellx.ObservableList) -> *, context?) -> Array;`.
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> *, context?) -> Array;`.
 
 ##### filter
 
-Сигнатура вызова: `(callback: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> Array;`.
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> Array;`.
 
 ##### find
 
-Сигнатура вызова: `(callback: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> *;`.
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> *;`.
 
 ##### findIndex
 
-Сигнатура вызова: `(callback: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> int;`.
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> int;`.
 
 ##### every
 
-Сигнатура вызова: `(callback: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> boolean;`.
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> boolean;`.
 
 ##### some
 
-Сигнатура вызова: `(callback: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> boolean;`.
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> boolean;`.
 
 ##### reduce
 
-Сигнатура вызова: `(callback: (accumulator, item, index: uint, list: cellx.ObservableList) -> *, initialValue?) -> *;`.
+Сигнатура вызова: `(cb: (accumulator, item, index: uint, list: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
 ##### reduceRight
 
-Сигнатура вызова: `(callback: (accumulator, item, index: uint, list: cellx.ObservableList) -> *, initialValue?) -> *;`.
+Сигнатура вызова: `(cb: (accumulator, item, index: uint, list: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
 ##### clone
 

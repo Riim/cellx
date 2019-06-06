@@ -79,9 +79,9 @@ class ObservableMap extends EventEmitter_1.EventEmitter {
         }
         return this;
     }
-    forEach(callback, context) {
+    forEach(cb, context) {
         this._entries.forEach(function (value, key) {
-            callback.call(context, value, key, this);
+            cb.call(context, value, key, this);
         }, this);
     }
     keys() {

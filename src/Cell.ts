@@ -205,12 +205,12 @@ function release(force?: boolean) {
 			afterRelease = null;
 
 			for (let i = 0, l = afterRelease_.length; i < l; i++) {
-				let callback = afterRelease_[i];
+				let cb = afterRelease_[i];
 
-				if (typeof callback == 'function') {
-					callback();
+				if (typeof cb == 'function') {
+					cb();
 				} else {
-					callback[0]._push(callback[1], true, false);
+					cb[0]._push(cb[1], true, false);
 				}
 			}
 		}
@@ -228,7 +228,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		return !!currentCell;
 	}
 
-	static autorun(callback: Function, context?: any): () => void {
+	static autorun(cb: Function, context?: any): () => void {
 		let disposer: (() => void) | undefined;
 
 		new Cell(
@@ -239,7 +239,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 					};
 				}
 
-				callback.call(context, disposer);
+				cb.call(context, disposer);
 			},
 			{
 				onChange() {}
@@ -255,8 +255,12 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 	}
 
-	static afterRelease(callback: Function) {
-		(afterRelease || (afterRelease = [])).push(callback);
+	static release() {
+		this.forceRelease();
+	}
+
+	static afterRelease(cb: Function) {
+		(afterRelease || (afterRelease = [])).push(cb);
 	}
 
 	debugKey: string | undefined;
@@ -614,13 +618,13 @@ export class Cell<T = any, M = any> extends EventEmitter {
 				currentCell._dependencies = [this];
 				currentCell._level = level + 1;
 			}
+
+			if (this._error && this._error instanceof WaitError) {
+				throw this._error;
+			}
 		}
 
-		if (currentCell && this._error && this._error instanceof WaitError) {
-			throw this._error;
-		}
-
-		return this._get ? this._get(this._value) : this._value!;
+		return this._get ? this._get(this._value) : this._value;
 	}
 
 	pull(): boolean {
@@ -632,14 +636,11 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			release();
 		}
 
-		let prevDeps: Array<Cell> | null | undefined;
-		let prevLevel: number;
-
 		let value;
 
 		if (this._state & STATE_HAS_FOLLOWERS) {
-			prevDeps = this._dependencies;
-			prevLevel = this._level;
+			let prevDeps = this._dependencies;
+			let prevLevel = this._level;
 
 			value = this._pull$();
 

@@ -32,11 +32,11 @@ export class EventEmitter {
 		currentlySubscribing = value;
 	}
 
-	static transact(callback: Function) {
+	static transact(cb: Function) {
 		transactionLevel++;
 
 		try {
-			callback();
+			cb();
 		} catch (err) {
 			error(err);
 		}

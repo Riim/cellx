@@ -30,8 +30,8 @@ export declare class ObservableList<T = any> extends EventEmitter {
     removeRange(index: number, count?: number): Array<T>;
     clear(): this;
     join(separator?: string): string;
-    find(callback: (item: T, index: number, list: this) => any, context?: any): T | undefined;
-    findIndex(callback: (item: T, index: number, list: this) => any, context?: any): number;
+    find(cb: (item: T, index: number, list: this) => any, context?: any): T | undefined;
+    findIndex(cb: (item: T, index: number, list: this) => any, context?: any): number;
     clone(deep?: boolean): ObservableList<T>;
     toArray(): Array<T>;
     toString(): string;
@@ -39,14 +39,14 @@ export declare class ObservableList<T = any> extends EventEmitter {
 }
 declare module './ObservableList' {
     interface ObservableList<T = any> {
-        forEach(callback: (item: T, index: number, list: this) => void, context?: any): void;
-        map<R>(callback: (item: T, index: number, list: this) => R, context?: any): Array<R>;
-        filter<R extends T>(callback: (item: T, index: number, list: this) => item is R, context?: any): Array<R>;
-        filter(callback: (item: T, index: number, list: this) => any, context?: any): Array<T>;
-        every(callback: (item: T, index: number, list: this) => any, context?: any): boolean;
-        some(callback: (item: T, index: number, list: this) => any, context?: any): boolean;
-        reduce<R = T>(callback: (accumulator: R, item: T, index: number, list: this) => R, initialValue?: R): R;
-        reduceRight<R = T>(callback: (accumulator: R, item: T, index: number, list: this) => R, initialValue?: R): R;
+        forEach(cb: (item: T, index: number, list: this) => void, context?: any): void;
+        map<R>(cb: (item: T, index: number, list: this) => R, context?: any): Array<R>;
+        filter<R extends T>(cb: (item: T, index: number, list: this) => item is R, context?: any): Array<R>;
+        filter(cb: (item: T, index: number, list: this) => any, context?: any): Array<T>;
+        every(cb: (item: T, index: number, list: this) => any, context?: any): boolean;
+        some(cb: (item: T, index: number, list: this) => any, context?: any): boolean;
+        reduce<R = T>(cb: (accumulator: R, item: T, index: number, list: this) => R, initialValue?: R): R;
+        reduceRight<R = T>(cb: (accumulator: R, item: T, index: number, list: this) => R, initialValue?: R): R;
         keys(): Iterator<number>;
         values(): Iterator<T>;
         entries(): Iterator<[number, T]>;
