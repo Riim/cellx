@@ -1,18 +1,15 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const is_1 = require("@riim/is");
-const map_set_polyfill_1 = require("@riim/map-set-polyfill");
-const symbol_polyfill_1 = require("@riim/symbol-polyfill");
 const EventEmitter_1 = require("../EventEmitter");
 const hasOwn = Object.prototype.hasOwnProperty;
 class ObservableMap extends EventEmitter_1.EventEmitter {
     constructor(entries) {
         super();
-        this._entries = new map_set_polyfill_1.Map();
+        this._entries = new Map();
         if (entries) {
             let mapEntries = this._entries;
-            if (entries instanceof map_set_polyfill_1.Map || entries instanceof ObservableMap) {
-                (entries instanceof map_set_polyfill_1.Map ? entries : entries._entries).forEach((value, key) => {
+            if (entries instanceof Map || entries instanceof ObservableMap) {
+                (entries instanceof Map ? entries : entries._entries).forEach((value, key) => {
                     mapEntries.set(key, value);
                 });
             }
@@ -45,7 +42,7 @@ class ObservableMap extends EventEmitter_1.EventEmitter {
         let prev;
         if (hasKey) {
             prev = entries.get(key);
-            if (is_1.is(value, prev)) {
+            if (value === prev) {
                 return this;
             }
         }
@@ -108,4 +105,4 @@ class ObservableMap extends EventEmitter_1.EventEmitter {
     }
 }
 exports.ObservableMap = ObservableMap;
-ObservableMap.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableMap.prototype.entries;
+ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;

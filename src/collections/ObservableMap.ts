@@ -1,6 +1,3 @@
-import { is } from '@riim/is';
-import { Map } from '@riim/map-set-polyfill';
-import { Symbol } from '@riim/symbol-polyfill';
 import { EventEmitter } from '../EventEmitter';
 
 const hasOwn = Object.prototype.hasOwnProperty;
@@ -58,7 +55,7 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 		if (hasKey) {
 			prev = entries.get(key);
 
-			if (is(value, prev)) {
+			if (value === prev) {
 				return this;
 			}
 		}

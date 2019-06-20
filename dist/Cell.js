@@ -1,20 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const is_1 = require("@riim/is");
 const logger_1 = require("@riim/logger");
-const map_set_polyfill_1 = require("@riim/map-set-polyfill");
 const next_tick_1 = require("@riim/next-tick");
-const symbol_polyfill_1 = require("@riim/symbol-polyfill");
 const EventEmitter_1 = require("./EventEmitter");
 const WaitError_1 = require("./WaitError");
 const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
-const KEY_WRAPPERS = symbol_polyfill_1.Symbol('cellx[wrappers]');
-const releasePlan = new map_set_polyfill_1.Map();
+const KEY_WRAPPERS = Symbol('cellx[wrappers]');
+const releasePlan = new Map();
 let releasePlanIndex = MAX_SAFE_INTEGER;
 let releasePlanToIndex = -1;
 let releasePlanned = false;
 let currentlyRelease = 0;
-const releasedCells = new map_set_polyfill_1.Set();
+const releasedCells = new Set();
 let releaseVersion = 1;
 let afterRelease;
 let currentCell = null;
@@ -277,7 +274,7 @@ class Cell extends EventEmitter_1.EventEmitter {
         return this.off('error', listener, context !== undefined ? context : this.context);
     }
     subscribe(listener, context) {
-        let wrappers = listener[KEY_WRAPPERS] || (listener[KEY_WRAPPERS] = new map_set_polyfill_1.Map());
+        let wrappers = listener[KEY_WRAPPERS] || (listener[KEY_WRAPPERS] = new Map());
         if (wrappers.has(this)) {
             return this;
         }
@@ -624,7 +621,7 @@ class Cell extends EventEmitter_1.EventEmitter {
             this._setError(null, false);
         }
         let prevValue = this._value;
-        if (is_1.is(value, prevValue)) {
+        if (value === prevValue) {
             if (public$ || (currentlyRelease && pulling)) {
                 this._fulfill(value);
             }
@@ -640,7 +637,7 @@ class Cell extends EventEmitter_1.EventEmitter {
         if (this._state & STATE_HAS_FOLLOWERS) {
             let changeEvent = this._changeEvent || this._prevChangeEvent;
             if (changeEvent) {
-                if (is_1.is(value, this._fixedValue) && this._state & STATE_CAN_CANCEL_CHANGE) {
+                if (value === this._fixedValue && this._state & STATE_CAN_CANCEL_CHANGE) {
                     this._levelInRelease = -1;
                     this._changeEvent = null;
                 }

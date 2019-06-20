@@ -1,7 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const map_set_polyfill_1 = require("@riim/map-set-polyfill");
-const symbol_polyfill_1 = require("@riim/symbol-polyfill");
 const Cell_1 = require("./Cell");
 const ObservableList_1 = require("./collections/ObservableList");
 const ObservableMap_1 = require("./collections/ObservableMap");
@@ -26,7 +24,7 @@ function list(items, options) {
     return new ObservableList_1.ObservableList(items, options);
 }
 exports.list = list;
-exports.KEY_CELL_MAP = symbol_polyfill_1.Symbol('cellx[cellMap]');
+exports.KEY_CELL_MAP = Symbol('cellx[cellMap]');
 function cellx(value, options) {
     if (!options) {
         options = {};
@@ -38,7 +36,7 @@ function cellx(value, options) {
             context = cx;
         }
         if (!hasOwn.call(context, exports.KEY_CELL_MAP)) {
-            context[exports.KEY_CELL_MAP] = new map_set_polyfill_1.Map();
+            context[exports.KEY_CELL_MAP] = new Map();
         }
         let cell = context[exports.KEY_CELL_MAP].get(cx);
         if (!cell) {

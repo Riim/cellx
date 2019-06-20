@@ -1,8 +1,5 @@
-import { is } from '@riim/is';
 import { error, warn } from '@riim/logger';
-import { Map, Set } from '@riim/map-set-polyfill';
 import { nextTick } from '@riim/next-tick';
-import { Symbol } from '@riim/symbol-polyfill';
 import { EventEmitter, IEvent, TListener } from './EventEmitter';
 import { WaitError } from './WaitError';
 
@@ -888,7 +885,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 		let prevValue = this._value;
 
-		if (is(value, prevValue)) {
+		if (value === prevValue) {
 			if (public$ || (currentlyRelease && pulling)) {
 				this._fulfill(value);
 			}
@@ -909,7 +906,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			let changeEvent = this._changeEvent || this._prevChangeEvent;
 
 			if (changeEvent) {
-				if (is(value, this._fixedValue) && this._state & STATE_CAN_CANCEL_CHANGE) {
+				if (value === this._fixedValue && this._state & STATE_CAN_CANCEL_CHANGE) {
 					this._levelInRelease = -1;
 					this._changeEvent = null;
 				} else {

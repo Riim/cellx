@@ -1,5 +1,3 @@
-import { Map } from '@riim/map-set-polyfill';
-import { Symbol } from '@riim/symbol-polyfill';
 import {
 	Cell,
 	ICellOptions,

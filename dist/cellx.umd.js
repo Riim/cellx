@@ -101,20 +101,18 @@ return /******/ (function(modules) { // webpackBootstrap
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const map_set_polyfill_1 = __webpack_require__(1);
-const symbol_polyfill_1 = __webpack_require__(2);
-const Cell_1 = __webpack_require__(3);
-const ObservableList_1 = __webpack_require__(9);
-const ObservableMap_1 = __webpack_require__(10);
-var EventEmitter_1 = __webpack_require__(7);
+const Cell_1 = __webpack_require__(1);
+const ObservableList_1 = __webpack_require__(6);
+const ObservableMap_1 = __webpack_require__(7);
+var EventEmitter_1 = __webpack_require__(4);
 exports.EventEmitter = EventEmitter_1.EventEmitter;
-var ObservableMap_2 = __webpack_require__(10);
+var ObservableMap_2 = __webpack_require__(7);
 exports.ObservableMap = ObservableMap_2.ObservableMap;
-var ObservableList_2 = __webpack_require__(9);
+var ObservableList_2 = __webpack_require__(6);
 exports.ObservableList = ObservableList_2.ObservableList;
-var Cell_2 = __webpack_require__(3);
+var Cell_2 = __webpack_require__(1);
 exports.Cell = Cell_2.Cell;
-var WaitError_1 = __webpack_require__(8);
+var WaitError_1 = __webpack_require__(5);
 exports.WaitError = WaitError_1.WaitError;
 const hasOwn = Object.prototype.hasOwnProperty;
 const slice = Array.prototype.slice;
@@ -127,7 +125,7 @@ function list(items, options) {
     return new ObservableList_1.ObservableList(items, options);
 }
 exports.list = list;
-exports.KEY_CELL_MAP = symbol_polyfill_1.Symbol('cellx[cellMap]');
+exports.KEY_CELL_MAP = Symbol('cellx[cellMap]');
 function cellx(value, options) {
     if (!options) {
         options = {};
@@ -139,7 +137,7 @@ function cellx(value, options) {
             context = cx;
         }
         if (!hasOwn.call(context, exports.KEY_CELL_MAP)) {
-            context[exports.KEY_CELL_MAP] = new map_set_polyfill_1.Map();
+            context[exports.KEY_CELL_MAP] = new Map();
         }
         let cell = context[exports.KEY_CELL_MAP].get(cx);
         if (!cell) {
@@ -226,351 +224,21 @@ exports.define = define;
 /* 1 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var global = Function('return this;')();
-var Symbol =  true
-	? __webpack_require__(2).Symbol
-	: undefined;
-
-var Map = global.Map;
-
-if (!Map || Map.toString().indexOf('[native code]') == -1 || !new Map([[1, 1]]).size) {
-	var hasOwn = Object.prototype.hasOwnProperty;
-
-	var KEY_MAP_ID = Symbol('mapId');
-	var mapIdCounter = 0;
-
-	var entryStub = {
-		value: undefined
-	};
-
-	Map = function Map(entries) {
-		this._entries = Object.create(null);
-		this._objectStamps = {};
-
-		this._first = null;
-		this._last = null;
-
-		this.size = 0;
-
-		if (entries) {
-			for (var i = 0, l = entries.length; i < l; i++) {
-				this.set(entries[i][0], entries[i][1]);
-			}
-		}
-	};
-
-	Map.prototype = {
-		constructor: Map,
-
-		has: function(key) {
-			return !!this._entries[this._getValueStamp(key)];
-		},
-
-		get: function(key) {
-			return (this._entries[this._getValueStamp(key)] || entryStub).value;
-		},
-
-		set: function(key, value) {
-			var entries = this._entries;
-			var keyStamp = this._getValueStamp(key);
-
-			if (entries[keyStamp]) {
-				entries[keyStamp].value = value;
-			} else {
-				var entry = entries[keyStamp] = {
-					key: key,
-					keyStamp: keyStamp,
-					value: value,
-					prev: this._last,
-					next: null
-				};
-
-				if (this.size++) {
-					this._last.next = entry;
-				} else {
-					this._first = entry;
-				}
-
-				this._last = entry;
-			}
-
-			return this;
-		},
-
-		delete: function(key) {
-			var keyStamp = this._getValueStamp(key);
-			var entry = this._entries[keyStamp];
-
-			if (!entry) {
-				return false;
-			}
-
-			if (--this.size) {
-				var prev = entry.prev;
-				var next = entry.next;
-
-				if (prev) {
-					prev.next = next;
-				} else {
-					this._first = next;
-				}
-
-				if (next) {
-					next.prev = prev;
-				} else {
-					this._last = prev;
-				}
-			} else {
-				this._first = null;
-				this._last = null;
-			}
-
-			delete this._entries[keyStamp];
-			delete this._objectStamps[keyStamp];
-
-			return true;
-		},
-
-		clear: function() {
-			var entries = this._entries;
-
-			for (var stamp in entries) {
-				delete entries[stamp];
-			}
-
-			this._objectStamps = {};
-
-			this._first = null;
-			this._last = null;
-
-			this.size = 0;
-		},
-
-		forEach: function(callback, context) {
-			var entry = this._first;
-
-			while (entry) {
-				callback.call(context, entry.value, entry.key, this);
-
-				do {
-					entry = entry.next;
-				} while (entry && !this._entries[entry.keyStamp]);
-			}
-		},
-
-		toString: function() {
-			return '[object Map]';
-		},
-
-		_getValueStamp: function(value) {
-			switch (typeof value) {
-				case 'undefined': {
-					return 'undefined';
-				}
-				case 'object': {
-					if (value === null) {
-						return 'null';
-					}
-
-					break;
-				}
-				case 'boolean': {
-					return '?' + value;
-				}
-				case 'number': {
-					return '+' + value;
-				}
-				case 'string': {
-					return ',' + value;
-				}
-			}
-
-			return this._getObjectStamp(value);
-		},
-
-		_getObjectStamp: function(obj) {
-			if (!hasOwn.call(obj, KEY_MAP_ID)) {
-				if (!Object.isExtensible(obj)) {
-					var stamps = this._objectStamps;
-					var stamp;
-
-					for (stamp in stamps) {
-						if (hasOwn.call(stamps, stamp) && stamps[stamp] == obj) {
-							return stamp;
-						}
-					}
-
-					stamp = String(++mapIdCounter);
-					stamps[stamp] = obj;
-
-					return stamp;
-				}
-
-				Object.defineProperty(obj, KEY_MAP_ID, {
-					value: String(++mapIdCounter)
-				});
-			}
-
-			return obj[KEY_MAP_ID];
-		}
-	};
-
-	[
-		['keys', function(entry) {
-			return entry.key;
-		}],
-		['values', function(entry) {
-			return entry.value;
-		}],
-		['entries', function(entry) {
-			return [entry.key, entry.value];
-		}]
-	].forEach(function(settings) {
-		var getStepValue = settings[1];
-
-		Map.prototype[settings[0]] = function() {
-			var entries = this._entries;
-			var entry;
-			var done = false;
-			var map = this;
-
-			return {
-				next: function() {
-					if (!done) {
-						if (entry) {
-							do {
-								entry = entry.next;
-							} while (entry && !entries[entry.keyStamp]);
-						} else {
-							entry = map._first;
-						}
-
-						if (entry) {
-							return {
-								value: getStepValue(entry),
-								done: false
-							};
-						}
-
-						done = true;
-					}
-
-					return {
-						value: undefined,
-						done: true
-					};
-				}
-			};
-		};
-	});
-}
-
-if (!Map.prototype[Symbol.iterator]) {
-	Map.prototype[Symbol.iterator] = Map.prototype.entries;
-}
-
-var Set = global.Set;
-
-if (!Set || Set.toString().indexOf('[native code]') == -1 || !new Set([1]).size) {
-	Set = function Set(values) {
-		this._values = new Map(values ? values.map(function(value) {
-			return [value, value];
-		}) : []);
-
-		this.size = 0;
-	};
-
-	Set.prototype = {
-		constructor: Set,
-
-		has: function(value) {
-			return this._values.has(value);
-		},
-
-		add: function(value) {
-			this._values.set(value, value);
-			this.size = this._values.size;
-			return this;
-		},
-
-		delete: function(value) {
-			if (this._values.delete(value)) {
-				this.size--;
-				return true;
-			}
-
-			return false;
-		},
-
-		clear: function() {
-			this._values.clear();
-			this.size = 0;
-		},
-
-		forEach: function(callback, context) {
-			this._values.forEach(function(value) {
-				callback.call(context, value, value, this);
-			}, this);
-		},
-
-		keys: Map.prototype.keys,
-		values: Map.prototype.values,
-		entries: Map.prototype.entries
-	};
-}
-
-if (!Set.prototype[Symbol.iterator]) {
-	Set.prototype[Symbol.iterator] = Set.prototype.values;
-}
-
-if (true) {
-	exports.Map = Map;
-	exports.Set = Set;
-} else {}
-
-
-/***/ }),
-/* 2 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var global = Function('return this;')();
-var Symbol = global.Symbol;
-
-if (!Symbol) {
-	var idCounter = 0;
-
-	Symbol = function Symbol(key) {
-		return '__' + key + '_' + Math.floor(Math.random() * 1e9) + '_' + (++idCounter) + '__';
-	};
-
-	Symbol.iterator = Symbol('Symbol.iterator');
-}
-
-( true ? exports : undefined).Symbol = Symbol;
-
-
-/***/ }),
-/* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const is_1 = __webpack_require__(4);
-const logger_1 = __webpack_require__(5);
-const map_set_polyfill_1 = __webpack_require__(1);
-const next_tick_1 = __webpack_require__(6);
-const symbol_polyfill_1 = __webpack_require__(2);
-const EventEmitter_1 = __webpack_require__(7);
-const WaitError_1 = __webpack_require__(8);
+const logger_1 = __webpack_require__(2);
+const next_tick_1 = __webpack_require__(3);
+const EventEmitter_1 = __webpack_require__(4);
+const WaitError_1 = __webpack_require__(5);
 const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
-const KEY_WRAPPERS = symbol_polyfill_1.Symbol('cellx[wrappers]');
-const releasePlan = new map_set_polyfill_1.Map();
+const KEY_WRAPPERS = Symbol('cellx[wrappers]');
+const releasePlan = new Map();
 let releasePlanIndex = MAX_SAFE_INTEGER;
 let releasePlanToIndex = -1;
 let releasePlanned = false;
 let currentlyRelease = 0;
-const releasedCells = new map_set_polyfill_1.Set();
+const releasedCells = new Set();
 let releaseVersion = 1;
 let afterRelease;
 let currentCell = null;
@@ -833,7 +501,7 @@ class Cell extends EventEmitter_1.EventEmitter {
         return this.off('error', listener, context !== undefined ? context : this.context);
     }
     subscribe(listener, context) {
-        let wrappers = listener[KEY_WRAPPERS] || (listener[KEY_WRAPPERS] = new map_set_polyfill_1.Map());
+        let wrappers = listener[KEY_WRAPPERS] || (listener[KEY_WRAPPERS] = new Map());
         if (wrappers.has(this)) {
             return this;
         }
@@ -1180,7 +848,7 @@ class Cell extends EventEmitter_1.EventEmitter {
             this._setError(null, false);
         }
         let prevValue = this._value;
-        if (is_1.is(value, prevValue)) {
+        if (value === prevValue) {
             if (public$ || (currentlyRelease && pulling)) {
                 this._fulfill(value);
             }
@@ -1196,7 +864,7 @@ class Cell extends EventEmitter_1.EventEmitter {
         if (this._state & STATE_HAS_FOLLOWERS) {
             let changeEvent = this._changeEvent || this._prevChangeEvent;
             if (changeEvent) {
-                if (is_1.is(value, this._fixedValue) && this._state & STATE_CAN_CANCEL_CHANGE) {
+                if (value === this._fixedValue && this._state & STATE_CAN_CANCEL_CHANGE) {
                     this._levelInRelease = -1;
                     this._changeEvent = null;
                 }
@@ -1381,17 +1049,7 @@ exports.Cell = Cell;
 
 
 /***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.is = Object.is || (function (a, b) { return (a === b ? a !== 0 || 1 / a == 1 / b : a != a && b != b); });
-
-
-/***/ }),
-/* 5 */
+/* 2 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1440,13 +1098,13 @@ exports.error = exports.logger.error.bind(exports.logger);
 
 
 /***/ }),
-/* 6 */
+/* 3 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const logger_1 = __webpack_require__(5);
+const logger_1 = __webpack_require__(2);
 exports.nextTick = (() => {
     const global = Function('return this;')();
     if (global.process &&
@@ -1496,14 +1154,13 @@ exports.nextTick = (() => {
 
 
 /***/ }),
-/* 7 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const logger_1 = __webpack_require__(5);
-const map_set_polyfill_1 = __webpack_require__(1);
+const logger_1 = __webpack_require__(2);
 const hasOwn = Object.prototype.hasOwnProperty;
 let currentlySubscribing = false;
 let transactionLevel = 0;
@@ -1533,7 +1190,7 @@ class EventEmitter {
         }
     }
     constructor() {
-        this._events = new map_set_polyfill_1.Map();
+        this._events = new Map();
     }
     getEvents(type) {
         let events;
@@ -1725,7 +1382,7 @@ exports.EventEmitter = EventEmitter;
 
 
 /***/ }),
-/* 8 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1740,15 +1397,13 @@ WaitError.prototype = {
 
 
 /***/ }),
-/* 9 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const is_1 = __webpack_require__(4);
-const symbol_polyfill_1 = __webpack_require__(2);
-const EventEmitter_1 = __webpack_require__(7);
+const EventEmitter_1 = __webpack_require__(4);
 const push = Array.prototype.push;
 const splice = Array.prototype.splice;
 const defaultComparator = (a, b) => {
@@ -1825,7 +1480,7 @@ class ObservableList extends EventEmitter_1.EventEmitter {
             throw new TypeError('Cannot set to sorted list');
         }
         index = this._validateIndex(index, true);
-        if (!is_1.is(value, this._items[index])) {
+        if (value !== this._items[index]) {
             this._items[index] = value;
             this.emit('change');
         }
@@ -1850,7 +1505,7 @@ class ObservableList extends EventEmitter_1.EventEmitter {
         let changed = false;
         for (let i = index + valueCount; i > index;) {
             let value = values[--i - index];
-            if (!is_1.is(value, items[i])) {
+            if (value !== items[i]) {
                 items[i] = value;
                 changed = true;
             }
@@ -2108,29 +1763,26 @@ exports.ObservableList = ObservableList;
         };
     };
 });
-ObservableList.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableList.prototype.values;
+ObservableList.prototype[Symbol.iterator] = ObservableList.prototype.values;
 
 
 /***/ }),
-/* 10 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const is_1 = __webpack_require__(4);
-const map_set_polyfill_1 = __webpack_require__(1);
-const symbol_polyfill_1 = __webpack_require__(2);
-const EventEmitter_1 = __webpack_require__(7);
+const EventEmitter_1 = __webpack_require__(4);
 const hasOwn = Object.prototype.hasOwnProperty;
 class ObservableMap extends EventEmitter_1.EventEmitter {
     constructor(entries) {
         super();
-        this._entries = new map_set_polyfill_1.Map();
+        this._entries = new Map();
         if (entries) {
             let mapEntries = this._entries;
-            if (entries instanceof map_set_polyfill_1.Map || entries instanceof ObservableMap) {
-                (entries instanceof map_set_polyfill_1.Map ? entries : entries._entries).forEach((value, key) => {
+            if (entries instanceof Map || entries instanceof ObservableMap) {
+                (entries instanceof Map ? entries : entries._entries).forEach((value, key) => {
                     mapEntries.set(key, value);
                 });
             }
@@ -2163,7 +1815,7 @@ class ObservableMap extends EventEmitter_1.EventEmitter {
         let prev;
         if (hasKey) {
             prev = entries.get(key);
-            if (is_1.is(value, prev)) {
+            if (value === prev) {
                 return this;
             }
         }
@@ -2226,7 +1878,7 @@ class ObservableMap extends EventEmitter_1.EventEmitter {
     }
 }
 exports.ObservableMap = ObservableMap;
-ObservableMap.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableMap.prototype.entries;
+ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;
 
 
 /***/ })

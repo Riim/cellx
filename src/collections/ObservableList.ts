@@ -1,5 +1,3 @@
-import { is } from '@riim/is';
-import { Symbol } from '@riim/symbol-polyfill';
 import { EventEmitter } from '../EventEmitter';
 
 const push = Array.prototype.push;
@@ -112,7 +110,7 @@ export class ObservableList<T = any> extends EventEmitter {
 
 		index = this._validateIndex(index, true)!;
 
-		if (!is(value, this._items[index])) {
+		if (value !== this._items[index]) {
 			this._items[index] = value;
 			this.emit('change');
 		}
@@ -147,7 +145,7 @@ export class ObservableList<T = any> extends EventEmitter {
 		for (let i = index + valueCount; i > index; ) {
 			let value = values[--i - index];
 
-			if (!is(value, items[i])) {
+			if (value !== items[i]) {
 				items[i] = value;
 				changed = true;
 			}

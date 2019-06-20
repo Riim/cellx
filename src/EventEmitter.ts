@@ -1,5 +1,4 @@
 import { error } from '@riim/logger';
-import { Map } from '@riim/map-set-polyfill';
 
 const hasOwn = Object.prototype.hasOwnProperty;
 

@@ -24,7 +24,7 @@ export interface ICellx<T> {
     <U = any>(method: 'catch', onRejected: (err: Error) => U): Promise<U>;
     (method: 'reap' | 'dispose', _: any): Cell<T>;
 }
-export declare const KEY_CELL_MAP: symbol;
+export declare const KEY_CELL_MAP: unique symbol;
 export declare function cellx<T = any, M = any>(value: T | TCellPull<T>, options?: ICellOptions<T, M>): ICellx<T>;
 export declare function defineObservableProperty<T extends object = object>(obj: T, name: string, value: any): T;
 export declare function defineObservableProperties<T extends object = object>(obj: T, props: Record<string, any>): T;

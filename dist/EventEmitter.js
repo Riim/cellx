@@ -1,7 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const logger_1 = require("@riim/logger");
-const map_set_polyfill_1 = require("@riim/map-set-polyfill");
 const hasOwn = Object.prototype.hasOwnProperty;
 let currentlySubscribing = false;
 let transactionLevel = 0;
@@ -31,7 +30,7 @@ class EventEmitter {
         }
     }
     constructor() {
-        this._events = new map_set_polyfill_1.Map();
+        this._events = new Map();
     }
     getEvents(type) {
         let events;

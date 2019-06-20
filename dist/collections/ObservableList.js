@@ -1,7 +1,5 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const is_1 = require("@riim/is");
-const symbol_polyfill_1 = require("@riim/symbol-polyfill");
 const EventEmitter_1 = require("../EventEmitter");
 const push = Array.prototype.push;
 const splice = Array.prototype.splice;
@@ -79,7 +77,7 @@ class ObservableList extends EventEmitter_1.EventEmitter {
             throw new TypeError('Cannot set to sorted list');
         }
         index = this._validateIndex(index, true);
-        if (!is_1.is(value, this._items[index])) {
+        if (value !== this._items[index]) {
             this._items[index] = value;
             this.emit('change');
         }
@@ -104,7 +102,7 @@ class ObservableList extends EventEmitter_1.EventEmitter {
         let changed = false;
         for (let i = index + valueCount; i > index;) {
             let value = values[--i - index];
-            if (!is_1.is(value, items[i])) {
+            if (value !== items[i]) {
                 items[i] = value;
                 changed = true;
             }
@@ -362,4 +360,4 @@ exports.ObservableList = ObservableList;
         };
     };
 });
-ObservableList.prototype[symbol_polyfill_1.Symbol.iterator] = ObservableList.prototype.values;
+ObservableList.prototype[Symbol.iterator] = ObservableList.prototype.values;
