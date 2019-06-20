@@ -55,7 +55,7 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 		if (hasKey) {
 			prev = entries.get(key);
 
-			if (value === prev) {
+			if (Object.is(value, prev)) {
 				return this;
 			}
 		}

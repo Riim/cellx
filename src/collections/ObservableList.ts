@@ -110,7 +110,7 @@ export class ObservableList<T = any> extends EventEmitter {
 
 		index = this._validateIndex(index, true)!;
 
-		if (value !== this._items[index]) {
+		if (!Object.is(value, this._items[index])) {
 			this._items[index] = value;
 			this.emit('change');
 		}
@@ -145,7 +145,7 @@ export class ObservableList<T = any> extends EventEmitter {
 		for (let i = index + valueCount; i > index; ) {
 			let value = values[--i - index];
 
-			if (value !== items[i]) {
+			if (!Object.is(value, items[i])) {
 				items[i] = value;
 				changed = true;
 			}

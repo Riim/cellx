@@ -62,10 +62,8 @@ export class EventEmitter {
 	getEvents(): Record<string, Array<IRegisteredEvent>>;
 	getEvents(type: string): Array<IRegisteredEvent>;
 	getEvents(type?: string) {
-		let events: any;
-
 		if (type) {
-			events = this._events.get(type);
+			let events = this._events.get(type);
 
 			if (!events) {
 				return [];
@@ -74,7 +72,7 @@ export class EventEmitter {
 			return Array.isArray(events) ? events : [events];
 		}
 
-		events = { __proto__: null };
+		let events = { __proto__: null } as any;
 
 		this._events.forEach((typeEvents, type) => {
 			events[type] = Array.isArray(typeEvents) ? typeEvents : [typeEvents];
@@ -271,16 +269,15 @@ export class EventEmitter {
 		}
 
 		if (Array.isArray(events)) {
-			let eventCount = events.length;
-
-			if (eventCount == 1) {
+			if (events.length == 1) {
 				if (this._tryEventListener(events[0], evt) === false) {
 					evt.propagationStopped = true;
 				}
 			} else {
 				events = events.slice();
 
-				for (let i = 0; i < eventCount; i++) {
+				// tslint:disable-next-line:prefer-for-of
+				for (let i = 0; i < events.length; i++) {
 					if (this._tryEventListener(events[i], evt) === false) {
 						evt.propagationStopped = true;
 					}
