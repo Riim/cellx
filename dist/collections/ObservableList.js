@@ -77,7 +77,7 @@ class ObservableList extends EventEmitter_1.EventEmitter {
             throw new TypeError('Cannot set to sorted list');
         }
         index = this._validateIndex(index, true);
-        if (value !== this._items[index]) {
+        if (!Object.is(value, this._items[index])) {
             this._items[index] = value;
             this.emit('change');
         }
@@ -102,7 +102,7 @@ class ObservableList extends EventEmitter_1.EventEmitter {
         let changed = false;
         for (let i = index + valueCount; i > index;) {
             let value = values[--i - index];
-            if (value !== items[i]) {
+            if (!Object.is(value, items[i])) {
                 items[i] = value;
                 changed = true;
             }

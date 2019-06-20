@@ -42,7 +42,7 @@ class ObservableMap extends EventEmitter_1.EventEmitter {
         let prev;
         if (hasKey) {
             prev = entries.get(key);
-            if (value === prev) {
+            if (Object.is(value, prev)) {
                 return this;
             }
         }

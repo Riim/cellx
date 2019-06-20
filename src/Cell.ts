@@ -1,4 +1,4 @@
-import { error, warn } from '@riim/logger';
+import { error } from '@riim/logger';
 import { nextTick } from '@riim/next-tick';
 import { EventEmitter, IEvent, TListener } from './EventEmitter';
 import { WaitError } from './WaitError';
@@ -21,7 +21,6 @@ export interface ICellOptions<T, M> {
 export interface ICellChangeEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
 	type: 'change';
 	data: {
-		prevEvent: ICellChangeEvent | null;
 		prevValue: any;
 		value: any;
 	};
@@ -38,189 +37,42 @@ export type TCellEvent<T extends EventEmitter = EventEmitter> =
 	| ICellChangeEvent<T>
 	| ICellErrorEvent<T>;
 
-const MAX_SAFE_INTEGER = Number.MAX_SAFE_INTEGER || 0x1fffffffffffff;
-const KEY_WRAPPERS = Symbol('cellx[wrappers]');
+function defaultPut(cell: Cell, value: any) {
+	cell.push(value);
+}
 
-const releasePlan = new Map<number, Array<Cell>>();
-let releasePlanIndex = MAX_SAFE_INTEGER;
-let releasePlanToIndex = -1;
+const pendingCells: Array<Cell> = [];
+let pendingCellsIndex = 0;
 
-let releasePlanned = false;
-let currentlyRelease = 0;
-
-const releasedCells = new Set();
-
-let releaseVersion = 1;
-
-let afterRelease: Array<Function | [Cell, any]> | null;
+let afterRelease: Array<Function> | null;
 
 let currentCell: Cell | null = null;
 
 const $error: { error: Error | null } = { error: null };
 
-let pushingIndexCounter = 0;
-let errorIndexCounter = 0;
+let lastUpdationId = 0;
 
-const STATE_INITED = 1;
-const STATE_ACTIVE = 1 << 1;
-const STATE_HAS_FOLLOWERS = 1 << 2;
-const STATE_CURRENTLY_PULLING = 1 << 3;
-const STATE_PENDING = 1 << 4;
-const STATE_FULFILLED = 1 << 5;
-const STATE_REJECTED = 1 << 6;
-const STATE_CAN_CANCEL_CHANGE = 1 << 7;
-
-function release(force?: boolean) {
-	if (!releasePlanned && !force) {
-		return;
-	}
-
-	releasePlanned = false;
-	currentlyRelease++;
-
-	let queue = releasePlan.get(releasePlanIndex);
-
-	for (;;) {
-		let cell = queue && queue.shift();
-
-		if (!cell) {
-			if (releasePlanIndex == releasePlanToIndex) {
-				break;
-			}
-
-			queue = releasePlan.get(++releasePlanIndex);
-			continue;
-		}
-
-		let prevReleasePlanIndex: number;
-
-		let level = cell._level;
-		let changeEvent = cell._changeEvent;
-
-		if (changeEvent) {
-			prevReleasePlanIndex = releasePlanIndex;
-		} else {
-			if (level > releasePlanIndex || cell._levelInRelease == -1) {
-				if (!queue!.length) {
-					if (releasePlanIndex == releasePlanToIndex) {
-						break;
-					}
-
-					queue = releasePlan.get(++releasePlanIndex);
-				}
-
-				continue;
-			}
-
-			prevReleasePlanIndex = releasePlanIndex;
-
-			cell.pull();
-
-			if (releasedCells.has(cell)) {
-				if (Cell.debug) {
-					warn('Multiple cell pull in release', cell);
-				}
-			} else {
-				releasedCells.add(cell);
-			}
-
-			if (releasePlanIndex < prevReleasePlanIndex) {
-				queue!.unshift(cell);
-
-				queue = releasePlan.get(releasePlanIndex);
-				continue;
-			}
-
-			level = cell._level;
-
-			if (level > releasePlanIndex) {
-				if (!queue!.length) {
-					queue = releasePlan.get(++releasePlanIndex);
-				}
-
-				continue;
-			}
-
-			changeEvent = cell._changeEvent;
-		}
-
-		cell._levelInRelease = -1;
-
-		if (changeEvent) {
-			cell._fixedValue = cell._value;
-			cell._changeEvent = null;
-
-			let pushingIndex = cell._pushingIndex;
-			let reactions = cell._reactions;
-
-			for (let i = 0, l = reactions.length; i < l; i++) {
-				let reaction = reactions[i];
-
-				if (reaction._level <= level) {
-					reaction._level = level + 1;
-				}
-
-				if (pushingIndex > reaction._pushingIndex) {
-					reaction._pushingIndex = pushingIndex;
-					reaction._prevChangeEvent = reaction._changeEvent;
-					reaction._changeEvent = null;
-
-					reaction._addToRelease();
-				}
-			}
-
-			cell.handleEvent(changeEvent);
-
-			if (releasePlanIndex == MAX_SAFE_INTEGER) {
-				break;
-			}
-
-			if (releasePlanIndex != prevReleasePlanIndex) {
-				queue = releasePlan.get(releasePlanIndex);
-				continue;
-			}
-		}
-
-		if (!queue!.length) {
-			if (releasePlanIndex == releasePlanToIndex) {
-				break;
-			}
-
-			queue = releasePlan.get(++releasePlanIndex);
+function release() {
+	for (; pendingCellsIndex < pendingCells.length; pendingCellsIndex++) {
+		if (pendingCells[pendingCellsIndex]._active) {
+			pendingCells[pendingCellsIndex].actualize();
 		}
 	}
 
-	if (!--currentlyRelease) {
-		releasePlanIndex = MAX_SAFE_INTEGER;
-		releasePlanToIndex = -1;
-		releasedCells.clear();
-		releaseVersion++;
+	pendingCells.length = 0;
+	pendingCellsIndex = 0;
 
-		if (afterRelease) {
-			let afterRelease_ = afterRelease;
+	if (afterRelease) {
+		let afterRelease_ = afterRelease;
+		afterRelease = null;
 
-			afterRelease = null;
-
-			for (let i = 0, l = afterRelease_.length; i < l; i++) {
-				let cb = afterRelease_[i];
-
-				if (typeof cb == 'function') {
-					cb();
-				} else {
-					cb[0]._push(cb[1], true, false);
-				}
-			}
+		for (let cb of afterRelease_) {
+			cb();
 		}
 	}
-}
-
-function defaultPut(cell: Cell, value: any) {
-	cell.push(value);
 }
 
 export class Cell<T = any, M = any> extends EventEmitter {
-	static debug = false;
-
 	static get currentlyPulling(): boolean {
 		return !!currentCell;
 	}
@@ -246,14 +98,8 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		return disposer!;
 	}
 
-	static forceRelease() {
-		if (releasePlanned || currentlyRelease) {
-			release(true);
-		}
-	}
-
 	static release() {
-		this.forceRelease();
+		release();
 	}
 
 	static afterRelease(cb: Function) {
@@ -271,40 +117,23 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	_merge: ((next: T, value: any) => any) | null;
 	_put: (cell: Cell<T>, next: any, value: any) => void;
 
-	_onFulfilled: ((value: any) => void) | null;
-	_onRejected: ((err: Error) => void) | null;
-
 	_reap: (() => void) | null;
 
 	meta: M | null;
 
-	_value: any;
-	_fixedValue: any;
-
-	_error: Error | null = null;
-
-	_pushingIndex = 0;
-	_errorIndex = 0;
-
-	_version = 0;
-
-	_dependencies: Array<Cell> | null | undefined = undefined;
+	_dependencies: Array<Cell> | null | undefined;
 	_reactions: Array<Cell> = [];
-	_level = 0;
-	_levelInRelease = -1;
 
-	_selfPendingStatusCell: Cell<boolean> | null = null;
-	_pendingStatusCell: Cell<boolean> | null = null;
-
-	_selfErrorCell: Cell<Error | null> | null = null;
-	_errorCell: Cell<Error | null> | null = null;
-
-	_state = STATE_CAN_CANCEL_CHANGE;
-
-	_prevChangeEvent: IEvent | null = null;
-	_changeEvent: IEvent | null = null;
-
+	_value: any;
+	_error: Error | null = null;
 	_lastErrorEvent: IEvent<this> | null = null;
+
+	_state: 'actual' | 'dirty' | 'check';
+	_inited: boolean;
+	_hasSubscribers = false;
+	_active = false;
+	_currentlyPulling = false;
+	_updationId = -1;
 
 	constructor(value: T | TCellPull<T>, options?: ICellOptions<T, M>) {
 		super();
@@ -320,15 +149,18 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		this._merge = (options && options.merge) || null;
 		this._put = (options && options.put) || defaultPut;
 
-		this._onFulfilled = this._onRejected = null;
-
 		this._reap = (options && options.reap) || null;
 
 		this.meta = (options && options.meta) || null;
 
 		if (this._pull) {
-			this._fixedValue = this._value = undefined;
+			this._dependencies = undefined;
+			this._value = undefined;
+			this._state = 'dirty';
+			this._inited = false;
 		} else {
+			this._dependencies = null;
+
 			if (this._validate) {
 				this._validate(value as T, undefined);
 			}
@@ -336,7 +168,10 @@ export class Cell<T = any, M = any> extends EventEmitter {
 				value = this._merge(value as T, undefined);
 			}
 
-			this._fixedValue = this._value = value as T;
+			this._value = value;
+
+			this._state = 'actual';
+			this._inited = true;
 
 			if (value instanceof EventEmitter) {
 				value.on('change', this._onValueChange, this);
@@ -353,14 +188,12 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 	}
 
-	on(type: string, listener: TListener, context?: any): this;
-	on(listeners: Record<string, TListener>, context?: any): this;
+	on(type: 'change' | 'error', listener: TListener, context?: any): this;
+	on(listeners: Record<'change' | 'error', TListener>, context?: any): this;
 	on(type: string | Record<string, TListener>, listener?: any, context?: any) {
-		if (releasePlanned || (currentlyRelease && this._level > releasePlanIndex)) {
-			release(true);
+		if (this._dependencies !== null) {
+			this.actualize();
 		}
-
-		this._activate();
 
 		if (typeof type == 'object') {
 			super.on(type, listener !== undefined ? listener : this.context);
@@ -368,16 +201,18 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			super.on(type, listener, context !== undefined ? context : this.context);
 		}
 
-		this._state |= STATE_HAS_FOLLOWERS;
+		this._hasSubscribers = true;
+
+		this._activate(true);
 
 		return this;
 	}
 
-	off(type: string, listener: TListener, context?: any): this;
-	off(listeners?: Record<string, TListener>, context?: any): this;
+	off(type: 'change' | 'error', listener: TListener, context?: any): this;
+	off(listeners?: Record<'change' | 'error', TListener>, context?: any): this;
 	off(type?: string | Record<string, TListener>, listener?: any, context?: any) {
-		if (releasePlanned || (currentlyRelease && this._level > releasePlanIndex)) {
-			release(true);
+		if (this._dependencies !== null) {
+			this.actualize();
 		}
 
 		if (type) {
@@ -391,13 +226,12 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 
 		if (
+			this._hasSubscribers &&
 			!this._reactions.length &&
 			!this._events.has('change') &&
-			!this._events.has('error') &&
-			this._state & STATE_HAS_FOLLOWERS
+			!this._events.has('error')
 		) {
-			this._state ^= STATE_HAS_FOLLOWERS;
-
+			this._hasSubscribers = false;
 			this._deactivate();
 
 			if (this._reap) {
@@ -408,72 +242,23 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		return this;
 	}
 
-	addChangeListener(listener: TListener, context?: any): this {
-		return this.on('change', listener, context !== undefined ? context : this.context);
-	}
-
-	removeChangeListener(listener: TListener, context?: any): this {
-		return this.off('change', listener, context !== undefined ? context : this.context);
-	}
-
-	addErrorListener(listener: TListener, context?: any): this {
-		return this.on('error', listener, context !== undefined ? context : this.context);
-	}
-
-	removeErrorListener(listener: TListener, context?: any): this {
-		return this.off('error', listener, context !== undefined ? context : this.context);
-	}
-
-	subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this {
-		let wrappers: Map<Cell, TListener> =
-			listener[KEY_WRAPPERS] || (listener[KEY_WRAPPERS] = new Map());
-
-		if (wrappers.has(this)) {
-			return this;
-		}
-
-		function wrapper(evt: IEvent): any {
-			return listener.call(this, evt.data.error || null, evt);
-		}
-		wrappers.set(this, wrapper);
-
-		if (context === undefined) {
-			context = this.context;
-		}
-
-		return this.on('change', wrapper, context).on('error', wrapper, context);
-	}
-
-	unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this {
-		let wrappers: Map<Cell, TListener> | undefined = listener[KEY_WRAPPERS];
-		let wrapper = wrappers && wrappers.get(this);
-
-		if (!wrapper) {
-			return this;
-		}
-
-		wrappers!.delete(this);
-
-		if (context === undefined) {
-			context = this.context;
-		}
-
-		return this.off('change', wrapper, context).off('error', wrapper, context);
-	}
-
-	_addReaction(reaction: Cell) {
-		this._activate();
-
+	_addReaction(reaction: Cell, actual: boolean) {
 		this._reactions.push(reaction);
-		this._state |= STATE_HAS_FOLLOWERS;
+		this._hasSubscribers = true;
+
+		this._activate(actual);
 	}
 
 	_deleteReaction(reaction: Cell) {
 		this._reactions.splice(this._reactions.indexOf(reaction), 1);
 
-		if (!this._reactions.length && !this._events.has('change') && !this._events.has('error')) {
-			this._state ^= STATE_HAS_FOLLOWERS;
-
+		if (
+			this._hasSubscribers &&
+			!this._reactions.length &&
+			!this._events.has('change') &&
+			!this._events.has('error')
+		) {
+			this._hasSubscribers = false;
 			this._deactivate();
 
 			if (this._reap) {
@@ -482,44 +267,30 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 	}
 
-	_activate() {
-		if (!this._pull || this._state & STATE_ACTIVE) {
+	_activate(actual: boolean) {
+		if (this._active || !this._pull) {
 			return;
 		}
 
 		let deps = this._dependencies;
 
-		if (deps === null) {
-			return;
-		}
-
-		if (this._version < releaseVersion) {
-			let value = this._pull$();
-
-			if (deps || this._dependencies || !(this._state & STATE_INITED)) {
-				if (value === $error) {
-					this._fail($error.error, false, false);
-				} else {
-					this._push(value, false, false);
-				}
-			}
-
-			deps = this._dependencies;
-		}
-
 		if (deps) {
 			let i = deps.length;
 
 			do {
-				deps[--i]._addReaction(this);
+				deps[--i]._addReaction(this, actual);
 			} while (i);
 
-			this._state |= STATE_ACTIVE;
+			if (actual) {
+				this._state = 'actual';
+			}
+
+			this._active = true;
 		}
 	}
 
 	_deactivate() {
-		if (!(this._state & STATE_ACTIVE)) {
+		if (!this._active) {
 			return;
 		}
 
@@ -530,90 +301,76 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			deps[--i]._deleteReaction(this);
 		} while (i);
 
-		if (this._levelInRelease != -1) {
-			this._levelInRelease = -1;
-			this._changeEvent = null;
-		}
+		this._state = 'dirty';
 
-		this._state ^= STATE_ACTIVE;
+		this._active = false;
 	}
 
 	_onValueChange(evt: IEvent) {
-		this._pushingIndex = ++pushingIndexCounter;
+		this._inited = true;
+		this._updationId = ++lastUpdationId;
 
-		if (this._state & STATE_HAS_FOLLOWERS) {
-			let changeEvent = ((evt.data || (evt.data = {})).prevEvent = this._changeEvent);
+		let reactions = this._reactions;
 
-			this._changeEvent = evt;
+		// tslint:disable-next-line:prefer-for-of
+		for (let i = 0; i < reactions.length; i++) {
+			reactions[i]._addToRelease(true);
+		}
 
-			if (changeEvent) {
-				if (this._value === this._fixedValue) {
-					this._state &= ~STATE_CAN_CANCEL_CHANGE;
+		this.handleEvent(evt);
+	}
+
+	_addToRelease(dirty: boolean) {
+		this._state = dirty ? 'dirty' : 'check';
+
+		let reactions = this._reactions;
+		let i = reactions.length;
+
+		if (i) {
+			do {
+				if (reactions[--i]._state == 'actual') {
+					reactions[i]._addToRelease(false);
 				}
-			} else {
-				this._state &= ~STATE_CAN_CANCEL_CHANGE;
-				this._addToRelease();
+			} while (i);
+		} else if (pendingCells.push(this) == 1) {
+			nextTick(release);
+		}
+	}
+
+	actualize() {
+		if (this._state == 'dirty') {
+			this.pull();
+		} else if (this._state == 'check') {
+			let deps = this._dependencies!;
+
+			for (let i = 0; ; ) {
+				deps[i].actualize();
+
+				if ((this._state as any) == 'dirty') {
+					this.pull();
+					break;
+				}
+
+				if (++i == deps.length) {
+					this._state = 'actual';
+					break;
+				}
 			}
-		} else {
-			this._version = ++releaseVersion + +(currentlyRelease != 0);
 		}
 	}
 
 	get(): T {
-		if (this._pull) {
-			if (this._state & STATE_ACTIVE) {
-				if (
-					releasePlanned ||
-					(currentlyRelease && !currentCell && this._level > releasePlanIndex)
-				) {
-					release(true);
-				}
-			} else if (
-				this._version <
-				releaseVersion + +releasePlanned + +(currentlyRelease != 0)
-			) {
-				let prevDeps = this._dependencies;
-
-				if (prevDeps !== null) {
-					let value = this._pull$();
-					let deps = this._dependencies;
-
-					if (prevDeps || deps || !(this._state & STATE_INITED)) {
-						if (deps && this._state & STATE_HAS_FOLLOWERS) {
-							let i = deps.length;
-
-							do {
-								deps[--i]._addReaction(this);
-							} while (i);
-
-							this._state |= STATE_ACTIVE;
-						}
-
-						if (value === $error) {
-							this._fail($error.error, false, false);
-						} else {
-							this._push(value, false, false);
-						}
-					}
-				}
-			}
+		if (this._state != 'actual' && this._updationId != lastUpdationId) {
+			this.actualize();
 		}
 
 		if (currentCell) {
-			let currentCellDeps = currentCell._dependencies;
-			let level = this._level;
-
-			if (currentCellDeps) {
-				if (currentCellDeps.indexOf(this) == -1) {
-					currentCellDeps.push(this);
-
-					if (currentCell._level <= level) {
-						currentCell._level = level + 1;
-					}
+			if (currentCell._dependencies) {
+				if (currentCell._dependencies.indexOf(this) == -1) {
+					currentCell._dependencies.push(this);
 				}
 			} else {
 				currentCell._dependencies = [this];
-				currentCell._level = level + 1;
 			}
 
 			if (this._error && this._error instanceof WaitError) {
@@ -629,234 +386,86 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			return false;
 		}
 
-		if (releasePlanned) {
-			release();
+		if (this._currentlyPulling) {
+			throw new TypeError('Circular pulling detected');
 		}
+
+		this._currentlyPulling = true;
+
+		let prevDeps = this._dependencies;
+		this._dependencies = null;
+
+		let prevCell = currentCell;
+		currentCell = this;
 
 		let value;
 
-		if (this._state & STATE_HAS_FOLLOWERS) {
-			let prevDeps = this._dependencies;
-			let prevLevel = this._level;
+		try {
+			value = this._pull!.length
+				? this._pull!.call(this.context, this, this._value)
+				: this._pull!.call(this.context);
+		} catch (err) {
+			$error.error = err;
+			value = $error;
+		}
 
-			value = this._pull$();
+		currentCell = prevCell;
 
+		this._currentlyPulling = false;
+
+		if (this._hasSubscribers) {
 			let deps = this._dependencies;
 			let newDepCount = 0;
 
 			if (deps) {
-				let i = deps.length;
+				let i = (deps as any).length;
 
 				do {
-					let dep = deps[--i];
+					let dep: Cell = deps[--i];
 
 					if (!prevDeps || prevDeps.indexOf(dep) == -1) {
-						dep._addReaction(this);
+						dep._addReaction(this, false);
 						newDepCount++;
 					}
 				} while (i);
 			}
 
-			if (prevDeps && (deps ? deps.length - newDepCount : 0) < prevDeps.length) {
+			if (prevDeps && (!deps || (deps as any).length - newDepCount < prevDeps.length)) {
 				for (let i = prevDeps.length; i; ) {
-					let prevDep = prevDeps[--i];
+					i--;
 
-					if (!deps || deps.indexOf(prevDep) == -1) {
-						prevDep._deleteReaction(this);
+					if (!deps || (deps as any).indexOf(prevDeps[i]) == -1) {
+						prevDeps[i]._deleteReaction(this);
 					}
 				}
 			}
 
 			if (deps) {
-				this._state |= STATE_ACTIVE;
+				this._active = true;
 			} else {
-				this._state &= ~STATE_ACTIVE;
-			}
-
-			if (currentlyRelease && this._level > (prevLevel as number)) {
-				this._addToRelease();
-				return false;
+				this._state = 'actual';
+				this._active = false;
 			}
 		} else {
-			value = this._pull$();
+			this._state = this._dependencies ? 'dirty' : 'actual';
 		}
 
-		if (value === $error) {
-			this._fail($error.error, false, true);
-			return true;
-		}
-
-		return this._push(value, false, true);
-	}
-
-	_pull$(): any {
-		if (this._state & STATE_CURRENTLY_PULLING) {
-			throw new TypeError('Circular pulling detected');
-		}
-
-		let pull = this._pull!;
-
-		if (pull.length) {
-			if (this._selfPendingStatusCell) {
-				this._selfPendingStatusCell.set(true);
-			}
-			this._state |= STATE_PENDING;
-
-			this._state &= ~(STATE_FULFILLED | STATE_REJECTED);
-		}
-
-		let prevCell = currentCell;
-		currentCell = this;
-
-		this._dependencies = null;
-		this._level = 0;
-		this._state |= STATE_CURRENTLY_PULLING;
-
-		try {
-			return pull.length
-				? pull.call(this.context, this, this._value)
-				: pull.call(this.context);
-		} catch (err) {
-			$error.error = err;
-			return $error;
-		} finally {
-			currentCell = prevCell;
-
-			this._version = releaseVersion + +(currentlyRelease != 0);
-
-			let pendingStatusCell = this._pendingStatusCell;
-
-			if (pendingStatusCell && pendingStatusCell._state & STATE_ACTIVE) {
-				pendingStatusCell.pull();
-			}
-
-			let errorCell = this._errorCell;
-
-			if (errorCell && errorCell._state & STATE_ACTIVE) {
-				errorCell.pull();
-			}
-
-			this._state ^= STATE_CURRENTLY_PULLING;
-		}
-	}
-
-	getError(): Error | null {
-		let errorCell = this._errorCell;
-
-		if (!errorCell) {
-			let debugKey = this.debugKey;
-
-			this._selfErrorCell = new Cell(
-				this._error,
-				debugKey ? { debugKey: debugKey + '._selfErrorCell' } : undefined
-			);
-
-			errorCell = this._errorCell = new Cell<Error | null>(
-				function(this: Cell) {
-					this.get();
-
-					let err = this._selfErrorCell!.get();
-					let errorIndex: number;
-
-					if (err) {
-						errorIndex = this._errorIndex;
-
-						if (errorIndex == errorIndexCounter) {
-							return err;
-						}
-					}
-
-					let deps = this._dependencies;
-
-					if (deps) {
-						let i = deps.length;
-
-						do {
-							let dep = deps[--i];
-							let depError = dep.getError();
-
-							if (depError) {
-								let depErrorIndex = dep._errorIndex;
-
-								if (depErrorIndex == errorIndexCounter) {
-									return depError;
-								}
-
-								if (!err || errorIndex! < depErrorIndex) {
-									err = depError;
-									errorIndex = depErrorIndex;
-								}
-							}
-						} while (i);
-					}
-
-					return err;
-				},
-				debugKey ? { debugKey: debugKey + '._errorCell', context: this } : { context: this }
-			);
-		}
-
-		return errorCell.get();
-	}
-
-	isPending(): boolean {
-		let pendingStatusCell = this._pendingStatusCell;
-
-		if (!pendingStatusCell) {
-			let debugKey = this.debugKey;
-
-			this._selfPendingStatusCell = new Cell(
-				!!(this._state & STATE_PENDING),
-				debugKey ? { debugKey: debugKey + '._selfPendingStatusCell' } : undefined
-			);
-
-			pendingStatusCell = this._pendingStatusCell = new Cell<boolean>(
-				function(this: Cell) {
-					if (this._selfPendingStatusCell!.get()) {
-						return true;
-					}
-
-					try {
-						this.get();
-					} catch {}
-
-					let deps = this._dependencies;
-
-					if (deps) {
-						let i = deps.length;
-
-						do {
-							if (deps[--i].isPending()) {
-								return true;
-							}
-						} while (i);
-					}
-
-					return false;
-				},
-				debugKey
-					? { debugKey: debugKey + '._pendingStatusCell', context: this }
-					: { context: this }
-			);
-		}
-
-		return pendingStatusCell.get();
+		return value === $error ? this.fail($error.error) : this.push(value);
 	}
 
 	set(value: T): this {
+		if (!this._inited) {
+			// Не инициализированная ячейка не может иметь _state == 'check', поэтому вместо
+			// actualize сразу pull.
+			this.pull();
+		}
+
 		if (this._validate) {
 			this._validate(value, this._value);
 		}
 		if (this._merge) {
 			value = this._merge(value, this._value);
 		}
-
-		if (this._selfPendingStatusCell) {
-			this._selfPendingStatusCell.set(true);
-		}
-		this._state |= STATE_PENDING;
-
-		this._state &= ~(STATE_FULFILLED | STATE_REJECTED);
 
 		if (this._put.length >= 3) {
 			this._put.call(this.context, this, value, this._value);
@@ -867,110 +476,56 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		return this;
 	}
 
-	push(value: any): this {
-		this._push(value, true, false);
-		return this;
-	}
-
-	_push(value: any, public$: boolean, pulling: boolean): boolean {
-		if (public$ || (!currentlyRelease && pulling)) {
-			this._pushingIndex = ++pushingIndexCounter;
-		}
-
-		this._state |= STATE_INITED;
+	push(value: any): boolean {
+		this._inited = true;
 
 		if (this._error) {
-			this._setError(null, false);
+			this._setError(null);
 		}
 
 		let prevValue = this._value;
+		let changed = !Object.is(value, prevValue);
 
-		if (value === prevValue) {
-			if (public$ || (currentlyRelease && pulling)) {
-				this._fulfill(value);
+		if (changed) {
+			this._value = value;
+
+			if (prevValue instanceof EventEmitter) {
+				prevValue.off('change', this._onValueChange, this);
+			}
+			if (value instanceof EventEmitter) {
+				value.on('change', this._onValueChange, this);
+			}
+		}
+
+		if (this._active) {
+			this._state = 'actual';
+		}
+
+		this._updationId = ++lastUpdationId;
+
+		if (changed) {
+			let reactions = this._reactions;
+
+			// tslint:disable-next-line:prefer-for-of
+			for (let i = 0; i < reactions.length; i++) {
+				reactions[i]._addToRelease(true);
 			}
 
-			return false;
+			this.emit('change', {
+				prevValue,
+				value
+			});
 		}
 
-		this._value = value;
-
-		if (prevValue instanceof EventEmitter) {
-			prevValue.off('change', this._onValueChange, this);
-		}
-		if (value instanceof EventEmitter) {
-			value.on('change', this._onValueChange, this);
-		}
-
-		if (this._state & STATE_HAS_FOLLOWERS) {
-			let changeEvent = this._changeEvent || this._prevChangeEvent;
-
-			if (changeEvent) {
-				if (value === this._fixedValue && this._state & STATE_CAN_CANCEL_CHANGE) {
-					this._levelInRelease = -1;
-					this._changeEvent = null;
-				} else {
-					this._changeEvent = {
-						target: this,
-						type: 'change',
-						data: {
-							prevEvent: changeEvent,
-							prevValue,
-							value
-						}
-					};
-				}
-
-				this._prevChangeEvent = null;
-			} else {
-				this._state |= STATE_CAN_CANCEL_CHANGE;
-				this._changeEvent = {
-					target: this,
-					type: 'change',
-					data: {
-						prevEvent: null,
-						prevValue,
-						value
-					}
-				};
-
-				this._addToRelease();
-			}
-		} else {
-			if (public$ || (!currentlyRelease && pulling)) {
-				releaseVersion++;
-			}
-
-			this._fixedValue = value;
-			this._version = releaseVersion + +(currentlyRelease != 0);
-		}
-
-		if (public$ || (currentlyRelease && pulling)) {
-			this._fulfill(value);
-		}
-
-		return true;
+		return changed;
 	}
 
-	_fulfill(value: any) {
-		this._resolvePending();
+	fail(err: any): boolean {
+		this._inited = true;
 
-		if (!(this._state & STATE_FULFILLED)) {
-			this._state |= STATE_FULFILLED;
+		let isWaitError = err instanceof WaitError;
 
-			if (this._onFulfilled) {
-				this._onFulfilled(value);
-			}
-		}
-	}
-
-	fail(err: any): this {
-		this._fail(err, true, false);
-		return this;
-	}
-
-	_fail(err: any, public$: boolean, pulling: boolean) {
-		if (!(err instanceof WaitError)) {
+		if (!isWaitError) {
 			if (this.debugKey) {
 				error('[' + this.debugKey + ']', err);
 			} else {
@@ -982,32 +537,32 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			}
 		}
 
-		this._setError(err, public$ || (currentlyRelease != 0 && pulling));
+		this._setError(err);
+
+		if (this._active) {
+			this._state = 'actual';
+		}
+
+		return isWaitError;
 	}
 
-	_setError(err: Error | null, reject: boolean) {
+	_setError(err: Error | null) {
 		this._error = err;
-		if (this._selfErrorCell) {
-			this._selfErrorCell.set(err);
-		}
+
+		this._updationId = ++lastUpdationId;
 
 		if (err) {
-			this._errorIndex = ++errorIndexCounter;
-
-			this._handleErrorEvent(
-				{
-					target: this,
-					type: 'error',
-					data: {
-						error: err
-					}
-				},
-				reject ? err : null
-			);
+			this._handleErrorEvent({
+				target: this,
+				type: 'error',
+				data: {
+					error: err
+				}
+			});
 		}
 	}
 
-	_handleErrorEvent(evt: IEvent<this>, err: Error | null) {
+	_handleErrorEvent(evt: IEvent<this>) {
 		if (this._lastErrorEvent === evt) {
 			return;
 		}
@@ -1015,26 +570,11 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		this._lastErrorEvent = evt;
 		this.handleEvent(evt);
 
-		if (err) {
-			this._reject(err);
-		}
-
 		let reactions = this._reactions;
 
-		for (let i = reactions.length; i; ) {
-			reactions[--i]._handleErrorEvent(evt, err);
-		}
-	}
-
-	_reject(err: Error) {
-		this._resolvePending();
-
-		if (!(err instanceof WaitError) && !(this._state & STATE_REJECTED)) {
-			this._state |= STATE_REJECTED;
-
-			if (this._onRejected) {
-				this._onRejected(err);
-			}
+		// tslint:disable-next-line:prefer-for-of
+		for (let i = 0; i < reactions.length; i++) {
+			reactions[i]._handleErrorEvent(evt);
 		}
 	}
 
@@ -1042,89 +582,14 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		throw new (WaitError as any)();
 	}
 
-	_addToRelease() {
-		let level = this._level;
-
-		if (level <= this._levelInRelease) {
-			return;
-		}
-
-		let queue: Array<Cell>;
-
-		(releasePlan.get(level) || (releasePlan.set(level, (queue = [])), queue)).push(this);
-
-		if (releasePlanIndex > level) {
-			releasePlanIndex = level;
-		}
-		if (releasePlanToIndex < level) {
-			releasePlanToIndex = level;
-		}
-
-		this._levelInRelease = level;
-
-		if (!releasePlanned && !currentlyRelease) {
-			releasePlanned = true;
-			nextTick(release);
-		}
-	}
-
-	_resolvePending() {
-		if (this._state & STATE_PENDING) {
-			if (this._selfPendingStatusCell) {
-				this._selfPendingStatusCell.set(false);
-			}
-			this._state ^= STATE_PENDING;
-		}
-	}
-
-	then<U = any>(
-		onFulfilled: ((value: T) => U) | null,
-		onRejected?: (err: Error) => U
-	): Promise<U> {
-		let listener = () => {};
-		this.on('change', listener);
-
-		if (!this._pull || this._state & STATE_FULFILLED) {
-			this.off('change', listener);
-			return Promise.resolve(this._get ? this._get(this._value) : this._value).then(
-				onFulfilled
-			);
-		}
-		if (this._state & STATE_REJECTED) {
-			this.off('change', listener);
-			return Promise.reject(this._error).catch(onRejected);
-		}
-
-		let cell = this;
-
-		let promise = new Promise((resolve, reject) => {
-			cell._onFulfilled = value => {
-				cell._onFulfilled = cell._onRejected = null;
-				this.off('change', listener);
-				resolve(cell._get ? cell._get(value) : value);
-			};
-
-			cell._onRejected = err => {
-				cell._onFulfilled = cell._onRejected = null;
-				this.off('change', listener);
-				reject(err);
-			};
-		}).then(onFulfilled, onRejected);
-
-		return promise;
-	}
-
-	catch<U = any>(onRejected: (err: Error) => U): Promise<U> {
-		return this.then(null, onRejected);
-	}
-
 	reap(): this {
 		this.off();
 
 		let reactions = this._reactions;
 
-		for (let i = reactions.length; i; ) {
-			reactions[--i].reap();
+		// tslint:disable-next-line:prefer-for-of
+		for (let i = 0; i < reactions.length; i++) {
+			reactions[i].reap();
 		}
 
 		return this;

@@ -1,4 +1,4 @@
-let { Cell, cellx } = require('../dist/cellx');
+import { Cell, cellx } from '../src/cellx';
 
 describe('cellx', () => {
 	test('#get()', () => {
@@ -44,8 +44,8 @@ describe('cellx', () => {
 			return [1, 2, 3];
 		});
 
-		let a1 = new A();
-		let a2 = new A();
+		let a1 = new (A as any)();
+		let a2 = new (A as any)();
 
 		expect(a1.prop1()).toBe(a2.prop1());
 		expect(a1.prop2()).not.toBe(a2.prop2());

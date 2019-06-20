@@ -1,4 +1,4 @@
-let { ObservableList } = require('../dist/cellx');
+import { ObservableList } from '../src/cellx';
 
 describe('ObservableList', () => {
 	test('#sorted', () => {
@@ -231,7 +231,7 @@ describe('ObservableList', () => {
 		let list = new ObservableList([1, 2, 3]);
 		let result = [];
 
-		for (let value of list) {
+		for (let value of (list as any)) {
 			result.push(value);
 		}
 

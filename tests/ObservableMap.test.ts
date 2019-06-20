@@ -1,7 +1,7 @@
-let { ObservableMap } = require('../dist/cellx');
+import { ObservableMap } from '../src/cellx';
 
 describe('ObservableMap', () => {
-	test('#has()', function() {
+	test('#has()', () => {
 		let map = new ObservableMap({
 			foo: 1,
 			bar: 2,
@@ -17,7 +17,7 @@ describe('ObservableMap', () => {
 		expect(map.has('quux')).toBeTruthy();
 	});
 
-	test('#get()', function() {
+	test('#get()', () => {
 		let map = new ObservableMap({
 			foo: 1,
 			bar: 2,
@@ -28,7 +28,7 @@ describe('ObservableMap', () => {
 		expect(map.get('bar')).toBe(2);
 	});
 
-	test('#set()', function() {
+	test('#set()', () => {
 		let map = new ObservableMap({
 			foo: 1,
 			bar: 2,
@@ -42,7 +42,7 @@ describe('ObservableMap', () => {
 		expect(map.get('quux')).toBe(5);
 	});
 
-	test('#delete()', function() {
+	test('#delete()', () => {
 		let map = new ObservableMap({
 			foo: 1,
 			bar: 2,
@@ -55,7 +55,7 @@ describe('ObservableMap', () => {
 		expect(map.get('foo')).toBeUndefined();
 	});
 
-	test('#size', function() {
+	test('#size', () => {
 		let map = new ObservableMap({
 			foo: 1,
 			bar: 2,
@@ -69,7 +69,7 @@ describe('ObservableMap', () => {
 		expect(map.size).toBe(4);
 	});
 
-	test('#clear()', function() {
+	test('#clear()', () => {
 		let map = new ObservableMap({
 			foo: 1,
 			bar: 2,
@@ -81,7 +81,7 @@ describe('ObservableMap', () => {
 		expect(map.size).toBe(0);
 	});
 
-	test('#forEach()', function() {
+	test('#forEach()', () => {
 		let map = new ObservableMap({
 			foo: 1,
 			bar: 2,
@@ -120,7 +120,7 @@ describe('ObservableMap', () => {
 		});
 		let result = [];
 
-		for (let [key, value] of map) {
+		for (let [key, value] of (map as any)) {
 			result.push(key, value);
 		}
 
