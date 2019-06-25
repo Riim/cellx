@@ -5,6 +5,7 @@ const hasOwn = Object.prototype.hasOwnProperty;
 let currentlySubscribing = false;
 let transactionLevel = 0;
 let transactionEvents = [];
+let silently = 0;
 class EventEmitter {
     static get currentlySubscribing() {
         return currentlySubscribing;
@@ -28,6 +29,16 @@ class EventEmitter {
         for (let evt of events) {
             evt.target.handleEvent(evt);
         }
+    }
+    static silently(cb) {
+        silently++;
+        try {
+            cb();
+        }
+        catch (err) {
+            logger_1.error(err);
+        }
+        silently--;
     }
     constructor() {
         this._events = new Map();
@@ -163,23 +174,25 @@ class EventEmitter {
         if (data) {
             evt.data = data;
         }
-        if (transactionLevel) {
-            for (let i = transactionEvents.length;;) {
-                if (!i) {
-                    (evt.data || (evt.data = {})).prevEvent = null;
-                    transactionEvents.push(evt);
-                    break;
-                }
-                let event = transactionEvents[--i];
-                if (event.target == this && event.type == evt.type) {
-                    (evt.data || (evt.data = {})).prevEvent = event;
-                    transactionEvents[i] = evt;
-                    break;
+        if (!silently) {
+            if (transactionLevel) {
+                for (let i = transactionEvents.length;;) {
+                    if (!i) {
+                        (evt.data || (evt.data = {})).prevEvent = null;
+                        transactionEvents.push(evt);
+                        break;
+                    }
+                    let event = transactionEvents[--i];
+                    if (event.target == this && event.type == evt.type) {
+                        (evt.data || (evt.data = {})).prevEvent = event;
+                        transactionEvents[i] = evt;
+                        break;
+                    }
                 }
             }
-        }
-        else {
-            this.handleEvent(evt);
+            else {
+                this.handleEvent(evt);
+            }
         }
         return evt;
     }

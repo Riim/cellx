@@ -23,6 +23,8 @@ let currentlySubscribing = false;
 let transactionLevel = 0;
 let transactionEvents: Array<IEvent> = [];
 
+let silently = 0;
+
 export class EventEmitter {
 	static get currentlySubscribing(): boolean {
 		return currentlySubscribing;
@@ -51,6 +53,18 @@ export class EventEmitter {
 		for (let evt of events) {
 			evt.target.handleEvent(evt);
 		}
+	}
+
+	static silently(cb: Function) {
+		silently++;
+
+		try {
+			cb();
+		} catch (err) {
+			error(err);
+		}
+
+		silently--;
 	}
 
 	_events: Map<string, IRegisteredEvent | Array<IRegisteredEvent>>;
@@ -238,24 +252,26 @@ export class EventEmitter {
 			evt.data = data;
 		}
 
-		if (transactionLevel) {
-			for (let i = transactionEvents.length; ; ) {
-				if (!i) {
-					(evt.data || (evt.data = {})).prevEvent = null;
-					transactionEvents.push(evt as IEvent);
-					break;
-				}
+		if (!silently) {
+			if (transactionLevel) {
+				for (let i = transactionEvents.length; ; ) {
+					if (!i) {
+						(evt.data || (evt.data = {})).prevEvent = null;
+						transactionEvents.push(evt as IEvent);
+						break;
+					}
 
-				let event = transactionEvents[--i];
+					let event = transactionEvents[--i];
 
-				if (event.target == this && event.type == evt.type) {
-					(evt.data || (evt.data = {})).prevEvent = event;
-					transactionEvents[i] = evt as IEvent;
-					break;
+					if (event.target == this && event.type == evt.type) {
+						(evt.data || (evt.data = {})).prevEvent = event;
+						transactionEvents[i] = evt as IEvent;
+						break;
+					}
 				}
+			} else {
+				this.handleEvent(evt as IEvent);
 			}
-		} else {
-			this.handleEvent(evt as IEvent);
 		}
 
 		return evt as IEvent;
