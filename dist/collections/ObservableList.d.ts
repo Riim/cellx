@@ -36,6 +36,7 @@ export declare class ObservableList<T = any> extends EventEmitter {
     toArray(): Array<T>;
     toString(): string;
     _insertSortedValue(value: T): void;
+    [Symbol.iterator]: () => Iterator<T>;
 }
 declare module './ObservableList' {
     interface ObservableList<T = any> {

@@ -208,6 +208,14 @@ describe('ObservableList', () => {
 		expect(copy.toArray()).toEqual(list.toArray());
 	});
 
+	test('#clone(true)', () => {
+		let list = new ObservableList([new ObservableList([1, 2, 3])]);
+		let copy = list.clone(true);
+
+		expect(copy.get(0)!.toArray()).toEqual([1, 2, 3]);
+		expect(copy.get(0)).not.toBe(list.get(0));
+	});
+
 	test('#toArray()', () => {
 		let list = new ObservableList([1, 2, 3]);
 
@@ -231,7 +239,7 @@ describe('ObservableList', () => {
 		let list = new ObservableList([1, 2, 3]);
 		let result = [];
 
-		for (let value of (list as any)) {
+		for (let value of list) {
 			result.push(value);
 		}
 

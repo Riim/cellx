@@ -112,6 +112,19 @@ describe('ObservableMap', () => {
 		expect(copy.size).toBe(3);
 	});
 
+	test('#clone(true)', () => {
+		let submap = new ObservableMap({
+			foo: 1
+		});
+		let map = new ObservableMap({
+			bar: submap
+		});
+		let copy = map.clone(true);
+
+		expect(copy.get('bar')!.has('foo')).toBeTruthy();
+		expect(copy.get('bar')).not.toBe(map.get('bar'));
+	});
+
 	test('поддерживает перебор for-of-ом', () => {
 		let map = new ObservableMap({
 			foo: 1,
@@ -120,7 +133,7 @@ describe('ObservableMap', () => {
 		});
 		let result = [];
 
-		for (let [key, value] of (map as any)) {
+		for (let [key, value] of map) {
 			result.push(key, value);
 		}
 

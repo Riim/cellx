@@ -10,9 +10,6 @@ class EventEmitter {
     static get currentlySubscribing() {
         return currentlySubscribing;
     }
-    static set currentlySubscribing(value) {
-        currentlySubscribing = value;
-    }
     static transact(cb) {
         transactionLevel++;
         try {

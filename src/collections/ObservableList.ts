@@ -185,9 +185,7 @@ export class ObservableList<T = any> extends EventEmitter {
 				let sorted = this._sorted;
 				let changed = false;
 
-				for (let i = 0, l = values.length; i < l; i++) {
-					let value = values[i];
-
+				for (let value of values) {
 					if (items.indexOf(value) == -1) {
 						if (sorted) {
 							this._insertSortedValue(value);
@@ -241,7 +239,7 @@ export class ObservableList<T = any> extends EventEmitter {
 		}
 
 		if (values.length) {
-			splice.apply(this._items, ([index, 0] as any).concat(values));
+			splice.apply(this._items, ([index, 0] as Array<any>).concat(values));
 			this.emit('change');
 		}
 
@@ -415,6 +413,8 @@ export class ObservableList<T = any> extends EventEmitter {
 
 		items.splice(low, 0, value);
 	}
+
+	[Symbol.iterator]: () => Iterator<T>;
 }
 
 ['forEach', 'map', 'filter', 'every', 'some'].forEach(name => {

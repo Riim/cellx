@@ -29,9 +29,6 @@ export class EventEmitter {
 	static get currentlySubscribing(): boolean {
 		return currentlySubscribing;
 	}
-	static set currentlySubscribing(value: boolean) {
-		currentlySubscribing = value;
-	}
 
 	static transact(cb: Function) {
 		transactionLevel++;

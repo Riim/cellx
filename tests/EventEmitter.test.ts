@@ -141,4 +141,17 @@ describe('EventEmitter', () => {
 
 		expect(onFoo).toHaveBeenCalledTimes(2);
 	});
+
+	test('.silently()', () => {
+		let emitter = new EventEmitter();
+		let onFoo = jest.fn();
+
+		emitter.on('foo', onFoo);
+
+		EventEmitter.silently(() => {
+			emitter.emit('foo');
+		});
+
+		expect(onFoo).not.toHaveBeenCalled();
+	});
 });

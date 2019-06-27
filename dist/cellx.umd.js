@@ -775,9 +775,6 @@ class EventEmitter {
     static get currentlySubscribing() {
         return currentlySubscribing;
     }
-    static set currentlySubscribing(value) {
-        currentlySubscribing = value;
-    }
     static transact(cb) {
         transactionLevel++;
         try {
@@ -1154,8 +1151,7 @@ class ObservableList extends EventEmitter_1.EventEmitter {
                 let items = this._items;
                 let sorted = this._sorted;
                 let changed = false;
-                for (let i = 0, l = values.length; i < l; i++) {
-                    let value = values[i];
+                for (let value of values) {
                     if (items.indexOf(value) == -1) {
                         if (sorted) {
                             this._insertSortedValue(value);
