@@ -3,12 +3,14 @@ export declare type TCellPull<T> = (cell: Cell<T>, next: any) => any;
 export interface ICellOptions<T, M> {
     debugKey?: string;
     context?: object;
+    pull?: TCellPull<T>;
     get?: (value: any) => T;
     validate?: (next: T, value: any) => void;
     merge?: (next: T, value: any) => any;
     put?: (cell: Cell<T>, next: any, value: any) => void;
     reap?: () => void;
     meta?: M;
+    value?: T;
     onChange?: TListener;
     onError?: TListener;
 }

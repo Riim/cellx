@@ -391,7 +391,7 @@ describe('Cell', () => {
 			expect(b.get()).toBe(3);
 		});
 
-		test('[validate]', () => {
+		test('[options.validate]', () => {
 			let a = new Cell(1, {
 				validate(value) {
 					if (typeof value != 'number') {
@@ -411,7 +411,13 @@ describe('Cell', () => {
 			expect(a.get()).toBe(1);
 		});
 
-		test('[reap]', () => {
+		test('[options.value]', () => {
+			let a = new Cell(1, { value: 2 });
+
+			expect(a.get()).toBe(2);
+		});
+
+		test('[options.reap]', () => {
 			let reap = jest.fn();
 			let a = new Cell<number>(() => Math.random(), { reap });
 			let b = new Cell(() => a.get() + 1);

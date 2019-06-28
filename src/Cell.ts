@@ -8,12 +8,14 @@ export type TCellPull<T> = (cell: Cell<T>, next: any) => any;
 export interface ICellOptions<T, M> {
 	debugKey?: string;
 	context?: object;
+	pull?: TCellPull<T>;
 	get?: (value: any) => T;
 	validate?: (next: T, value: any) => void;
 	merge?: (next: T, value: any) => any;
 	put?: (cell: Cell<T>, next: any, value: any) => void;
 	reap?: () => void;
 	meta?: M;
+	value?: T;
 	onChange?: TListener;
 	onError?: TListener;
 }
@@ -142,7 +144,8 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 		this.context = options && options.context !== undefined ? options.context : this;
 
-		this._pull = typeof value == 'function' ? (value as any) : null;
+		this._pull =
+			(options && options.pull) || (typeof value == 'function' ? (value as any) : null);
 		this._get = (options && options.get) || null;
 
 		this._validate = (options && options.validate) || null;
@@ -160,6 +163,10 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			this._inited = false;
 		} else {
 			this._dependencies = null;
+
+			if (options && options.value !== undefined) {
+				value = options.value;
+			}
 
 			if (this._validate) {
 				this._validate(value as T, undefined);

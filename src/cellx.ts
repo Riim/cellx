@@ -1,12 +1,6 @@
-import {
-	Cell,
-	ICellOptions,
-	TCellEvent,
-	TCellPull
-	} from './Cell';
+import { Cell, ICellOptions, TCellPull } from './Cell';
 import { IObservableListOptions, ObservableList, TObservableListItems } from './collections/ObservableList';
 import { ObservableMap, TObservableMapEntries } from './collections/ObservableMap';
-import { TListener } from './EventEmitter';
 
 export { IEvent, TListener, IRegisteredEvent, EventEmitter } from './EventEmitter';
 export { TObservableMapEntries, ObservableMap } from './collections/ObservableMap';
@@ -50,37 +44,12 @@ export interface ICellx<T> {
 	(method: 'cell', _: any): Cell<T>;
 	(method: 'bind', _: any): ICellx<T>;
 
-	(
-		method:
-			| 'addChangeListener'
-			| 'removeChangeListener'
-			| 'addErrorListener'
-			| 'removeErrorListener',
-		listener: TListener,
-		context?: any
-	): Cell<T>;
-	(
-		method: 'subscribe' | 'unsubscribe',
-		listener: (err: Error | null, evt: TCellEvent) => any,
-		context?: any
-	): Cell<T>;
-
 	(method: 'pull', _: any): boolean;
-	(method: 'getError', _: any): Error | null;
-	// tslint:disable-next-line
-	(method: 'isPending', _: any): boolean;
 
 	// tslint:disable-next-line
 	(method: 'push', value: any): Cell<T>;
 	// tslint:disable-next-line
 	(method: 'fail', err: any): Cell<T>;
-
-	<U = any>(
-		method: 'then',
-		onFulfilled: ((value: T) => U) | null,
-		onRejected?: (err: Error) => U
-	): Promise<U>;
-	<U = any>(method: 'catch', onRejected: (err: Error) => U): Promise<U>;
 
 	// tslint:disable-next-line
 	(method: 'reap' | 'dispose', _: any): Cell<T>;

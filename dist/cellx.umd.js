@@ -268,7 +268,8 @@ class Cell extends EventEmitter_1.EventEmitter {
         this._updationId = -1;
         this.debugKey = options && options.debugKey;
         this.context = options && options.context !== undefined ? options.context : this;
-        this._pull = typeof value == 'function' ? value : null;
+        this._pull =
+            (options && options.pull) || (typeof value == 'function' ? value : null);
         this._get = (options && options.get) || null;
         this._validate = (options && options.validate) || null;
         this._merge = (options && options.merge) || null;
@@ -283,6 +284,9 @@ class Cell extends EventEmitter_1.EventEmitter {
         }
         else {
             this._dependencies = null;
+            if (options && options.value !== undefined) {
+                value = options.value;
+            }
             if (this._validate) {
                 this._validate(value, undefined);
             }
