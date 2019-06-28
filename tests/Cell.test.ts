@@ -12,6 +12,12 @@ describe('Cell', () => {
 			expect(a.get()).toBe(1);
 		});
 
+		test('чтение ячейки (2)', () => {
+			let a = new Cell(1);
+
+			expect(a.value).toBe(1);
+		});
+
 		test('чтение вычисляемой ячейки', () => {
 			let a = new Cell(1);
 			let b = new Cell(() => a.get() + 1);
@@ -23,6 +29,14 @@ describe('Cell', () => {
 			let a = new Cell(1);
 
 			a.set(2);
+
+			expect(a.get()).toBe(2);
+		});
+
+		test('запись в ячейку (2)', () => {
+			let a = new Cell(1);
+
+			a.value = 2;
 
 			expect(a.get()).toBe(2);
 		});

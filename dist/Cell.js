@@ -236,6 +236,12 @@ class Cell extends EventEmitter_1.EventEmitter {
             }
         }
     }
+    get value() {
+        return this.get();
+    }
+    set value(value) {
+        this.set(value);
+    }
     get() {
         if (this._state != 'actual' && this._updationId != lastUpdationId) {
             this.actualize();

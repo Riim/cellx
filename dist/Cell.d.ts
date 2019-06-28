@@ -65,6 +65,7 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     _onValueChange(evt: IEvent): void;
     _addToRelease(dirty: boolean): void;
     actualize(): void;
+    value: T;
     get(): T;
     pull(): boolean;
     set(value: T): this;

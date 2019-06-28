@@ -366,6 +366,13 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 	}
 
+	get value(): T {
+		return this.get();
+	}
+	set value(value: T) {
+		this.set(value);
+	}
+
 	get(): T {
 		if (this._state != 'actual' && this._updationId != lastUpdationId) {
 			this.actualize();
