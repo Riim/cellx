@@ -1,6 +1,4 @@
 import { Cell, ICellOptions, TCellPull } from './Cell';
-import { IObservableListOptions, ObservableList, TObservableListItems } from './collections/ObservableList';
-import { ObservableMap, TObservableMapEntries } from './collections/ObservableMap';
 
 export { IEvent, TListener, IRegisteredEvent, EventEmitter } from './EventEmitter';
 export { TObservableMapEntries, ObservableMap } from './collections/ObservableMap';
@@ -25,19 +23,6 @@ const slice = Array.prototype.slice;
 
 const global_ = Function('return this;')();
 
-export function map<K = any, V = any>(
-	entries?: TObservableMapEntries<K, V> | null
-): ObservableMap<K, V> {
-	return new ObservableMap(entries);
-}
-
-export function list<T = any>(
-	items?: TObservableListItems<T> | null,
-	options?: IObservableListOptions<T>
-): ObservableList<T> {
-	return new ObservableList(items, options);
-}
-
 export interface ICellx<T> {
 	(value?: T): T;
 
@@ -55,7 +40,7 @@ export interface ICellx<T> {
 	(method: 'reap' | 'dispose', _: any): Cell<T>;
 }
 
-export const KEY_CELL_MAP = Symbol('cellx[cellMap]');
+export const KEY_CELLS = Symbol('cellx[cells]');
 
 export function cellx<T = any, M = any>(
 	value: T | TCellPull<T>,
@@ -74,11 +59,11 @@ export function cellx<T = any, M = any>(
 			context = cx;
 		}
 
-		if (!hasOwn.call(context, KEY_CELL_MAP)) {
-			context[KEY_CELL_MAP] = new Map();
+		if (!hasOwn.call(context, KEY_CELLS)) {
+			context[KEY_CELLS] = new Map();
 		}
 
-		let cell = context[KEY_CELL_MAP].get(cx);
+		let cell = context[KEY_CELLS].get(cx);
 
 		if (!cell) {
 			if (value === 'dispose' && arguments.length >= 2) {
@@ -90,7 +75,7 @@ export function cellx<T = any, M = any>(
 				context
 			} as any);
 
-			context[KEY_CELL_MAP].set(cx, cell);
+			context[KEY_CELLS].set(cx, cell);
 		}
 
 		switch (arguments.length) {

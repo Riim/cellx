@@ -580,7 +580,7 @@ and dependent cells will be recalculated. Two such collections already is added 
 The short syntax to create:
 
 ```js
-let map = cellx.map({
+let map = new cellx.ObservableMap({
     key1: 1,
     key2: 2,
     key3: 3
@@ -603,7 +603,7 @@ the fact that the keys in the Map can be of any type) or another map.
 Short creation syntax:
 
 ```js
-let list = cellx.list([1, 2, 3]);
+let list = new cellx.ObservableList([1, 2, 3]);
 ```
 
 Like `cellx.ObservableMap`, list generates an event `change` upon any change of its records.
@@ -611,7 +611,7 @@ Like `cellx.ObservableMap`, list generates an event `change` upon any change of 
 During initialization the list may take option `comparator`, which will implement the assortment of its values:
 
 ```js
-let list = cellx.list([
+let list = new cellx.ObservableList([
     { x: 5 },
     { x: 1 },
     { x: 10 }
@@ -635,7 +635,7 @@ console.log(list.toArray());
 If instead of `comparator` you pass the option `sorted` with the value `true`, it will use the standard `comparator`:
 
 ```js
-let list = cellx.list([5, 1, 10], { sorted: true });
+let list = new cellx.ObservableList([5, 1, 10], { sorted: true });
 
 console.log(list.toArray());
 // => [1, 5, 10]

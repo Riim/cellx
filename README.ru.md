@@ -567,7 +567,7 @@ value().emit('change');
 Короткий синтаксис для создания:
 
 ```js
-let map = cellx.map({
+let map = new cellx.ObservableMap({
     key1: 1,
     key2: 2,
     key3: 3
@@ -589,7 +589,7 @@ let map = cellx.map({
 Короткий синтаксис для создания:
 
 ```js
-let list = cellx.list([1, 2, 3]);
+let list = new cellx.ObservableList([1, 2, 3]);
 ```
 
 Список также как и `cellx.ObservableMap` генерирует событие `change` при любом изменении своих записей.
@@ -597,7 +597,7 @@ let list = cellx.list([1, 2, 3]);
 При инициализации список может принимать `comparator`, с помощью которого будет происходить сортировка его значений:
 
 ```js
-let list = cellx.list([
+let list = new cellx.ObservableList([
     { x: 5 },
     { x: 1 },
     { x: 10 }
@@ -621,7 +621,7 @@ console.log(list.toArray());
 Если вместо `comparator`-а передать опцию `sorted` со значением `true`, то будет использован стандартный `comparator`:
 
 ```js
-let list = cellx.list([5, 1, 10], { sorted: true });
+let list = new cellx.ObservableList([5, 1, 10], { sorted: true });
 
 console.log(list.toArray());
 // => [1, 5, 10]

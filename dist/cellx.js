@@ -1,14 +1,12 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const Cell_1 = require("./Cell");
-const ObservableList_1 = require("./collections/ObservableList");
-const ObservableMap_1 = require("./collections/ObservableMap");
 var EventEmitter_1 = require("./EventEmitter");
 exports.EventEmitter = EventEmitter_1.EventEmitter;
-var ObservableMap_2 = require("./collections/ObservableMap");
-exports.ObservableMap = ObservableMap_2.ObservableMap;
-var ObservableList_2 = require("./collections/ObservableList");
-exports.ObservableList = ObservableList_2.ObservableList;
+var ObservableMap_1 = require("./collections/ObservableMap");
+exports.ObservableMap = ObservableMap_1.ObservableMap;
+var ObservableList_1 = require("./collections/ObservableList");
+exports.ObservableList = ObservableList_1.ObservableList;
 var Cell_2 = require("./Cell");
 exports.Cell = Cell_2.Cell;
 var WaitError_1 = require("./WaitError");
@@ -16,15 +14,7 @@ exports.WaitError = WaitError_1.WaitError;
 const hasOwn = Object.prototype.hasOwnProperty;
 const slice = Array.prototype.slice;
 const global_ = Function('return this;')();
-function map(entries) {
-    return new ObservableMap_1.ObservableMap(entries);
-}
-exports.map = map;
-function list(items, options) {
-    return new ObservableList_1.ObservableList(items, options);
-}
-exports.list = list;
-exports.KEY_CELL_MAP = Symbol('cellx[cellMap]');
+exports.KEY_CELLS = Symbol('cellx[cells]');
 function cellx(value, options) {
     if (!options) {
         options = {};
@@ -35,10 +25,10 @@ function cellx(value, options) {
         if (!context || context == global_) {
             context = cx;
         }
-        if (!hasOwn.call(context, exports.KEY_CELL_MAP)) {
-            context[exports.KEY_CELL_MAP] = new Map();
+        if (!hasOwn.call(context, exports.KEY_CELLS)) {
+            context[exports.KEY_CELLS] = new Map();
         }
-        let cell = context[exports.KEY_CELL_MAP].get(cx);
+        let cell = context[exports.KEY_CELLS].get(cx);
         if (!cell) {
             if (value === 'dispose' && arguments.length >= 2) {
                 return;
@@ -47,7 +37,7 @@ function cellx(value, options) {
                 __proto__: options,
                 context
             });
-            context[exports.KEY_CELL_MAP].set(cx, cell);
+            context[exports.KEY_CELLS].set(cx, cell);
         }
         switch (arguments.length) {
             case 0: {

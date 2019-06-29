@@ -102,14 +102,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const Cell_1 = __webpack_require__(1);
-const ObservableList_1 = __webpack_require__(6);
-const ObservableMap_1 = __webpack_require__(7);
 var EventEmitter_1 = __webpack_require__(4);
 exports.EventEmitter = EventEmitter_1.EventEmitter;
-var ObservableMap_2 = __webpack_require__(7);
-exports.ObservableMap = ObservableMap_2.ObservableMap;
-var ObservableList_2 = __webpack_require__(6);
-exports.ObservableList = ObservableList_2.ObservableList;
+var ObservableMap_1 = __webpack_require__(6);
+exports.ObservableMap = ObservableMap_1.ObservableMap;
+var ObservableList_1 = __webpack_require__(7);
+exports.ObservableList = ObservableList_1.ObservableList;
 var Cell_2 = __webpack_require__(1);
 exports.Cell = Cell_2.Cell;
 var WaitError_1 = __webpack_require__(5);
@@ -117,15 +115,7 @@ exports.WaitError = WaitError_1.WaitError;
 const hasOwn = Object.prototype.hasOwnProperty;
 const slice = Array.prototype.slice;
 const global_ = Function('return this;')();
-function map(entries) {
-    return new ObservableMap_1.ObservableMap(entries);
-}
-exports.map = map;
-function list(items, options) {
-    return new ObservableList_1.ObservableList(items, options);
-}
-exports.list = list;
-exports.KEY_CELL_MAP = Symbol('cellx[cellMap]');
+exports.KEY_CELLS = Symbol('cellx[cells]');
 function cellx(value, options) {
     if (!options) {
         options = {};
@@ -136,10 +126,10 @@ function cellx(value, options) {
         if (!context || context == global_) {
             context = cx;
         }
-        if (!hasOwn.call(context, exports.KEY_CELL_MAP)) {
-            context[exports.KEY_CELL_MAP] = new Map();
+        if (!hasOwn.call(context, exports.KEY_CELLS)) {
+            context[exports.KEY_CELLS] = new Map();
         }
-        let cell = context[exports.KEY_CELL_MAP].get(cx);
+        let cell = context[exports.KEY_CELLS].get(cx);
         if (!cell) {
             if (value === 'dispose' && arguments.length >= 2) {
                 return;
@@ -148,7 +138,7 @@ function cellx(value, options) {
                 __proto__: options,
                 context
             });
-            context[exports.KEY_CELL_MAP].set(cx, cell);
+            context[exports.KEY_CELLS].set(cx, cell);
         }
         switch (arguments.length) {
             case 0: {
@@ -1028,6 +1018,121 @@ WaitError.prototype = {
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const EventEmitter_1 = __webpack_require__(4);
+const hasOwn = Object.prototype.hasOwnProperty;
+class ObservableMap extends EventEmitter_1.EventEmitter {
+    constructor(entries) {
+        super();
+        this._entries = new Map();
+        if (entries) {
+            let mapEntries = this._entries;
+            if (entries instanceof Map || entries instanceof ObservableMap) {
+                (entries instanceof Map ? entries : entries._entries).forEach((value, key) => {
+                    mapEntries.set(key, value);
+                });
+            }
+            else if (Array.isArray(entries)) {
+                for (let i = 0, l = entries.length; i < l; i++) {
+                    mapEntries.set(entries[i][0], entries[i][1]);
+                }
+            }
+            else {
+                for (let key in entries) {
+                    if (hasOwn.call(entries, key)) {
+                        mapEntries.set(key, entries[key]);
+                    }
+                }
+            }
+        }
+    }
+    get size() {
+        return this._entries.size;
+    }
+    has(key) {
+        return this._entries.has(key);
+    }
+    get(key) {
+        return this._entries.get(key);
+    }
+    set(key, value) {
+        let entries = this._entries;
+        let hasKey = entries.has(key);
+        let prev;
+        if (hasKey) {
+            prev = entries.get(key);
+            if (Object.is(value, prev)) {
+                return this;
+            }
+        }
+        entries.set(key, value);
+        this.emit('change', {
+            subtype: hasKey ? 'update' : 'add',
+            key,
+            prevValue: prev,
+            value
+        });
+        return this;
+    }
+    delete(key) {
+        let entries = this._entries;
+        if (entries.has(key)) {
+            let value = entries.get(key);
+            entries.delete(key);
+            this.emit('change', {
+                subtype: 'delete',
+                key,
+                value
+            });
+            return true;
+        }
+        return false;
+    }
+    clear() {
+        if (this._entries.size) {
+            this._entries.clear();
+            this.emit('change', { subtype: 'clear' });
+        }
+        return this;
+    }
+    forEach(cb, context) {
+        this._entries.forEach(function (value, key) {
+            cb.call(context, value, key, this);
+        }, this);
+    }
+    keys() {
+        return this._entries.keys();
+    }
+    values() {
+        return this._entries.values();
+    }
+    entries() {
+        return this._entries.entries();
+    }
+    clone(deep) {
+        let entries;
+        if (deep) {
+            entries = [];
+            this._entries.forEach((value, key) => {
+                entries.push([
+                    key,
+                    value && value.clone ? value.clone(true) : value
+                ]);
+            });
+        }
+        return new this.constructor(entries || this);
+    }
+}
+exports.ObservableMap = ObservableMap;
+ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;
+
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const EventEmitter_1 = __webpack_require__(4);
 const push = Array.prototype.push;
 const splice = Array.prototype.splice;
 const defaultComparator = (a, b) => {
@@ -1387,121 +1492,6 @@ exports.ObservableList = ObservableList;
     };
 });
 ObservableList.prototype[Symbol.iterator] = ObservableList.prototype.values;
-
-
-/***/ }),
-/* 7 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const EventEmitter_1 = __webpack_require__(4);
-const hasOwn = Object.prototype.hasOwnProperty;
-class ObservableMap extends EventEmitter_1.EventEmitter {
-    constructor(entries) {
-        super();
-        this._entries = new Map();
-        if (entries) {
-            let mapEntries = this._entries;
-            if (entries instanceof Map || entries instanceof ObservableMap) {
-                (entries instanceof Map ? entries : entries._entries).forEach((value, key) => {
-                    mapEntries.set(key, value);
-                });
-            }
-            else if (Array.isArray(entries)) {
-                for (let i = 0, l = entries.length; i < l; i++) {
-                    mapEntries.set(entries[i][0], entries[i][1]);
-                }
-            }
-            else {
-                for (let key in entries) {
-                    if (hasOwn.call(entries, key)) {
-                        mapEntries.set(key, entries[key]);
-                    }
-                }
-            }
-        }
-    }
-    get size() {
-        return this._entries.size;
-    }
-    has(key) {
-        return this._entries.has(key);
-    }
-    get(key) {
-        return this._entries.get(key);
-    }
-    set(key, value) {
-        let entries = this._entries;
-        let hasKey = entries.has(key);
-        let prev;
-        if (hasKey) {
-            prev = entries.get(key);
-            if (Object.is(value, prev)) {
-                return this;
-            }
-        }
-        entries.set(key, value);
-        this.emit('change', {
-            subtype: hasKey ? 'update' : 'add',
-            key,
-            prevValue: prev,
-            value
-        });
-        return this;
-    }
-    delete(key) {
-        let entries = this._entries;
-        if (entries.has(key)) {
-            let value = entries.get(key);
-            entries.delete(key);
-            this.emit('change', {
-                subtype: 'delete',
-                key,
-                value
-            });
-            return true;
-        }
-        return false;
-    }
-    clear() {
-        if (this._entries.size) {
-            this._entries.clear();
-            this.emit('change', { subtype: 'clear' });
-        }
-        return this;
-    }
-    forEach(cb, context) {
-        this._entries.forEach(function (value, key) {
-            cb.call(context, value, key, this);
-        }, this);
-    }
-    keys() {
-        return this._entries.keys();
-    }
-    values() {
-        return this._entries.values();
-    }
-    entries() {
-        return this._entries.entries();
-    }
-    clone(deep) {
-        let entries;
-        if (deep) {
-            entries = [];
-            this._entries.forEach((value, key) => {
-                entries.push([
-                    key,
-                    value && value.clone ? value.clone(true) : value
-                ]);
-            });
-        }
-        return new this.constructor(entries || this);
-    }
-}
-exports.ObservableMap = ObservableMap;
-ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;
 
 
 /***/ })
