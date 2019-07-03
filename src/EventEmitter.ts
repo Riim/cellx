@@ -4,7 +4,7 @@ const hasOwn = Object.prototype.hasOwnProperty;
 
 export interface IEvent<T extends EventEmitter = EventEmitter> {
 	target: T;
-	type: string;
+	type: string | symbol;
 	bubbles?: boolean;
 	defaultPrevented?: boolean;
 	propagationStopped?: boolean;
