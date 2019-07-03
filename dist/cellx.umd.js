@@ -115,7 +115,7 @@ exports.WaitError = WaitError_1.WaitError;
 const hasOwn = Object.prototype.hasOwnProperty;
 const slice = Array.prototype.slice;
 const global_ = Function('return this;')();
-exports.KEY_CELLS = Symbol('cellx[cells]');
+exports.KEY_CELLS = Symbol('cells');
 function cellx(value, options) {
     if (!options) {
         options = {};
@@ -813,10 +813,10 @@ class EventEmitter {
             }
             return Array.isArray(events) ? events : [events];
         }
-        let events = { __proto__: null };
-        this._events.forEach((typeEvents, type) => {
-            events[type] = Array.isArray(typeEvents) ? typeEvents : [typeEvents];
-        });
+        let events = new Map();
+        for (let [type, typeEvents] of this._events) {
+            events.set(type, Array.isArray(typeEvents) ? typeEvents : [typeEvents]);
+        }
         return events;
     }
     on(type, listener, context) {
@@ -827,6 +827,9 @@ class EventEmitter {
                 if (hasOwn.call(listeners, type)) {
                     this._on(type, listeners[type], context);
                 }
+            }
+            for (let type of Object.getOwnPropertySymbols(listeners)) {
+                this._on(type, listeners[type], context);
             }
         }
         else {
@@ -844,6 +847,9 @@ class EventEmitter {
                         this._off(type, listeners[type], context);
                     }
                 }
+                for (let type of Object.getOwnPropertySymbols(listeners)) {
+                    this._off(type, listeners[type], context);
+                }
             }
             else {
                 this._off(type, listener, context !== undefined ? context : this);
@@ -855,8 +861,8 @@ class EventEmitter {
         return this;
     }
     _on(type, listener, context) {
-        let index = type.indexOf(':');
-        if (index != -1) {
+        let index;
+        if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
             let propName = type.slice(index + 1);
             currentlySubscribing = true;
             (this[propName + 'Cell'] || (this[propName], this[propName + 'Cell'])).on(type.slice(0, index), listener, context);
@@ -877,8 +883,8 @@ class EventEmitter {
         }
     }
     _off(type, listener, context) {
-        let index = type.indexOf(':');
-        if (index != -1) {
+        let index;
+        if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
             let propName = type.slice(index + 1);
             (this[propName + 'Cell'] || (this[propName], this[propName + 'Cell'])).off(type.slice(0, index), listener, context);
         }
@@ -921,17 +927,19 @@ class EventEmitter {
         return wrapper;
     }
     emit(evt, data) {
-        if (typeof evt == 'string') {
+        if (typeof evt == 'object') {
+            if (!evt.target) {
+                evt.target = this;
+            }
+            else if (evt.target != this) {
+                throw new TypeError('Event cannot be emitted on this target');
+            }
+        }
+        else {
             evt = {
                 target: this,
                 type: evt
             };
-        }
-        else if (!evt.target) {
-            evt.target = this;
-        }
-        else if (evt.target != this) {
-            throw new TypeError('Event cannot be emitted on this object');
         }
         if (data) {
             evt.data = data;
@@ -945,7 +953,7 @@ class EventEmitter {
                         break;
                     }
                     let event = transactionEvents[--i];
-                    if (event.target == this && event.type == evt.type) {
+                    if (event.target == this && event.type === evt.type) {
                         (evt.data || (evt.data = {})).prevEvent = event;
                         transactionEvents[i] = evt;
                         break;

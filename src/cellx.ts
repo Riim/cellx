@@ -40,7 +40,7 @@ export interface ICellx<T> {
 	(method: 'reap' | 'dispose', _: any): Cell<T>;
 }
 
-export const KEY_CELLS = Symbol('cellx[cells]');
+export const KEY_CELLS = Symbol('cells');
 
 export function cellx<T = any, M = any>(
 	value: T | TCellPull<T>,

@@ -64,15 +64,15 @@ export class EventEmitter {
 		silently--;
 	}
 
-	_events: Map<string, IRegisteredEvent | Array<IRegisteredEvent>>;
+	_events: Map<string | symbol, IRegisteredEvent | Array<IRegisteredEvent>>;
 
 	constructor() {
 		this._events = new Map();
 	}
 
-	getEvents(): Record<string, Array<IRegisteredEvent>>;
-	getEvents(type: string): Array<IRegisteredEvent>;
-	getEvents(type?: string) {
+	getEvents(): Map<string | symbol, Array<IRegisteredEvent>>;
+	getEvents(type: string | symbol): Array<IRegisteredEvent>;
+	getEvents(type?: string | symbol) {
 		if (type) {
 			let events = this._events.get(type);
 
@@ -83,18 +83,18 @@ export class EventEmitter {
 			return Array.isArray(events) ? events : [events];
 		}
 
-		let events = { __proto__: null } as any;
+		let events = new Map<string | symbol, Array<IRegisteredEvent>>();
 
-		this._events.forEach((typeEvents, type) => {
-			events[type] = Array.isArray(typeEvents) ? typeEvents : [typeEvents];
-		});
+		for (let [type, typeEvents] of this._events) {
+			events.set(type, Array.isArray(typeEvents) ? typeEvents : [typeEvents]);
+		}
 
 		return events;
 	}
 
-	on(type: string, listener: TListener, context?: any): this;
-	on(listeners: Record<string, TListener>, context?: any): this;
-	on(type: string | Record<string, TListener>, listener?: any, context?: any) {
+	on(type: string | symbol, listener: TListener, context?: any): this;
+	on(listeners: Record<string | symbol, TListener>, context?: any): this;
+	on(type: string | symbol | Record<string | symbol, TListener>, listener?: any, context?: any) {
 		if (typeof type == 'object') {
 			context = listener !== undefined ? listener : this;
 
@@ -105,6 +105,10 @@ export class EventEmitter {
 					this._on(type, listeners[type], context);
 				}
 			}
+
+			for (let type of Object.getOwnPropertySymbols(listeners)) {
+				this._on(type, listeners[type as any], context);
+			}
 		} else {
 			this._on(type, listener, context !== undefined ? context : this);
 		}
@@ -112,9 +116,13 @@ export class EventEmitter {
 		return this;
 	}
 
-	off(type: string, listener: TListener, context?: any): this;
-	off(listeners?: Record<string, TListener>, context?: any): this;
-	off(type?: string | Record<string, TListener>, listener?: any, context?: any) {
+	off(type: string | symbol, listener: TListener, context?: any): this;
+	off(listeners?: Record<string | symbol, TListener>, context?: any): this;
+	off(
+		type?: string | symbol | Record<string | symbol, TListener>,
+		listener?: any,
+		context?: any
+	) {
 		if (type) {
 			if (typeof type == 'object') {
 				context = listener !== undefined ? listener : this;
@@ -126,6 +134,10 @@ export class EventEmitter {
 						this._off(type, listeners[type], context);
 					}
 				}
+
+				for (let type of Object.getOwnPropertySymbols(listeners)) {
+					this._off(type, listeners[type as any], context);
+				}
 			} else {
 				this._off(type, listener, context !== undefined ? context : this);
 			}
@@ -136,10 +148,10 @@ export class EventEmitter {
 		return this;
 	}
 
-	_on(type: string, listener: TListener, context: any) {
-		let index = type.indexOf(':');
+	_on(type: string | symbol, listener: TListener, context: any) {
+		let index: number;
 
-		if (index != -1) {
+		if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
 			let propName = type.slice(index + 1);
 
 			currentlySubscribing = true;
@@ -163,10 +175,10 @@ export class EventEmitter {
 		}
 	}
 
-	_off(type: string, listener: TListener, context: any) {
-		let index = type.indexOf(':');
+	_off(type: string | symbol, listener: TListener, context: any) {
+		let index: number;
 
-		if (index != -1) {
+		if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
 			let propName = type.slice(index + 1);
 
 			(this[propName + 'Cell'] || (this[propName], this[propName + 'Cell'])).off(
@@ -206,7 +218,7 @@ export class EventEmitter {
 		}
 	}
 
-	once(type: string, listener: TListener, context?: any): TListener {
+	once(type: string | symbol, listener: TListener, context?: any): TListener {
 		if (context === undefined) {
 			context = this;
 		}
@@ -225,24 +237,27 @@ export class EventEmitter {
 		evt:
 			| {
 					target?: EventEmitter;
-					type: string;
+					type: string | symbol;
 					bubbles?: boolean;
 					defaultPrevented?: boolean;
 					propagationStopped?: boolean;
 					data?: Record<string, any>;
 			  }
-			| string,
+			| string
+			| symbol,
 		data?: Record<string, any>
 	): IEvent {
-		if (typeof evt == 'string') {
+		if (typeof evt == 'object') {
+			if (!evt.target) {
+				evt.target = this;
+			} else if (evt.target != this) {
+				throw new TypeError('Event cannot be emitted on this target');
+			}
+		} else {
 			evt = {
 				target: this,
 				type: evt
 			};
-		} else if (!evt.target) {
-			evt.target = this;
-		} else if (evt.target != this) {
-			throw new TypeError('Event cannot be emitted on this object');
 		}
 
 		if (data) {
@@ -260,7 +275,7 @@ export class EventEmitter {
 
 					let event = transactionEvents[--i];
 
-					if (event.target == this && event.type == evt.type) {
+					if (event.target == this && event.type === evt.type) {
 						(evt.data || (evt.data = {})).prevEvent = event;
 						transactionEvents[i] = evt as IEvent;
 						break;

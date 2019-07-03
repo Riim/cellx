@@ -28,6 +28,35 @@ describe('EventEmitter', () => {
 		expect(onBar.mock.instances[0]).toBe(context);
 	});
 
+	test('#on() (2)', () => {
+		let EVENT_FOO = Symbol('foo');
+		let EVENT_BAR = Symbol('bar');
+		let emitter = new EventEmitter();
+		let onFoo = jest.fn();
+		let onBar = jest.fn();
+		let context = {};
+
+		emitter.on(EVENT_FOO, onFoo);
+		emitter.on(
+			{
+				[EVENT_BAR]: onBar
+			},
+			context
+		);
+
+		emitter.emit(EVENT_FOO);
+
+		expect(onFoo).toHaveBeenCalledTimes(1);
+		expect(onBar).toHaveBeenCalledTimes(0);
+
+		emitter.emit(EVENT_BAR);
+
+		expect(onFoo).toHaveBeenCalledTimes(1);
+		expect(onFoo.mock.instances[0]).toBe(emitter);
+		expect(onBar).toHaveBeenCalledTimes(1);
+		expect(onBar.mock.instances[0]).toBe(context);
+	});
+
 	test('#off()', () => {
 		let emitter = new EventEmitter();
 		let onFoo = jest.fn();
@@ -60,6 +89,46 @@ describe('EventEmitter', () => {
 
 		emitter.emit('bar');
 		emitter.emit('baz');
+
+		expect(onBar).not.toHaveBeenCalled();
+		expect(onBaz).not.toHaveBeenCalled();
+	});
+
+	test('#off() (2)', () => {
+		let EVENT_FOO = Symbol('foo');
+		let EVENT_BAR = Symbol('bar');
+		let EVENT_BAZ = Symbol('baz');
+		let emitter = new EventEmitter();
+		let onFoo = jest.fn();
+		let onBar = jest.fn();
+		let onBaz = jest.fn();
+		let context = {};
+
+		emitter.on(EVENT_FOO, onFoo);
+		emitter.off(EVENT_FOO, onFoo);
+
+		emitter.emit(EVENT_FOO);
+
+		expect(onFoo).not.toHaveBeenCalled();
+
+		emitter.on(EVENT_BAR, onBar);
+		emitter.on(EVENT_BAR, onBar);
+		emitter.on(EVENT_BAZ, onBaz, context);
+
+		emitter.off(EVENT_BAR, onBar);
+		emitter.off({
+			[EVENT_BAR]: onBar
+		});
+		emitter.off(
+			{
+				[EVENT_BAZ]: onBaz
+			},
+			context
+		);
+		emitter.off('qux', onFoo);
+
+		emitter.emit(EVENT_BAR);
+		emitter.emit(EVENT_BAZ);
 
 		expect(onBar).not.toHaveBeenCalled();
 		expect(onBaz).not.toHaveBeenCalled();
@@ -104,7 +173,7 @@ describe('EventEmitter', () => {
 
 		emitter.on('foo', onFoo);
 
-		expect(Object.keys(emitter.getEvents())).toEqual(['foo']);
+		expect([...emitter.getEvents().keys()]).toEqual(['foo']);
 		expect(emitter.getEvents('foo').length).toBe(1);
 
 		emitter.on('foo', onFoo);
@@ -113,7 +182,7 @@ describe('EventEmitter', () => {
 
 		emitter.on('foo', () => {});
 
-		expect(Object.keys(emitter.getEvents())).toEqual(['foo']);
+		expect([...emitter.getEvents().keys()]).toEqual(['foo']);
 		expect(emitter.getEvents('foo').length).toBe(3);
 	});
 
