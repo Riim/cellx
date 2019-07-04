@@ -102,21 +102,21 @@ return /******/ (function(modules) { // webpackBootstrap
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const Cell_1 = __webpack_require__(1);
-var EventEmitter_1 = __webpack_require__(5);
+var EventEmitter_1 = __webpack_require__(3);
 exports.EventEmitter = EventEmitter_1.EventEmitter;
-var ObservableMap_1 = __webpack_require__(9);
+var ObservableMap_1 = __webpack_require__(7);
 exports.ObservableMap = ObservableMap_1.ObservableMap;
-var ObservableList_1 = __webpack_require__(10);
+var ObservableList_1 = __webpack_require__(8);
 exports.ObservableList = ObservableList_1.ObservableList;
 var Cell_2 = __webpack_require__(1);
 exports.Cell = Cell_2.Cell;
-var WaitError_1 = __webpack_require__(8);
+var WaitError_1 = __webpack_require__(6);
 exports.WaitError = WaitError_1.WaitError;
 const hasOwn = Object.prototype.hasOwnProperty;
 const slice = Array.prototype.slice;
 const global_ = Function('return this;')();
-var configuration_1 = __webpack_require__(7);
-exports.configure = configuration_1.configure;
+var config_1 = __webpack_require__(5);
+exports.configure = config_1.configure;
 exports.KEY_CELLS = Symbol('cells');
 function cellx(value, options) {
     if (!options) {
@@ -220,9 +220,9 @@ exports.define = define;
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const next_tick_1 = __webpack_require__(2);
-const EventEmitter_1 = __webpack_require__(5);
-const utils_1 = __webpack_require__(6);
-const WaitError_1 = __webpack_require__(8);
+const EventEmitter_1 = __webpack_require__(3);
+const utils_1 = __webpack_require__(4);
+const WaitError_1 = __webpack_require__(6);
 function defaultPut(cell, value) {
     cell.push(value);
 }
@@ -662,9 +662,6 @@ exports.Cell = Cell;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const utils_1 = __webpack_require__(3);
-var configuration_1 = __webpack_require__(4);
-exports.configure = configuration_1.configure;
 exports.nextTick = (() => {
     const global = Function('return this;')();
     if (global.process &&
@@ -678,37 +675,11 @@ exports.nextTick = (() => {
             setImmediate(cb);
         };
     }
-    if (global.Promise && Promise.toString().indexOf('[native code]') != -1) {
-        const prm = Promise.resolve();
-        return (cb) => {
-            prm.then(() => {
-                cb();
-            });
-        };
-    }
-    let queue;
-    global.addEventListener('message', () => {
-        if (queue) {
-            let track = queue;
-            queue = null;
-            for (let i = 0, l = track.length; i < l; i++) {
-                try {
-                    track[i]();
-                }
-                catch (err) {
-                    utils_1.logError(err);
-                }
-            }
-        }
-    });
+    const promise = Promise.resolve();
     return (cb) => {
-        if (queue) {
-            queue.push(cb);
-        }
-        else {
-            queue = [cb];
-            postMessage('__tic__', '*');
-        }
+        promise.then(() => {
+            cb();
+        });
     };
 })();
 
@@ -720,40 +691,7 @@ exports.nextTick = (() => {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const configuration_1 = __webpack_require__(4);
-function logError(...args) {
-    configuration_1.configuration.logError(...args);
-}
-exports.logError = logError;
-
-
-/***/ }),
-/* 4 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.configuration = {
-    logError: (...args) => {
-        console.error(...args);
-    }
-};
-function configure(config) {
-    Object.assign(exports.configuration, config);
-    return exports.configuration;
-}
-exports.configure = configure;
-
-
-/***/ }),
-/* 5 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const utils_1 = __webpack_require__(6);
+const utils_1 = __webpack_require__(4);
 const hasOwn = Object.prototype.hasOwnProperty;
 let currentlySubscribing = false;
 let transactionLevel = 0;
@@ -992,40 +930,40 @@ exports.EventEmitter = EventEmitter;
 
 
 /***/ }),
-/* 6 */
+/* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const configuration_1 = __webpack_require__(7);
+const config_1 = __webpack_require__(5);
 function logError(...args) {
-    configuration_1.configuration.logError(...args);
+    config_1.config.logError(...args);
 }
 exports.logError = logError;
 
 
 /***/ }),
-/* 7 */
+/* 5 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.configuration = {
+exports.config = {
     logError: (...args) => {
         console.error(...args);
     }
 };
-function configure(config) {
-    Object.assign(exports.configuration, config);
-    return exports.configuration;
+function configure(options) {
+    Object.assign(exports.config, options);
+    return exports.config;
 }
 exports.configure = configure;
 
 
 /***/ }),
-/* 8 */
+/* 6 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1040,13 +978,13 @@ WaitError.prototype = {
 
 
 /***/ }),
-/* 9 */
+/* 7 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const EventEmitter_1 = __webpack_require__(5);
+const EventEmitter_1 = __webpack_require__(3);
 const hasOwn = Object.prototype.hasOwnProperty;
 class ObservableMap extends EventEmitter_1.EventEmitter {
     constructor(entries) {
@@ -1155,13 +1093,13 @@ ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;
 
 
 /***/ }),
-/* 10 */
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const EventEmitter_1 = __webpack_require__(5);
+const EventEmitter_1 = __webpack_require__(3);
 const push = Array.prototype.push;
 const splice = Array.prototype.splice;
 const defaultComparator = (a, b) => {

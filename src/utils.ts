@@ -1,5 +1,5 @@
-import { configuration } from './configuration';
+import { config } from './config';
 
 export function logError(...args: Array<any>) {
-	configuration.logError(...args);
+	config.logError(...args);
 }

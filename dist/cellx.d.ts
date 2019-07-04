@@ -13,7 +13,7 @@ export interface ICellx<T> {
     (method: 'fail', err: any): Cell<T>;
     (method: 'reap' | 'dispose', _: any): Cell<T>;
 }
-export { configure } from './configuration';
+export { configure } from './config';
 export declare const KEY_CELLS: unique symbol;
 export declare function cellx<T = any, M = any>(value: T | TCellPull<T>, options?: ICellOptions<T, M>): ICellx<T>;
 export declare function defineObservableProperty<T extends object = object>(obj: T, name: string, value: any): T;

@@ -40,7 +40,7 @@ export interface ICellx<T> {
 	(method: 'reap' | 'dispose', _: any): Cell<T>;
 }
 
-export { configure } from './configuration';
+export { configure } from './config';
 
 export const KEY_CELLS = Symbol('cells');
 
