@@ -1,8 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const logger_1 = require("@riim/logger");
 const next_tick_1 = require("@riim/next-tick");
 const EventEmitter_1 = require("./EventEmitter");
+const utils_1 = require("./utils");
 const WaitError_1 = require("./WaitError");
 function defaultPut(cell, value) {
     cell.push(value);
@@ -377,10 +377,10 @@ class Cell extends EventEmitter_1.EventEmitter {
         let isWaitError = err instanceof WaitError_1.WaitError;
         if (!isWaitError) {
             if (this.debugKey) {
-                logger_1.error('[' + this.debugKey + ']', err);
+                utils_1.logError('[' + this.debugKey + ']', err);
             }
             else {
-                logger_1.error(err);
+                utils_1.logError(err);
             }
             if (!(err instanceof Error)) {
                 err = new Error(String(err));

@@ -102,19 +102,21 @@ return /******/ (function(modules) { // webpackBootstrap
 
 Object.defineProperty(exports, "__esModule", { value: true });
 const Cell_1 = __webpack_require__(1);
-var EventEmitter_1 = __webpack_require__(4);
+var EventEmitter_1 = __webpack_require__(5);
 exports.EventEmitter = EventEmitter_1.EventEmitter;
-var ObservableMap_1 = __webpack_require__(6);
+var ObservableMap_1 = __webpack_require__(9);
 exports.ObservableMap = ObservableMap_1.ObservableMap;
-var ObservableList_1 = __webpack_require__(7);
+var ObservableList_1 = __webpack_require__(10);
 exports.ObservableList = ObservableList_1.ObservableList;
 var Cell_2 = __webpack_require__(1);
 exports.Cell = Cell_2.Cell;
-var WaitError_1 = __webpack_require__(5);
+var WaitError_1 = __webpack_require__(8);
 exports.WaitError = WaitError_1.WaitError;
 const hasOwn = Object.prototype.hasOwnProperty;
 const slice = Array.prototype.slice;
 const global_ = Function('return this;')();
+var configuration_1 = __webpack_require__(7);
+exports.configure = configuration_1.configure;
 exports.KEY_CELLS = Symbol('cells');
 function cellx(value, options) {
     if (!options) {
@@ -217,10 +219,10 @@ exports.define = define;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const logger_1 = __webpack_require__(2);
-const next_tick_1 = __webpack_require__(3);
-const EventEmitter_1 = __webpack_require__(4);
-const WaitError_1 = __webpack_require__(5);
+const next_tick_1 = __webpack_require__(2);
+const EventEmitter_1 = __webpack_require__(5);
+const utils_1 = __webpack_require__(6);
+const WaitError_1 = __webpack_require__(8);
 function defaultPut(cell, value) {
     cell.push(value);
 }
@@ -594,10 +596,10 @@ class Cell extends EventEmitter_1.EventEmitter {
         let isWaitError = err instanceof WaitError_1.WaitError;
         if (!isWaitError) {
             if (this.debugKey) {
-                logger_1.error('[' + this.debugKey + ']', err);
+                utils_1.logError('[' + this.debugKey + ']', err);
             }
             else {
-                logger_1.error(err);
+                utils_1.logError(err);
             }
             if (!(err instanceof Error)) {
                 err = new Error(String(err));
@@ -660,56 +662,9 @@ exports.Cell = Cell;
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-function noop() { }
-var defaultHandler = function (type) {
-    var msg = [];
-    for (var _i = 1; _i < arguments.length; _i++) {
-        msg[_i - 1] = arguments[_i];
-    }
-    (console[type] || noop).apply(console, type == 'error' ? msg.map(function (m) { return (m && typeof m == 'object' && m.stack) || m; }) : msg);
-};
-var Logger = /** @class */ (function () {
-    function Logger(handler) {
-        this.handler = handler || defaultHandler;
-    }
-    Logger.prototype.log = function () {
-        var msg = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            msg[_i] = arguments[_i];
-        }
-        this.handler.apply(this, ['log'].concat(msg));
-    };
-    Logger.prototype.warn = function () {
-        var msg = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            msg[_i] = arguments[_i];
-        }
-        this.handler.apply(this, ['warn'].concat(msg));
-    };
-    Logger.prototype.error = function () {
-        var msg = [];
-        for (var _i = 0; _i < arguments.length; _i++) {
-            msg[_i] = arguments[_i];
-        }
-        this.handler.apply(this, ['error'].concat(msg));
-    };
-    return Logger;
-}());
-exports.Logger = Logger;
-exports.logger = (Logger.$instance = new Logger());
-exports.log = exports.logger.log.bind(exports.logger);
-exports.warn = exports.logger.warn.bind(exports.logger);
-exports.error = exports.logger.error.bind(exports.logger);
-
-
-/***/ }),
-/* 3 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", { value: true });
-const logger_1 = __webpack_require__(2);
+const utils_1 = __webpack_require__(3);
+var configuration_1 = __webpack_require__(4);
+exports.configure = configuration_1.configure;
 exports.nextTick = (() => {
     const global = Function('return this;')();
     if (global.process &&
@@ -741,7 +696,7 @@ exports.nextTick = (() => {
                     track[i]();
                 }
                 catch (err) {
-                    logger_1.error(err);
+                    utils_1.logError(err);
                 }
             }
         }
@@ -759,13 +714,46 @@ exports.nextTick = (() => {
 
 
 /***/ }),
+/* 3 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const configuration_1 = __webpack_require__(4);
+function logError(...args) {
+    configuration_1.configuration.logError(...args);
+}
+exports.logError = logError;
+
+
+/***/ }),
 /* 4 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const logger_1 = __webpack_require__(2);
+exports.configuration = {
+    logError: (...args) => {
+        console.error(...args);
+    }
+};
+function configure(config) {
+    Object.assign(exports.configuration, config);
+    return exports.configuration;
+}
+exports.configure = configure;
+
+
+/***/ }),
+/* 5 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const utils_1 = __webpack_require__(6);
 const hasOwn = Object.prototype.hasOwnProperty;
 let currentlySubscribing = false;
 let transactionLevel = 0;
@@ -781,7 +769,7 @@ class EventEmitter {
             cb();
         }
         catch (err) {
-            logger_1.error(err);
+            utils_1.logError(err);
         }
         if (--transactionLevel) {
             return;
@@ -798,7 +786,7 @@ class EventEmitter {
             cb();
         }
         catch (err) {
-            logger_1.error(err);
+            utils_1.logError(err);
         }
         silently--;
     }
@@ -996,7 +984,7 @@ class EventEmitter {
             return emEvt.listener.call(emEvt.context, evt);
         }
         catch (err) {
-            logger_1.error(err);
+            utils_1.logError(err);
         }
     }
 }
@@ -1004,7 +992,40 @@ exports.EventEmitter = EventEmitter;
 
 
 /***/ }),
-/* 5 */
+/* 6 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+const configuration_1 = __webpack_require__(7);
+function logError(...args) {
+    configuration_1.configuration.logError(...args);
+}
+exports.logError = logError;
+
+
+/***/ }),
+/* 7 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.configuration = {
+    logError: (...args) => {
+        console.error(...args);
+    }
+};
+function configure(config) {
+    Object.assign(exports.configuration, config);
+    return exports.configuration;
+}
+exports.configure = configure;
+
+
+/***/ }),
+/* 8 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -1019,13 +1040,13 @@ WaitError.prototype = {
 
 
 /***/ }),
-/* 6 */
+/* 9 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const EventEmitter_1 = __webpack_require__(4);
+const EventEmitter_1 = __webpack_require__(5);
 const hasOwn = Object.prototype.hasOwnProperty;
 class ObservableMap extends EventEmitter_1.EventEmitter {
     constructor(entries) {
@@ -1134,13 +1155,13 @@ ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;
 
 
 /***/ }),
-/* 7 */
+/* 10 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", { value: true });
-const EventEmitter_1 = __webpack_require__(4);
+const EventEmitter_1 = __webpack_require__(5);
 const push = Array.prototype.push;
 const splice = Array.prototype.splice;
 const defaultComparator = (a, b) => {

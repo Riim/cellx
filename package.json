@@ -35,8 +35,7 @@
     "webpack-cli": "^3.3.5"
   },
   "dependencies": {
-    "@riim/logger": "^1.0.2",
-    "@riim/next-tick": "^1.1.1"
+    "@riim/next-tick": "^1.1.2"
   },
   "jest": {
     "collectCoverage": true,

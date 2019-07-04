@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-const logger_1 = require("@riim/logger");
+const utils_1 = require("./utils");
 const hasOwn = Object.prototype.hasOwnProperty;
 let currentlySubscribing = false;
 let transactionLevel = 0;
@@ -16,7 +16,7 @@ class EventEmitter {
             cb();
         }
         catch (err) {
-            logger_1.error(err);
+            utils_1.logError(err);
         }
         if (--transactionLevel) {
             return;
@@ -33,7 +33,7 @@ class EventEmitter {
             cb();
         }
         catch (err) {
-            logger_1.error(err);
+            utils_1.logError(err);
         }
         silently--;
     }
@@ -231,7 +231,7 @@ class EventEmitter {
             return emEvt.listener.call(emEvt.context, evt);
         }
         catch (err) {
-            logger_1.error(err);
+            utils_1.logError(err);
         }
     }
 }

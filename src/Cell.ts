@@ -1,6 +1,6 @@
-import { error } from '@riim/logger';
 import { nextTick } from '@riim/next-tick';
 import { EventEmitter, IEvent, TListener } from './EventEmitter';
+import { logError } from './utils';
 import { WaitError } from './WaitError';
 
 export type TCellPull<T> = (cell: Cell<T>, next: any) => any;
@@ -541,9 +541,9 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 		if (!isWaitError) {
 			if (this.debugKey) {
-				error('[' + this.debugKey + ']', err);
+				logError('[' + this.debugKey + ']', err);
 			} else {
-				error(err);
+				logError(err);
 			}
 
 			if (!(err instanceof Error)) {

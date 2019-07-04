@@ -14,6 +14,8 @@ exports.WaitError = WaitError_1.WaitError;
 const hasOwn = Object.prototype.hasOwnProperty;
 const slice = Array.prototype.slice;
 const global_ = Function('return this;')();
+var configuration_1 = require("./configuration");
+exports.configure = configuration_1.configure;
 exports.KEY_CELLS = Symbol('cells');
 function cellx(value, options) {
     if (!options) {

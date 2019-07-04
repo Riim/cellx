@@ -1,4 +1,4 @@
-import { error } from '@riim/logger';
+import { logError } from './utils';
 
 const hasOwn = Object.prototype.hasOwnProperty;
 
@@ -36,7 +36,7 @@ export class EventEmitter {
 		try {
 			cb();
 		} catch (err) {
-			error(err);
+			logError(err);
 		}
 
 		if (--transactionLevel) {
@@ -58,7 +58,7 @@ export class EventEmitter {
 		try {
 			cb();
 		} catch (err) {
-			error(err);
+			logError(err);
 		}
 
 		silently--;
@@ -320,7 +320,7 @@ export class EventEmitter {
 		try {
 			return emEvt.listener.call(emEvt.context, evt);
 		} catch (err) {
-			error(err);
+			logError(err);
 		}
 	}
 }

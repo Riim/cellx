@@ -40,6 +40,8 @@ export interface ICellx<T> {
 	(method: 'reap' | 'dispose', _: any): Cell<T>;
 }
 
+export { configure } from './configuration';
+
 export const KEY_CELLS = Symbol('cells');
 
 export function cellx<T = any, M = any>(
