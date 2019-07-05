@@ -4,7 +4,7 @@ export const config = {
 	}
 };
 
-export function configure(options: { logError: Function }): Object {
+export function configure(options: typeof config) {
 	Object.assign(config, options);
 	return config;
 }
