@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.8.11",
+  "version": "1.8.12",
   "description": "",
   "main": "dist/cellx.js",
   "typings": "dist/cellx.d.ts",
@@ -30,8 +30,8 @@
     "ts-jest": "^24.0.2",
     "tslint": "^5.18.0",
     "tslint-loader": "^3.6.0",
-    "typescript": "^3.5.2",
-    "webpack": "^4.35.2",
+    "typescript": "^3.5.3",
+    "webpack": "^4.35.3",
     "webpack-cli": "^3.3.5"
   },
   "dependencies": {
