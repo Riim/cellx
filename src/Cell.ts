@@ -55,9 +55,11 @@ const $error: { error: Error | null } = { error: null };
 let lastUpdationId = 0;
 
 function release() {
-	for (; pendingCellsIndex < pendingCells.length; pendingCellsIndex++) {
-		if (pendingCells[pendingCellsIndex]._active) {
-			pendingCells[pendingCellsIndex].actualize();
+	while (pendingCellsIndex < pendingCells.length) {
+		let cell = pendingCells[pendingCellsIndex++];
+
+		if (cell._active) {
+			cell.actualize();
 		}
 	}
 

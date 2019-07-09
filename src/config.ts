@@ -4,7 +4,7 @@ export const config = {
 	}
 };
 
-export function configure(options: typeof config) {
+export function configure(options: Partial<typeof config>) {
 	Object.assign(config, options);
 	return config;
 }
