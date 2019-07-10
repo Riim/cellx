@@ -11,64 +11,61 @@ var Cell_2 = require("./Cell");
 exports.Cell = Cell_2.Cell;
 var WaitError_1 = require("./WaitError");
 exports.WaitError = WaitError_1.WaitError;
-const hasOwn = Object.prototype.hasOwnProperty;
-const slice = Array.prototype.slice;
-const global_ = Function('return this;')();
 var config_1 = require("./config");
 exports.configure = config_1.configure;
-exports.KEY_CELLS = Symbol('cells');
+const cellxProto = {
+    __proto__: Function.prototype,
+    cell: null,
+    on(type, listener, context) {
+        return this.cell.on(type, listener, context);
+    },
+    off(type, listener, context) {
+        return this.cell.off(type, listener, context);
+    },
+    addChangeListener(listener, context) {
+        return this.cell.addChangeListener(listener, context);
+    },
+    removeChangeListener(listener, context) {
+        return this.cell.removeChangeListener(listener, context);
+    },
+    addErrorListener(listener, context) {
+        return this.cell.addErrorListener(listener, context);
+    },
+    removeErrorListener(listener, context) {
+        return this.cell.removeErrorListener(listener, context);
+    },
+    subscribe(listener, context) {
+        return this.cell.subscribe(listener, context);
+    },
+    unsubscribe(listener, context) {
+        return this.cell.unsubscribe(listener, context);
+    },
+    get value() {
+        return this.cell.value;
+    },
+    set value(value) {
+        this.cell.value = value;
+    },
+    reap() {
+        return this.cell.reap();
+    },
+    dispose() {
+        return this.cell.dispose();
+    }
+};
 function cellx(value, options) {
-    if (!options) {
-        options = {};
-    }
-    let initialValue = value;
-    let cx = function (value) {
-        let context = this;
-        if (!context || context == global_) {
-            context = cx;
+    // tslint:disable-next-line:only-arrow-functions
+    let $cellx = function (value) {
+        if (arguments.length) {
+            $cellx.cell.set(value);
+            return value;
         }
-        if (!hasOwn.call(context, exports.KEY_CELLS)) {
-            context[exports.KEY_CELLS] = new Map();
-        }
-        let cell = context[exports.KEY_CELLS].get(cx);
-        if (!cell) {
-            if (value === 'dispose' && arguments.length >= 2) {
-                return;
-            }
-            cell = new Cell_1.Cell(initialValue, {
-                __proto__: options,
-                context
-            });
-            context[exports.KEY_CELLS].set(cx, cell);
-        }
-        switch (arguments.length) {
-            case 0: {
-                return cell.get();
-            }
-            case 1: {
-                cell.set(value);
-                return value;
-            }
-        }
-        let method = value;
-        switch (method) {
-            case 'cell': {
-                return cell;
-            }
-            case 'bind': {
-                cx = cx.bind(context);
-                cx.constructor = cellx;
-                return cx;
-            }
-        }
-        let result = Cell_1.Cell.prototype[method].apply(cell, slice.call(arguments, 1));
-        return result === cell ? cx : result;
+        return $cellx.cell.get();
     };
-    cx.constructor = cellx;
-    if (options.onChange || options.onError) {
-        cx.call(options.context || global_);
-    }
-    return cx;
+    Object.setPrototypeOf($cellx, cellxProto);
+    $cellx.constructor = cellx;
+    $cellx.cell = new Cell_1.Cell(value, options);
+    return $cellx;
 }
 exports.cellx = cellx;
 function defineObservableProperty(obj, name, value) {

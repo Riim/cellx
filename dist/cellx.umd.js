@@ -112,64 +112,61 @@ var Cell_2 = __webpack_require__(1);
 exports.Cell = Cell_2.Cell;
 var WaitError_1 = __webpack_require__(6);
 exports.WaitError = WaitError_1.WaitError;
-const hasOwn = Object.prototype.hasOwnProperty;
-const slice = Array.prototype.slice;
-const global_ = Function('return this;')();
 var config_1 = __webpack_require__(5);
 exports.configure = config_1.configure;
-exports.KEY_CELLS = Symbol('cells');
+const cellxProto = {
+    __proto__: Function.prototype,
+    cell: null,
+    on(type, listener, context) {
+        return this.cell.on(type, listener, context);
+    },
+    off(type, listener, context) {
+        return this.cell.off(type, listener, context);
+    },
+    addChangeListener(listener, context) {
+        return this.cell.addChangeListener(listener, context);
+    },
+    removeChangeListener(listener, context) {
+        return this.cell.removeChangeListener(listener, context);
+    },
+    addErrorListener(listener, context) {
+        return this.cell.addErrorListener(listener, context);
+    },
+    removeErrorListener(listener, context) {
+        return this.cell.removeErrorListener(listener, context);
+    },
+    subscribe(listener, context) {
+        return this.cell.subscribe(listener, context);
+    },
+    unsubscribe(listener, context) {
+        return this.cell.unsubscribe(listener, context);
+    },
+    get value() {
+        return this.cell.value;
+    },
+    set value(value) {
+        this.cell.value = value;
+    },
+    reap() {
+        return this.cell.reap();
+    },
+    dispose() {
+        return this.cell.dispose();
+    }
+};
 function cellx(value, options) {
-    if (!options) {
-        options = {};
-    }
-    let initialValue = value;
-    let cx = function (value) {
-        let context = this;
-        if (!context || context == global_) {
-            context = cx;
+    // tslint:disable-next-line:only-arrow-functions
+    let $cellx = function (value) {
+        if (arguments.length) {
+            $cellx.cell.set(value);
+            return value;
         }
-        if (!hasOwn.call(context, exports.KEY_CELLS)) {
-            context[exports.KEY_CELLS] = new Map();
-        }
-        let cell = context[exports.KEY_CELLS].get(cx);
-        if (!cell) {
-            if (value === 'dispose' && arguments.length >= 2) {
-                return;
-            }
-            cell = new Cell_1.Cell(initialValue, {
-                __proto__: options,
-                context
-            });
-            context[exports.KEY_CELLS].set(cx, cell);
-        }
-        switch (arguments.length) {
-            case 0: {
-                return cell.get();
-            }
-            case 1: {
-                cell.set(value);
-                return value;
-            }
-        }
-        let method = value;
-        switch (method) {
-            case 'cell': {
-                return cell;
-            }
-            case 'bind': {
-                cx = cx.bind(context);
-                cx.constructor = cellx;
-                return cx;
-            }
-        }
-        let result = Cell_1.Cell.prototype[method].apply(cell, slice.call(arguments, 1));
-        return result === cell ? cx : result;
+        return $cellx.cell.get();
     };
-    cx.constructor = cellx;
-    if (options.onChange || options.onError) {
-        cx.call(options.context || global_);
-    }
-    return cx;
+    Object.setPrototypeOf($cellx, cellxProto);
+    $cellx.constructor = cellx;
+    $cellx.cell = new Cell_1.Cell(value, options);
+    return $cellx;
 }
 exports.cellx = cellx;
 function defineObservableProperty(obj, name, value) {
@@ -223,6 +220,7 @@ const next_tick_1 = __webpack_require__(2);
 const EventEmitter_1 = __webpack_require__(3);
 const utils_1 = __webpack_require__(4);
 const WaitError_1 = __webpack_require__(6);
+const KEY_LISTENER_WRAPPERS = Symbol('listenerWrappers');
 function defaultPut(cell, value) {
     cell.push(value);
 }
@@ -365,6 +363,44 @@ class Cell extends EventEmitter_1.EventEmitter {
             }
         }
         return this;
+    }
+    addChangeListener(listener, context) {
+        return this.on('change', listener, context !== undefined ? context : this.context);
+    }
+    removeChangeListener(listener, context) {
+        return this.off('change', listener, context !== undefined ? context : this.context);
+    }
+    addErrorListener(listener, context) {
+        return this.on('error', listener, context !== undefined ? context : this.context);
+    }
+    removeErrorListener(listener, context) {
+        return this.off('error', listener, context !== undefined ? context : this.context);
+    }
+    subscribe(listener, context) {
+        let wrappers = listener[KEY_LISTENER_WRAPPERS] || (listener[KEY_LISTENER_WRAPPERS] = new Map());
+        if (wrappers.has(this)) {
+            return this;
+        }
+        function wrapper(evt) {
+            return listener.call(this, evt.data.error || null, evt);
+        }
+        wrappers.set(this, wrapper);
+        if (context === undefined) {
+            context = this.context;
+        }
+        return this.on('change', wrapper, context).on('error', wrapper, context);
+    }
+    unsubscribe(listener, context) {
+        let wrappers = listener[KEY_LISTENER_WRAPPERS];
+        let wrapper = wrappers && wrappers.get(this);
+        if (!wrapper) {
+            return this;
+        }
+        wrappers.delete(this);
+        if (context === undefined) {
+            context = this.context;
+        }
+        return this.off('change', wrapper, context).off('error', wrapper, context);
     }
     _addReaction(reaction, actual) {
         this._reactions.push(reaction);

@@ -58,6 +58,12 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     on(listeners: Record<'change' | 'error', TListener>, context?: any): this;
     off(type: 'change' | 'error', listener: TListener, context?: any): this;
     off(listeners?: Record<'change' | 'error', TListener>, context?: any): this;
+    addChangeListener(listener: TListener, context?: any): this;
+    removeChangeListener(listener: TListener, context?: any): this;
+    addErrorListener(listener: TListener, context?: any): this;
+    removeErrorListener(listener: TListener, context?: any): this;
+    subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this;
+    unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this;
     _addReaction(reaction: Cell, actual: boolean): void;
     _deleteReaction(reaction: Cell): void;
     _activate(actual: boolean): void;

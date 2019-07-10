@@ -4,6 +4,7 @@ const next_tick_1 = require("@riim/next-tick");
 const EventEmitter_1 = require("./EventEmitter");
 const utils_1 = require("./utils");
 const WaitError_1 = require("./WaitError");
+const KEY_LISTENER_WRAPPERS = Symbol('listenerWrappers');
 function defaultPut(cell, value) {
     cell.push(value);
 }
@@ -146,6 +147,44 @@ class Cell extends EventEmitter_1.EventEmitter {
             }
         }
         return this;
+    }
+    addChangeListener(listener, context) {
+        return this.on('change', listener, context !== undefined ? context : this.context);
+    }
+    removeChangeListener(listener, context) {
+        return this.off('change', listener, context !== undefined ? context : this.context);
+    }
+    addErrorListener(listener, context) {
+        return this.on('error', listener, context !== undefined ? context : this.context);
+    }
+    removeErrorListener(listener, context) {
+        return this.off('error', listener, context !== undefined ? context : this.context);
+    }
+    subscribe(listener, context) {
+        let wrappers = listener[KEY_LISTENER_WRAPPERS] || (listener[KEY_LISTENER_WRAPPERS] = new Map());
+        if (wrappers.has(this)) {
+            return this;
+        }
+        function wrapper(evt) {
+            return listener.call(this, evt.data.error || null, evt);
+        }
+        wrappers.set(this, wrapper);
+        if (context === undefined) {
+            context = this.context;
+        }
+        return this.on('change', wrapper, context).on('error', wrapper, context);
+    }
+    unsubscribe(listener, context) {
+        let wrappers = listener[KEY_LISTENER_WRAPPERS];
+        let wrapper = wrappers && wrappers.get(this);
+        if (!wrapper) {
+            return this;
+        }
+        wrappers.delete(this);
+        if (context === undefined) {
+            context = this.context;
+        }
+        return this.off('change', wrapper, context).off('error', wrapper, context);
     }
     _addReaction(reaction, actual) {
         this._reactions.push(reaction);
