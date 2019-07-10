@@ -1,12 +1,10 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const utils_1 = require("./utils");
+import { logError } from './utils';
 const hasOwn = Object.prototype.hasOwnProperty;
 let currentlySubscribing = false;
 let transactionLevel = 0;
 let transactionEvents = [];
 let silently = 0;
-class EventEmitter {
+export class EventEmitter {
     static get currentlySubscribing() {
         return currentlySubscribing;
     }
@@ -16,7 +14,7 @@ class EventEmitter {
             cb();
         }
         catch (err) {
-            utils_1.logError(err);
+            logError(err);
         }
         if (--transactionLevel) {
             return;
@@ -33,7 +31,7 @@ class EventEmitter {
             cb();
         }
         catch (err) {
-            utils_1.logError(err);
+            logError(err);
         }
         silently--;
     }
@@ -231,8 +229,7 @@ class EventEmitter {
             return emEvt.listener.call(emEvt.context, evt);
         }
         catch (err) {
-            utils_1.logError(err);
+            logError(err);
         }
     }
 }
-exports.EventEmitter = EventEmitter;

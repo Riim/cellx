@@ -1,12 +1,9 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.config = {
+export const config = {
     logError: (...args) => {
         console.error(...args);
     }
 };
-function configure(options) {
-    Object.assign(exports.config, options);
-    return exports.config;
+export function configure(options) {
+    Object.assign(config, options);
+    return config;
 }
-exports.configure = configure;

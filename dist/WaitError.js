@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-function WaitError() { }
-exports.WaitError = WaitError;
+export function WaitError() { }
 WaitError.prototype = {
     __proto__: Error.prototype,
     constructor: WaitError

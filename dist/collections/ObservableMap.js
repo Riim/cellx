@@ -1,8 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const EventEmitter_1 = require("../EventEmitter");
+import { EventEmitter } from '../EventEmitter';
 const hasOwn = Object.prototype.hasOwnProperty;
-class ObservableMap extends EventEmitter_1.EventEmitter {
+export class ObservableMap extends EventEmitter {
     constructor(entries) {
         super();
         this._entries = new Map();
@@ -104,5 +102,4 @@ class ObservableMap extends EventEmitter_1.EventEmitter {
         return new this.constructor(entries || this);
     }
 }
-exports.ObservableMap = ObservableMap;
 ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;

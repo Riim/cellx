@@ -1,9 +1,7 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const next_tick_1 = require("@riim/next-tick");
-const EventEmitter_1 = require("./EventEmitter");
-const utils_1 = require("./utils");
-const WaitError_1 = require("./WaitError");
+import { nextTick } from '@riim/next-tick';
+import { EventEmitter } from './EventEmitter';
+import { logError } from './utils';
+import { WaitError } from './WaitError';
 const KEY_LISTENER_WRAPPERS = Symbol('listenerWrappers');
 function defaultPut(cell, value) {
     cell.push(value);
@@ -31,7 +29,7 @@ function release() {
         }
     }
 }
-class Cell extends EventEmitter_1.EventEmitter {
+export class Cell extends EventEmitter {
     constructor(value, options) {
         super();
         this._reactions = [];
@@ -71,7 +69,7 @@ class Cell extends EventEmitter_1.EventEmitter {
             this._value = value;
             this._state = 'actual';
             this._inited = true;
-            if (value instanceof EventEmitter_1.EventEmitter) {
+            if (value instanceof EventEmitter) {
                 value.on('change', this._onValueChange, this);
             }
         }
@@ -254,7 +252,7 @@ class Cell extends EventEmitter_1.EventEmitter {
             } while (i);
         }
         else if (pendingCells.push(this) == 1) {
-            next_tick_1.nextTick(release);
+            nextTick(release);
         }
     }
     actualize() {
@@ -295,7 +293,7 @@ class Cell extends EventEmitter_1.EventEmitter {
             else {
                 currentCell._dependencies = [this];
             }
-            if (this._error && this._error instanceof WaitError_1.WaitError) {
+            if (this._error && this._error instanceof WaitError) {
                 throw this._error;
             }
         }
@@ -388,10 +386,10 @@ class Cell extends EventEmitter_1.EventEmitter {
         let changed = !Object.is(value, prevValue);
         if (changed) {
             this._value = value;
-            if (prevValue instanceof EventEmitter_1.EventEmitter) {
+            if (prevValue instanceof EventEmitter) {
                 prevValue.off('change', this._onValueChange, this);
             }
-            if (value instanceof EventEmitter_1.EventEmitter) {
+            if (value instanceof EventEmitter) {
                 value.on('change', this._onValueChange, this);
             }
         }
@@ -414,13 +412,13 @@ class Cell extends EventEmitter_1.EventEmitter {
     }
     fail(err) {
         this._inited = true;
-        let isWaitError = err instanceof WaitError_1.WaitError;
+        let isWaitError = err instanceof WaitError;
         if (!isWaitError) {
             if (this.debugKey) {
-                utils_1.logError('[' + this.debugKey + ']', err);
+                logError('[' + this.debugKey + ']', err);
             }
             else {
-                utils_1.logError(err);
+                logError(err);
             }
             if (!(err instanceof Error)) {
                 err = new Error(String(err));
@@ -458,7 +456,7 @@ class Cell extends EventEmitter_1.EventEmitter {
         }
     }
     wait() {
-        throw new WaitError_1.WaitError();
+        throw new WaitError();
     }
     reap() {
         this.off();
@@ -473,4 +471,3 @@ class Cell extends EventEmitter_1.EventEmitter {
         return this.reap();
     }
 }
-exports.Cell = Cell;

@@ -1,18 +1,10 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const Cell_1 = require("./Cell");
-var EventEmitter_1 = require("./EventEmitter");
-exports.EventEmitter = EventEmitter_1.EventEmitter;
-var ObservableMap_1 = require("./collections/ObservableMap");
-exports.ObservableMap = ObservableMap_1.ObservableMap;
-var ObservableList_1 = require("./collections/ObservableList");
-exports.ObservableList = ObservableList_1.ObservableList;
-var Cell_2 = require("./Cell");
-exports.Cell = Cell_2.Cell;
-var WaitError_1 = require("./WaitError");
-exports.WaitError = WaitError_1.WaitError;
-var config_1 = require("./config");
-exports.configure = config_1.configure;
+import { Cell } from './Cell';
+export { EventEmitter } from './EventEmitter';
+export { ObservableMap } from './collections/ObservableMap';
+export { ObservableList } from './collections/ObservableList';
+export { Cell } from './Cell';
+export { WaitError } from './WaitError';
+export { configure } from './config';
 const cellxProto = {
     __proto__: Function.prototype,
     cell: null,
@@ -53,7 +45,7 @@ const cellxProto = {
         return this.cell.dispose();
     }
 };
-function cellx(value, options) {
+export function cellx(value, options) {
     // tslint:disable-next-line:only-arrow-functions
     let $cellx = function (value) {
         if (arguments.length) {
@@ -64,17 +56,16 @@ function cellx(value, options) {
     };
     Object.setPrototypeOf($cellx, cellxProto);
     $cellx.constructor = cellx;
-    $cellx.cell = new Cell_1.Cell(value, options);
+    $cellx.cell = new Cell(value, options);
     return $cellx;
 }
-exports.cellx = cellx;
-function defineObservableProperty(obj, name, value) {
+export function defineObservableProperty(obj, name, value) {
     let cellName = name + 'Cell';
     Object.defineProperty(obj, cellName, {
         configurable: true,
         enumerable: false,
         writable: true,
-        value: value instanceof Cell_1.Cell ? value : new Cell_1.Cell(value, { context: obj })
+        value: value instanceof Cell ? value : new Cell(value, { context: obj })
     });
     Object.defineProperty(obj, name, {
         configurable: true,
@@ -88,15 +79,13 @@ function defineObservableProperty(obj, name, value) {
     });
     return obj;
 }
-exports.defineObservableProperty = defineObservableProperty;
-function defineObservableProperties(obj, props) {
+export function defineObservableProperties(obj, props) {
     Object.keys(props).forEach(name => {
         defineObservableProperty(obj, name, props[name]);
     });
     return obj;
 }
-exports.defineObservableProperties = defineObservableProperties;
-function define(obj, name, value) {
+export function define(obj, name, value) {
     if (typeof name == 'string') {
         defineObservableProperty(obj, name, value);
     }
@@ -105,4 +94,3 @@ function define(obj, name, value) {
     }
     return obj;
 }
-exports.define = define;

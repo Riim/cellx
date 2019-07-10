@@ -1,12 +1,10 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const EventEmitter_1 = require("../EventEmitter");
+import { EventEmitter } from '../EventEmitter';
 const push = Array.prototype.push;
 const splice = Array.prototype.splice;
 const defaultComparator = (a, b) => {
     return a < b ? -1 : a > b ? 1 : 0;
 };
-class ObservableList extends EventEmitter_1.EventEmitter {
+export class ObservableList extends EventEmitter {
     constructor(items, options) {
         super();
         this._items = [];
@@ -311,7 +309,6 @@ class ObservableList extends EventEmitter_1.EventEmitter {
         items.splice(low, 0, value);
     }
 }
-exports.ObservableList = ObservableList;
 ['forEach', 'map', 'filter', 'every', 'some'].forEach(name => {
     ObservableList.prototype[name] = function (cb, context) {
         return this._items[name](function (item, index) {

@@ -8,7 +8,7 @@
     "test": "tests"
   },
   "scripts": {
-    "build": "rm -rf dist && webpack && tsc",
+    "build": "rm -rf dist && rollup -c && tsc",
     "test": "rm -rf coverage && jest",
     "coveralls": "cat coverage/lcov.info | node_modules/.bin/coveralls",
     "debug": "node --inspect-brk ./node_modules/jest/bin/jest.js --runInBand"
@@ -27,15 +27,16 @@
     "@types/jest": "^24.0.15",
     "awesome-typescript-loader": "^5.2.1",
     "jest": "^24.8.0",
+    "rollup": "^1.16.7",
+    "rollup-plugin-node-resolve": "^5.2.0",
+    "rollup-plugin-typescript2": "^0.21.2",
     "ts-jest": "^24.0.2",
     "tslint": "^5.18.0",
     "tslint-loader": "^3.6.0",
-    "typescript": "^3.5.3",
-    "webpack": "^4.35.3",
-    "webpack-cli": "^3.3.5"
+    "typescript": "^3.5.3"
   },
   "dependencies": {
-    "@riim/next-tick": "^1.2.0"
+    "@riim/next-tick": "^1.2.2"
   },
   "jest": {
     "collectCoverage": true,

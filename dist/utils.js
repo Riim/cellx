@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-const config_1 = require("./config");
-function logError(...args) {
-    config_1.config.logError(...args);
+import { config } from './config';
+export function logError(...args) {
+    config.logError(...args);
 }
-exports.logError = logError;
