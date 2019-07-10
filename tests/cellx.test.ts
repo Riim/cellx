@@ -1,13 +1,13 @@
 import { Cell, cellx } from '../src/cellx';
 
 describe('cellx', () => {
-	test('#get()', () => {
+	test('чтение ячейки', () => {
 		let a = cellx(1);
 
 		expect(a()).toBe(1);
 	});
 
-	test('#set()', () => {
+	test('запись в ячейку', () => {
 		let a = cellx(1);
 
 		a(2);
@@ -15,40 +15,184 @@ describe('cellx', () => {
 		expect(a()).toBe(2);
 	});
 
-	test('#cell()', () => {
+	test('[options.onChange]', done => {
+		let a = cellx(1, {
+			onChange() {
+				expect(a()).toBe(2);
+				done();
+			}
+		});
+
+		a(2);
+	});
+
+	test('#cell', () => {
 		let a = cellx(1);
-		let aa = a('cell', 0);
 
-		expect(aa).toBeInstanceOf(Cell);
+		expect(a.cell).toBeInstanceOf(Cell);
 	});
 
-	test('#bind()', () => {
-		let c;
-		let getA = jest.fn(function() {
-			c = this;
+	test('#on()', done => {
+		let a = cellx(1);
+
+		a.on('change', evt => {
+			expect(evt).toEqual({
+				target: a.cell,
+				type: 'change',
+				data: {
+					prevValue: 1,
+					value: 2
+				}
+			});
+
+			done();
 		});
-		let a = cellx(getA);
-		let context = {};
 
-		a = a.call(context, 'bind', 0);
-		a();
-
-		expect(getA).toHaveBeenCalledTimes(1);
-		expect(c).toBe(context);
+		a(2);
 	});
 
-	test('позволяет использование в прототипе', () => {
-		function A() {}
-		A.prototype.prop1 = cellx([1, 2, 3]);
-		A.prototype.prop2 = cellx(() => {
-			return [1, 2, 3];
+	test('#off()', () => {
+		let a = cellx(1);
+		let listener = jest.fn();
+
+		a.on('change', listener);
+		a.off('change', listener);
+
+		a(2);
+
+		Cell.release();
+
+		expect(listener).not.toHaveBeenCalled();
+	});
+
+	test('#addErrorListener()', done => {
+		let a = cellx(1);
+		let b = cellx(() => {
+			if (a() == 2) {
+				throw new RangeError();
+			}
+
+			return a();
 		});
 
-		let a1 = new (A as any)();
-		let a2 = new (A as any)();
+		b.addErrorListener(evt => {
+			expect(evt.data.error).toBeInstanceOf(RangeError);
 
-		expect(a1.prop1()).toBe(a2.prop1());
-		expect(a1.prop2()).not.toBe(a2.prop2());
-		expect(a1.prop2()).toEqual(a2.prop2());
+			done();
+		});
+
+		a(2);
+	});
+
+	test('#removeErrorListener()', () => {
+		let a = cellx(1);
+		let b = cellx(() => {
+			throw new RangeError();
+		});
+		let listener = jest.fn();
+
+		b.addErrorListener(listener);
+		b.removeErrorListener(listener);
+
+		a(2);
+
+		Cell.release();
+
+		expect(listener).not.toHaveBeenCalled();
+	});
+
+	test('#addChangeListener()', done => {
+		let a = cellx(1);
+
+		a.addChangeListener(evt => {
+			expect(evt).toEqual({
+				target: a.cell,
+				type: 'change',
+				data: {
+					prevValue: 1,
+					value: 2
+				}
+			});
+
+			done();
+		});
+
+		a(2);
+	});
+
+	test('#removeChangeListener()', () => {
+		let a = cellx(1);
+		let listener = jest.fn();
+
+		a.addChangeListener(listener);
+		a.removeChangeListener(listener);
+
+		a(2);
+
+		Cell.release();
+
+		expect(listener).not.toHaveBeenCalled();
+	});
+
+	test('подписка на ячейку', done => {
+		let a = cellx(1);
+
+		a.subscribe((err, evt) => {
+			expect(err).toBeNull();
+			expect(evt).toEqual({
+				target: a.cell,
+				type: 'change',
+				data: {
+					prevValue: 1,
+					value: 2
+				}
+			});
+
+			done();
+		});
+
+		a(2);
+	});
+
+	test('отписка от ячейки', () => {
+		let a = cellx(1);
+		let listener = jest.fn();
+
+		a.subscribe(listener);
+		a.unsubscribe(listener);
+
+		a(2);
+
+		Cell.release();
+
+		expect(listener).not.toHaveBeenCalled();
+	});
+
+	test('#value', () => {
+		let a = cellx(1);
+
+		expect(a.value).toBe(1);
+
+		a.value = 2;
+
+		expect(a.value).toBe(2);
+	});
+
+	test('#reap()', () => {
+		let a = cellx(1);
+		let b = cellx(() => a(), { onChange() {} });
+
+		b.reap();
+
+		expect(b.cell._active).toBeFalsy();
+	});
+
+	test('#dispose()', () => {
+		let a = cellx(1);
+		let b = cellx(() => a(), { onChange() {} });
+
+		b.dispose();
+
+		expect(b.cell._active).toBeFalsy();
 	});
 });

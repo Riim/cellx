@@ -29,12 +29,12 @@ let user = {
     lastName: cellx('Cat'),
 
     fullName: cellx(function() {
-        return (this.firstName() + ' ' + this.lastName()).trim();
+        return (user.firstName() + ' ' + user.lastName()).trim();
     })
 };
 
-user.fullName('subscribe', function() {
-    console.log('fullName: ' + this.fullName());
+user.fullName.subscribe(function() {
+    console.log('fullName: ' + user.fullName());
 });
 
 console.log(user.fullName());
@@ -94,29 +94,13 @@ or in the callable properties:
 ```js
 function User(name) {
     this.name = cellx(name);
-    this.nameInitial = cellx(function() { return this.name().charAt(0).toUpperCase(); });
+    this.nameInitial = cellx(() => this.name().charAt(0).toUpperCase());
 }
 
 let user = new User('Matroskin');
 
 console.log(user.nameInitial());
 // => 'M'
-```
-
-including in the prototype:
-
-```js
-function User(name) {
-    this.name(name);
-}
-User.prototype.name = cellx();
-User.prototype.friends = cellx(() => []); // each instance of the user will get its own instance of the array
-
-let user1 = new User('Matroskin');
-let user2 = new User('Sharik');
-
-console.log(user1.friends() == user2.friends());
-// => false
 ```
 
 or in simple properties:
@@ -180,16 +164,17 @@ function User() {
     this.firstName = cellx('');
     this.lastName = cellx('');
 
-    this.fullName = cellx(function() {
-        return (this.firstName() + ' ' + this.lastName()).trim();
-    }, {
-        put: function(name) {
-            name = name.split(' ');
+    this.fullName = cellx(
+		() => (this.firstName() + ' ' + this.lastName()).trim(),
+		{
+			put: name => {
+				name = name.split(' ');
 
-            this.firstName(name[0]);
-            this.lastName(name[1]);
-        }
-    });
+				this.firstName(name[0]);
+				this.lastName(name[1]);
+			}
+		}
+	);
 }
 
 let user = new User();
@@ -241,7 +226,7 @@ let num = cellx(() => value(), {
     }
 });
 
-num('subscribe', err => {
+num.subscribe(err => {
     console.log(err.message);
 });
 
@@ -257,11 +242,6 @@ console.log(num());
 
 ### Methods
 
-Calling the cell method is somewhat unusual — the cell itself is called, the first argument passes the method name,
-rest ones — the arguments. In this case, there must be at least one argument, or call of the cell will be counted as its
-recording. If the method has no arguments, you need to transfer an additional `undefined` with a call or to shorten it
-just `0` (see `dispose`).
-
 #### addChangeListener
 
 Adds a change listener:
@@ -269,7 +249,7 @@ Adds a change listener:
 ```js
 let num = cellx(5);
 
-num('addChangeListener', evt => {
+num.addChangeListener(evt => {
     console.log(evt);
 });
 
@@ -291,12 +271,12 @@ let value = cellx(1);
 let num = cellx(() => value(), {
     validate: v => {
         if (v > 1) {
-            throw new TypeError('Oops!');
+            throw new RangeError('Oops!');
         }
     }
 });
 
-num('addErrorListener', evt => {
+num.addErrorListener(evt => {
     console.log(evt.error.message);
 });
 
@@ -313,7 +293,7 @@ Removes previously added error listener.
 Subscribes to the events `change` and `error`. First argument comes into handler is an error object, second — an event.
 
 ```js
-user.fullName('subscribe', (err, evt) => {
+user.fullName.subscribe((err, evt) => {
     if (err) {
         //
     } else {
@@ -353,7 +333,7 @@ user.name = 'Sharik';
 // => 'nameInitial: S'
 ```
 
-#### dispose or how to kill the cell
+#### dispose
 
 In many reactivity engines calculated cell (atom, observable-property) should be seen
 as a normal event handler for other cells, that is, for "killing" the cell it is not enough to simply remove
@@ -367,7 +347,7 @@ from which it is calculated or which are calculated from it. After this, garbage
 You can call the `dispose`, just in case:
 
 ```js
-user.name('dispose', 0);
+user.name.dispose();
 ```
 
 This will remove all the handlers, not only from the cell itself, but also from all cells calculated from it,
@@ -381,7 +361,7 @@ To minimize redraw of UI cellx may "collapse" several events into one. Link to t
 ```js
 let num = cellx(5);
 
-num('addChangeListener', evt => {
+num.addChangeListener(evt => {
     console.log(evt);
 });
 
@@ -408,7 +388,7 @@ In cases when the cell comes to the initial value before generation of event, it
 ```js
 let num = cellx(5);
 
-num('addChangeListener', evt => {
+num.addChangeListener(evt => {
     console.log(evt);
 });
 
@@ -432,7 +412,7 @@ let sum = cellx(() => {
     return num1() + num2();
 });
 
-sum('addChangeListener', evt => {
+sum.addChangeListener(evt => {
     console.log(evt);
 });
 
@@ -457,7 +437,7 @@ let user = {
     firstName: cellx(''),
     lastName: cellx(''),
 
-    name: cellx(function() {
+    name: cellx(() => {
         return this.firstName() || this.lastName();
     })
 };
@@ -475,9 +455,9 @@ to the `lastName`.
 
 ```js
 let foo = cellx(() => localStorage.foo || 'foo', {
-	put: function(value) {
+	put: function(cell, value) {
 		localStorage.foo = value;
-		this.push(value);
+		cell.push(value);
 	}
 });
 
@@ -540,7 +520,7 @@ let foo = cellx(function(cell, next = 0) {
 	}
 });
 
-foo('subscribe', () => {
+foo.subscribe(() => {
 	console.log('New foo value: ' + foo());
 	foo(5);
 });
@@ -564,7 +544,7 @@ then the cell will subscribe to its `change` event and will claim it as own:
 ```js
 let value = cellx(new cellx.EventEmitter());
 
-value('subscribe', (err, evt) => {
+value.subscribe((err, evt) => {
     console.log(evt.target instanceof cellx.EventEmitter);
 });
 

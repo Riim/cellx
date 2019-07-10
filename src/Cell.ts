@@ -39,6 +39,8 @@ export type TCellEvent<T extends EventEmitter = EventEmitter> =
 	| ICellChangeEvent<T>
 	| ICellErrorEvent<T>;
 
+const KEY_LISTENER_WRAPPERS = Symbol('listenerWrappers');
+
 function defaultPut(cell: Cell, value: any) {
 	cell.push(value);
 }
@@ -249,6 +251,59 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 
 		return this;
+	}
+
+	addChangeListener(listener: TListener, context?: any): this {
+		return this.on('change', listener, context !== undefined ? context : this.context);
+	}
+
+	removeChangeListener(listener: TListener, context?: any): this {
+		return this.off('change', listener, context !== undefined ? context : this.context);
+	}
+
+	addErrorListener(listener: TListener, context?: any): this {
+		return this.on('error', listener, context !== undefined ? context : this.context);
+	}
+
+	removeErrorListener(listener: TListener, context?: any): this {
+		return this.off('error', listener, context !== undefined ? context : this.context);
+	}
+
+	subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this {
+		let wrappers: Map<Cell, TListener> =
+			listener[KEY_LISTENER_WRAPPERS] || (listener[KEY_LISTENER_WRAPPERS] = new Map());
+
+		if (wrappers.has(this)) {
+			return this;
+		}
+
+		function wrapper(evt: IEvent): any {
+			return listener.call(this, evt.data.error || null, evt);
+		}
+		wrappers.set(this, wrapper);
+
+		if (context === undefined) {
+			context = this.context;
+		}
+
+		return this.on('change', wrapper, context).on('error', wrapper, context);
+	}
+
+	unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this {
+		let wrappers: Map<Cell, TListener> | undefined = listener[KEY_LISTENER_WRAPPERS];
+		let wrapper = wrappers && wrappers.get(this);
+
+		if (!wrapper) {
+			return this;
+		}
+
+		wrappers!.delete(this);
+
+		if (context === undefined) {
+			context = this.context;
+		}
+
+		return this.off('change', wrapper, context).off('error', wrapper, context);
 	}
 
 	_addReaction(reaction: Cell, actual: boolean) {

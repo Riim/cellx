@@ -1,4 +1,5 @@
 import { Cell, ICellOptions, TCellPull } from './Cell';
+import { IEvent, TListener } from './EventEmitter';
 
 export { IEvent, TListener, IRegisteredEvent, EventEmitter } from './EventEmitter';
 export { TObservableMapEntries, ObservableMap } from './collections/ObservableMap';
@@ -18,101 +19,104 @@ export {
 } from './Cell';
 export { WaitError } from './WaitError';
 
-const hasOwn = Object.prototype.hasOwnProperty;
-const slice = Array.prototype.slice;
-
-const global_ = Function('return this;')();
-
-export interface ICellx<T> {
-	(value?: T): T;
-
-	(method: 'cell', _: any): Cell<T>;
-	(method: 'bind', _: any): ICellx<T>;
-
-	(method: 'pull', _: any): boolean;
-
-	// tslint:disable-next-line
-	(method: 'push', value: any): Cell<T>;
-	// tslint:disable-next-line
-	(method: 'fail', err: any): Cell<T>;
-
-	// tslint:disable-next-line
-	(method: 'reap' | 'dispose', _: any): Cell<T>;
-}
-
 export { configure } from './config';
 
-export const KEY_CELLS = Symbol('cells');
+export interface ICellx<T = any, M = any> {
+	(value?: T): T;
+
+	cell: Cell<T, M>;
+
+	on(type: 'change' | 'error', listener: TListener, context?: any): Cell<T, M>;
+	on(listeners: Record<'change' | 'error', TListener>, context?: any): Cell<T, M>;
+	off(type: 'change' | 'error', listener: TListener, context?: any): Cell<T, M>;
+	off(listeners?: Record<'change' | 'error', TListener>, context?: any): Cell<T, M>;
+
+	addChangeListener(listener: TListener, context?: any): Cell<T, M>;
+	removeChangeListener(listener: TListener, context?: any): Cell<T, M>;
+
+	addErrorListener(listener: TListener, context?: any): Cell<T, M>;
+	removeErrorListener(listener: TListener, context?: any): Cell<T, M>;
+
+	subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): Cell<T, M>;
+	unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): Cell<T, M>;
+
+	value: T;
+
+	reap(): Cell<T, M>;
+	dispose(): Cell<T, M>;
+}
+
+const cellxProto = {
+	__proto__: Function.prototype,
+
+	cell: null,
+
+	on(type: string | Record<string, TListener>, listener?: any, context?: any): Cell {
+		return (this as ICellx).cell.on(type as any, listener, context);
+	},
+
+	off(type?: string | Record<string, TListener>, listener?: any, context?: any): Cell {
+		return (this as ICellx).cell.off(type as any, listener, context);
+	},
+
+	addChangeListener(listener: TListener, context?: any): Cell {
+		return (this as ICellx).cell.addChangeListener(listener, context);
+	},
+
+	removeChangeListener(listener: TListener, context?: any): Cell {
+		return (this as ICellx).cell.removeChangeListener(listener, context);
+	},
+
+	addErrorListener(listener: TListener, context?: any): Cell {
+		return (this as ICellx).cell.addErrorListener(listener, context);
+	},
+
+	removeErrorListener(listener: TListener, context?: any): Cell {
+		return (this as ICellx).cell.removeErrorListener(listener, context);
+	},
+
+	subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): Cell {
+		return (this as ICellx).cell.subscribe(listener, context);
+	},
+
+	unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): Cell {
+		return (this as ICellx).cell.unsubscribe(listener, context);
+	},
+
+	get value(): any {
+		return (this as ICellx).cell.value;
+	},
+	set value(value: any) {
+		(this as ICellx).cell.value = value;
+	},
+
+	reap(): Cell {
+		return (this as ICellx).cell.reap();
+	},
+
+	dispose(): Cell {
+		return (this as ICellx).cell.dispose();
+	}
+};
 
 export function cellx<T = any, M = any>(
 	value: T | TCellPull<T>,
 	options?: ICellOptions<T, M>
 ): ICellx<T> {
-	if (!options) {
-		options = {};
-	}
-
-	let initialValue = value;
-
-	let cx = function(value: any) {
-		let context = this;
-
-		if (!context || context == global_) {
-			context = cx;
+	// tslint:disable-next-line:only-arrow-functions
+	let $cellx = function(value: any) {
+		if (arguments.length) {
+			$cellx.cell.set(value);
+			return value;
 		}
 
-		if (!hasOwn.call(context, KEY_CELLS)) {
-			context[KEY_CELLS] = new Map();
-		}
+		return $cellx.cell.get();
+	} as ICellx;
+	Object.setPrototypeOf($cellx, cellxProto);
+	$cellx.constructor = cellx;
+	$cellx.cell = new Cell(value, options);
 
-		let cell = context[KEY_CELLS].get(cx);
-
-		if (!cell) {
-			if (value === 'dispose' && arguments.length >= 2) {
-				return;
-			}
-
-			cell = new Cell(initialValue, {
-				__proto__: options,
-				context
-			} as any);
-
-			context[KEY_CELLS].set(cx, cell);
-		}
-
-		switch (arguments.length) {
-			case 0: {
-				return cell.get();
-			}
-			case 1: {
-				cell.set(value);
-				return value;
-			}
-		}
-
-		let method = value;
-
-		switch (method) {
-			case 'cell': {
-				return cell;
-			}
-			case 'bind': {
-				cx = cx.bind(context);
-				cx.constructor = cellx;
-				return cx;
-			}
-		}
-
-		let result = Cell.prototype[method].apply(cell, slice.call(arguments, 1));
-		return result === cell ? cx : result;
-	};
-	cx.constructor = cellx;
-
-	if (options.onChange || options.onError) {
-		cx.call(options.context || global_);
-	}
-
-	return cx;
+	return $cellx;
 }
 
 export function defineObservableProperty<T extends object = object>(

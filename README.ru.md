@@ -18,12 +18,12 @@ let user = {
     lastName: cellx('Кот'),
 
     fullName: cellx(function() {
-        return (this.firstName() + ' ' + this.lastName()).trim();
+        return (user.firstName() + ' ' + user.lastName()).trim();
     })
 };
 
-user.fullName('subscribe', function() {
-    console.log('fullName: ' + this.fullName());
+user.fullName.subscribe(function() {
+    console.log('fullName: ' + user.fullName());
 });
 
 console.log(user.fullName());
@@ -81,29 +81,13 @@ console.log(plusOne());
 ```js
 function User(name) {
     this.name = cellx(name);
-    this.nameInitial = cellx(function() { return this.name().charAt(0).toUpperCase(); });
+    this.nameInitial = cellx(() => this.name().charAt(0).toUpperCase());
 }
 
 let user = new User('Матроскин');
 
 console.log(user.nameInitial());
 // => 'М'
-```
-
-в том числе в прототипе:
-
-```js
-function User(name) {
-    this.name(name);
-}
-User.prototype.name = cellx();
-User.prototype.friends = cellx(() => []); // каждый инстанс юзера получит свой инстанс массива
-
-let user1 = new User('Матроскин');
-let user2 = new User('Шарик');
-
-console.log(user1.friends() == user2.friends());
-// => false
 ```
 
 или в обычных свойствах:
@@ -167,16 +151,17 @@ function User() {
     this.firstName = cellx('');
     this.lastName = cellx('');
 
-    this.fullName = cellx(function() {
-        return (this.firstName() + ' ' + this.lastName()).trim();
-    }, {
-        put: function(name) {
-            name = name.split(' ');
+    this.fullName = cellx(
+		() => (this.firstName() + ' ' + this.lastName()).trim(),
+		{
+			put: name => {
+				name = name.split(' ');
 
-            this.firstName(name[0]);
-            this.lastName(name[1]);
-        }
-    });
+				this.firstName(name[0]);
+				this.lastName(name[1]);
+			}
+		}
+	);
 }
 
 let user = new User();
@@ -228,7 +213,7 @@ let num = cellx(() => value(), {
     }
 });
 
-num('subscribe', err => {
+num.subscribe(err => {
     console.log(err.message);
 });
 
@@ -244,11 +229,6 @@ console.log(num());
 
 ### Методы
 
-Вызов метода ячейки делается несколько необычно — вызывается сама ячейка, первым аргументом передаётся имя метода,
-остальными — аргументы. При этом аргументов должно быть не менее одного, иначе вызов ячейки будет засчитан как её
-запись. Если у метода нет аргументов, нужно при вызове дополнительно передавать `undefined` или для краткости
-просто `0` (см. `dispose`).
-
 #### addChangeListener
 
 Добавляет обработчик изменения:
@@ -256,7 +236,7 @@ console.log(num());
 ```js
 let num = cellx(5);
 
-num('addChangeListener', evt => {
+num.addChangeListener(evt => {
     console.log(evt);
 });
 
@@ -278,12 +258,12 @@ let value = cellx(1);
 let num = cellx(() => value(), {
     validate: v => {
         if (v > 1) {
-            throw new TypeError('Oops!');
+            throw new RangeError('Oops!');
         }
     }
 });
 
-num('addErrorListener', evt => {
+num.addErrorListener(evt => {
     console.log(evt.error.message);
 });
 
@@ -300,7 +280,7 @@ value(2);
 Подписывает на события `change` и `error`. В обработчик первым аргументом приходит объект ошибки, вторым — событие.
 
 ```js
-user.fullName('subscribe', (err, evt) => {
+user.fullName.subscribe((err, evt) => {
     if (err) {
         //
     } else {
@@ -340,7 +320,7 @@ user.name = 'Шарик';
 // => 'nameInitial: Ш'
 ```
 
-#### dispose или как убить ячейку
+#### dispose
 
 Во многих движках реактивного программирования вычисляемую ячейку (атом, observable-свойство) нужно воспринимать
 как обычный обработчик изменения других ячеек, то есть, что бы "убить" ячейку, недостаточно просто снять с неё все
@@ -354,7 +334,7 @@ user.name = 'Шарик';
 На всякий случай можно вызвать `dispose`:
 
 ```js
-user.name('dispose', 0);
+user.name.dispose();
 ```
 
 это снимет все обработчики не только с самой ячейки, но и со всех вычисляемых из неё ячеек,
@@ -368,7 +348,7 @@ user.name('dispose', 0);
 ```js
 let num = cellx(5);
 
-num('addChangeListener', evt => {
+num.addChangeListener(evt => {
     console.log(evt);
 });
 
@@ -395,7 +375,7 @@ num(20);
 ```js
 let num = cellx(5);
 
-num('addChangeListener', evt => {
+num.addChangeListener(evt => {
     console.log(evt);
 });
 
@@ -419,7 +399,7 @@ let sum = cellx(() => {
     return num1() + num2();
 });
 
-sum('addChangeListener', evt => {
+sum.addChangeListener(evt => {
     console.log(evt);
 });
 
@@ -444,7 +424,7 @@ let user = {
     firstName: cellx(''),
     lastName: cellx(''),
 
-    name: cellx(function() {
+    name: cellx(() => {
         return this.firstName() || this.lastName();
     })
 };
@@ -462,9 +442,9 @@ let user = {
 
 ```js
 let foo = cellx(() => localStorage.foo || 'foo', {
-	put: function(value) {
+	put: function(cell, value) {
 		localStorage.foo = value;
-		this.push(value);
+		cell.push(value);
 	}
 });
 
@@ -527,7 +507,7 @@ let foo = cellx(function(cell, next = 0) {
 	}
 });
 
-foo('subscribe', () => {
+foo.subscribe(() => {
 	console.log('New foo value: ' + foo());
 	foo(5);
 });
@@ -551,7 +531,7 @@ foo('then', () => {
 ```js
 let value = cellx(new cellx.EventEmitter());
 
-value('subscribe', (err, evt) => {
+value.subscribe((err, evt) => {
     console.log(evt.target instanceof cellx.EventEmitter);
 });
 
