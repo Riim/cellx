@@ -1,3 +1,5 @@
+import { expect } from 'chai';
+import * as sinon from 'sinon';
 import { Cell, define, EventEmitter } from '../src/cellx';
 
 afterEach(() => {
@@ -6,71 +8,70 @@ afterEach(() => {
 
 describe('Cell', () => {
 	describe('get/set', () => {
-		test('чтение ячейки', () => {
+		it('чтение ячейки', () => {
 			let a = new Cell(1);
 
-			expect(a.get()).toBe(1);
+			expect(a.get()).to.equal(1);
 		});
 
-		test('чтение ячейки (2)', () => {
+		it('чтение ячейки (2)', () => {
 			let a = new Cell(1);
 
-			expect(a.value).toBe(1);
+			expect(a.value).to.equal(1);
 		});
 
-		test('чтение вычисляемой ячейки', () => {
+		it('чтение вычисляемой ячейки', () => {
 			let a = new Cell(1);
 			let b = new Cell(() => a.get() + 1);
 
-			expect(b.get()).toBe(2);
+			expect(b.get()).to.equal(2);
 		});
 
-		test('запись в ячейку', () => {
+		it('запись в ячейку', () => {
 			let a = new Cell(1);
 
 			a.set(2);
 
-			expect(a.get()).toBe(2);
+			expect(a.get()).to.equal(2);
 		});
 
-		test('запись в ячейку (2)', () => {
+		it('запись в ячейку (2)', () => {
 			let a = new Cell(1);
 
 			a.value = 2;
 
-			expect(a.get()).toBe(2);
+			expect(a.get()).to.equal(2);
 		});
 
-		test('запись в ячейку и чтение вычисляемой ячейки', () => {
+		it('запись в ячейку и чтение вычисляемой ячейки', () => {
 			let a = new Cell(1);
 			let b = new Cell(() => a.get() + 1);
 
 			a.set(2);
 
-			expect(b.get()).toBe(3);
+			expect(b.get()).to.equal(3);
 		});
 
-		test('#pull()', () => {
+		it('#pull()', () => {
 			let counter = 0;
 			let a = new Cell<number>(() => ++counter);
-
-			let onChange = jest.fn();
+			let onChange = sinon.spy();
 			let b = new Cell(() => a.get() + 1, { onChange });
 
 			a.pull();
 
 			Cell.release();
 
-			expect(onChange).toHaveBeenCalledTimes(1);
-			expect(b.get()).toBe(3);
+			expect(onChange.calledOnce).to.be.true;
+			expect(b.get()).to.equal(3);
 		});
 	});
 
 	describe('events', () => {
-		test('событие change', done => {
+		it('событие change', done => {
 			let a = new Cell(1, {
 				onChange() {
-					expect(a.get()).toBe(2);
+					expect(a.get()).to.equal(2);
 					done();
 				}
 			});
@@ -78,11 +79,11 @@ describe('Cell', () => {
 			a.set(2);
 		});
 
-		test('событие change вычисляемой ячейки', done => {
+		it('событие change вычисляемой ячейки', done => {
 			let a = new Cell(1);
 			let b = new Cell(() => a.get() + 1, {
 				onChange() {
-					expect(b.get()).toBe(3);
+					expect(b.get()).to.equal(3);
 					done();
 				}
 			});
@@ -90,63 +91,62 @@ describe('Cell', () => {
 			a.set(2);
 		});
 
-		test('нет события change при установке значения равного текущему', () => {
-			let onChange = jest.fn();
+		it('нет события change при установке значения равного текущему', () => {
+			let onChange = sinon.spy();
 			let a = new Cell(1, { onChange });
 
 			a.set(1);
 
 			Cell.release();
 
-			expect(onChange).not.toHaveBeenCalled();
+			expect(onChange.notCalled).to.be.true;
 		});
 
-		test('нет события change при добавлении обработчика после изменения', () => {
+		it('нет события change при добавлении обработчика после изменения', () => {
 			let a = new Cell(1);
 			let b = new Cell(() => a.get());
 
 			a.set(2);
 
-			let onChange = jest.fn();
+			let onChange = sinon.spy();
 
 			b.on('change', onChange);
 
 			Cell.release();
 
-			expect(onChange).not.toHaveBeenCalled();
+			expect(onChange.notCalled).to.be.true;
 		});
 
-		test('EventEmitter в качестве значения', () => {
+		it('EventEmitter в качестве значения', () => {
 			let emitter = new EventEmitter();
+			let onChange = sinon.spy();
 
-			let onChange = jest.fn();
 			new Cell(emitter, { onChange });
 
 			emitter.emit('change');
 
 			Cell.release();
 
-			expect(onChange).toHaveBeenCalled();
+			expect(onChange.called).to.be.true;
 		});
 
-		test('EventEmitter в качестве значения (2)', () => {
+		it('EventEmitter в качестве значения (2)', () => {
 			let emitter = new EventEmitter();
-
-			let onChange = jest.fn();
-
+			let onChange = sinon.spy();
 			let a = new Cell(emitter);
+
 			new Cell(() => a.get(), { onChange });
 
 			emitter.emit('change');
 
 			Cell.release();
 
-			expect(onChange).toHaveBeenCalled();
+			expect(onChange.called).to.be.true;
 		});
 
-		test('подписка через EventEmitter', () => {
+		it('подписка через EventEmitter', () => {
 			let emitter = new EventEmitter();
-			let onChange = jest.fn();
+			let onChange = sinon.spy();
 
 			define(emitter, {
 				foo: 1
@@ -156,79 +156,76 @@ describe('Cell', () => {
 
 			(emitter as any).foo = 2;
 
-			expect(onChange).toHaveBeenCalled();
+			expect(onChange.called).to.be.true;
 		});
 	});
 
 	describe('behavior', () => {
-		test('одно вычисление при изменении нескольких зависимостей', () => {
+		it('одно вычисление при изменении нескольких зависимостей', () => {
 			let a = new Cell(1);
 			let b = new Cell(2);
-
-			let getC = jest.fn(() => a.get() + b.get());
+			let getC = sinon.spy(() => a.get() + b.get());
 
 			new Cell(getC, { onChange() {} });
 
-			getC.mockClear();
+			getC.resetHistory();
 
 			a.set(2);
 			b.set(3);
 
 			Cell.release();
 
-			expect(getC).toHaveBeenCalledTimes(1);
+			expect(getC.calledOnce).to.be.true;
 		});
 
-		test('одно вычисление при изменении нескольких зависимостей (2)', () => {
+		it('одно вычисление при изменении нескольких зависимостей (2)', () => {
 			let a = new Cell(1);
 			let b = new Cell(2);
 			let c = new Cell<number>(() => b.get() + 1);
-
-			let getD = jest.fn(() => a.get() + c.get());
+			let getD = sinon.spy(() => a.get() + c.get());
 
 			new Cell(getD, { onChange() {} });
 
-			getD.mockClear();
+			getD.resetHistory();
 
 			a.set(2);
 			b.set(3);
 
 			Cell.release();
 
-			expect(getD).toHaveBeenCalledTimes(1);
+			expect(getD.calledOnce).to.be.true;
 		});
 
-		test('одно вычисление при изменении нескольких зависимостей (3)', () => {
+		it('одно вычисление при изменении нескольких зависимостей (3)', () => {
 			let a = new Cell(1);
 			let b = new Cell(2);
 			let aa = new Cell<number>(() => a.get() + 1);
 			let bb = new Cell<number>(() => b.get() + 1);
-
-			let getC = jest.fn(() => aa.get() + bb.get());
+			let getC = sinon.spy(() => aa.get() + bb.get());
 
 			new Cell(getC, { onChange() {} });
 
-			getC.mockClear();
+			getC.resetHistory();
 
 			a.set(2);
 			b.set(3);
 
 			Cell.release();
 
-			expect(getC).toHaveBeenCalledTimes(1);
+			expect(getC.calledOnce).to.be.true;
 		});
 
-		test('запись в неинициализированную ячейку отменяет pull', () => {
+		it('запись в неинициализированную ячейку отменяет pull', () => {
 			let a = new Cell<number>(() => 1);
 			let b = new Cell(1);
 
 			a.set(5);
 			b.set(5);
 
-			expect(b.get()).toBe(5);
+			expect(b.get()).to.equal(5);
 		});
 
-		test('запись в неинициализированную ячейку отменяет pull (2)', () => {
+		it('запись в неинициализированную ячейку отменяет pull (2)', () => {
 			let a = new Cell<number>(() => 1);
 			let b = new Cell(1);
 
@@ -237,10 +234,10 @@ describe('Cell', () => {
 
 			a.on('change', () => {});
 
-			expect(b.get()).toBe(5);
+			expect(b.get()).to.equal(5);
 		});
 
-		test('последняя запись более приоритетная', () => {
+		it('последняя запись более приоритетная', () => {
 			let a = new Cell(1);
 			let b = new Cell<number>(() => a.get() + 1);
 			let c = new Cell(() => b.get() + 1, { onChange() {} });
@@ -248,10 +245,10 @@ describe('Cell', () => {
 			a.set(2);
 			b.set(4);
 
-			expect(c.get()).toBe(5);
+			expect(c.get()).to.equal(5);
 		});
 
-		test('последняя запись более приоритетная (2)', () => {
+		it('последняя запись более приоритетная (2)', () => {
 			let a = new Cell(1);
 			let b = new Cell<number>(() => a.get() + 1);
 			let c = new Cell(() => b.get() + 1, { onChange() {} });
@@ -259,15 +256,15 @@ describe('Cell', () => {
 			b.set(4);
 			a.set(2);
 
-			expect(c.get()).toBe(4);
+			expect(c.get()).to.equal(4);
 		});
 
-		test('запись в активную ячейку и последующее изменение её зависимости', done => {
+		it('запись в активную ячейку и последующее изменение её зависимости', done => {
 			let a = new Cell(1);
 			let b = new Cell(
 				(_cell, next) => {
 					if (a.get() == 2) {
-						expect(next).toBe(5);
+						expect(next).to.equal(5);
 					}
 
 					return a.get();
@@ -275,14 +272,14 @@ describe('Cell', () => {
 				{
 					onChange(evt) {
 						if (evt.data.value == 2) {
-							expect(evt.data).toEqual({
+							expect(evt.data).to.eql({
 								prevValue: 5,
 								value: 2
 							});
 
 							done();
 						} else {
-							expect(evt.data).toEqual({
+							expect(evt.data).to.eql({
 								prevValue: 1,
 								value: 5
 							});
@@ -295,7 +292,7 @@ describe('Cell', () => {
 			a.set(2);
 		});
 
-		test("вычисляемая ячейка лишаясь зависимостей получает _state == 'actual'", () => {
+		it("вычисляемая ячейка лишаясь зависимостей получает _state == 'actual'", () => {
 			let a = new Cell(1);
 
 			let t = 0;
@@ -314,11 +311,11 @@ describe('Cell', () => {
 
 			Cell.release();
 
-			expect(b.get()).toEqual(2);
-			expect(t).toEqual(2);
+			expect(b.get()).to.equal(2);
+			expect(t).to.equal(2);
 		});
 
-		test('запись в родительскую ячейку в pull', () => {
+		it('запись в родительскую ячейку в pull', () => {
 			let a = new Cell(1);
 			let b = new Cell<number>(() => a.get() + 1);
 			let c = new Cell(() => {
@@ -331,10 +328,10 @@ describe('Cell', () => {
 
 			a.set(2);
 
-			expect(c.get()).toBe(12);
+			expect(c.get()).to.equal(12);
 		});
 
-		test('запись в родительскую ячейку в pull (2)', () => {
+		it('запись в родительскую ячейку в pull (2)', () => {
 			let a = new Cell(1);
 			let b = new Cell<number>(() => a.get() + 1);
 			let c = new Cell(
@@ -350,14 +347,14 @@ describe('Cell', () => {
 
 			a.set(2);
 
-			expect(c.get()).toBe(12);
+			expect(c.get()).to.equal(12);
 		});
 
-		test('событие error без дублирования', () => {
-			let bOnError = jest.fn();
-			let c1OnError = jest.fn();
-			let c2OnError = jest.fn();
-			let dOnError = jest.fn();
+		it('событие error без дублирования', () => {
+			let bOnError = sinon.spy();
+			let c1OnError = sinon.spy();
+			let c2OnError = sinon.spy();
+			let dOnError = sinon.spy();
 
 			let a = new Cell(1);
 
@@ -381,31 +378,31 @@ describe('Cell', () => {
 
 			Cell.release();
 
-			expect(bOnError).toHaveBeenCalledTimes(1);
-			expect(c1OnError).toHaveBeenCalledTimes(1);
-			expect(c2OnError).toHaveBeenCalledTimes(1);
-			expect(dOnError).toHaveBeenCalledTimes(1);
+			expect(bOnError.calledOnce).to.be.true;
+			expect(c1OnError.calledOnce).to.be.true;
+			expect(c2OnError.calledOnce).to.be.true;
+			expect(dOnError.calledOnce).to.be.true;
 		});
 	});
 
 	describe('other', () => {
-		test('.afterRelease()', () => {
+		it('.afterRelease()', () => {
 			let a = new Cell(1);
 			let b = new Cell(() => a.get() + 1, { onChange() {} });
 
 			a.set(2);
 
-			let afterReleaseCallback = jest.fn();
+			let afterReleaseCallback = sinon.spy();
 
 			Cell.afterRelease(afterReleaseCallback);
 
 			Cell.release();
 
-			expect(afterReleaseCallback).toHaveBeenCalledTimes(1);
-			expect(b.get()).toBe(3);
+			expect(afterReleaseCallback.calledOnce).to.be.true;
+			expect(b.get()).to.equal(3);
 		});
 
-		test('[options.validate]', () => {
+		it('[options.validate]', () => {
 			let a = new Cell(1, {
 				validate(value) {
 					if (typeof value != 'number') {
@@ -421,36 +418,35 @@ describe('Cell', () => {
 				error = err;
 			}
 
-			expect(error).not.toBe(null);
-			expect(a.get()).toBe(1);
+			expect(error).not.to.be.null;
+			expect(a.get()).to.equal(1);
 		});
 
-		test('[options.value]', () => {
+		it('[options.value]', () => {
 			let a = new Cell(1, { value: 2 });
 
-			expect(a.get()).toBe(2);
+			expect(a.get()).to.equal(2);
 		});
 
-		test('[options.reap]', () => {
-			let reap = jest.fn();
+		it('[options.reap]', () => {
+			let reap = sinon.spy();
 			let a = new Cell<number>(() => Math.random(), { reap });
 			let b = new Cell(() => a.get() + 1);
-
 			let listener = () => {};
 
 			b.on('change', listener);
 			b.off('change', listener);
 
-			expect(reap).toHaveBeenCalledTimes(1);
+			expect(reap.calledOnce).to.be.true;
 		});
 
-		test('#reap()', () => {
+		it('#reap()', () => {
 			let a = new Cell(1);
 			let b = new Cell(() => a.get(), { onChange() {} });
 
 			b.reap();
 
-			expect(b._active).toBeFalsy();
+			expect(b._active).to.be.false;
 		});
 	});
 });

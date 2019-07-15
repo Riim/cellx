@@ -1,241 +1,243 @@
+import { expect } from 'chai';
+import * as sinon from 'sinon';
 import { ObservableList } from '../src/cellx';
 
 describe('ObservableList', () => {
-	test('#sorted', () => {
+	it('#sorted', () => {
 		let list = new ObservableList([4, 3, 1, 5, 2], {
 			sorted: true
 		});
 
-		expect(list.toArray()).toEqual([1, 2, 3, 4, 5]);
+		expect(list.toArray()).to.eql([1, 2, 3, 4, 5]);
 	});
 
-	test('#contains()', () => {
+	it('#contains()', () => {
 		let list = new ObservableList([1, 2, 3]);
 
-		expect(list.contains(2)).toBeTruthy();
-		expect(list.contains(4)).toBeFalsy();
+		expect(list.contains(2)).to.be.true;
+		expect(list.contains(4)).to.be.false;
 	});
 
-	test('#indexOf()', () => {
+	it('#indexOf()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.indexOf(1)).toBe(0);
-		expect(list.indexOf(2, 2)).toBe(3);
-		expect(list.indexOf(3, 3)).toBe(-1);
+		expect(list.indexOf(1)).to.equal(0);
+		expect(list.indexOf(2, 2)).to.equal(3);
+		expect(list.indexOf(3, 3)).to.equal(-1);
 	});
 
-	test('#lastIndexOf()', () => {
+	it('#lastIndexOf()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.lastIndexOf(1)).toBe(4);
-		expect(list.lastIndexOf(2, 3)).toBe(3);
-		expect(list.lastIndexOf(3, 3)).toBe(2);
-		expect(list.lastIndexOf(3, 1)).toBe(-1);
+		expect(list.lastIndexOf(1)).to.equal(4);
+		expect(list.lastIndexOf(2, 3)).to.equal(3);
+		expect(list.lastIndexOf(3, 3)).to.equal(2);
+		expect(list.lastIndexOf(3, 1)).to.equal(-1);
 	});
 
-	test('#get()', () => {
+	it('#get()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.get(2)).toBe(3);
+		expect(list.get(2)).to.equal(3);
 	});
 
-	test('#getRange()', () => {
+	it('#getRange()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.getRange(2, 2)).toEqual([3, 2]);
-		expect(list.getRange(2)).toEqual([3, 2, 1]);
+		expect(list.getRange(2, 2)).to.eql([3, 2]);
+		expect(list.getRange(2)).to.eql([3, 2, 1]);
 	});
 
-	test('#set()', () => {
+	it('#set()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.set(2, 4)).toBe(list);
-		expect(list.get(2)).toBe(4);
+		expect(list.set(2, 4)).to.equal(list);
+		expect(list.get(2)).to.equal(4);
 	});
 
-	test('#setRange()', () => {
+	it('#setRange()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.setRange(2, [4, 5])).toBe(list);
-		expect(list.toArray()).toEqual([1, 2, 4, 5, 1]);
+		expect(list.setRange(2, [4, 5])).to.equal(list);
+		expect(list.toArray()).to.eql([1, 2, 4, 5, 1]);
 	});
 
-	test('#add()', () => {
+	it('#add()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.add(4)).toBe(list);
-		expect(list.get(-1)).toBe(4);
+		expect(list.add(4)).to.equal(list);
+		expect(list.get(-1)).to.equal(4);
 	});
 
-	test('#add(unique = true)', () => {
+	it('#add(unique = true)', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.add(3, true)).toBe(list);
-		expect(list.get(-1)).toBe(1);
+		expect(list.add(3, true)).to.equal(list);
+		expect(list.get(-1)).to.equal(1);
 	});
 
-	test('#addRange()', () => {
+	it('#addRange()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.addRange([4, 5])).toBe(list);
-		expect(list.getRange(-2)).toEqual([4, 5]);
+		expect(list.addRange([4, 5])).to.equal(list);
+		expect(list.getRange(-2)).to.eql([4, 5]);
 	});
 
-	test('#addRange(unique = true)', () => {
+	it('#addRange(unique = true)', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.addRange([3, 4, 2, 5], true)).toBe(list);
-		expect(list.getRange(-3)).toEqual([1, 4, 5]);
-		expect(list.length).toBe(7);
+		expect(list.addRange([3, 4, 2, 5], true)).to.equal(list);
+		expect(list.getRange(-3)).to.eql([1, 4, 5]);
+		expect(list.length).to.equal(7);
 	});
 
-	test('#insert()', () => {
+	it('#insert()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.insert(3, 4)).toBe(list);
-		expect(list.toArray()).toEqual([1, 2, 3, 4, 2, 1]);
+		expect(list.insert(3, 4)).to.equal(list);
+		expect(list.toArray()).to.eql([1, 2, 3, 4, 2, 1]);
 	});
 
-	test('#insertRange()', () => {
+	it('#insertRange()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.insertRange(3, [4, 5])).toBe(list);
-		expect(list.toArray()).toEqual([1, 2, 3, 4, 5, 2, 1]);
+		expect(list.insertRange(3, [4, 5])).to.equal(list);
+		expect(list.toArray()).to.eql([1, 2, 3, 4, 5, 2, 1]);
 	});
 
-	test('#remove()', () => {
+	it('#remove()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.remove(1)).toBeTruthy();
-		expect(list.remove(4)).toBeFalsy();
-		expect(list.toArray()).toEqual([2, 3, 2, 1]);
+		expect(list.remove(1)).to.be.true;
+		expect(list.remove(4)).to.be.false;
+		expect(list.toArray()).to.eql([2, 3, 2, 1]);
 	});
 
-	test('#removeAll()', () => {
+	it('#removeAll()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.removeAll(1)).toBeTruthy();
-		expect(list.toArray()).toEqual([2, 3, 2]);
+		expect(list.removeAll(1)).to.be.true;
+		expect(list.toArray()).to.eql([2, 3, 2]);
 	});
 
-	test('#removeEach()', () => {
+	it('#removeEach()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.removeEach([2, 3, 1], 1)).toBeTruthy();
-		expect(list.removeEach([1], 1)).toBeFalsy();
-		expect(list.toArray()).toEqual([1, 2]);
+		expect(list.removeEach([2, 3, 1], 1)).to.be.true;
+		expect(list.removeEach([1], 1)).to.be.false;
+		expect(list.toArray()).to.eql([1, 2]);
 	});
 
-	test('#removeAt()', () => {
+	it('#removeAt()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.removeAt(2)).toBe(3);
-		expect(list.toArray()).toEqual([1, 2, 2, 1]);
+		expect(list.removeAt(2)).to.equal(3);
+		expect(list.toArray()).to.eql([1, 2, 2, 1]);
 	});
 
-	test('#removeRange()', () => {
+	it('#removeRange()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.removeRange(2, 2)).toEqual([3, 2]);
-		expect(list.toArray()).toEqual([1, 2, 1]);
-		expect(list.removeRange(1)).toEqual([2, 1]);
-		expect(list.toArray()).toEqual([1]);
+		expect(list.removeRange(2, 2)).to.eql([3, 2]);
+		expect(list.toArray()).to.eql([1, 2, 1]);
+		expect(list.removeRange(1)).to.eql([2, 1]);
+		expect(list.toArray()).to.eql([1]);
 	});
 
-	test('#clear()', () => {
+	it('#clear()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.clear()).toBe(list);
-		expect(list.toArray()).toEqual([]);
+		expect(list.clear()).to.equal(list);
+		expect(list.toArray()).to.eql([]);
 	});
 
-	test('#length', () => {
+	it('#length', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.length).toBe(5);
-		expect(list.add(4).length).toBe(6);
+		expect(list.length).to.equal(5);
+		expect(list.add(4).length).to.equal(6);
 	});
 
-	test('#join()', () => {
+	it('#join()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.join('-')).toBe('1-2-3-2-1');
+		expect(list.join('-')).to.equal('1-2-3-2-1');
 	});
 
-	test('#forEach()', () => {
+	it('#forEach()', () => {
 		let list = new ObservableList([1, 2, 3]);
-		let cb = jest.fn();
+		let cb = sinon.spy();
 
 		list.forEach(cb);
 
-		expect(cb).toHaveBeenCalledTimes(3);
-		expect(cb.mock.calls[1]).toEqual([2, 1, list]);
+		expect(cb.calledThrice).to.be.true;
+		expect(cb.secondCall.args).to.eql([2, 1, list]);
 	});
 
-	test('#find()', () => {
+	it('#find()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
-		let isThree = jest.fn(item => item == 3);
+		let isThree = sinon.spy(item => item == 3);
 
-		expect(list.find(isThree)).toBe(3);
-		expect(isThree).toHaveBeenCalledTimes(3);
-		expect(isThree.mock.calls[1]).toEqual([2, 1, list]);
+		expect(list.find(isThree)).to.equal(3);
+		expect(isThree.calledThrice).to.be.true;
+		expect(isThree.secondCall.args).to.eql([2, 1, list]);
 	});
 
-	test('#findIndex()', () => {
+	it('#findIndex()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
-		let isThree = jest.fn(item => item == 3);
+		let isThree = sinon.spy(item => item == 3);
 
-		expect(list.findIndex(isThree)).toBe(2);
-		expect(isThree).toHaveBeenCalledTimes(3);
-		expect(isThree.mock.calls[1]).toEqual([2, 1, list]);
+		expect(list.findIndex(isThree)).to.equal(2);
+		expect(isThree.calledThrice).to.be.true;
+		expect(isThree.secondCall.args).to.eql([2, 1, list]);
 	});
 
-	test('#reduce()', () => {
+	it('#reduce()', () => {
 		let list = new ObservableList([1, 2, 3]);
-		let reducer = jest.fn((sum, item) => sum + item);
+		let reducer = sinon.spy((sum, item) => sum + item);
 
-		expect(list.reduce(reducer)).toBe(6);
-		expect(reducer).toHaveBeenCalledTimes(2);
-		expect(reducer.mock.calls[1]).toEqual([3, 3, 2, list]);
+		expect(list.reduce(reducer)).to.equal(6);
+		expect(reducer.calledTwice).to.be.true;
+		expect(reducer.secondCall.args).to.eql([3, 3, 2, list]);
 	});
 
-	test('#clone()', () => {
+	it('#clone()', () => {
 		let list = new ObservableList([1, 2, 3]);
 		let copy = list.clone();
 
-		expect(copy).not.toBe(list);
-		expect(copy.length).toBe(list.length);
-		expect(copy.toArray()).toEqual(list.toArray());
+		expect(copy).not.to.equal(list);
+		expect(copy.length).to.equal(list.length);
+		expect(copy.toArray()).to.eql(list.toArray());
 	});
 
-	test('#clone(true)', () => {
+	it('#clone(true)', () => {
 		let list = new ObservableList([new ObservableList([1, 2, 3])]);
 		let copy = list.clone(true);
 
-		expect(copy.get(0)!.toArray()).toEqual([1, 2, 3]);
-		expect(copy.get(0)).not.toBe(list.get(0));
+		expect(copy.get(0)!.toArray()).to.eql([1, 2, 3]);
+		expect(copy.get(0)).not.to.equal(list.get(0));
 	});
 
-	test('#toArray()', () => {
+	it('#toArray()', () => {
 		let list = new ObservableList([1, 2, 3]);
 
-		expect(list.toArray()).toEqual([1, 2, 3]);
+		expect(list.toArray()).to.eql([1, 2, 3]);
 	});
 
-	test('#toString()', () => {
+	it('#toString()', () => {
 		let list = new ObservableList([1, 2, 3]);
 
-		expect(list.toString()).toBe('1,2,3');
+		expect(list.toString()).to.equal('1,2,3');
 	});
 
-	test('понимает отрицательные индексы', () => {
+	it('понимает отрицательные индексы', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
-		expect(list.get(-3)).toBe(3);
-		expect(list.get(-2)).toBe(2);
+		expect(list.get(-3)).to.equal(3);
+		expect(list.get(-2)).to.equal(2);
 	});
 
-	test('поддерживает перебор for-of-ом', () => {
+	it('поддерживает перебор for-of-ом', () => {
 		let list = new ObservableList([1, 2, 3]);
 		let result = [];
 
@@ -243,6 +245,6 @@ describe('ObservableList', () => {
 			result.push(value);
 		}
 
-		expect(result).toEqual([1, 2, 3]);
+		expect(result).to.eql([1, 2, 3]);
 	});
 });

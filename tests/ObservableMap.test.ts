@@ -1,34 +1,36 @@
+import { expect } from 'chai';
+import * as sinon from 'sinon';
 import { ObservableMap } from '../src/cellx';
 
 describe('ObservableMap', () => {
-	test('#has()', () => {
+	it('#has()', () => {
 		let map = new ObservableMap({
 			foo: 1,
 			bar: 2,
 			baz: 3
 		});
 
-		expect(map.has('foo')).toBeTruthy();
-		expect(map.has('quux')).toBeFalsy();
+		expect(map.has('foo')).to.be.true;
+		expect(map.has('quux')).to.be.false;
 
 		map.set('foo', 4).set('quux', 5);
 
-		expect(map.has('foo')).toBeTruthy();
-		expect(map.has('quux')).toBeTruthy();
+		expect(map.has('foo')).to.be.true;
+		expect(map.has('quux')).to.be.true;
 	});
 
-	test('#get()', () => {
+	it('#get()', () => {
 		let map = new ObservableMap({
 			foo: 1,
 			bar: 2,
 			baz: 3
 		});
 
-		expect(map.get('foo')).toBe(1);
-		expect(map.get('bar')).toBe(2);
+		expect(map.get('foo')).to.equal(1);
+		expect(map.get('bar')).to.equal(2);
 	});
 
-	test('#set()', () => {
+	it('#set()', () => {
 		let map = new ObservableMap({
 			foo: 1,
 			bar: 2,
@@ -37,65 +39,65 @@ describe('ObservableMap', () => {
 
 		map.set('foo', 4).set('quux', 5);
 
-		expect(map.get('foo')).toBe(4);
-		expect(map.get('bar')).toBe(2);
-		expect(map.get('quux')).toBe(5);
+		expect(map.get('foo')).to.equal(4);
+		expect(map.get('bar')).to.equal(2);
+		expect(map.get('quux')).to.equal(5);
 	});
 
-	test('#delete()', () => {
+	it('#delete()', () => {
 		let map = new ObservableMap({
 			foo: 1,
 			bar: 2,
 			baz: 3
 		});
 
-		expect(map.delete('foo')).toBeTruthy();
-		expect(map.delete('quux')).toBeFalsy();
-		expect(map.has('foo')).toBeFalsy();
-		expect(map.get('foo')).toBeUndefined();
+		expect(map.delete('foo')).to.be.true;
+		expect(map.delete('quux')).to.be.false;
+		expect(map.has('foo')).to.be.false;
+		expect(map.get('foo')).to.be.undefined;
 	});
 
-	test('#size', () => {
+	it('#size', () => {
 		let map = new ObservableMap({
 			foo: 1,
 			bar: 2,
 			baz: 3
 		});
 
-		expect(map.size).toBe(3);
+		expect(map.size).to.equal(3);
 
 		map.set('foo', 4).set('quux', 5);
 
-		expect(map.size).toBe(4);
+		expect(map.size).to.equal(4);
 	});
 
-	test('#clear()', () => {
+	it('#clear()', () => {
 		let map = new ObservableMap({
 			foo: 1,
 			bar: 2,
 			baz: 3
 		});
 
-		expect(map.clear()).toBe(map);
-		expect(map.has('foo')).toBeFalsy();
-		expect(map.size).toBe(0);
+		expect(map.clear()).to.equal(map);
+		expect(map.has('foo')).to.be.false;
+		expect(map.size).to.equal(0);
 	});
 
-	test('#forEach()', () => {
+	it('#forEach()', () => {
 		let map = new ObservableMap({
 			foo: 1,
 			bar: 2,
 			baz: 3
 		});
-		let cb = jest.fn();
+		let cb = sinon.spy();
 
 		map.forEach(cb);
 
-		expect(cb).toHaveBeenCalledTimes(3);
-		expect(cb.mock.calls[1]).toEqual([2, 'bar', map]);
+		expect(cb.calledThrice).to.be.true;
+		expect(cb.secondCall.args).to.eql([2, 'bar', map]);
 	});
 
-	test('#clone()', () => {
+	it('#clone()', () => {
 		let map = new ObservableMap({
 			foo: 1,
 			bar: 2,
@@ -103,16 +105,16 @@ describe('ObservableMap', () => {
 		});
 		let copy = map.clone();
 
-		expect(map).not.toBe(copy);
-		expect(copy.has('foo')).toBeTruthy();
+		expect(map).not.to.equal(copy);
+		expect(copy.has('foo')).to.be.true;
 
 		map.set('quux', 4);
 
-		expect(copy.has('quux')).toBeFalsy();
-		expect(copy.size).toBe(3);
+		expect(copy.has('quux')).to.be.false;
+		expect(copy.size).to.equal(3);
 	});
 
-	test('#clone(true)', () => {
+	it('#clone(true)', () => {
 		let submap = new ObservableMap({
 			foo: 1
 		});
@@ -121,11 +123,11 @@ describe('ObservableMap', () => {
 		});
 		let copy = map.clone(true);
 
-		expect(copy.get('bar')!.has('foo')).toBeTruthy();
-		expect(copy.get('bar')).not.toBe(map.get('bar'));
+		expect(copy.get('bar')!.has('foo')).to.be.true;
+		expect(copy.get('bar')).not.to.equal(map.get('bar'));
 	});
 
-	test('поддерживает перебор for-of-ом', () => {
+	it('поддерживает перебор for-of-ом', () => {
 		let map = new ObservableMap({
 			foo: 1,
 			bar: 2,
@@ -137,6 +139,6 @@ describe('ObservableMap', () => {
 			result.push(key, value);
 		}
 
-		expect(result).toEqual(['foo', 1, 'bar', 2, 'baz', 3]);
+		expect(result).to.eql(['foo', 1, 'bar', 2, 'baz', 3]);
 	});
 });

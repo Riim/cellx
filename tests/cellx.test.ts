@@ -1,24 +1,26 @@
+import { expect } from 'chai';
+import * as sinon from 'sinon';
 import { Cell, cellx } from '../src/cellx';
 
 describe('cellx', () => {
-	test('чтение ячейки', () => {
+	it('чтение ячейки', () => {
 		let a = cellx(1);
 
-		expect(a()).toBe(1);
+		expect(a()).to.equal(1);
 	});
 
-	test('запись в ячейку', () => {
+	it('запись в ячейку', () => {
 		let a = cellx(1);
 
 		a(2);
 
-		expect(a()).toBe(2);
+		expect(a()).to.equal(2);
 	});
 
-	test('[options.onChange]', done => {
+	it('[options.onChange]', done => {
 		let a = cellx(1, {
 			onChange() {
-				expect(a()).toBe(2);
+				expect(a()).to.equal(2);
 				done();
 			}
 		});
@@ -26,17 +28,17 @@ describe('cellx', () => {
 		a(2);
 	});
 
-	test('#cell', () => {
+	it('#cell', () => {
 		let a = cellx(1);
 
-		expect(a.cell).toBeInstanceOf(Cell);
+		expect(a.cell).to.be.instanceOf(Cell);
 	});
 
-	test('#on()', done => {
+	it('#on()', done => {
 		let a = cellx(1);
 
 		a.on('change', evt => {
-			expect(evt).toEqual({
+			expect(evt).to.eql({
 				target: a.cell,
 				type: 'change',
 				data: {
@@ -51,9 +53,9 @@ describe('cellx', () => {
 		a(2);
 	});
 
-	test('#off()', () => {
+	it('#off()', () => {
 		let a = cellx(1);
-		let listener = jest.fn();
+		let listener = sinon.spy();
 
 		a.on('change', listener);
 		a.off('change', listener);
@@ -62,10 +64,10 @@ describe('cellx', () => {
 
 		Cell.release();
 
-		expect(listener).not.toHaveBeenCalled();
+		expect(listener.notCalled).to.true;
 	});
 
-	test('#addErrorListener()', done => {
+	it('#addErrorListener()', done => {
 		let a = cellx(1);
 		let b = cellx(() => {
 			if (a() == 2) {
@@ -76,7 +78,7 @@ describe('cellx', () => {
 		});
 
 		b.addErrorListener(evt => {
-			expect(evt.data.error).toBeInstanceOf(RangeError);
+			expect(evt.data.error).to.be.instanceOf(RangeError);
 
 			done();
 		});
@@ -84,12 +86,12 @@ describe('cellx', () => {
 		a(2);
 	});
 
-	test('#removeErrorListener()', () => {
+	it('#removeErrorListener()', () => {
 		let a = cellx(1);
 		let b = cellx(() => {
 			throw new RangeError();
 		});
-		let listener = jest.fn();
+		let listener = sinon.spy();
 
 		b.addErrorListener(listener);
 		b.removeErrorListener(listener);
@@ -98,14 +100,14 @@ describe('cellx', () => {
 
 		Cell.release();
 
-		expect(listener).not.toHaveBeenCalled();
+		expect(listener.notCalled).to.be.true;
 	});
 
-	test('#addChangeListener()', done => {
+	it('#addChangeListener()', done => {
 		let a = cellx(1);
 
 		a.addChangeListener(evt => {
-			expect(evt).toEqual({
+			expect(evt).to.eql({
 				target: a.cell,
 				type: 'change',
 				data: {
@@ -120,9 +122,9 @@ describe('cellx', () => {
 		a(2);
 	});
 
-	test('#removeChangeListener()', () => {
+	it('#removeChangeListener()', () => {
 		let a = cellx(1);
-		let listener = jest.fn();
+		let listener = sinon.spy();
 
 		a.addChangeListener(listener);
 		a.removeChangeListener(listener);
@@ -131,15 +133,15 @@ describe('cellx', () => {
 
 		Cell.release();
 
-		expect(listener).not.toHaveBeenCalled();
+		expect(listener.notCalled).to.be.true;
 	});
 
-	test('подписка на ячейку', done => {
+	it('подписка на ячейку', done => {
 		let a = cellx(1);
 
 		a.subscribe((err, evt) => {
-			expect(err).toBeNull();
-			expect(evt).toEqual({
+			expect(err).to.be.null;
+			expect(evt).to.eql({
 				target: a.cell,
 				type: 'change',
 				data: {
@@ -154,9 +156,9 @@ describe('cellx', () => {
 		a(2);
 	});
 
-	test('отписка от ячейки', () => {
+	it('отписка от ячейки', () => {
 		let a = cellx(1);
-		let listener = jest.fn();
+		let listener = sinon.spy();
 
 		a.subscribe(listener);
 		a.unsubscribe(listener);
@@ -165,34 +167,34 @@ describe('cellx', () => {
 
 		Cell.release();
 
-		expect(listener).not.toHaveBeenCalled();
+		expect(listener.notCalled).to.be.true;
 	});
 
-	test('#value', () => {
+	it('#value', () => {
 		let a = cellx(1);
 
-		expect(a.value).toBe(1);
+		expect(a.value).to.equal(1);
 
 		a.value = 2;
 
-		expect(a.value).toBe(2);
+		expect(a.value).to.equal(2);
 	});
 
-	test('#reap()', () => {
+	it('#reap()', () => {
 		let a = cellx(1);
 		let b = cellx(() => a(), { onChange() {} });
 
 		b.reap();
 
-		expect(b.cell._active).toBeFalsy();
+		expect(b.cell._active).to.be.false;
 	});
 
-	test('#dispose()', () => {
+	it('#dispose()', () => {
 		let a = cellx(1);
 		let b = cellx(() => a(), { onChange() {} });
 
 		b.dispose();
 
-		expect(b.cell._active).toBeFalsy();
+		expect(b.cell._active).to.be.false;
 	});
 });
