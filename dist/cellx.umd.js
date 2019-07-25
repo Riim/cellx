@@ -354,7 +354,7 @@
                     this.on('change', options.onChange);
                 }
                 if (options.onError) {
-                    this.on('error', options.onError);
+                    this.on(Cell.EVENT_ERROR, options.onError);
                 }
             }
         }
@@ -412,8 +412,8 @@
             }
             if (this._hasSubscribers &&
                 !this._reactions.length &&
-                !this._events.has('change') &&
-                !this._events.has('error')) {
+                !this._events.has(Cell.EVENT_CHANGE) &&
+                !this._events.has(Cell.EVENT_ERROR)) {
                 this._hasSubscribers = false;
                 this._deactivate();
                 if (this._reap) {
@@ -422,17 +422,17 @@
             }
             return this;
         }
-        addChangeListener(listener, context) {
-            return this.on('change', listener, context !== undefined ? context : this.context);
+        onChange(listener, context) {
+            return this.on(Cell.EVENT_CHANGE, listener, context !== undefined ? context : this.context);
         }
-        removeChangeListener(listener, context) {
-            return this.off('change', listener, context !== undefined ? context : this.context);
+        offChange(listener, context) {
+            return this.off(Cell.EVENT_CHANGE, listener, context !== undefined ? context : this.context);
         }
-        addErrorListener(listener, context) {
-            return this.on('error', listener, context !== undefined ? context : this.context);
+        onError(listener, context) {
+            return this.on(Cell.EVENT_ERROR, listener, context !== undefined ? context : this.context);
         }
-        removeErrorListener(listener, context) {
-            return this.off('error', listener, context !== undefined ? context : this.context);
+        offError(listener, context) {
+            return this.off(Cell.EVENT_ERROR, listener, context !== undefined ? context : this.context);
         }
         subscribe(listener, context) {
             let wrappers = listener[KEY_LISTENER_WRAPPERS] || (listener[KEY_LISTENER_WRAPPERS] = new Map());
@@ -446,7 +446,7 @@
             if (context === undefined) {
                 context = this.context;
             }
-            return this.on('change', wrapper, context).on('error', wrapper, context);
+            return this.on(Cell.EVENT_CHANGE, wrapper, context).on(Cell.EVENT_ERROR, wrapper, context);
         }
         unsubscribe(listener, context) {
             let wrappers = listener[KEY_LISTENER_WRAPPERS];
@@ -458,7 +458,7 @@
             if (context === undefined) {
                 context = this.context;
             }
-            return this.off('change', wrapper, context).off('error', wrapper, context);
+            return this.off(Cell.EVENT_CHANGE, wrapper, context).off(Cell.EVENT_ERROR, wrapper, context);
         }
         _addReaction(reaction, actual) {
             this._reactions.push(reaction);
@@ -469,8 +469,8 @@
             this._reactions.splice(this._reactions.indexOf(reaction), 1);
             if (this._hasSubscribers &&
                 !this._reactions.length &&
-                !this._events.has('change') &&
-                !this._events.has('error')) {
+                !this._events.has(Cell.EVENT_CHANGE) &&
+                !this._events.has(Cell.EVENT_ERROR)) {
                 this._hasSubscribers = false;
                 this._deactivate();
                 if (this._reap) {
@@ -679,7 +679,7 @@
                 for (let i = 0; i < reactions.length; i++) {
                     reactions[i]._addToRelease(true);
                 }
-                this.emit('change', {
+                this.emit(Cell.EVENT_CHANGE, {
                     prevValue,
                     value
                 });
@@ -712,7 +712,7 @@
             if (err) {
                 this._handleErrorEvent({
                     target: this,
-                    type: 'error',
+                    type: Cell.EVENT_ERROR,
                     data: {
                         error: err
                     }
@@ -747,6 +747,8 @@
             return this.reap();
         }
     }
+    Cell.EVENT_CHANGE = 'change';
+    Cell.EVENT_ERROR = 'error';
 
     const hasOwn$1 = Object.prototype.hasOwnProperty;
     class ObservableMap extends EventEmitter {
@@ -794,7 +796,7 @@
                 }
             }
             entries.set(key, value);
-            this.emit('change', {
+            this.emit(ObservableMap.EVENT_CHANGE, {
                 subtype: hasKey ? 'update' : 'add',
                 key,
                 prevValue: prev,
@@ -807,7 +809,7 @@
             if (entries.has(key)) {
                 let value = entries.get(key);
                 entries.delete(key);
-                this.emit('change', {
+                this.emit(ObservableMap.EVENT_CHANGE, {
                     subtype: 'delete',
                     key,
                     value
@@ -819,7 +821,7 @@
         clear() {
             if (this._entries.size) {
                 this._entries.clear();
-                this.emit('change', { subtype: 'clear' });
+                this.emit(ObservableMap.EVENT_CHANGE, { subtype: 'clear' });
             }
             return this;
         }
@@ -851,6 +853,7 @@
             return new this.constructor(entries || this);
         }
     }
+    ObservableMap.EVENT_CHANGE = 'change';
     ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;
 
     const push = Array.prototype.push;
@@ -931,7 +934,7 @@
             index = this._validateIndex(index, true);
             if (!Object.is(value, this._items[index])) {
                 this._items[index] = value;
-                this.emit('change');
+                this.emit(ObservableList.EVENT_CHANGE);
             }
             return this;
         }
@@ -960,7 +963,7 @@
                 }
             }
             if (changed) {
-                this.emit('change');
+                this.emit(ObservableList.EVENT_CHANGE);
             }
             return this;
         }
@@ -974,7 +977,7 @@
             else {
                 this._items.push(value);
             }
-            this.emit('change');
+            this.emit(ObservableList.EVENT_CHANGE);
             return this;
         }
         addRange(values, unique) {
@@ -998,7 +1001,7 @@
                         }
                     }
                     if (changed) {
-                        this.emit('change');
+                        this.emit(ObservableList.EVENT_CHANGE);
                     }
                 }
                 else {
@@ -1010,7 +1013,7 @@
                     else {
                         push.apply(this._items, values);
                     }
-                    this.emit('change');
+                    this.emit(ObservableList.EVENT_CHANGE);
                 }
             }
             return this;
@@ -1020,7 +1023,7 @@
                 throw new TypeError('Cannot insert to sorted list');
             }
             this._items.splice(this._validateIndex(index, true), 0, value);
-            this.emit('change');
+            this.emit(ObservableList.EVENT_CHANGE);
             return this;
         }
         insertRange(index, values) {
@@ -1033,7 +1036,7 @@
             }
             if (values.length) {
                 splice.apply(this._items, [index, 0].concat(values));
-                this.emit('change');
+                this.emit(ObservableList.EVENT_CHANGE);
             }
             return this;
         }
@@ -1043,7 +1046,7 @@
                 return false;
             }
             this._items.splice(index, 1);
-            this.emit('change');
+            this.emit(ObservableList.EVENT_CHANGE);
             return true;
         }
         removeAll(value, fromIndex) {
@@ -1055,7 +1058,7 @@
                 changed = true;
             }
             if (changed) {
-                this.emit('change');
+                this.emit(ObservableList.EVENT_CHANGE);
             }
             return changed;
         }
@@ -1074,13 +1077,13 @@
                 }
             }
             if (changed) {
-                this.emit('change');
+                this.emit(ObservableList.EVENT_CHANGE);
             }
             return changed;
         }
         removeAt(index) {
             let value = this._items.splice(this._validateIndex(index), 1)[0];
-            this.emit('change');
+            this.emit(ObservableList.EVENT_CHANGE);
             return value;
         }
         removeRange(index, count) {
@@ -1100,13 +1103,13 @@
                 }
             }
             let values = this._items.splice(index, count);
-            this.emit('change');
+            this.emit(ObservableList.EVENT_CHANGE);
             return values;
         }
         clear() {
             if (this._items.length) {
                 this._items.length = 0;
-                this.emit('change', { subtype: 'clear' });
+                this.emit(ObservableList.EVENT_CHANGE, { subtype: 'clear' });
             }
             return this;
         }
@@ -1163,6 +1166,7 @@
             items.splice(low, 0, value);
         }
     }
+    ObservableList.EVENT_CHANGE = 'change';
     ['forEach', 'map', 'filter', 'every', 'some'].forEach(name => {
         ObservableList.prototype[name] = function (cb, context) {
             return this._items[name](function (item, index) {
@@ -1221,17 +1225,17 @@
         off(type, listener, context) {
             return this.cell.off(type, listener, context);
         },
-        addChangeListener(listener, context) {
-            return this.cell.addChangeListener(listener, context);
+        onChange(listener, context) {
+            return this.cell.onChange(listener, context);
         },
-        removeChangeListener(listener, context) {
-            return this.cell.removeChangeListener(listener, context);
+        offChange(listener, context) {
+            return this.cell.offChange(listener, context);
         },
-        addErrorListener(listener, context) {
-            return this.cell.addErrorListener(listener, context);
+        onError(listener, context) {
+            return this.cell.onError(listener, context);
         },
-        removeErrorListener(listener, context) {
-            return this.cell.removeErrorListener(listener, context);
+        offError(listener, context) {
+            return this.cell.offError(listener, context);
         },
         subscribe(listener, context) {
             return this.cell.subscribe(listener, context);

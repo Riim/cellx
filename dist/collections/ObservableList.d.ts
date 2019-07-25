@@ -6,6 +6,7 @@ export interface IObservableListOptions<T> {
     sorted?: boolean;
 }
 export declare class ObservableList<T = any> extends EventEmitter {
+    static EVENT_CHANGE: string;
     _items: Array<T>;
     readonly length: number;
     _comparator: TObservableListItemComparator<T> | null;

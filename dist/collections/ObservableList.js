@@ -77,7 +77,7 @@ export class ObservableList extends EventEmitter {
         index = this._validateIndex(index, true);
         if (!Object.is(value, this._items[index])) {
             this._items[index] = value;
-            this.emit('change');
+            this.emit(ObservableList.EVENT_CHANGE);
         }
         return this;
     }
@@ -106,7 +106,7 @@ export class ObservableList extends EventEmitter {
             }
         }
         if (changed) {
-            this.emit('change');
+            this.emit(ObservableList.EVENT_CHANGE);
         }
         return this;
     }
@@ -120,7 +120,7 @@ export class ObservableList extends EventEmitter {
         else {
             this._items.push(value);
         }
-        this.emit('change');
+        this.emit(ObservableList.EVENT_CHANGE);
         return this;
     }
     addRange(values, unique) {
@@ -144,7 +144,7 @@ export class ObservableList extends EventEmitter {
                     }
                 }
                 if (changed) {
-                    this.emit('change');
+                    this.emit(ObservableList.EVENT_CHANGE);
                 }
             }
             else {
@@ -156,7 +156,7 @@ export class ObservableList extends EventEmitter {
                 else {
                     push.apply(this._items, values);
                 }
-                this.emit('change');
+                this.emit(ObservableList.EVENT_CHANGE);
             }
         }
         return this;
@@ -166,7 +166,7 @@ export class ObservableList extends EventEmitter {
             throw new TypeError('Cannot insert to sorted list');
         }
         this._items.splice(this._validateIndex(index, true), 0, value);
-        this.emit('change');
+        this.emit(ObservableList.EVENT_CHANGE);
         return this;
     }
     insertRange(index, values) {
@@ -179,7 +179,7 @@ export class ObservableList extends EventEmitter {
         }
         if (values.length) {
             splice.apply(this._items, [index, 0].concat(values));
-            this.emit('change');
+            this.emit(ObservableList.EVENT_CHANGE);
         }
         return this;
     }
@@ -189,7 +189,7 @@ export class ObservableList extends EventEmitter {
             return false;
         }
         this._items.splice(index, 1);
-        this.emit('change');
+        this.emit(ObservableList.EVENT_CHANGE);
         return true;
     }
     removeAll(value, fromIndex) {
@@ -201,7 +201,7 @@ export class ObservableList extends EventEmitter {
             changed = true;
         }
         if (changed) {
-            this.emit('change');
+            this.emit(ObservableList.EVENT_CHANGE);
         }
         return changed;
     }
@@ -220,13 +220,13 @@ export class ObservableList extends EventEmitter {
             }
         }
         if (changed) {
-            this.emit('change');
+            this.emit(ObservableList.EVENT_CHANGE);
         }
         return changed;
     }
     removeAt(index) {
         let value = this._items.splice(this._validateIndex(index), 1)[0];
-        this.emit('change');
+        this.emit(ObservableList.EVENT_CHANGE);
         return value;
     }
     removeRange(index, count) {
@@ -246,13 +246,13 @@ export class ObservableList extends EventEmitter {
             }
         }
         let values = this._items.splice(index, count);
-        this.emit('change');
+        this.emit(ObservableList.EVENT_CHANGE);
         return values;
     }
     clear() {
         if (this._items.length) {
             this._items.length = 0;
-            this.emit('change', { subtype: 'clear' });
+            this.emit(ObservableList.EVENT_CHANGE, { subtype: 'clear' });
         }
         return this;
     }
@@ -309,6 +309,7 @@ export class ObservableList extends EventEmitter {
         items.splice(low, 0, value);
     }
 }
+ObservableList.EVENT_CHANGE = 'change';
 ['forEach', 'map', 'filter', 'every', 'some'].forEach(name => {
     ObservableList.prototype[name] = function (cb, context) {
         return this._items[name](function (item, index) {

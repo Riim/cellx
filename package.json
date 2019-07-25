@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.9.1",
+  "version": "1.9.5",
   "description": "",
   "type": "module",
   "main": "dist/cellx.js",
@@ -32,7 +32,7 @@
     "chai": "^4.2.0",
     "esm": "^3.2.25",
     "jest": "^24.8.0",
-    "mocha": "^6.1.4",
+    "mocha": "^6.2.0",
     "nyc": "^14.1.1",
     "rollup": "^1.17.0",
     "rollup-plugin-commonjs": "^10.0.1",

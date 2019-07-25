@@ -45,7 +45,7 @@ export class ObservableMap extends EventEmitter {
             }
         }
         entries.set(key, value);
-        this.emit('change', {
+        this.emit(ObservableMap.EVENT_CHANGE, {
             subtype: hasKey ? 'update' : 'add',
             key,
             prevValue: prev,
@@ -58,7 +58,7 @@ export class ObservableMap extends EventEmitter {
         if (entries.has(key)) {
             let value = entries.get(key);
             entries.delete(key);
-            this.emit('change', {
+            this.emit(ObservableMap.EVENT_CHANGE, {
                 subtype: 'delete',
                 key,
                 value
@@ -70,7 +70,7 @@ export class ObservableMap extends EventEmitter {
     clear() {
         if (this._entries.size) {
             this._entries.clear();
-            this.emit('change', { subtype: 'clear' });
+            this.emit(ObservableMap.EVENT_CHANGE, { subtype: 'clear' });
         }
         return this;
     }
@@ -102,4 +102,5 @@ export class ObservableMap extends EventEmitter {
         return new this.constructor(entries || this);
     }
 }
+ObservableMap.EVENT_CHANGE = 'change';
 ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;

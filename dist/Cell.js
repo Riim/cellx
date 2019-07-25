@@ -78,7 +78,7 @@ export class Cell extends EventEmitter {
                 this.on('change', options.onChange);
             }
             if (options.onError) {
-                this.on('error', options.onError);
+                this.on(Cell.EVENT_ERROR, options.onError);
             }
         }
     }
@@ -136,8 +136,8 @@ export class Cell extends EventEmitter {
         }
         if (this._hasSubscribers &&
             !this._reactions.length &&
-            !this._events.has('change') &&
-            !this._events.has('error')) {
+            !this._events.has(Cell.EVENT_CHANGE) &&
+            !this._events.has(Cell.EVENT_ERROR)) {
             this._hasSubscribers = false;
             this._deactivate();
             if (this._reap) {
@@ -146,17 +146,17 @@ export class Cell extends EventEmitter {
         }
         return this;
     }
-    addChangeListener(listener, context) {
-        return this.on('change', listener, context !== undefined ? context : this.context);
+    onChange(listener, context) {
+        return this.on(Cell.EVENT_CHANGE, listener, context !== undefined ? context : this.context);
     }
-    removeChangeListener(listener, context) {
-        return this.off('change', listener, context !== undefined ? context : this.context);
+    offChange(listener, context) {
+        return this.off(Cell.EVENT_CHANGE, listener, context !== undefined ? context : this.context);
     }
-    addErrorListener(listener, context) {
-        return this.on('error', listener, context !== undefined ? context : this.context);
+    onError(listener, context) {
+        return this.on(Cell.EVENT_ERROR, listener, context !== undefined ? context : this.context);
     }
-    removeErrorListener(listener, context) {
-        return this.off('error', listener, context !== undefined ? context : this.context);
+    offError(listener, context) {
+        return this.off(Cell.EVENT_ERROR, listener, context !== undefined ? context : this.context);
     }
     subscribe(listener, context) {
         let wrappers = listener[KEY_LISTENER_WRAPPERS] || (listener[KEY_LISTENER_WRAPPERS] = new Map());
@@ -170,7 +170,7 @@ export class Cell extends EventEmitter {
         if (context === undefined) {
             context = this.context;
         }
-        return this.on('change', wrapper, context).on('error', wrapper, context);
+        return this.on(Cell.EVENT_CHANGE, wrapper, context).on(Cell.EVENT_ERROR, wrapper, context);
     }
     unsubscribe(listener, context) {
         let wrappers = listener[KEY_LISTENER_WRAPPERS];
@@ -182,7 +182,7 @@ export class Cell extends EventEmitter {
         if (context === undefined) {
             context = this.context;
         }
-        return this.off('change', wrapper, context).off('error', wrapper, context);
+        return this.off(Cell.EVENT_CHANGE, wrapper, context).off(Cell.EVENT_ERROR, wrapper, context);
     }
     _addReaction(reaction, actual) {
         this._reactions.push(reaction);
@@ -193,8 +193,8 @@ export class Cell extends EventEmitter {
         this._reactions.splice(this._reactions.indexOf(reaction), 1);
         if (this._hasSubscribers &&
             !this._reactions.length &&
-            !this._events.has('change') &&
-            !this._events.has('error')) {
+            !this._events.has(Cell.EVENT_CHANGE) &&
+            !this._events.has(Cell.EVENT_ERROR)) {
             this._hasSubscribers = false;
             this._deactivate();
             if (this._reap) {
@@ -403,7 +403,7 @@ export class Cell extends EventEmitter {
             for (let i = 0; i < reactions.length; i++) {
                 reactions[i]._addToRelease(true);
             }
-            this.emit('change', {
+            this.emit(Cell.EVENT_CHANGE, {
                 prevValue,
                 value
             });
@@ -436,7 +436,7 @@ export class Cell extends EventEmitter {
         if (err) {
             this._handleErrorEvent({
                 target: this,
-                type: 'error',
+                type: Cell.EVENT_ERROR,
                 data: {
                     error: err
                 }
@@ -471,3 +471,5 @@ export class Cell extends EventEmitter {
         return this.reap();
     }
 }
+Cell.EVENT_CHANGE = 'change';
+Cell.EVENT_ERROR = 'error';

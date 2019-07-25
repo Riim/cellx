@@ -14,17 +14,17 @@ const cellxProto = {
     off(type, listener, context) {
         return this.cell.off(type, listener, context);
     },
-    addChangeListener(listener, context) {
-        return this.cell.addChangeListener(listener, context);
+    onChange(listener, context) {
+        return this.cell.onChange(listener, context);
     },
-    removeChangeListener(listener, context) {
-        return this.cell.removeChangeListener(listener, context);
+    offChange(listener, context) {
+        return this.cell.offChange(listener, context);
     },
-    addErrorListener(listener, context) {
-        return this.cell.addErrorListener(listener, context);
+    onError(listener, context) {
+        return this.cell.onError(listener, context);
     },
-    removeErrorListener(listener, context) {
-        return this.cell.removeErrorListener(listener, context);
+    offError(listener, context) {
+        return this.cell.offError(listener, context);
     },
     subscribe(listener, context) {
         return this.cell.subscribe(listener, context);

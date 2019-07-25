@@ -15,20 +15,22 @@ export interface ICellOptions<T, M> {
     onError?: TListener;
 }
 export interface ICellChangeEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
-    type: 'change';
+    type: typeof Cell.EVENT_CHANGE;
     data: {
         prevValue: any;
         value: any;
     };
 }
 export interface ICellErrorEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
-    type: 'error';
+    type: typeof Cell.EVENT_ERROR;
     data: {
         error: any;
     };
 }
 export declare type TCellEvent<T extends EventEmitter = EventEmitter> = ICellChangeEvent<T> | ICellErrorEvent<T>;
 export declare class Cell<T = any, M = any> extends EventEmitter {
+    static EVENT_CHANGE: string;
+    static EVENT_ERROR: string;
     static readonly currentlyPulling: boolean;
     static autorun(cb: Function, context?: any): () => void;
     static release(): void;
@@ -54,14 +56,14 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     _currentlyPulling: boolean;
     _updationId: number;
     constructor(value: T | TCellPull<T>, options?: ICellOptions<T, M>);
-    on(type: 'change' | 'error', listener: TListener, context?: any): this;
-    on(listeners: Record<'change' | 'error', TListener>, context?: any): this;
-    off(type: 'change' | 'error', listener: TListener, context?: any): this;
-    off(listeners?: Record<'change' | 'error', TListener>, context?: any): this;
-    addChangeListener(listener: TListener, context?: any): this;
-    removeChangeListener(listener: TListener, context?: any): this;
-    addErrorListener(listener: TListener, context?: any): this;
-    removeErrorListener(listener: TListener, context?: any): this;
+    on(type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, listener: TListener, context?: any): this;
+    on(listeners: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>, context?: any): this;
+    off(type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, listener: TListener, context?: any): this;
+    off(listeners?: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>, context?: any): this;
+    onChange(listener: TListener, context?: any): this;
+    offChange(listener: TListener, context?: any): this;
+    onError(listener: TListener, context?: any): this;
+    offError(listener: TListener, context?: any): this;
     subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this;
     unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this;
     _addReaction(reaction: Cell, actual: boolean): void;
