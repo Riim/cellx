@@ -229,14 +229,14 @@ console.log(num());
 
 ### Методы
 
-#### addChangeListener
+#### onChange
 
 Добавляет обработчик изменения:
 
 ```js
 let num = cellx(5);
 
-num.addChangeListener(evt => {
+num.onChange(evt => {
     console.log(evt);
 });
 
@@ -244,11 +244,11 @@ num(10);
 // => { prevValue: 5, value: 10 }
 ```
 
-#### removeChangeListener
+#### offChange
 
 Снимает ранее добавленный обработчик изменения.
 
-#### addErrorListener
+#### onError
 
 Добавляет обработчик ошибки:
 
@@ -263,7 +263,7 @@ let num = cellx(() => value(), {
     }
 });
 
-num.addErrorListener(evt => {
+num.onError(evt => {
     console.log(evt.error.message);
 });
 
@@ -271,7 +271,7 @@ value(2);
 // => 'Oops!'
 ```
 
-#### removeErrorListener
+#### offError
 
 Снимает ранее добавленный обработчик ошибки.
 
@@ -348,7 +348,7 @@ user.name.dispose();
 ```js
 let num = cellx(5);
 
-num.addChangeListener(evt => {
+num.onChange(evt => {
     console.log(evt);
 });
 
@@ -375,7 +375,7 @@ num(20);
 ```js
 let num = cellx(5);
 
-num.addChangeListener(evt => {
+num.onChange(evt => {
     console.log(evt);
 });
 
@@ -399,7 +399,7 @@ let sum = cellx(() => {
     return num1() + num2();
 });
 
-sum.addChangeListener(evt => {
+sum.onChange(evt => {
     console.log(evt);
 });
 

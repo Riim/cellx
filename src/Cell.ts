@@ -270,11 +270,11 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		return this;
 	}
 
-	addChangeListener(listener: TListener, context?: any): this {
+	onChange(listener: TListener, context?: any): this {
 		return this.on(Cell.EVENT_CHANGE, listener, context !== undefined ? context : this.context);
 	}
 
-	removeChangeListener(listener: TListener, context?: any): this {
+	offChange(listener: TListener, context?: any): this {
 		return this.off(
 			Cell.EVENT_CHANGE,
 			listener,
@@ -282,11 +282,11 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		);
 	}
 
-	addErrorListener(listener: TListener, context?: any): this {
+	onError(listener: TListener, context?: any): this {
 		return this.on(Cell.EVENT_ERROR, listener, context !== undefined ? context : this.context);
 	}
 
-	removeErrorListener(listener: TListener, context?: any): this {
+	offError(listener: TListener, context?: any): this {
 		return this.off(Cell.EVENT_ERROR, listener, context !== undefined ? context : this.context);
 	}
 

@@ -45,11 +45,11 @@ export interface ICellx<T = any, M = any> {
 		context?: any
 	): Cell<T, M>;
 
-	addChangeListener(listener: TListener, context?: any): Cell<T, M>;
-	removeChangeListener(listener: TListener, context?: any): Cell<T, M>;
+	onChange(listener: TListener, context?: any): Cell<T, M>;
+	offChange(listener: TListener, context?: any): Cell<T, M>;
 
-	addErrorListener(listener: TListener, context?: any): Cell<T, M>;
-	removeErrorListener(listener: TListener, context?: any): Cell<T, M>;
+	onError(listener: TListener, context?: any): Cell<T, M>;
+	offError(listener: TListener, context?: any): Cell<T, M>;
 
 	subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): Cell<T, M>;
 	unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): Cell<T, M>;
@@ -73,20 +73,20 @@ const cellxProto = {
 		return (this as ICellx).cell.off(type as any, listener, context);
 	},
 
-	addChangeListener(listener: TListener, context?: any): Cell {
-		return (this as ICellx).cell.addChangeListener(listener, context);
+	onChange(listener: TListener, context?: any): Cell {
+		return (this as ICellx).cell.onChange(listener, context);
 	},
 
-	removeChangeListener(listener: TListener, context?: any): Cell {
-		return (this as ICellx).cell.removeChangeListener(listener, context);
+	offChange(listener: TListener, context?: any): Cell {
+		return (this as ICellx).cell.offChange(listener, context);
 	},
 
-	addErrorListener(listener: TListener, context?: any): Cell {
-		return (this as ICellx).cell.addErrorListener(listener, context);
+	onError(listener: TListener, context?: any): Cell {
+		return (this as ICellx).cell.onError(listener, context);
 	},
 
-	removeErrorListener(listener: TListener, context?: any): Cell {
-		return (this as ICellx).cell.removeErrorListener(listener, context);
+	offError(listener: TListener, context?: any): Cell {
+		return (this as ICellx).cell.offError(listener, context);
 	},
 
 	subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): Cell {

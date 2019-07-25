@@ -67,7 +67,7 @@ describe('cellx', () => {
 		expect(listener.notCalled).to.true;
 	});
 
-	it('#addErrorListener()', done => {
+	it('#onError()', done => {
 		let a = cellx(1);
 		let b = cellx(() => {
 			if (a() == 2) {
@@ -77,7 +77,7 @@ describe('cellx', () => {
 			return a();
 		});
 
-		b.addErrorListener(evt => {
+		b.onError(evt => {
 			expect(evt.data.error).to.be.instanceOf(RangeError);
 
 			done();
@@ -86,15 +86,15 @@ describe('cellx', () => {
 		a(2);
 	});
 
-	it('#removeErrorListener()', () => {
+	it('#offError()', () => {
 		let a = cellx(1);
 		let b = cellx(() => {
 			throw new RangeError();
 		});
 		let listener = sinon.spy();
 
-		b.addErrorListener(listener);
-		b.removeErrorListener(listener);
+		b.onError(listener);
+		b.offError(listener);
 
 		a(2);
 
@@ -103,10 +103,10 @@ describe('cellx', () => {
 		expect(listener.notCalled).to.be.true;
 	});
 
-	it('#addChangeListener()', done => {
+	it('#onChange()', done => {
 		let a = cellx(1);
 
-		a.addChangeListener(evt => {
+		a.onChange(evt => {
 			expect(evt).to.eql({
 				target: a.cell,
 				type: Cell.EVENT_CHANGE,
@@ -122,12 +122,12 @@ describe('cellx', () => {
 		a(2);
 	});
 
-	it('#removeChangeListener()', () => {
+	it('#offChange()', () => {
 		let a = cellx(1);
 		let listener = sinon.spy();
 
-		a.addChangeListener(listener);
-		a.removeChangeListener(listener);
+		a.onChange(listener);
+		a.offChange(listener);
 
 		a(2);
 

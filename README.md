@@ -242,14 +242,14 @@ console.log(num());
 
 ### Methods
 
-#### addChangeListener
+#### onChange
 
 Adds a change listener:
 
 ```js
 let num = cellx(5);
 
-num.addChangeListener(evt => {
+num.onChange(evt => {
     console.log(evt);
 });
 
@@ -257,11 +257,11 @@ num(10);
 // => { prevValue: 5, value: 10 }
 ```
 
-#### removeChangeListener
+#### offChange
 
 Removes previously added change listener.
 
-#### addErrorListener
+#### onError
 
 Adds a error listener:
 
@@ -276,7 +276,7 @@ let num = cellx(() => value(), {
     }
 });
 
-num.addErrorListener(evt => {
+num.onError(evt => {
     console.log(evt.error.message);
 });
 
@@ -284,7 +284,7 @@ value(2);
 // => 'Oops!'
 ```
 
-#### removeErrorListener
+#### offError
 
 Removes previously added error listener.
 
@@ -361,7 +361,7 @@ To minimize redraw of UI cellx may "collapse" several events into one. Link to t
 ```js
 let num = cellx(5);
 
-num.addChangeListener(evt => {
+num.onChange(evt => {
     console.log(evt);
 });
 
@@ -388,7 +388,7 @@ In cases when the cell comes to the initial value before generation of event, it
 ```js
 let num = cellx(5);
 
-num.addChangeListener(evt => {
+num.onChange(evt => {
     console.log(evt);
 });
 
@@ -412,7 +412,7 @@ let sum = cellx(() => {
     return num1() + num2();
 });
 
-sum.addChangeListener(evt => {
+sum.onChange(evt => {
     console.log(evt);
 });
 
