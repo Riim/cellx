@@ -1,4 +1,4 @@
-import { EventEmitter } from '../EventEmitter';
+import { EventEmitter, TListener } from '../EventEmitter';
 
 const hasOwn = Object.prototype.hasOwnProperty;
 
@@ -39,6 +39,14 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 				}
 			}
 		}
+	}
+
+	onChange(listener: TListener, context?: any): this {
+		return this.on(ObservableMap.EVENT_CHANGE, listener, context);
+	}
+
+	offChange(listener: TListener, context?: any): this {
+		return this.off(ObservableMap.EVENT_CHANGE, listener, context);
 	}
 
 	has(key: K): boolean {

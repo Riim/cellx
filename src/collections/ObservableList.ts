@@ -1,4 +1,4 @@
-import { EventEmitter } from '../EventEmitter';
+import { EventEmitter, TListener } from '../EventEmitter';
 
 const push = Array.prototype.push;
 const splice = Array.prototype.splice;
@@ -52,6 +52,14 @@ export class ObservableList<T = any> extends EventEmitter {
 				push.apply(this._items, items instanceof ObservableList ? items._items : items);
 			}
 		}
+	}
+
+	onChange(listener: TListener, context?: any): this {
+		return this.on(ObservableList.EVENT_CHANGE, listener, context);
+	}
+
+	offChange(listener: TListener, context?: any): this {
+		return this.off(ObservableList.EVENT_CHANGE, listener, context);
 	}
 
 	_validateIndex(index: number | undefined, allowEndIndex?: boolean): number | undefined {
