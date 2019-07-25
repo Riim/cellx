@@ -110,7 +110,7 @@ describe('Cell', () => {
 
 			let onChange = sinon.spy();
 
-			b.on('change', onChange);
+			b.on(Cell.EVENT_CHANGE, onChange);
 
 			Cell.release();
 
@@ -232,7 +232,7 @@ describe('Cell', () => {
 			a.set(5);
 			b.set(5);
 
-			a.on('change', () => {});
+			a.on(Cell.EVENT_CHANGE, () => {});
 
 			expect(b.get()).to.equal(5);
 		});
@@ -434,8 +434,8 @@ describe('Cell', () => {
 			let b = new Cell(() => a.get() + 1);
 			let listener = () => {};
 
-			b.on('change', listener);
-			b.off('change', listener);
+			b.on(Cell.EVENT_CHANGE, listener);
+			b.off(Cell.EVENT_CHANGE, listener);
 
 			expect(reap.calledOnce).to.be.true;
 		});

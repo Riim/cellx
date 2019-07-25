@@ -9,6 +9,8 @@ export type TObservableMapEntries<K, V> =
 	| ObservableMap<K, V>;
 
 export class ObservableMap<K = any, V = any> extends EventEmitter {
+	static EVENT_CHANGE = 'change';
+
 	_entries = new Map<K, V>();
 
 	get size(): number {
@@ -61,7 +63,7 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 		}
 
 		entries.set(key, value);
-		this.emit('change', {
+		this.emit(ObservableMap.EVENT_CHANGE, {
 			subtype: hasKey ? 'update' : 'add',
 			key,
 			prevValue: prev,
@@ -78,7 +80,7 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 			let value = entries.get(key);
 
 			entries.delete(key);
-			this.emit('change', {
+			this.emit(ObservableMap.EVENT_CHANGE, {
 				subtype: 'delete',
 				key,
 				value
@@ -93,7 +95,7 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 	clear(): this {
 		if (this._entries.size) {
 			this._entries.clear();
-			this.emit('change', { subtype: 'clear' });
+			this.emit(ObservableMap.EVENT_CHANGE, { subtype: 'clear' });
 		}
 
 		return this;

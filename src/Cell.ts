@@ -21,7 +21,7 @@ export interface ICellOptions<T, M> {
 }
 
 export interface ICellChangeEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
-	type: 'change';
+	type: typeof Cell.EVENT_CHANGE;
 	data: {
 		prevValue: any;
 		value: any;
@@ -29,7 +29,7 @@ export interface ICellChangeEvent<T extends EventEmitter = EventEmitter> extends
 }
 
 export interface ICellErrorEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
-	type: 'error';
+	type: typeof Cell.EVENT_ERROR;
 	data: {
 		error: any;
 	};
@@ -79,6 +79,9 @@ function release() {
 }
 
 export class Cell<T = any, M = any> extends EventEmitter {
+	static EVENT_CHANGE = 'change';
+	static EVENT_ERROR = 'error';
+
 	static get currentlyPulling(): boolean {
 		return !!currentCell;
 	}
@@ -194,13 +197,20 @@ export class Cell<T = any, M = any> extends EventEmitter {
 				this.on('change', options.onChange);
 			}
 			if (options.onError) {
-				this.on('error', options.onError);
+				this.on(Cell.EVENT_ERROR, options.onError);
 			}
 		}
 	}
 
-	on(type: 'change' | 'error', listener: TListener, context?: any): this;
-	on(listeners: Record<'change' | 'error', TListener>, context?: any): this;
+	on(
+		type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR,
+		listener: TListener,
+		context?: any
+	): this;
+	on(
+		listeners: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>,
+		context?: any
+	): this;
 	on(type: string | Record<string, TListener>, listener?: any, context?: any) {
 		if (this._dependencies !== null) {
 			this.actualize();
@@ -219,8 +229,15 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		return this;
 	}
 
-	off(type: 'change' | 'error', listener: TListener, context?: any): this;
-	off(listeners?: Record<'change' | 'error', TListener>, context?: any): this;
+	off(
+		type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR,
+		listener: TListener,
+		context?: any
+	): this;
+	off(
+		listeners?: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>,
+		context?: any
+	): this;
 	off(type?: string | Record<string, TListener>, listener?: any, context?: any) {
 		if (this._dependencies !== null) {
 			this.actualize();
@@ -239,8 +256,8 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		if (
 			this._hasSubscribers &&
 			!this._reactions.length &&
-			!this._events.has('change') &&
-			!this._events.has('error')
+			!this._events.has(Cell.EVENT_CHANGE) &&
+			!this._events.has(Cell.EVENT_ERROR)
 		) {
 			this._hasSubscribers = false;
 			this._deactivate();
@@ -254,19 +271,23 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	}
 
 	addChangeListener(listener: TListener, context?: any): this {
-		return this.on('change', listener, context !== undefined ? context : this.context);
+		return this.on(Cell.EVENT_CHANGE, listener, context !== undefined ? context : this.context);
 	}
 
 	removeChangeListener(listener: TListener, context?: any): this {
-		return this.off('change', listener, context !== undefined ? context : this.context);
+		return this.off(
+			Cell.EVENT_CHANGE,
+			listener,
+			context !== undefined ? context : this.context
+		);
 	}
 
 	addErrorListener(listener: TListener, context?: any): this {
-		return this.on('error', listener, context !== undefined ? context : this.context);
+		return this.on(Cell.EVENT_ERROR, listener, context !== undefined ? context : this.context);
 	}
 
 	removeErrorListener(listener: TListener, context?: any): this {
-		return this.off('error', listener, context !== undefined ? context : this.context);
+		return this.off(Cell.EVENT_ERROR, listener, context !== undefined ? context : this.context);
 	}
 
 	subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this {
@@ -286,7 +307,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			context = this.context;
 		}
 
-		return this.on('change', wrapper, context).on('error', wrapper, context);
+		return this.on(Cell.EVENT_CHANGE, wrapper, context).on(Cell.EVENT_ERROR, wrapper, context);
 	}
 
 	unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this {
@@ -303,7 +324,11 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			context = this.context;
 		}
 
-		return this.off('change', wrapper, context).off('error', wrapper, context);
+		return this.off(Cell.EVENT_CHANGE, wrapper, context).off(
+			Cell.EVENT_ERROR,
+			wrapper,
+			context
+		);
 	}
 
 	_addReaction(reaction: Cell, actual: boolean) {
@@ -319,8 +344,8 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		if (
 			this._hasSubscribers &&
 			!this._reactions.length &&
-			!this._events.has('change') &&
-			!this._events.has('error')
+			!this._events.has(Cell.EVENT_CHANGE) &&
+			!this._events.has(Cell.EVENT_ERROR)
 		) {
 			this._hasSubscribers = false;
 			this._deactivate();
@@ -582,7 +607,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 				reactions[i]._addToRelease(true);
 			}
 
-			this.emit('change', {
+			this.emit(Cell.EVENT_CHANGE, {
 				prevValue,
 				value
 			});
@@ -625,7 +650,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		if (err) {
 			this._handleErrorEvent({
 				target: this,
-				type: 'error',
+				type: Cell.EVENT_ERROR,
 				data: {
 					error: err
 				}

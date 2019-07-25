@@ -37,10 +37,10 @@ describe('cellx', () => {
 	it('#on()', done => {
 		let a = cellx(1);
 
-		a.on('change', evt => {
+		a.on(Cell.EVENT_CHANGE, evt => {
 			expect(evt).to.eql({
 				target: a.cell,
-				type: 'change',
+				type: Cell.EVENT_CHANGE,
 				data: {
 					prevValue: 1,
 					value: 2
@@ -57,8 +57,8 @@ describe('cellx', () => {
 		let a = cellx(1);
 		let listener = sinon.spy();
 
-		a.on('change', listener);
-		a.off('change', listener);
+		a.on(Cell.EVENT_CHANGE, listener);
+		a.off(Cell.EVENT_CHANGE, listener);
 
 		a(2);
 
@@ -109,7 +109,7 @@ describe('cellx', () => {
 		a.addChangeListener(evt => {
 			expect(evt).to.eql({
 				target: a.cell,
-				type: 'change',
+				type: Cell.EVENT_CHANGE,
 				data: {
 					prevValue: 1,
 					value: 2
@@ -143,7 +143,7 @@ describe('cellx', () => {
 			expect(err).to.be.null;
 			expect(evt).to.eql({
 				target: a.cell,
-				type: 'change',
+				type: Cell.EVENT_CHANGE,
 				data: {
 					prevValue: 1,
 					value: 2

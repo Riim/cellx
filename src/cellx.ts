@@ -26,10 +26,24 @@ export interface ICellx<T = any, M = any> {
 
 	cell: Cell<T, M>;
 
-	on(type: 'change' | 'error', listener: TListener, context?: any): Cell<T, M>;
-	on(listeners: Record<'change' | 'error', TListener>, context?: any): Cell<T, M>;
-	off(type: 'change' | 'error', listener: TListener, context?: any): Cell<T, M>;
-	off(listeners?: Record<'change' | 'error', TListener>, context?: any): Cell<T, M>;
+	on(
+		type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR,
+		listener: TListener,
+		context?: any
+	): Cell<T, M>;
+	on(
+		listeners: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>,
+		context?: any
+	): Cell<T, M>;
+	off(
+		type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR,
+		listener: TListener,
+		context?: any
+	): Cell<T, M>;
+	off(
+		listeners?: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>,
+		context?: any
+	): Cell<T, M>;
 
 	addChangeListener(listener: TListener, context?: any): Cell<T, M>;
 	removeChangeListener(listener: TListener, context?: any): Cell<T, M>;

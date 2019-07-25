@@ -17,6 +17,8 @@ const defaultComparator: TObservableListItemComparator<any> = (a, b) => {
 };
 
 export class ObservableList<T = any> extends EventEmitter {
+	static EVENT_CHANGE = 'change';
+
 	_items: Array<T> = [];
 
 	get length(): number {
@@ -112,7 +114,7 @@ export class ObservableList<T = any> extends EventEmitter {
 
 		if (!Object.is(value, this._items[index])) {
 			this._items[index] = value;
-			this.emit('change');
+			this.emit(ObservableList.EVENT_CHANGE);
 		}
 
 		return this;
@@ -152,7 +154,7 @@ export class ObservableList<T = any> extends EventEmitter {
 		}
 
 		if (changed) {
-			this.emit('change');
+			this.emit(ObservableList.EVENT_CHANGE);
 		}
 
 		return this;
@@ -169,7 +171,7 @@ export class ObservableList<T = any> extends EventEmitter {
 			this._items.push(value);
 		}
 
-		this.emit('change');
+		this.emit(ObservableList.EVENT_CHANGE);
 
 		return this;
 	}
@@ -198,7 +200,7 @@ export class ObservableList<T = any> extends EventEmitter {
 				}
 
 				if (changed) {
-					this.emit('change');
+					this.emit(ObservableList.EVENT_CHANGE);
 				}
 			} else {
 				if (this._sorted) {
@@ -209,7 +211,7 @@ export class ObservableList<T = any> extends EventEmitter {
 					push.apply(this._items, values);
 				}
 
-				this.emit('change');
+				this.emit(ObservableList.EVENT_CHANGE);
 			}
 		}
 
@@ -222,7 +224,7 @@ export class ObservableList<T = any> extends EventEmitter {
 		}
 
 		this._items.splice(this._validateIndex(index, true)!, 0, value);
-		this.emit('change');
+		this.emit(ObservableList.EVENT_CHANGE);
 
 		return this;
 	}
@@ -240,7 +242,7 @@ export class ObservableList<T = any> extends EventEmitter {
 
 		if (values.length) {
 			splice.apply(this._items, ([index, 0] as Array<any>).concat(values));
-			this.emit('change');
+			this.emit(ObservableList.EVENT_CHANGE);
 		}
 
 		return this;
@@ -254,7 +256,7 @@ export class ObservableList<T = any> extends EventEmitter {
 		}
 
 		this._items.splice(index, 1);
-		this.emit('change');
+		this.emit(ObservableList.EVENT_CHANGE);
 
 		return true;
 	}
@@ -270,7 +272,7 @@ export class ObservableList<T = any> extends EventEmitter {
 		}
 
 		if (changed) {
-			this.emit('change');
+			this.emit(ObservableList.EVENT_CHANGE);
 		}
 
 		return changed;
@@ -296,7 +298,7 @@ export class ObservableList<T = any> extends EventEmitter {
 		}
 
 		if (changed) {
-			this.emit('change');
+			this.emit(ObservableList.EVENT_CHANGE);
 		}
 
 		return changed;
@@ -304,7 +306,7 @@ export class ObservableList<T = any> extends EventEmitter {
 
 	removeAt(index: number): T {
 		let value = this._items.splice(this._validateIndex(index)!, 1)[0];
-		this.emit('change');
+		this.emit(ObservableList.EVENT_CHANGE);
 
 		return value;
 	}
@@ -329,7 +331,7 @@ export class ObservableList<T = any> extends EventEmitter {
 		}
 
 		let values = this._items.splice(index, count);
-		this.emit('change');
+		this.emit(ObservableList.EVENT_CHANGE);
 
 		return values;
 	}
@@ -337,7 +339,7 @@ export class ObservableList<T = any> extends EventEmitter {
 	clear(): this {
 		if (this._items.length) {
 			this._items.length = 0;
-			this.emit('change', { subtype: 'clear' });
+			this.emit(ObservableList.EVENT_CHANGE, { subtype: 'clear' });
 		}
 
 		return this;
