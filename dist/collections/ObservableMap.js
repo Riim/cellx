@@ -28,6 +28,12 @@ export class ObservableMap extends EventEmitter {
     get size() {
         return this._entries.size;
     }
+    onChange(listener, context) {
+        return this.on(ObservableMap.EVENT_CHANGE, listener, context);
+    }
+    offChange(listener, context) {
+        return this.off(ObservableMap.EVENT_CHANGE, listener, context);
+    }
     has(key) {
         return this._entries.has(key);
     }

@@ -1,10 +1,12 @@
-import { EventEmitter } from '../EventEmitter';
+import { EventEmitter, TListener } from '../EventEmitter';
 export declare type TObservableMapEntries<K, V> = Array<[K, V]> | Record<string, V> | Map<K, V> | ObservableMap<K, V>;
 export declare class ObservableMap<K = any, V = any> extends EventEmitter {
     static EVENT_CHANGE: string;
     _entries: Map<K, V>;
     readonly size: number;
     constructor(entries?: TObservableMapEntries<K, V> | null);
+    onChange(listener: TListener, context?: any): this;
+    offChange(listener: TListener, context?: any): this;
     has(key: K): boolean;
     get(key: K): V | undefined;
     set(key: K, value: V): this;

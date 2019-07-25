@@ -1,4 +1,4 @@
-import { EventEmitter } from '../EventEmitter';
+import { EventEmitter, TListener } from '../EventEmitter';
 export declare type TObservableListItems<T> = Array<T> | ObservableList<T>;
 export declare type TObservableListItemComparator<T> = (a: T, b: T) => number;
 export interface IObservableListOptions<T> {
@@ -12,6 +12,8 @@ export declare class ObservableList<T = any> extends EventEmitter {
     _comparator: TObservableListItemComparator<T> | null;
     _sorted: boolean;
     constructor(items?: TObservableListItems<T> | null, options?: IObservableListOptions<T>);
+    onChange(listener: TListener, context?: any): this;
+    offChange(listener: TListener, context?: any): this;
     _validateIndex(index: number | undefined, allowEndIndex?: boolean): number | undefined;
     contains(value: T): boolean;
     indexOf(value: T, fromIndex?: number): number;

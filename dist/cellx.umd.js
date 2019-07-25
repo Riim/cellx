@@ -779,6 +779,12 @@
         get size() {
             return this._entries.size;
         }
+        onChange(listener, context) {
+            return this.on(ObservableMap.EVENT_CHANGE, listener, context);
+        }
+        offChange(listener, context) {
+            return this.off(ObservableMap.EVENT_CHANGE, listener, context);
+        }
         has(key) {
             return this._entries.has(key);
         }
@@ -889,6 +895,12 @@
         }
         get length() {
             return this._items.length;
+        }
+        onChange(listener, context) {
+            return this.on(ObservableList.EVENT_CHANGE, listener, context);
+        }
+        offChange(listener, context) {
+            return this.off(ObservableList.EVENT_CHANGE, listener, context);
         }
         _validateIndex(index, allowEndIndex) {
             if (index === undefined) {

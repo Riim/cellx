@@ -33,6 +33,12 @@ export class ObservableList extends EventEmitter {
     get length() {
         return this._items.length;
     }
+    onChange(listener, context) {
+        return this.on(ObservableList.EVENT_CHANGE, listener, context);
+    }
+    offChange(listener, context) {
+        return this.off(ObservableList.EVENT_CHANGE, listener, context);
+    }
     _validateIndex(index, allowEndIndex) {
         if (index === undefined) {
             return index;
