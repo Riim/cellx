@@ -24,6 +24,16 @@ export class ObservableList<T = any> extends EventEmitter {
 	get length(): number {
 		return this._items.length;
 	}
+	set length(value: number) {
+		if (this._items.length != value) {
+			if (value > this._items.length) {
+				throw RangeError('Length out of valid range');
+			}
+
+			this.emit(ObservableList.EVENT_CHANGE);
+			this._items.length = value;
+		}
+	}
 
 	_comparator: TObservableListItemComparator<T> | null;
 	_sorted: boolean;
@@ -71,10 +81,10 @@ export class ObservableList<T = any> extends EventEmitter {
 			index += this._items.length;
 
 			if (index < 0) {
-				throw new RangeError('Index out of valid range');
+				throw RangeError('Index out of valid range');
 			}
 		} else if (index > this._items.length - (allowEndIndex ? 0 : 1)) {
-			throw new RangeError('Index out of valid range');
+			throw RangeError('Index out of valid range');
 		}
 
 		return index;
@@ -107,7 +117,7 @@ export class ObservableList<T = any> extends EventEmitter {
 		}
 
 		if (index + count > this._items.length) {
-			throw new RangeError('Sum of "index" and "count" out of valid range');
+			throw RangeError('Sum of "index" and "count" out of valid range');
 		}
 
 		return this._items.slice(index, index + count);
@@ -115,7 +125,7 @@ export class ObservableList<T = any> extends EventEmitter {
 
 	set(index: number, value: T): this {
 		if (this._sorted) {
-			throw new TypeError('Cannot set to sorted list');
+			throw TypeError('Cannot set to sorted list');
 		}
 
 		index = this._validateIndex(index, true)!;
@@ -130,7 +140,7 @@ export class ObservableList<T = any> extends EventEmitter {
 
 	setRange(index: number, values: TObservableListItems<T>): this {
 		if (this._sorted) {
-			throw new TypeError('Cannot set to sorted list');
+			throw TypeError('Cannot set to sorted list');
 		}
 
 		index = this._validateIndex(index, true)!;
@@ -145,11 +155,12 @@ export class ObservableList<T = any> extends EventEmitter {
 			return this;
 		}
 
-		if (index + valueCount > this._items.length) {
-			throw new RangeError('Sum of "index" and "values.length" out of valid range');
+		let items = this._items;
+
+		if (index + valueCount > items.length) {
+			throw RangeError('Sum of "index" and "values.length" out of valid range');
 		}
 
-		let items = this._items;
 		let changed = false;
 
 		for (let i = index + valueCount; i > index; ) {
@@ -228,7 +239,7 @@ export class ObservableList<T = any> extends EventEmitter {
 
 	insert(index: number, value: T): this {
 		if (this._sorted) {
-			throw new TypeError('Cannot insert to sorted list');
+			throw TypeError('Cannot insert to sorted list');
 		}
 
 		this._items.splice(this._validateIndex(index, true)!, 0, value);
@@ -239,7 +250,7 @@ export class ObservableList<T = any> extends EventEmitter {
 
 	insertRange(index: number, values: TObservableListItems<T>): this {
 		if (this._sorted) {
-			throw new TypeError('Cannot insert to sorted list');
+			throw TypeError('Cannot insert to sorted list');
 		}
 
 		index = this._validateIndex(index, true)!;
@@ -334,7 +345,7 @@ export class ObservableList<T = any> extends EventEmitter {
 			}
 
 			if (index + count > this._items.length) {
-				throw new RangeError('Sum of "index" and "count" out of valid range');
+				throw RangeError('Sum of "index" and "count" out of valid range');
 			}
 		}
 
@@ -451,7 +462,7 @@ export class ObservableList<T = any> extends EventEmitter {
 
 [
 	['keys', (index: number): number => index],
-	['values', (index: number, item: any): any => item],
+	['values', (_index: number, item: any): any => item],
 	['entries', (index: number, item: any): [number, any] => [index, item]]
 ].forEach((settings: [string, (index: number, item: any) => any]) => {
 	let getStepValue = settings[1];

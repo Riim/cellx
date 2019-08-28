@@ -483,7 +483,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 
 		if (this._currentlyPulling) {
-			throw new TypeError('Circular pulling detected');
+			throw TypeError('Circular pulling detected');
 		}
 
 		this._currentlyPulling = true;
@@ -675,7 +675,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	}
 
 	wait() {
-		throw new (WaitError as any)();
+		throw WaitError();
 	}
 
 	reap(): this {

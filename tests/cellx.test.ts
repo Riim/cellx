@@ -71,7 +71,7 @@ describe('cellx', () => {
 		let a = cellx(1);
 		let b = cellx(() => {
 			if (a() == 2) {
-				throw new RangeError();
+				throw RangeError();
 			}
 
 			return a();
@@ -89,7 +89,7 @@ describe('cellx', () => {
 	it('#offError()', () => {
 		let a = cellx(1);
 		let b = cellx(() => {
-			throw new RangeError();
+			throw RangeError();
 		});
 		let listener = sinon.spy();
 

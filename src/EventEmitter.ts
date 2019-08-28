@@ -251,7 +251,7 @@ export class EventEmitter {
 			if (!evt.target) {
 				evt.target = this;
 			} else if (evt.target != this) {
-				throw new TypeError('Event cannot be emitted on this target');
+				throw TypeError('Event cannot be emitted on this target');
 			}
 		} else {
 			evt = {
