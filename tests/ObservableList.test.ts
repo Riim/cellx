@@ -36,12 +36,36 @@ describe('ObservableList', () => {
 	});
 
 	it('#get()', () => {
+		let list = new ObservableList([1]);
+
+		expect(() => {
+			list.get(-2);
+		}).to.throw(RangeError);
+	});
+
+	it('#get() (2)', () => {
+		let list = new ObservableList([1]);
+
+		expect(() => {
+			list.get(2);
+		}).to.throw(RangeError);
+	});
+
+	it('#get() (3)', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
 		expect(list.get(2)).to.equal(3);
 	});
 
 	it('#getRange()', () => {
+		let list = new ObservableList([1, 2, 3]);
+
+		expect(() => {
+			list.getRange(2, 2);
+		}).to.throw(RangeError);
+	});
+
+	it('#getRange() (2)', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
 		expect(list.getRange(2, 2)).to.eql([3, 2]);
@@ -49,6 +73,14 @@ describe('ObservableList', () => {
 	});
 
 	it('#set()', () => {
+		let list = new ObservableList(null, { sorted: true });
+
+		expect(() => {
+			list.set(0, 1);
+		}).to.throw(TypeError);
+	});
+
+	it('#set() (2)', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
 		expect(list.set(2, 4)).to.equal(list);
@@ -56,6 +88,22 @@ describe('ObservableList', () => {
 	});
 
 	it('#setRange()', () => {
+		let list = new ObservableList(null, { sorted: true });
+
+		expect(() => {
+			list.setRange(0, [1]);
+		}).to.throw(TypeError);
+	});
+
+	it('#setRange() (2)', () => {
+		let list = new ObservableList([1, 2, 3]);
+
+		expect(() => {
+			list.setRange(2, [4, 5]);
+		}).to.throw(RangeError);
+	});
+
+	it('#setRange() (3)', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
 		expect(list.setRange(2, [4, 5])).to.equal(list);
@@ -92,6 +140,14 @@ describe('ObservableList', () => {
 	});
 
 	it('#insert()', () => {
+		let list = new ObservableList(null, { sorted: true });
+
+		expect(() => {
+			list.insert(0, 1);
+		}).to.throw(TypeError);
+	});
+
+	it('#insert() (2)', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
 		expect(list.insert(3, 4)).to.equal(list);
@@ -99,6 +155,14 @@ describe('ObservableList', () => {
 	});
 
 	it('#insertRange()', () => {
+		let list = new ObservableList(null, { sorted: true });
+
+		expect(() => {
+			list.insertRange(0, [1]);
+		}).to.throw(TypeError);
+	});
+
+	it('#insertRange() (2)', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
 		expect(list.insertRange(3, [4, 5])).to.equal(list);
@@ -136,6 +200,14 @@ describe('ObservableList', () => {
 	});
 
 	it('#removeRange()', () => {
+		let list = new ObservableList([1, 2, 3]);
+
+		expect(() => {
+			list.removeRange(2, 2);
+		}).to.throw(RangeError);
+	});
+
+	it('#removeRange() (2)', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
 		expect(list.removeRange(2, 2)).to.eql([3, 2]);
@@ -156,6 +228,22 @@ describe('ObservableList', () => {
 
 		expect(list.length).to.equal(5);
 		expect(list.add(4).length).to.equal(6);
+	});
+
+	it('#length (2)', () => {
+		let list = new ObservableList([1]);
+
+		expect(() => {
+			list.length = 3;
+		}).to.throw(RangeError);
+	});
+
+	it('#length (3)', () => {
+		let list = new ObservableList([1, 2, 3, 4, 5]);
+
+		list.length = 3;
+
+		expect(list.length).to.equal(3);
 	});
 
 	it('#join()', () => {
