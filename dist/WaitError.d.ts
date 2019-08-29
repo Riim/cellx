@@ -1,1 +1,1 @@
-export declare function WaitError(): void;
+export declare function WaitError(): any;

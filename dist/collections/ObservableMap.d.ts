@@ -12,10 +12,12 @@ export declare class ObservableMap<K = any, V = any> extends EventEmitter {
     set(key: K, value: V): this;
     delete(key: K): boolean;
     clear(): this;
+    equals(that: any): boolean;
     forEach(cb: (value: V, key: K, map: this) => void, context?: any): void;
     keys(): Iterator<K>;
     values(): Iterator<V>;
     entries(): Iterator<[K, V]>;
     clone(deep?: boolean): ObservableMap<K, V>;
+    merge(that: any): boolean;
     [Symbol.iterator]: () => Iterator<[K, V]>;
 }

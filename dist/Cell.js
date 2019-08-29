@@ -304,7 +304,7 @@ export class Cell extends EventEmitter {
             return false;
         }
         if (this._currentlyPulling) {
-            throw new TypeError('Circular pulling detected');
+            throw TypeError('Circular pulling detected');
         }
         this._currentlyPulling = true;
         let prevDeps = this._dependencies;
@@ -456,7 +456,7 @@ export class Cell extends EventEmitter {
         }
     }
     wait() {
-        throw new WaitError();
+        throw WaitError();
     }
     reap() {
         this.off();

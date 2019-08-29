@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.9.6",
+  "version": "1.9.7",
   "description": "",
   "type": "module",
   "main": "dist/cellx.js",
@@ -36,10 +36,10 @@
     "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-tslint": "^0.2.2",
-    "rollup-plugin-typescript2": "^0.23.0",
+    "rollup-plugin-typescript2": "^0.24.0",
     "sinon": "^7.4.1",
     "ts-mocha": "^6.0.0",
-    "typescript": "^3.5.3"
+    "typescript": "^3.6.2"
   },
   "dependencies": {
     "@riim/next-tick": "^1.2.3"

@@ -33,6 +33,15 @@ export class ObservableList extends EventEmitter {
     get length() {
         return this._items.length;
     }
+    set length(value) {
+        if (this._items.length != value) {
+            if (value > this._items.length) {
+                throw RangeError('Length out of valid range');
+            }
+            this.emit(ObservableList.EVENT_CHANGE);
+            this._items.length = value;
+        }
+    }
     onChange(listener, context) {
         return this.on(ObservableList.EVENT_CHANGE, listener, context);
     }
@@ -46,11 +55,11 @@ export class ObservableList extends EventEmitter {
         if (index < 0) {
             index += this._items.length;
             if (index < 0) {
-                throw new RangeError('Index out of valid range');
+                throw RangeError('Index out of valid range');
             }
         }
         else if (index > this._items.length - (allowEndIndex ? 0 : 1)) {
-            throw new RangeError('Index out of valid range');
+            throw RangeError('Index out of valid range');
         }
         return index;
     }
@@ -72,13 +81,13 @@ export class ObservableList extends EventEmitter {
             return this._items.slice(index);
         }
         if (index + count > this._items.length) {
-            throw new RangeError('Sum of "index" and "count" out of valid range');
+            throw RangeError('Sum of "index" and "count" out of valid range');
         }
         return this._items.slice(index, index + count);
     }
     set(index, value) {
         if (this._sorted) {
-            throw new TypeError('Cannot set to sorted list');
+            throw TypeError('Cannot set to sorted list');
         }
         index = this._validateIndex(index, true);
         if (!Object.is(value, this._items[index])) {
@@ -89,7 +98,7 @@ export class ObservableList extends EventEmitter {
     }
     setRange(index, values) {
         if (this._sorted) {
-            throw new TypeError('Cannot set to sorted list');
+            throw TypeError('Cannot set to sorted list');
         }
         index = this._validateIndex(index, true);
         if (values instanceof ObservableList) {
@@ -99,10 +108,10 @@ export class ObservableList extends EventEmitter {
         if (!valueCount) {
             return this;
         }
-        if (index + valueCount > this._items.length) {
-            throw new RangeError('Sum of "index" and "values.length" out of valid range');
-        }
         let items = this._items;
+        if (index + valueCount > items.length) {
+            throw RangeError('Sum of "index" and "values.length" out of valid range');
+        }
         let changed = false;
         for (let i = index + valueCount; i > index;) {
             let value = values[--i - index];
@@ -169,7 +178,7 @@ export class ObservableList extends EventEmitter {
     }
     insert(index, value) {
         if (this._sorted) {
-            throw new TypeError('Cannot insert to sorted list');
+            throw TypeError('Cannot insert to sorted list');
         }
         this._items.splice(this._validateIndex(index, true), 0, value);
         this.emit(ObservableList.EVENT_CHANGE);
@@ -177,7 +186,7 @@ export class ObservableList extends EventEmitter {
     }
     insertRange(index, values) {
         if (this._sorted) {
-            throw new TypeError('Cannot insert to sorted list');
+            throw TypeError('Cannot insert to sorted list');
         }
         index = this._validateIndex(index, true);
         if (values instanceof ObservableList) {
@@ -248,7 +257,7 @@ export class ObservableList extends EventEmitter {
                 return [];
             }
             if (index + count > this._items.length) {
-                throw new RangeError('Sum of "index" and "count" out of valid range');
+                throw RangeError('Sum of "index" and "count" out of valid range');
             }
         }
         let values = this._items.splice(index, count);
@@ -258,9 +267,25 @@ export class ObservableList extends EventEmitter {
     clear() {
         if (this._items.length) {
             this._items.length = 0;
-            this.emit(ObservableList.EVENT_CHANGE, { subtype: 'clear' });
+            this.emit(ObservableList.EVENT_CHANGE);
         }
         return this;
+    }
+    equals(that) {
+        if (!(that instanceof ObservableList)) {
+            return false;
+        }
+        let items = this._items;
+        let thatItems = that._items;
+        if (items.length != thatItems.length) {
+            return false;
+        }
+        for (let i = items.length; i;) {
+            if (items[--i] !== thatItems[i]) {
+                return false;
+            }
+        }
+        return true;
     }
     join(separator) {
         return this._items.join(separator);
@@ -291,6 +316,40 @@ export class ObservableList extends EventEmitter {
             comparator: this._comparator || undefined,
             sorted: this._sorted
         });
+    }
+    merge(that) {
+        if (!(that instanceof ObservableList)) {
+            throw TypeError('"that" must be instance of ObservableList');
+        }
+        let items = this._items;
+        let thatItems = that._items;
+        let changed = false;
+        if (items.length != that.length) {
+            items.length = that.length;
+            changed = true;
+        }
+        for (let i = items.length; i;) {
+            let item = items[--i];
+            let thatItem = thatItems[i];
+            if (item !== thatItem) {
+                if (item &&
+                    thatItem &&
+                    item.merge &&
+                    item.merge === thatItem.merge) {
+                    if (item.merge(thatItem)) {
+                        changed = true;
+                    }
+                }
+                else {
+                    items[i] = thatItem;
+                    changed = true;
+                }
+            }
+        }
+        if (changed) {
+            this.emit(ObservableList.EVENT_CHANGE);
+        }
+        return changed;
     }
     toArray() {
         return this._items.slice();
@@ -336,7 +395,7 @@ ObservableList.EVENT_CHANGE = 'change';
 });
 [
     ['keys', (index) => index],
-    ['values', (index, item) => item],
+    ['values', (_index, item) => item],
     ['entries', (index, item) => [index, item]]
 ].forEach((settings) => {
     let getStepValue = settings[1];

@@ -23,6 +23,201 @@
         };
     })();
 
+    /* istanbul ignore file */
+    let Map_;
+    if (typeof navigator != 'undefined' && navigator.userAgent.includes('Edge')) {
+        const hasOwn = Object.prototype.hasOwnProperty;
+        const KEY_MAP_ID = Symbol('mapId');
+        let mapIdCounter = 0;
+        const entryStub = {
+            value: undefined
+        };
+        Map_ = function Map(entries) {
+            this._entries = { __proto__: null };
+            this._objectStamps = null;
+            this._first = null;
+            this._last = null;
+            this.size = 0;
+            if (entries) {
+                for (let i = 0, l = entries.length; i < l; i++) {
+                    this.set(entries[i][0], entries[i][1]);
+                }
+            }
+        };
+        Map_.prototype = {
+            constructor: Map_,
+            has(key) {
+                return !!this._entries[this._getValueStamp(key)];
+            },
+            get(key) {
+                return (this._entries[this._getValueStamp(key)] || entryStub).value;
+            },
+            set(key, value) {
+                let entries = this._entries;
+                let keyStamp = this._getValueStamp(key);
+                if (entries[keyStamp]) {
+                    entries[keyStamp].value = value;
+                }
+                else {
+                    let entry = (entries[keyStamp] = {
+                        key,
+                        keyStamp,
+                        value,
+                        prev: this._last,
+                        next: null
+                    });
+                    if (this.size++) {
+                        this._last.next = entry;
+                    }
+                    else {
+                        this._first = entry;
+                    }
+                    this._last = entry;
+                }
+                return this;
+            },
+            delete(key) {
+                let keyStamp = this._getValueStamp(key);
+                let entry = this._entries[keyStamp];
+                if (!entry) {
+                    return false;
+                }
+                if (--this.size) {
+                    let prev = entry.prev;
+                    let next = entry.next;
+                    if (prev) {
+                        prev.next = next;
+                    }
+                    else {
+                        this._first = next;
+                    }
+                    if (next) {
+                        next.prev = prev;
+                    }
+                    else {
+                        this._last = prev;
+                    }
+                }
+                else {
+                    this._first = null;
+                    this._last = null;
+                }
+                delete this._entries[keyStamp];
+                if (this._objectStamps) {
+                    delete this._objectStamps[keyStamp];
+                }
+                return true;
+            },
+            clear() {
+                let entries = this._entries;
+                for (let stamp in entries) {
+                    delete entries[stamp];
+                }
+                this._objectStamps = null;
+                this._first = null;
+                this._last = null;
+                this.size = 0;
+            },
+            // forEach(cb: Function, context: any) {
+            // 	let entry = this._first;
+            // 	while (entry) {
+            // 		cb.call(context, entry.value, entry.key, this);
+            // 		do {
+            // 			entry = entry.next;
+            // 		} while (entry && !this._entries[entry.keyStamp]);
+            // 	}
+            // },
+            // toString() {
+            // 	return '[object Map]';
+            // },
+            _getValueStamp(value) {
+                switch (typeof value) {
+                    case 'undefined': {
+                        return 'undefined';
+                    }
+                    case 'object': {
+                        if (value === null) {
+                            return 'null';
+                        }
+                        break;
+                    }
+                    case 'boolean': {
+                        return '?' + value;
+                    }
+                    case 'number': {
+                        return '+' + value;
+                    }
+                    case 'string': {
+                        return ',' + value;
+                    }
+                }
+                return this._getObjectStamp(value);
+            },
+            _getObjectStamp(obj) {
+                if (!hasOwn.call(obj, KEY_MAP_ID)) {
+                    if (!Object.isExtensible(obj)) {
+                        let stamps = this._objectStamps;
+                        let stamp;
+                        for (stamp in stamps) {
+                            if (stamps[stamp] == obj) {
+                                return stamp;
+                            }
+                        }
+                        stamp = String(++mapIdCounter);
+                        (stamps || (this._objectStamps = { __proto__: null }))[stamp] = obj;
+                        return stamp;
+                    }
+                    Object.defineProperty(obj, KEY_MAP_ID, {
+                        value: String(++mapIdCounter)
+                    });
+                }
+                return obj[KEY_MAP_ID];
+            }
+        };
+        [
+            // ['keys', entry => entry.key],
+            // ['values', entry => entry.value],
+            ['entries', entry => [entry.key, entry.value]]
+        ].forEach(settings => {
+            let getStepValue = settings[1];
+            Map_.prototype[settings[0]] = function () {
+                let entries = this._entries;
+                let entry;
+                let done = false;
+                let map = this;
+                return {
+                    next() {
+                        if (!done) {
+                            if (entry) {
+                                do {
+                                    entry = entry.next;
+                                } while (entry && !entries[entry.keyStamp]);
+                            }
+                            else {
+                                entry = map._first;
+                            }
+                            if (entry) {
+                                return {
+                                    value: getStepValue(entry),
+                                    done: false
+                                };
+                            }
+                            done = true;
+                        }
+                        return {
+                            value: undefined,
+                            done: true
+                        };
+                    }
+                };
+            };
+        });
+        Map_.prototype[Symbol.iterator] = Map_.prototype.entries;
+    }
+    else {
+        Map_ = Map;
+    }
+
     const config = {
         logError: (...args) => {
             console.error(...args);
@@ -43,6 +238,9 @@
     let transactionEvents = [];
     let silently = 0;
     class EventEmitter {
+        constructor() {
+            this._events = new Map_();
+        }
         static get currentlySubscribing() {
             return currentlySubscribing;
         }
@@ -73,9 +271,6 @@
             }
             silently--;
         }
-        constructor() {
-            this._events = new Map();
-        }
         getEvents(type) {
             if (type) {
                 let events = this._events.get(type);
@@ -84,7 +279,7 @@
                 }
                 return Array.isArray(events) ? events : [events];
             }
-            let events = new Map();
+            let events = new Map_();
             for (let [type, typeEvents] of this._events) {
                 events.set(type, Array.isArray(typeEvents) ? typeEvents : [typeEvents]);
             }
@@ -203,7 +398,7 @@
                     evt.target = this;
                 }
                 else if (evt.target != this) {
-                    throw new TypeError('Event cannot be emitted on this target');
+                    throw TypeError('Event cannot be emitted on this target');
                 }
             }
             else {
@@ -272,7 +467,11 @@
         }
     }
 
-    function WaitError() { }
+    function WaitError() {
+        if (!(this instanceof WaitError)) {
+            return new WaitError();
+        }
+    }
     WaitError.prototype = {
         __proto__: Error.prototype,
         constructor: WaitError
@@ -580,7 +779,7 @@
                 return false;
             }
             if (this._currentlyPulling) {
-                throw new TypeError('Circular pulling detected');
+                throw TypeError('Circular pulling detected');
             }
             this._currentlyPulling = true;
             let prevDeps = this._dependencies;
@@ -732,7 +931,7 @@
             }
         }
         wait() {
-            throw new WaitError();
+            throw WaitError();
         }
         reap() {
             this.off();
@@ -831,6 +1030,20 @@
             }
             return this;
         }
+        equals(that) {
+            if (!(that instanceof ObservableMap)) {
+                return false;
+            }
+            if (this.size != that.size) {
+                return false;
+            }
+            for (let entry of this) {
+                if (entry[1] !== that.get(entry[0])) {
+                    return false;
+                }
+            }
+            return true;
+        }
         forEach(cb, context) {
             this._entries.forEach(function (value, key) {
                 cb.call(context, value, key, this);
@@ -857,6 +1070,47 @@
                 });
             }
             return new this.constructor(entries || this);
+        }
+        merge(that) {
+            if (!(that instanceof ObservableMap)) {
+                throw TypeError('"that" must be instance of ObservableMap');
+            }
+            let entries = this._entries;
+            let changed = false;
+            for (let [key, value] of entries) {
+                if (that.has(key)) {
+                    let thatValue = that.get(key);
+                    if (value !== thatValue) {
+                        if (value &&
+                            thatValue &&
+                            value.merge &&
+                            value.merge ===
+                                thatValue.merge) {
+                            if (value.merge(thatValue)) {
+                                changed = true;
+                            }
+                        }
+                        else {
+                            entries.set(key, thatValue);
+                            changed = true;
+                        }
+                    }
+                }
+                else {
+                    entries.delete(key);
+                    changed = true;
+                }
+            }
+            for (let [key, value] of that) {
+                if (!entries.has(key)) {
+                    entries.set(key, value);
+                    changed = true;
+                }
+            }
+            if (changed) {
+                this.emit(ObservableMap.EVENT_CHANGE, { subtype: 'merge' });
+            }
+            return changed;
         }
     }
     ObservableMap.EVENT_CHANGE = 'change';
@@ -896,6 +1150,15 @@
         get length() {
             return this._items.length;
         }
+        set length(value) {
+            if (this._items.length != value) {
+                if (value > this._items.length) {
+                    throw RangeError('Length out of valid range');
+                }
+                this.emit(ObservableList.EVENT_CHANGE);
+                this._items.length = value;
+            }
+        }
         onChange(listener, context) {
             return this.on(ObservableList.EVENT_CHANGE, listener, context);
         }
@@ -909,11 +1172,11 @@
             if (index < 0) {
                 index += this._items.length;
                 if (index < 0) {
-                    throw new RangeError('Index out of valid range');
+                    throw RangeError('Index out of valid range');
                 }
             }
             else if (index > this._items.length - (allowEndIndex ? 0 : 1)) {
-                throw new RangeError('Index out of valid range');
+                throw RangeError('Index out of valid range');
             }
             return index;
         }
@@ -935,13 +1198,13 @@
                 return this._items.slice(index);
             }
             if (index + count > this._items.length) {
-                throw new RangeError('Sum of "index" and "count" out of valid range');
+                throw RangeError('Sum of "index" and "count" out of valid range');
             }
             return this._items.slice(index, index + count);
         }
         set(index, value) {
             if (this._sorted) {
-                throw new TypeError('Cannot set to sorted list');
+                throw TypeError('Cannot set to sorted list');
             }
             index = this._validateIndex(index, true);
             if (!Object.is(value, this._items[index])) {
@@ -952,7 +1215,7 @@
         }
         setRange(index, values) {
             if (this._sorted) {
-                throw new TypeError('Cannot set to sorted list');
+                throw TypeError('Cannot set to sorted list');
             }
             index = this._validateIndex(index, true);
             if (values instanceof ObservableList) {
@@ -962,10 +1225,10 @@
             if (!valueCount) {
                 return this;
             }
-            if (index + valueCount > this._items.length) {
-                throw new RangeError('Sum of "index" and "values.length" out of valid range');
-            }
             let items = this._items;
+            if (index + valueCount > items.length) {
+                throw RangeError('Sum of "index" and "values.length" out of valid range');
+            }
             let changed = false;
             for (let i = index + valueCount; i > index;) {
                 let value = values[--i - index];
@@ -1032,7 +1295,7 @@
         }
         insert(index, value) {
             if (this._sorted) {
-                throw new TypeError('Cannot insert to sorted list');
+                throw TypeError('Cannot insert to sorted list');
             }
             this._items.splice(this._validateIndex(index, true), 0, value);
             this.emit(ObservableList.EVENT_CHANGE);
@@ -1040,7 +1303,7 @@
         }
         insertRange(index, values) {
             if (this._sorted) {
-                throw new TypeError('Cannot insert to sorted list');
+                throw TypeError('Cannot insert to sorted list');
             }
             index = this._validateIndex(index, true);
             if (values instanceof ObservableList) {
@@ -1111,7 +1374,7 @@
                     return [];
                 }
                 if (index + count > this._items.length) {
-                    throw new RangeError('Sum of "index" and "count" out of valid range');
+                    throw RangeError('Sum of "index" and "count" out of valid range');
                 }
             }
             let values = this._items.splice(index, count);
@@ -1121,9 +1384,25 @@
         clear() {
             if (this._items.length) {
                 this._items.length = 0;
-                this.emit(ObservableList.EVENT_CHANGE, { subtype: 'clear' });
+                this.emit(ObservableList.EVENT_CHANGE);
             }
             return this;
+        }
+        equals(that) {
+            if (!(that instanceof ObservableList)) {
+                return false;
+            }
+            let items = this._items;
+            let thatItems = that._items;
+            if (items.length != thatItems.length) {
+                return false;
+            }
+            for (let i = items.length; i;) {
+                if (items[--i] !== thatItems[i]) {
+                    return false;
+                }
+            }
+            return true;
         }
         join(separator) {
             return this._items.join(separator);
@@ -1154,6 +1433,40 @@
                 comparator: this._comparator || undefined,
                 sorted: this._sorted
             });
+        }
+        merge(that) {
+            if (!(that instanceof ObservableList)) {
+                throw TypeError('"that" must be instance of ObservableList');
+            }
+            let items = this._items;
+            let thatItems = that._items;
+            let changed = false;
+            if (items.length != that.length) {
+                items.length = that.length;
+                changed = true;
+            }
+            for (let i = items.length; i;) {
+                let item = items[--i];
+                let thatItem = thatItems[i];
+                if (item !== thatItem) {
+                    if (item &&
+                        thatItem &&
+                        item.merge &&
+                        item.merge === thatItem.merge) {
+                        if (item.merge(thatItem)) {
+                            changed = true;
+                        }
+                    }
+                    else {
+                        items[i] = thatItem;
+                        changed = true;
+                    }
+                }
+            }
+            if (changed) {
+                this.emit(ObservableList.EVENT_CHANGE);
+            }
+            return changed;
         }
         toArray() {
             return this._items.slice();
@@ -1199,7 +1512,7 @@
     });
     [
         ['keys', (index) => index],
-        ['values', (index, item) => item],
+        ['values', (_index, item) => item],
         ['entries', (index, item) => [index, item]]
     ].forEach((settings) => {
         let getStepValue = settings[1];

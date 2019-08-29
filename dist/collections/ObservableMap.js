@@ -80,6 +80,20 @@ export class ObservableMap extends EventEmitter {
         }
         return this;
     }
+    equals(that) {
+        if (!(that instanceof ObservableMap)) {
+            return false;
+        }
+        if (this.size != that.size) {
+            return false;
+        }
+        for (let entry of this) {
+            if (entry[1] !== that.get(entry[0])) {
+                return false;
+            }
+        }
+        return true;
+    }
     forEach(cb, context) {
         this._entries.forEach(function (value, key) {
             cb.call(context, value, key, this);
@@ -106,6 +120,47 @@ export class ObservableMap extends EventEmitter {
             });
         }
         return new this.constructor(entries || this);
+    }
+    merge(that) {
+        if (!(that instanceof ObservableMap)) {
+            throw TypeError('"that" must be instance of ObservableMap');
+        }
+        let entries = this._entries;
+        let changed = false;
+        for (let [key, value] of entries) {
+            if (that.has(key)) {
+                let thatValue = that.get(key);
+                if (value !== thatValue) {
+                    if (value &&
+                        thatValue &&
+                        value.merge &&
+                        value.merge ===
+                            thatValue.merge) {
+                        if (value.merge(thatValue)) {
+                            changed = true;
+                        }
+                    }
+                    else {
+                        entries.set(key, thatValue);
+                        changed = true;
+                    }
+                }
+            }
+            else {
+                entries.delete(key);
+                changed = true;
+            }
+        }
+        for (let [key, value] of that) {
+            if (!entries.has(key)) {
+                entries.set(key, value);
+                changed = true;
+            }
+        }
+        if (changed) {
+            this.emit(ObservableMap.EVENT_CHANGE, { subtype: 'merge' });
+        }
+        return changed;
     }
 }
 ObservableMap.EVENT_CHANGE = 'change';

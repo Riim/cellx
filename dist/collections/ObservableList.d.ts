@@ -8,7 +8,7 @@ export interface IObservableListOptions<T> {
 export declare class ObservableList<T = any> extends EventEmitter {
     static EVENT_CHANGE: string;
     _items: Array<T>;
-    readonly length: number;
+    length: number;
     _comparator: TObservableListItemComparator<T> | null;
     _sorted: boolean;
     constructor(items?: TObservableListItems<T> | null, options?: IObservableListOptions<T>);
@@ -32,10 +32,12 @@ export declare class ObservableList<T = any> extends EventEmitter {
     removeAt(index: number): T;
     removeRange(index: number, count?: number): Array<T>;
     clear(): this;
+    equals(that: any): boolean;
     join(separator?: string): string;
     find(cb: (item: T, index: number, list: this) => any, context?: any): T | undefined;
     findIndex(cb: (item: T, index: number, list: this) => any, context?: any): number;
     clone(deep?: boolean): ObservableList<T>;
+    merge(that: ObservableList): boolean;
     toArray(): Array<T>;
     toString(): string;
     _insertSortedValue(value: T): void;

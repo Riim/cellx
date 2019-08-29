@@ -1,3 +1,4 @@
+import { Map } from './Map-polyfill';
 import { logError } from './utils';
 const hasOwn = Object.prototype.hasOwnProperty;
 let currentlySubscribing = false;
@@ -5,6 +6,9 @@ let transactionLevel = 0;
 let transactionEvents = [];
 let silently = 0;
 export class EventEmitter {
+    constructor() {
+        this._events = new Map();
+    }
     static get currentlySubscribing() {
         return currentlySubscribing;
     }
@@ -34,9 +38,6 @@ export class EventEmitter {
             logError(err);
         }
         silently--;
-    }
-    constructor() {
-        this._events = new Map();
     }
     getEvents(type) {
         if (type) {
@@ -165,7 +166,7 @@ export class EventEmitter {
                 evt.target = this;
             }
             else if (evt.target != this) {
-                throw new TypeError('Event cannot be emitted on this target');
+                throw TypeError('Event cannot be emitted on this target');
             }
         }
         else {
