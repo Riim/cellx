@@ -37,7 +37,7 @@ export declare class ObservableList<T = any> extends EventEmitter {
     find(cb: (item: T, index: number, list: this) => any, context?: any): T | undefined;
     findIndex(cb: (item: T, index: number, list: this) => any, context?: any): number;
     clone(deep?: boolean): ObservableList<T>;
-    merge(that: ObservableList): boolean;
+    absorbFrom(that: ObservableList): boolean;
     toArray(): Array<T>;
     toString(): string;
     _insertSortedValue(value: T): void;

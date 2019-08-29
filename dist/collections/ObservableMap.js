@@ -121,7 +121,7 @@ export class ObservableMap extends EventEmitter {
         }
         return new this.constructor(entries || this);
     }
-    merge(that) {
+    absorbFrom(that) {
         if (!(that instanceof ObservableMap)) {
             throw TypeError('"that" must be instance of ObservableMap');
         }
@@ -133,10 +133,10 @@ export class ObservableMap extends EventEmitter {
                 if (value !== thatValue) {
                     if (value &&
                         thatValue &&
-                        value.merge &&
-                        value.merge ===
-                            thatValue.merge) {
-                        if (value.merge(thatValue)) {
+                        value.absorbFrom &&
+                        value.absorbFrom ===
+                            thatValue.absorbFrom) {
+                        if (value.absorbFrom(thatValue)) {
                             changed = true;
                         }
                     }
@@ -158,7 +158,7 @@ export class ObservableMap extends EventEmitter {
             }
         }
         if (changed) {
-            this.emit(ObservableMap.EVENT_CHANGE, { subtype: 'merge' });
+            this.emit(ObservableMap.EVENT_CHANGE, { subtype: 'absorbFrom' });
         }
         return changed;
     }

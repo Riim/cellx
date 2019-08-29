@@ -18,6 +18,6 @@ export declare class ObservableMap<K = any, V = any> extends EventEmitter {
     values(): Iterator<V>;
     entries(): Iterator<[K, V]>;
     clone(deep?: boolean): ObservableMap<K, V>;
-    merge(that: any): boolean;
+    absorbFrom(that: any): boolean;
     [Symbol.iterator]: () => Iterator<[K, V]>;
 }

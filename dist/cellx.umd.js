@@ -1071,7 +1071,7 @@
             }
             return new this.constructor(entries || this);
         }
-        merge(that) {
+        absorbFrom(that) {
             if (!(that instanceof ObservableMap)) {
                 throw TypeError('"that" must be instance of ObservableMap');
             }
@@ -1083,10 +1083,10 @@
                     if (value !== thatValue) {
                         if (value &&
                             thatValue &&
-                            value.merge &&
-                            value.merge ===
-                                thatValue.merge) {
-                            if (value.merge(thatValue)) {
+                            value.absorbFrom &&
+                            value.absorbFrom ===
+                                thatValue.absorbFrom) {
+                            if (value.absorbFrom(thatValue)) {
                                 changed = true;
                             }
                         }
@@ -1108,7 +1108,7 @@
                 }
             }
             if (changed) {
-                this.emit(ObservableMap.EVENT_CHANGE, { subtype: 'merge' });
+                this.emit(ObservableMap.EVENT_CHANGE, { subtype: 'absorbFrom' });
             }
             return changed;
         }
@@ -1434,7 +1434,7 @@
                 sorted: this._sorted
             });
         }
-        merge(that) {
+        absorbFrom(that) {
             if (!(that instanceof ObservableList)) {
                 throw TypeError('"that" must be instance of ObservableList');
             }
@@ -1451,9 +1451,9 @@
                 if (item !== thatItem) {
                     if (item &&
                         thatItem &&
-                        item.merge &&
-                        item.merge === thatItem.merge) {
-                        if (item.merge(thatItem)) {
+                        item.absorbFrom &&
+                        item.absorbFrom === thatItem.absorbFrom) {
+                        if (item.absorbFrom(thatItem)) {
                             changed = true;
                         }
                     }
