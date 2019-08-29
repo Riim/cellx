@@ -115,7 +115,11 @@ export class ObservableMap extends EventEmitter {
             this._entries.forEach((value, key) => {
                 entries.push([
                     key,
-                    value && value.clone ? value.clone(true) : value
+                    value && typeof value == 'object' && value.clone
+                        ? value.clone.length
+                            ? value.clone(true)
+                            : value.clone()
+                        : value
                 ]);
             });
         }

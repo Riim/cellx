@@ -311,7 +311,11 @@ export class ObservableList extends EventEmitter {
     }
     clone(deep) {
         return new this.constructor(deep
-            ? this._items.map(item => item && item.clone ? item.clone(true) : item)
+            ? this._items.map(item => item && typeof item == 'object' && item.clone
+                ? item.clone.length
+                    ? item.clone(true)
+                    : item.clone()
+                : item)
             : this, {
             comparator: this._comparator || undefined,
             sorted: this._sorted
