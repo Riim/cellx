@@ -419,7 +419,11 @@ export class ObservableList<T = any> extends EventEmitter {
 		return new (this.constructor as typeof ObservableList)(
 			deep
 				? this._items.map(item =>
-						item && (item as any).clone ? (item as any).clone(true) : item
+						item && (item as any).clone
+							? (item as any).clone.length
+								? (item as any).clone(true)
+								: (item as any).clone()
+							: item
 				  )
 				: this,
 			{
