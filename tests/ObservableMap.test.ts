@@ -83,6 +83,33 @@ describe('ObservableMap', () => {
 		expect(map.size).to.equal(0);
 	});
 
+	it('#equals()', () => {
+		let map1 = new ObservableMap({
+			foo: 1,
+			bar: 2
+		});
+		let map2 = new ObservableMap({
+			foo: 1,
+			bar: 2
+		});
+		let map3 = new ObservableMap({
+			foo: 1,
+			bar: 20
+		});
+		let map4 = new ObservableMap({
+			foo: 1,
+			bar: 2,
+			baz: 3
+		});
+
+		expect(map1.equals(map2)).to.be.true;
+		expect(map1.equals(map3)).to.be.false;
+		expect(map1.equals(map4)).to.be.false;
+		expect(map2.equals(map3)).to.be.false;
+		expect(map2.equals(map4)).to.be.false;
+		expect(map3.equals(map4)).to.be.false;
+	});
+
 	it('#forEach()', () => {
 		let map = new ObservableMap({
 			foo: 1,
@@ -125,6 +152,63 @@ describe('ObservableMap', () => {
 
 		expect(copy.get('bar')!.has('foo')).to.be.true;
 		expect(copy.get('bar')).not.to.equal(map.get('bar'));
+	});
+
+	it('#merge()', () => {
+		let map = new ObservableMap();
+
+		expect(() => {
+			map.merge({} as any);
+		}).to.throw(TypeError);
+	});
+
+	it('#merge() (2)', () => {
+		let map1 = new ObservableMap({
+			foo: 1
+		});
+		let map2 = new ObservableMap({
+			foo: 2
+		});
+		map1.merge(map2);
+
+		expect(map1.get('foo')).to.equal(2);
+	});
+
+	it('#merge() (3)', () => {
+		let map1 = new ObservableMap({
+			foo: 1
+		});
+		let map2 = new ObservableMap({
+			bar: 2
+		});
+		map1.merge(map2);
+
+		expect(map1.size).to.equal(1);
+		expect(map1.has('foo')).to.be.false;
+		expect(map1.has('bar')).to.be.true;
+		expect(map1.get('bar')).to.equal(2);
+	});
+
+	it('#merge() (4)', () => {
+		let map1 = new ObservableMap({
+			foo: new ObservableMap({
+				foo: 1
+			})
+		});
+		let map2 = new ObservableMap({
+			foo: new ObservableMap({
+				foo: 2,
+				bar: 3
+			})
+		});
+		map1.merge(map2);
+
+		expect(map1.get('foo').size).to.equal(2);
+		expect(map1.get('foo').has('foo')).to.be.true;
+		expect(map1.get('foo').has('bar')).to.be.true;
+		expect(map1.get('foo').get('foo')).to.equal(2);
+		expect(map1.get('foo').get('bar')).to.equal(3);
+		expect(map1.get('foo')).not.to.equal(map2.get('foo'));
 	});
 
 	it('поддерживает перебор for-of-ом', () => {

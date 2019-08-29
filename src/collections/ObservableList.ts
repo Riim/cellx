@@ -358,10 +358,31 @@ export class ObservableList<T = any> extends EventEmitter {
 	clear(): this {
 		if (this._items.length) {
 			this._items.length = 0;
-			this.emit(ObservableList.EVENT_CHANGE, { subtype: 'clear' });
+			this.emit(ObservableList.EVENT_CHANGE);
 		}
 
 		return this;
+	}
+
+	equals(that: any): boolean {
+		if (!(that instanceof ObservableList)) {
+			return false;
+		}
+
+		let items = this._items;
+		let thatItems = that._items;
+
+		if (items.length != thatItems.length) {
+			return false;
+		}
+
+		for (let i = items.length; i; ) {
+			if (items[--i] !== thatItems[i]) {
+				return false;
+			}
+		}
+
+		return true;
 	}
 
 	join(separator?: string): string {
@@ -406,6 +427,48 @@ export class ObservableList<T = any> extends EventEmitter {
 				sorted: this._sorted
 			}
 		);
+	}
+
+	merge(that: ObservableList): boolean {
+		if (!(that instanceof ObservableList)) {
+			throw TypeError('"that" must be instance of ObservableList');
+		}
+
+		let items = this._items;
+		let thatItems = that._items;
+		let changed = false;
+
+		if (items.length != that.length) {
+			items.length = that.length;
+			changed = true;
+		}
+
+		for (let i = items.length; i; ) {
+			let item: any = items[--i];
+			let thatItem = thatItems[i];
+
+			if (item !== thatItem) {
+				if (
+					item &&
+					thatItem &&
+					(item as ObservableList).merge &&
+					(item as ObservableList).merge === (thatItem as ObservableList).merge
+				) {
+					if ((item as ObservableList).merge(thatItem)) {
+						changed = true;
+					}
+				} else {
+					items[i] = thatItem;
+					changed = true;
+				}
+			}
+		}
+
+		if (changed) {
+			this.emit(ObservableList.EVENT_CHANGE);
+		}
+
+		return changed;
 	}
 
 	toArray(): Array<T> {

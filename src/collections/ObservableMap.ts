@@ -109,6 +109,24 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 		return this;
 	}
 
+	equals(that: any): boolean {
+		if (!(that instanceof ObservableMap)) {
+			return false;
+		}
+
+		if (this.size != that.size) {
+			return false;
+		}
+
+		for (let entry of this) {
+			if (entry[1] !== that.get(entry[0])) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	forEach(cb: (value: V, key: K, map: this) => void, context?: any) {
 		this._entries.forEach(function(value, key) {
 			cb.call(context, value, key, this);
@@ -142,6 +160,54 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 		}
 
 		return new (this.constructor as typeof ObservableMap)(entries || this);
+	}
+
+	merge(that: any): boolean {
+		if (!(that instanceof ObservableMap)) {
+			throw TypeError('"that" must be instance of ObservableMap');
+		}
+
+		let entries = this._entries;
+		let changed = false;
+
+		for (let [key, value] of entries) {
+			if (that.has(key)) {
+				let thatValue = that.get(key);
+
+				if (value !== thatValue) {
+					if (
+						value &&
+						thatValue &&
+						((value as any) as ObservableMap).merge &&
+						((value as any) as ObservableMap).merge ===
+							(thatValue as ObservableMap).merge
+					) {
+						if (((value as any) as ObservableMap).merge(thatValue)) {
+							changed = true;
+						}
+					} else {
+						entries.set(key, thatValue);
+						changed = true;
+					}
+				}
+			} else {
+				entries.delete(key);
+				changed = true;
+			}
+		}
+
+		for (let [key, value] of that) {
+			if (!entries.has(key)) {
+				entries.set(key, value);
+				changed = true;
+			}
+		}
+
+		if (changed) {
+			this.emit(ObservableMap.EVENT_CHANGE, { subtype: 'merge' });
+		}
+
+		return changed;
 	}
 
 	[Symbol.iterator]: () => Iterator<[K, V]>;

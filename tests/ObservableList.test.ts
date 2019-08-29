@@ -223,6 +223,20 @@ describe('ObservableList', () => {
 		expect(list.toArray()).to.eql([]);
 	});
 
+	it('#equals()', () => {
+		let list1 = new ObservableList([1, 2]);
+		let list2 = new ObservableList([1, 2]);
+		let list3 = new ObservableList([1, 20]);
+		let list4 = new ObservableList([1, 2, 3]);
+
+		expect(list1.equals(list2)).to.be.true;
+		expect(list1.equals(list3)).to.be.false;
+		expect(list1.equals(list4)).to.be.false;
+		expect(list2.equals(list3)).to.be.false;
+		expect(list2.equals(list4)).to.be.false;
+		expect(list3.equals(list4)).to.be.false;
+	});
+
 	it('#length', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 
@@ -304,6 +318,33 @@ describe('ObservableList', () => {
 
 		expect(copy.get(0)!.toArray()).to.eql([1, 2, 3]);
 		expect(copy.get(0)).not.to.equal(list.get(0));
+	});
+
+	it('#merge()', () => {
+		let list = new ObservableList();
+
+		expect(() => {
+			list.merge([] as any);
+		}).to.throw(TypeError);
+	});
+
+	it('#merge() (2)', () => {
+		let list1 = new ObservableList([1, 2]);
+		let list2 = new ObservableList([2]);
+		list1.merge(list2);
+
+		expect(list1.length).to.equal(1);
+		expect(list1.get(0)).to.equal(2);
+	});
+
+	it('#merge() (3)', () => {
+		let list1 = new ObservableList([1, new ObservableList([1, 2])]);
+		let list2 = new ObservableList([1, new ObservableList([2])]);
+		list1.merge(list2);
+
+		expect((list1.get(1) as ObservableList<number>).length).to.equal(1);
+		expect((list1.get(1) as ObservableList<number>).get(0)).to.equal(2);
+		expect(list1.get(1)).not.to.equal(list2.get(1));
 	});
 
 	it('#toArray()', () => {
