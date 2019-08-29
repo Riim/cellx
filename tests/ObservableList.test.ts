@@ -320,27 +320,27 @@ describe('ObservableList', () => {
 		expect(copy.get(0)).not.to.equal(list.get(0));
 	});
 
-	it('#merge()', () => {
+	it('#absorbFrom()', () => {
 		let list = new ObservableList();
 
 		expect(() => {
-			list.merge([] as any);
+			list.absorbFrom([] as any);
 		}).to.throw(TypeError);
 	});
 
-	it('#merge() (2)', () => {
+	it('#absorbFrom() (2)', () => {
 		let list1 = new ObservableList([1, 2]);
 		let list2 = new ObservableList([2]);
-		list1.merge(list2);
+		list1.absorbFrom(list2);
 
 		expect(list1.length).to.equal(1);
 		expect(list1.get(0)).to.equal(2);
 	});
 
-	it('#merge() (3)', () => {
+	it('#absorbFrom() (3)', () => {
 		let list1 = new ObservableList([1, new ObservableList([1, 2])]);
 		let list2 = new ObservableList([1, new ObservableList([2])]);
-		list1.merge(list2);
+		list1.absorbFrom(list2);
 
 		expect((list1.get(1) as ObservableList<number>).length).to.equal(1);
 		expect((list1.get(1) as ObservableList<number>).get(0)).to.equal(2);

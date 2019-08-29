@@ -154,34 +154,34 @@ describe('ObservableMap', () => {
 		expect(copy.get('bar')).not.to.equal(map.get('bar'));
 	});
 
-	it('#merge()', () => {
+	it('#absorbFrom()', () => {
 		let map = new ObservableMap();
 
 		expect(() => {
-			map.merge({} as any);
+			map.absorbFrom({} as any);
 		}).to.throw(TypeError);
 	});
 
-	it('#merge() (2)', () => {
+	it('#absorbFrom() (2)', () => {
 		let map1 = new ObservableMap({
 			foo: 1
 		});
 		let map2 = new ObservableMap({
 			foo: 2
 		});
-		map1.merge(map2);
+		map1.absorbFrom(map2);
 
 		expect(map1.get('foo')).to.equal(2);
 	});
 
-	it('#merge() (3)', () => {
+	it('#absorbFrom() (3)', () => {
 		let map1 = new ObservableMap({
 			foo: 1
 		});
 		let map2 = new ObservableMap({
 			bar: 2
 		});
-		map1.merge(map2);
+		map1.absorbFrom(map2);
 
 		expect(map1.size).to.equal(1);
 		expect(map1.has('foo')).to.be.false;
@@ -189,7 +189,7 @@ describe('ObservableMap', () => {
 		expect(map1.get('bar')).to.equal(2);
 	});
 
-	it('#merge() (4)', () => {
+	it('#absorbFrom() (4)', () => {
 		let map1 = new ObservableMap({
 			foo: new ObservableMap({
 				foo: 1
@@ -201,7 +201,7 @@ describe('ObservableMap', () => {
 				bar: 3
 			})
 		});
-		map1.merge(map2);
+		map1.absorbFrom(map2);
 
 		expect(map1.get('foo').size).to.equal(2);
 		expect(map1.get('foo').has('foo')).to.be.true;

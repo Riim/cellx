@@ -429,7 +429,7 @@ export class ObservableList<T = any> extends EventEmitter {
 		);
 	}
 
-	merge(that: ObservableList): boolean {
+	absorbFrom(that: ObservableList): boolean {
 		if (!(that instanceof ObservableList)) {
 			throw TypeError('"that" must be instance of ObservableList');
 		}
@@ -451,10 +451,10 @@ export class ObservableList<T = any> extends EventEmitter {
 				if (
 					item &&
 					thatItem &&
-					(item as ObservableList).merge &&
-					(item as ObservableList).merge === (thatItem as ObservableList).merge
+					(item as ObservableList).absorbFrom &&
+					(item as ObservableList).absorbFrom === (thatItem as ObservableList).absorbFrom
 				) {
-					if ((item as ObservableList).merge(thatItem)) {
+					if ((item as ObservableList).absorbFrom(thatItem)) {
 						changed = true;
 					}
 				} else {
