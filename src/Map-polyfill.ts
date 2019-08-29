@@ -30,9 +30,9 @@ if (typeof navigator != 'undefined' && navigator.userAgent.includes('Edge')) {
 	(Map_ as any).prototype = {
 		constructor: Map_,
 
-		// has(key: any) {
-		// 	return !!this._entries[this._getValueStamp(key)];
-		// },
+		has(key: any) {
+			return !!this._entries[this._getValueStamp(key)];
+		},
 
 		get(key: any) {
 			return (this._entries[this._getValueStamp(key)] || entryStub).value;
