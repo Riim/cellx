@@ -182,6 +182,8 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 					if (
 						value &&
 						thatValue &&
+						typeof value == 'object' &&
+						typeof thatValue == 'object' &&
 						((value as any) as ObservableMap).absorbFrom &&
 						((value as any) as ObservableMap).absorbFrom ===
 							(thatValue as ObservableMap).absorbFrom

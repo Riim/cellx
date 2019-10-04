@@ -455,6 +455,8 @@ export class ObservableList<T = any> extends EventEmitter {
 				if (
 					item &&
 					thatItem &&
+					typeof item == 'object' &&
+					typeof thatItem == 'object' &&
 					(item as ObservableList).absorbFrom &&
 					(item as ObservableList).absorbFrom === (thatItem as ObservableList).absorbFrom
 				) {
