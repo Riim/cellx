@@ -1087,6 +1087,8 @@
                     if (value !== thatValue) {
                         if (value &&
                             thatValue &&
+                            typeof value == 'object' &&
+                            typeof thatValue == 'object' &&
                             value.absorbFrom &&
                             value.absorbFrom ===
                                 thatValue.absorbFrom) {
@@ -1459,6 +1461,8 @@
                 if (item !== thatItem) {
                     if (item &&
                         thatItem &&
+                        typeof item == 'object' &&
+                        typeof thatItem == 'object' &&
                         item.absorbFrom &&
                         item.absorbFrom === thatItem.absorbFrom) {
                         if (item.absorbFrom(thatItem)) {

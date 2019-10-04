@@ -137,6 +137,8 @@ export class ObservableMap extends EventEmitter {
                 if (value !== thatValue) {
                     if (value &&
                         thatValue &&
+                        typeof value == 'object' &&
+                        typeof thatValue == 'object' &&
                         value.absorbFrom &&
                         value.absorbFrom ===
                             thatValue.absorbFrom) {
