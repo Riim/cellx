@@ -355,6 +355,23 @@ export class ObservableList<T = any> extends EventEmitter {
 		return values;
 	}
 
+	replace(oldValue: T, newValue: T): boolean {
+		if (this._sorted) {
+			throw TypeError('Cannot replace in sorted list');
+		}
+
+		let index = this._items.indexOf(oldValue);
+
+		if (index != -1) {
+			this._items[index] = newValue;
+			this.emit(ObservableList.EVENT_CHANGE);
+
+			return true;
+		}
+
+		return false;
+	}
+
 	clear(): this {
 		if (this._items.length) {
 			this._items.length = 0;

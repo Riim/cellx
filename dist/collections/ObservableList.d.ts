@@ -31,6 +31,7 @@ export declare class ObservableList<T = any> extends EventEmitter {
     removeEach(values: TObservableListItems<T>, fromIndex?: number): boolean;
     removeAt(index: number): T;
     removeRange(index: number, count?: number): Array<T>;
+    replace(oldValue: T, newValue: T): boolean;
     clear(): this;
     equals(that: any): boolean;
     join(separator?: string): string;

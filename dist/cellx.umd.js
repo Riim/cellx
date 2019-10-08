@@ -1387,6 +1387,18 @@
             this.emit(ObservableList.EVENT_CHANGE);
             return values;
         }
+        replace(oldValue, newValue) {
+            if (this._sorted) {
+                throw TypeError('Cannot replace in sorted list');
+            }
+            let index = this._items.indexOf(oldValue);
+            if (index != -1) {
+                this._items[index] = newValue;
+                this.emit(ObservableList.EVENT_CHANGE);
+                return true;
+            }
+            return false;
+        }
         clear() {
             if (this._items.length) {
                 this._items.length = 0;
