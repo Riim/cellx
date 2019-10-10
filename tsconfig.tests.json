@@ -13,6 +13,6 @@
 		"preserveConstEnums": true,
 		"strictNullChecks": true,
 		"suppressImplicitAnyIndexErrors": true,
-		"target": "es6"
+		"target": "es2017"
 	}
 }

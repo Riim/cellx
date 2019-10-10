@@ -1,6 +1,5 @@
 import resolve from 'rollup-plugin-node-resolve';
-import commonjs from 'rollup-plugin-commonjs';
-import tslint from "rollup-plugin-tslint";
+import tslint from 'rollup-plugin-tslint';
 import typescript from 'rollup-plugin-typescript2';
 
 export default {
@@ -14,7 +13,6 @@ export default {
 
 	plugins: [
 		resolve({ browser: true }),
-		commonjs({ include: /node_modules/ }),
 		tslint(),
 		typescript({ clean: true })
 	]

@@ -7,9 +7,9 @@ export class ObservableMap extends EventEmitter {
         if (entries) {
             let mapEntries = this._entries;
             if (entries instanceof Map || entries instanceof ObservableMap) {
-                (entries instanceof Map ? entries : entries._entries).forEach((value, key) => {
+                for (let [key, value] of entries instanceof Map ? entries : entries._entries) {
                     mapEntries.set(key, value);
-                });
+                }
             }
             else if (Array.isArray(entries)) {
                 for (let i = 0, l = entries.length; i < l; i++) {
@@ -95,9 +95,9 @@ export class ObservableMap extends EventEmitter {
         return true;
     }
     forEach(cb, context) {
-        this._entries.forEach(function (value, key) {
+        for (let [key, value] of this._entries) {
             cb.call(context, value, key, this);
-        }, this);
+        }
     }
     keys() {
         return this._entries.keys();
@@ -112,7 +112,7 @@ export class ObservableMap extends EventEmitter {
         let entries;
         if (deep) {
             entries = [];
-            this._entries.forEach((value, key) => {
+            for (let [key, value] of this._entries) {
                 entries.push([
                     key,
                     value && typeof value == 'object' && value.clone
@@ -121,7 +121,7 @@ export class ObservableMap extends EventEmitter {
                             : value.clone()
                         : value
                 ]);
-            });
+            }
         }
         return new this.constructor(entries || this);
     }
@@ -167,6 +167,16 @@ export class ObservableMap extends EventEmitter {
             this.emit(ObservableMap.EVENT_CHANGE, { subtype: 'absorbFrom' });
         }
         return changed;
+    }
+    toData() {
+        let data = {};
+        for (let [key, value] of this._entries) {
+            data[key] =
+                value && typeof value == 'object' && value.toData
+                    ? value.toData()
+                    : value;
+        }
+        return data;
     }
 }
 ObservableMap.EVENT_CHANGE = 'change';

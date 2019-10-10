@@ -957,9 +957,9 @@
             if (entries) {
                 let mapEntries = this._entries;
                 if (entries instanceof Map || entries instanceof ObservableMap) {
-                    (entries instanceof Map ? entries : entries._entries).forEach((value, key) => {
+                    for (let [key, value] of entries instanceof Map ? entries : entries._entries) {
                         mapEntries.set(key, value);
-                    });
+                    }
                 }
                 else if (Array.isArray(entries)) {
                     for (let i = 0, l = entries.length; i < l; i++) {
@@ -1045,9 +1045,9 @@
             return true;
         }
         forEach(cb, context) {
-            this._entries.forEach(function (value, key) {
+            for (let [key, value] of this._entries) {
                 cb.call(context, value, key, this);
-            }, this);
+            }
         }
         keys() {
             return this._entries.keys();
@@ -1062,7 +1062,7 @@
             let entries;
             if (deep) {
                 entries = [];
-                this._entries.forEach((value, key) => {
+                for (let [key, value] of this._entries) {
                     entries.push([
                         key,
                         value && typeof value == 'object' && value.clone
@@ -1071,7 +1071,7 @@
                                 : value.clone()
                             : value
                     ]);
-                });
+                }
             }
             return new this.constructor(entries || this);
         }
@@ -1117,6 +1117,16 @@
                 this.emit(ObservableMap.EVENT_CHANGE, { subtype: 'absorbFrom' });
             }
             return changed;
+        }
+        toData() {
+            let data = {};
+            for (let [key, value] of this._entries) {
+                data[key] =
+                    value && typeof value == 'object' && value.toData
+                        ? value.toData()
+                        : value;
+            }
+            return data;
         }
     }
     ObservableMap.EVENT_CHANGE = 'change';
@@ -1497,6 +1507,9 @@
         }
         toString() {
             return this._items.join();
+        }
+        toData() {
+            return this._items.map(item => item && typeof item == 'object' && item.toData ? item.toData() : item);
         }
         _insertSortedValue(value) {
             let items = this._items;

@@ -24,9 +24,9 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 			let mapEntries = this._entries;
 
 			if (entries instanceof Map || entries instanceof ObservableMap) {
-				(entries instanceof Map ? entries : entries._entries).forEach((value, key) => {
+				for (let [key, value] of entries instanceof Map ? entries : entries._entries) {
 					mapEntries.set(key, value);
-				});
+				}
 			} else if (Array.isArray(entries)) {
 				for (let i = 0, l = entries.length; i < l; i++) {
 					mapEntries.set(entries[i][0], entries[i][1]);
@@ -128,9 +128,9 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 	}
 
 	forEach(cb: (value: V, key: K, map: this) => void, context?: any) {
-		this._entries.forEach(function(value, key) {
+		for (let [key, value] of this._entries) {
 			cb.call(context, value, key, this);
-		}, this);
+		}
 	}
 
 	keys(): Iterator<K> {
@@ -151,7 +151,7 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 		if (deep) {
 			entries = [];
 
-			this._entries.forEach((value, key) => {
+			for (let [key, value] of this._entries) {
 				entries!.push([
 					key,
 					value && typeof value == 'object' && (value as any).clone
@@ -160,7 +160,7 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 							: (value as any).clone()
 						: value
 				]);
-			});
+			}
 		}
 
 		return new (this.constructor as typeof ObservableMap)(entries || this);
@@ -214,6 +214,19 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 		}
 
 		return changed;
+	}
+
+	toData<I = any>(): Record<string, I> {
+		let data: Record<string, I> = {};
+
+		for (let [key, value] of this._entries) {
+			data[key as any] =
+				value && typeof value == 'object' && (value as any).toData
+					? (value as any).toData()
+					: value;
+		}
+
+		return data;
 	}
 
 	[Symbol.iterator]: () => Iterator<[K, V]>;

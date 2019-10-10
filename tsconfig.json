@@ -2,7 +2,7 @@
 	"compilerOptions": {
 		"declaration": true,
 		"experimentalDecorators": true,
-		"lib": ["dom", "es2017"],
+		"lib": ["es2017", "dom"],
 		"module": "es2015",
 		"moduleResolution": "node",
 		"newLine": "lf",
@@ -13,7 +13,7 @@
 		"preserveConstEnums": true,
 		"strictNullChecks": true,
 		"suppressImplicitAnyIndexErrors": true,
-		"target": "es6"
+		"target": "es2017"
 	},
 	"files": [
 		"src/cellx.ts"

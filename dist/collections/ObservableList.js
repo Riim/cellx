@@ -375,6 +375,9 @@ export class ObservableList extends EventEmitter {
     toString() {
         return this._items.join();
     }
+    toData() {
+        return this._items.map(item => item && typeof item == 'object' && item.toData ? item.toData() : item);
+    }
     _insertSortedValue(value) {
         let items = this._items;
         let comparator = this._comparator;

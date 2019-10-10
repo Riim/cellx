@@ -41,6 +41,7 @@ export declare class ObservableList<T = any> extends EventEmitter {
     absorbFrom(that: ObservableList): boolean;
     toArray(): Array<T>;
     toString(): string;
+    toData<I = any>(): Array<I>;
     _insertSortedValue(value: T): void;
     [Symbol.iterator]: () => Iterator<T>;
 }

@@ -19,5 +19,6 @@ export declare class ObservableMap<K = any, V = any> extends EventEmitter {
     entries(): Iterator<[K, V]>;
     clone(deep?: boolean): ObservableMap<K, V>;
     absorbFrom(that: any): boolean;
+    toData<I = any>(): Record<string, I>;
     [Symbol.iterator]: () => Iterator<[K, V]>;
 }

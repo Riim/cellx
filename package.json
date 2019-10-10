@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.9.12",
+  "version": "1.9.16",
   "description": "",
   "type": "module",
   "main": "dist/cellx.js",
@@ -9,7 +9,7 @@
     "test": "tests"
   },
   "scripts": {
-    "build": "rm -rf dist && rollup -c && tsc",
+    "build": "rm -rf dist && tsc && rollup -c",
     "test": "rm -rf coverage && nyc ts-mocha -p tsconfig.tests.json -r esm tests/**/*.test.ts",
     "coveralls": "cat coverage/lcov.info | node_modules/.bin/coveralls"
   },
@@ -33,15 +33,14 @@
     "mocha": "^6.2.1",
     "nyc": "^14.1.1",
     "rollup": "^1.23.1",
-    "rollup-plugin-commonjs": "^10.1.0",
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-tslint": "^0.2.2",
     "rollup-plugin-typescript2": "^0.24.3",
     "sinon": "^7.5.0",
     "ts-mocha": "^6.0.0",
-    "typescript": "^3.6.3"
+    "typescript": "^3.6.4"
   },
   "dependencies": {
-    "@riim/next-tick": "^1.2.3"
+    "@riim/next-tick": "^1.2.4"
   }
 }
