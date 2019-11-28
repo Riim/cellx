@@ -526,8 +526,6 @@ export class ObservableList<T = any> extends EventEmitter {
 
 		items.splice(low, 0, value);
 	}
-
-	[Symbol.iterator] = this.values;
 }
 
 ['forEach', 'map', 'filter', 'every', 'some'].forEach(name => {
@@ -586,6 +584,8 @@ export class ObservableList<T = any> extends EventEmitter {
 	};
 });
 
+ObservableList.prototype[Symbol.iterator] = ObservableList.prototype.values;
+
 declare module './ObservableList' {
 	/* tslint:disable-next-line */
 	interface ObservableList<T = any> {
@@ -618,5 +618,7 @@ declare module './ObservableList' {
 		values(): Iterator<T>;
 
 		entries(): Iterator<[number, T]>;
+
+		[Symbol.iterator]: () => Iterator<T>;
 	}
 }

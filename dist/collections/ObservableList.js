@@ -25,12 +25,6 @@ export class ObservableList extends EventEmitter {
             writable: true,
             value: void 0
         });
-        Object.defineProperty(this, Symbol.iterator, {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: this.values
-        });
         if (options && (options.sorted || (options.comparator && options.sorted !== false))) {
             this._comparator = options.comparator || defaultComparator;
             this._sorted = true;
@@ -471,3 +465,4 @@ Object.defineProperty(ObservableList, "EVENT_CHANGE", {
         };
     };
 });
+ObservableList.prototype[Symbol.iterator] = ObservableList.prototype.values;

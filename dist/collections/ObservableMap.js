@@ -9,12 +9,6 @@ export class ObservableMap extends EventEmitter {
             writable: true,
             value: new Map()
         });
-        Object.defineProperty(this, Symbol.iterator, {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: this.entries
-        });
         if (entries) {
             let mapEntries = this._entries;
             if (entries instanceof Map || entries instanceof ObservableMap) {
@@ -196,3 +190,4 @@ Object.defineProperty(ObservableMap, "EVENT_CHANGE", {
     writable: true,
     value: 'change'
 });
+ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;

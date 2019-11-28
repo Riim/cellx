@@ -569,7 +569,7 @@ export class Cell extends EventEmitter {
         }
     }
     wait() {
-        throw WaitError();
+        throw new WaitError();
     }
     reap() {
         this.off();

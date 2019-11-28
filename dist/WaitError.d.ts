@@ -1,1 +1,2 @@
-export declare function WaitError(): any;
+export declare class WaitError extends Error {
+}

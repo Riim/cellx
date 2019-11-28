@@ -65,11 +65,7 @@ export class EventEmitter {
 		silently--;
 	}
 
-	_events: Map<string | symbol, IRegisteredEvent | Array<IRegisteredEvent>>;
-
-	constructor() {
-		this._events = new Map();
-	}
+	_events = new Map<string | symbol, IRegisteredEvent | Array<IRegisteredEvent>>();
 
 	getEvents(): Map<string | symbol, Array<IRegisteredEvent>>;
 	getEvents(type: string | symbol): Array<IRegisteredEvent>;

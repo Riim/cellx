@@ -675,7 +675,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	}
 
 	wait() {
-		throw WaitError();
+		throw new WaitError();
 	}
 
 	reap(): this {

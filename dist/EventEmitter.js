@@ -11,9 +11,8 @@ export class EventEmitter {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: void 0
+            value: new Map()
         });
-        this._events = new Map();
     }
     static get currentlySubscribing() {
         return currentlySubscribing;

@@ -15,8 +15,7 @@ export declare class EventEmitter {
     static get currentlySubscribing(): boolean;
     static transact(cb: Function): void;
     static silently(cb: Function): void;
-    _events: Map<string | symbol, IRegisteredEvent | Array<IRegisteredEvent>>;
-    constructor();
+    _events: Map<string | symbol, IRegisteredEvent | IRegisteredEvent[]>;
     getEvents(): Map<string | symbol, Array<IRegisteredEvent>>;
     getEvents(type: string | symbol): Array<IRegisteredEvent>;
     on(type: string | symbol, listener: TListener, context?: any): this;

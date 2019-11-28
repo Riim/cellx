@@ -243,9 +243,8 @@
                 enumerable: true,
                 configurable: true,
                 writable: true,
-                value: void 0
+                value: new Map_()
             });
-            this._events = new Map_();
         }
         static get currentlySubscribing() {
             return currentlySubscribing;
@@ -473,15 +472,8 @@
         }
     }
 
-    function WaitError() {
-        if (!(this instanceof WaitError)) {
-            return new WaitError();
-        }
+    class WaitError extends Error {
     }
-    WaitError.prototype = {
-        __proto__: Error.prototype,
-        constructor: WaitError
-    };
 
     const KEY_LISTENER_WRAPPERS = Symbol('listenerWrappers');
     function defaultPut(cell, value) {
@@ -1050,7 +1042,7 @@
             }
         }
         wait() {
-            throw WaitError();
+            throw new WaitError();
         }
         reap() {
             this.off();
@@ -1087,12 +1079,6 @@
                 configurable: true,
                 writable: true,
                 value: new Map()
-            });
-            Object.defineProperty(this, Symbol.iterator, {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: this.entries
             });
             if (entries) {
                 let mapEntries = this._entries;
@@ -1275,6 +1261,7 @@
         writable: true,
         value: 'change'
     });
+    ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;
 
     const push = Array.prototype.push;
     const splice = Array.prototype.splice;
@@ -1301,12 +1288,6 @@
                 configurable: true,
                 writable: true,
                 value: void 0
-            });
-            Object.defineProperty(this, Symbol.iterator, {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: this.values
             });
             if (options && (options.sorted || (options.comparator && options.sorted !== false))) {
                 this._comparator = options.comparator || defaultComparator;
@@ -1748,6 +1729,7 @@
             };
         };
     });
+    ObservableList.prototype[Symbol.iterator] = ObservableList.prototype.values;
 
     const cellxProto = {
         __proto__: Function.prototype,
