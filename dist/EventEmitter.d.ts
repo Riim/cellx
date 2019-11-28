@@ -12,7 +12,7 @@ export interface IRegisteredEvent {
     context: any;
 }
 export declare class EventEmitter {
-    static readonly currentlySubscribing: boolean;
+    static get currentlySubscribing(): boolean;
     static transact(cb: Function): void;
     static silently(cb: Function): void;
     _events: Map<string | symbol, IRegisteredEvent | Array<IRegisteredEvent>>;

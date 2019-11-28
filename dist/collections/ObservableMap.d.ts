@@ -3,7 +3,7 @@ export declare type TObservableMapEntries<K, V> = Array<[K, V]> | Record<string,
 export declare class ObservableMap<K = any, V = any> extends EventEmitter {
     static EVENT_CHANGE: string;
     _entries: Map<K, V>;
-    readonly size: number;
+    get size(): number;
     constructor(entries?: TObservableMapEntries<K, V> | null);
     onChange(listener: TListener, context?: any): this;
     offChange(listener: TListener, context?: any): this;
@@ -20,5 +20,5 @@ export declare class ObservableMap<K = any, V = any> extends EventEmitter {
     clone(deep?: boolean): ObservableMap<K, V>;
     absorbFrom(that: any): boolean;
     toData<I = any>(): Record<string, I>;
-    [Symbol.iterator]: () => Iterator<[K, V]>;
+    [Symbol.iterator]: () => Iterator<[K, V], any, undefined>;
 }

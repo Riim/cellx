@@ -3,7 +3,18 @@ const hasOwn = Object.prototype.hasOwnProperty;
 export class ObservableMap extends EventEmitter {
     constructor(entries) {
         super();
-        this._entries = new Map();
+        Object.defineProperty(this, "_entries", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, Symbol.iterator, {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: this.entries
+        });
         if (entries) {
             let mapEntries = this._entries;
             if (entries instanceof Map || entries instanceof ObservableMap) {
@@ -179,5 +190,9 @@ export class ObservableMap extends EventEmitter {
         return data;
     }
 }
-ObservableMap.EVENT_CHANGE = 'change';
-ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;
+Object.defineProperty(ObservableMap, "EVENT_CHANGE", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: 'change'
+});

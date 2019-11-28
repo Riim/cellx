@@ -31,7 +31,7 @@ export declare type TCellEvent<T extends EventEmitter = EventEmitter> = ICellCha
 export declare class Cell<T = any, M = any> extends EventEmitter {
     static EVENT_CHANGE: string;
     static EVENT_ERROR: string;
-    static readonly currentlyPulling: boolean;
+    static get currentlyPulling(): boolean;
     static autorun(cb: Function, context?: any): () => void;
     static release(): void;
     static afterRelease(cb: Function): void;
@@ -73,7 +73,8 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     _onValueChange(evt: IEvent): void;
     _addToRelease(dirty: boolean): void;
     actualize(): void;
-    value: T;
+    get value(): T;
+    set value(value: T);
     get(): T;
     pull(): boolean;
     set(value: T): this;

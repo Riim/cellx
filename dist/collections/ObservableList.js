@@ -7,7 +7,30 @@ const defaultComparator = (a, b) => {
 export class ObservableList extends EventEmitter {
     constructor(items, options) {
         super();
-        this._items = [];
+        Object.defineProperty(this, "_items", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: []
+        });
+        Object.defineProperty(this, "_comparator", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "_sorted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, Symbol.iterator, {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: this.values
+        });
         if (options && (options.sorted || (options.comparator && options.sorted !== false))) {
             this._comparator = options.comparator || defaultComparator;
             this._sorted = true;
@@ -395,7 +418,12 @@ export class ObservableList extends EventEmitter {
         items.splice(low, 0, value);
     }
 }
-ObservableList.EVENT_CHANGE = 'change';
+Object.defineProperty(ObservableList, "EVENT_CHANGE", {
+    enumerable: true,
+    configurable: true,
+    writable: true,
+    value: 'change'
+});
 ['forEach', 'map', 'filter', 'every', 'some'].forEach(name => {
     ObservableList.prototype[name] = function (cb, context) {
         return this._items[name](function (item, index) {
@@ -443,4 +471,3 @@ ObservableList.EVENT_CHANGE = 'change';
         };
     };
 });
-ObservableList.prototype[Symbol.iterator] = ObservableList.prototype.values;

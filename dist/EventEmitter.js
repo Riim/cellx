@@ -7,6 +7,12 @@ let transactionEvents = [];
 let silently = 0;
 export class EventEmitter {
     constructor() {
+        Object.defineProperty(this, "_events", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
         this._events = new Map();
     }
     static get currentlySubscribing() {

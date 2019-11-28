@@ -8,7 +8,8 @@ export interface IObservableListOptions<T> {
 export declare class ObservableList<T = any> extends EventEmitter {
     static EVENT_CHANGE: string;
     _items: Array<T>;
-    length: number;
+    get length(): number;
+    set length(value: number);
     _comparator: TObservableListItemComparator<T> | null;
     _sorted: boolean;
     constructor(items?: TObservableListItems<T> | null, options?: IObservableListOptions<T>);
@@ -43,7 +44,7 @@ export declare class ObservableList<T = any> extends EventEmitter {
     toString(): string;
     toData<I = any>(): Array<I>;
     _insertSortedValue(value: T): void;
-    [Symbol.iterator]: () => Iterator<T>;
+    [Symbol.iterator]: () => Iterator<T, any, undefined>;
 }
 declare module './ObservableList' {
     interface ObservableList<T = any> {
