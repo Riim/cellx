@@ -13,7 +13,8 @@
 		"preserveConstEnums": true,
 		"strictNullChecks": true,
 		"suppressImplicitAnyIndexErrors": true,
-		"target": "es2017"
+		"target": "es2017",
+		"useDefineForClassFields": true
 	},
 	"files": [
 		"src/cellx.ts"

@@ -9,10 +9,10 @@
 		"noImplicitAny": true,
 		"noImplicitReturns": true,
 		"noUnusedLocals": true,
-		"outDir": "dist",
 		"preserveConstEnums": true,
 		"strictNullChecks": true,
 		"suppressImplicitAnyIndexErrors": true,
-		"target": "es2017"
+		"target": "es2017",
+		"useDefineForClassFields": true
 	}
 }

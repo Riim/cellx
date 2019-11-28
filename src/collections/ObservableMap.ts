@@ -229,7 +229,5 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 		return data;
 	}
 
-	[Symbol.iterator]: () => Iterator<[K, V]>;
+	[Symbol.iterator] = this.entries;
 }
-
-ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;
