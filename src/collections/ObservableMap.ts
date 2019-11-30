@@ -228,13 +228,8 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 
 		return data;
 	}
+
+	declare [Symbol.iterator]: () => Iterator<[K, V]>;
 }
 
 ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;
-
-declare module './ObservableMap' {
-	/* tslint:disable-next-line */
-	interface ObservableMap<K = any, V = any> {
-		[Symbol.iterator]: () => Iterator<[K, V]>;
-	}
-}

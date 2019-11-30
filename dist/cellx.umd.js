@@ -239,12 +239,7 @@
     let silently = 0;
     class EventEmitter {
         constructor() {
-            Object.defineProperty(this, "_events", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new Map_()
-            });
+            this._events = new Map_();
         }
         static get currentlySubscribing() {
             return currentlySubscribing;
@@ -505,126 +500,13 @@
     class Cell extends EventEmitter {
         constructor(value, options) {
             super();
-            Object.defineProperty(this, "debugKey", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "context", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_pull", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_get", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_validate", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_merge", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_put", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_reap", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "meta", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_dependencies", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_reactions", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: []
-            });
-            Object.defineProperty(this, "_value", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_error", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: null
-            });
-            Object.defineProperty(this, "_lastErrorEvent", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: null
-            });
-            Object.defineProperty(this, "_state", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_inited", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_hasSubscribers", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: false
-            });
-            Object.defineProperty(this, "_active", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: false
-            });
-            Object.defineProperty(this, "_currentlyPulling", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: false
-            });
-            Object.defineProperty(this, "_updationId", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: -1
-            });
+            this._reactions = [];
+            this._error = null;
+            this._lastErrorEvent = null;
+            this._hasSubscribers = false;
+            this._active = false;
+            this._currentlyPulling = false;
+            this._updationId = -1;
             this.debugKey = options && options.debugKey;
             this.context = options && options.context !== undefined ? options.context : this;
             this._pull =
@@ -1057,29 +939,14 @@
             return this.reap();
         }
     }
-    Object.defineProperty(Cell, "EVENT_CHANGE", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: 'change'
-    });
-    Object.defineProperty(Cell, "EVENT_ERROR", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: 'error'
-    });
+    Cell.EVENT_CHANGE = 'change';
+    Cell.EVENT_ERROR = 'error';
 
     const hasOwn$1 = Object.prototype.hasOwnProperty;
     class ObservableMap extends EventEmitter {
         constructor(entries) {
             super();
-            Object.defineProperty(this, "_entries", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: new Map()
-            });
+            this._entries = new Map();
             if (entries) {
                 let mapEntries = this._entries;
                 if (entries instanceof Map || entries instanceof ObservableMap) {
@@ -1255,12 +1122,7 @@
             return data;
         }
     }
-    Object.defineProperty(ObservableMap, "EVENT_CHANGE", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: 'change'
-    });
+    ObservableMap.EVENT_CHANGE = 'change';
     ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;
 
     const push = Array.prototype.push;
@@ -1271,24 +1133,7 @@
     class ObservableList extends EventEmitter {
         constructor(items, options) {
             super();
-            Object.defineProperty(this, "_items", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: []
-            });
-            Object.defineProperty(this, "_comparator", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
-            Object.defineProperty(this, "_sorted", {
-                enumerable: true,
-                configurable: true,
-                writable: true,
-                value: void 0
-            });
+            this._items = [];
             if (options && (options.sorted || (options.comparator && options.sorted !== false))) {
                 this._comparator = options.comparator || defaultComparator;
                 this._sorted = true;
@@ -1676,12 +1521,7 @@
             items.splice(low, 0, value);
         }
     }
-    Object.defineProperty(ObservableList, "EVENT_CHANGE", {
-        enumerable: true,
-        configurable: true,
-        writable: true,
-        value: 'change'
-    });
+    ObservableList.EVENT_CHANGE = 'change';
     ['forEach', 'map', 'filter', 'every', 'some'].forEach(name => {
         ObservableList.prototype[name] = function (cb, context) {
             return this._items[name](function (item, index) {

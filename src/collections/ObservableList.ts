@@ -526,6 +526,8 @@ export class ObservableList<T = any> extends EventEmitter {
 
 		items.splice(low, 0, value);
 	}
+
+	declare [Symbol.iterator]: () => Iterator<T>;
 }
 
 ['forEach', 'map', 'filter', 'every', 'some'].forEach(name => {
@@ -618,7 +620,5 @@ declare module './ObservableList' {
 		values(): Iterator<T>;
 
 		entries(): Iterator<[number, T]>;
-
-		[Symbol.iterator]: () => Iterator<T>;
 	}
 }
