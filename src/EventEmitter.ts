@@ -1,4 +1,3 @@
-import { Map } from './Map-polyfill';
 import { logError } from './utils';
 
 const hasOwn = Object.prototype.hasOwnProperty;
