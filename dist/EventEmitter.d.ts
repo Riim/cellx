@@ -1,3 +1,5 @@
+import { Cell } from './Cell';
+import { KEY_VALUE_CELLS } from './cellx';
 export interface IEvent<T extends EventEmitter = EventEmitter> {
     target: T;
     type: string | symbol;
@@ -15,6 +17,7 @@ export declare class EventEmitter {
     static get currentlySubscribing(): boolean;
     static transact(cb: Function): void;
     static silently(cb: Function): void;
+    [KEY_VALUE_CELLS]?: Map<string, Cell>;
     _events: Map<string | symbol, IRegisteredEvent | IRegisteredEvent[]>;
     getEvents(): Map<string | symbol, Array<IRegisteredEvent>>;
     getEvents(type: string | symbol): Array<IRegisteredEvent>;
