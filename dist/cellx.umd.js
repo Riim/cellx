@@ -136,9 +136,7 @@
             if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
                 let propName = type.slice(index + 1);
                 currentlySubscribing = true;
-                ((this[KEY_VALUE_CELLS] ||
-                    (this[KEY_VALUE_CELLS] = new Map())).get(propName) ||
-                    (this[propName], this[KEY_VALUE_CELLS]).get(propName)).on(type.slice(0, index), listener, context);
+                ((this[KEY_VALUE_CELLS] || (this[KEY_VALUE_CELLS] = new Map())).get(propName) || (this[propName], this[KEY_VALUE_CELLS]).get(propName)).on(type.slice(0, index), listener, context);
                 currentlySubscribing = false;
             }
             else {
@@ -158,8 +156,7 @@
         _off(type, listener, context) {
             let index;
             if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
-                let valueCell = this[KEY_VALUE_CELLS] &&
-                    this[KEY_VALUE_CELLS].get(type.slice(index + 1));
+                let valueCell = this[KEY_VALUE_CELLS] && this[KEY_VALUE_CELLS].get(type.slice(index + 1));
                 if (valueCell) {
                     valueCell.off(type.slice(0, index), listener, context);
                 }
