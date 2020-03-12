@@ -66,6 +66,8 @@ export class EventEmitter {
 		silently--;
 	}
 
+	[KEY_VALUE_CELLS]?: Map<string, Cell>;
+
 	_events = new Map<string | symbol, IRegisteredEvent | Array<IRegisteredEvent>>();
 
 	getEvents(): Map<string | symbol, Array<IRegisteredEvent>>;
