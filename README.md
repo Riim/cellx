@@ -482,7 +482,7 @@ and dependent cells will be recalculated. Two such collections already is added 
 
 ### cellx.ObservableMap
 
-The short syntax to create:
+Example:
 
 ```js
 let map = new cellx.ObservableMap({
@@ -505,7 +505,7 @@ the fact that the keys in the Map can be of any type) or another map.
 
 ### cellx.ObservableList
 
-Short creation syntax:
+Example:
 
 ```js
 let list = new cellx.ObservableList([1, 2, 3]);

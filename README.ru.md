@@ -469,7 +469,7 @@ value().emit('change');
 
 ### cellx.ObservableMap
 
-Короткий синтаксис для создания:
+Пример:
 
 ```js
 let map = new cellx.ObservableMap({
@@ -491,7 +491,7 @@ let map = new cellx.ObservableMap({
 
 ### cellx.ObservableList
 
-Короткий синтаксис для создания:
+Пример:
 
 ```js
 let list = new cellx.ObservableList([1, 2, 3]);
