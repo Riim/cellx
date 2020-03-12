@@ -1,4 +1,4 @@
-import { Map } from './Map-polyfill';
+import { KEY_VALUE_CELLS } from './cellx';
 import { logError } from './utils';
 const hasOwn = Object.prototype.hasOwnProperty;
 let currentlySubscribing = false;
@@ -99,7 +99,9 @@ export class EventEmitter {
         if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
             let propName = type.slice(index + 1);
             currentlySubscribing = true;
-            (this[propName + 'Cell'] || (this[propName], this[propName + 'Cell'])).on(type.slice(0, index), listener, context);
+            ((this[KEY_VALUE_CELLS] ||
+                (this[KEY_VALUE_CELLS] = new Map())).get(propName) ||
+                (this[propName], this[KEY_VALUE_CELLS]).get(propName)).on(type.slice(0, index), listener, context);
             currentlySubscribing = false;
         }
         else {
@@ -119,8 +121,11 @@ export class EventEmitter {
     _off(type, listener, context) {
         let index;
         if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
-            let propName = type.slice(index + 1);
-            (this[propName + 'Cell'] || (this[propName], this[propName + 'Cell'])).off(type.slice(0, index), listener, context);
+            let valueCell = this[KEY_VALUE_CELLS] &&
+                this[KEY_VALUE_CELLS].get(type.slice(index + 1));
+            if (valueCell) {
+                valueCell.off(type.slice(0, index), listener, context);
+            }
         }
         else {
             let events = this._events.get(type);

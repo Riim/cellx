@@ -1,10 +1,11 @@
 import { Cell } from './Cell';
+export { configure } from './config';
 export { EventEmitter } from './EventEmitter';
 export { ObservableMap } from './collections/ObservableMap';
 export { ObservableList } from './collections/ObservableList';
 export { Cell } from './Cell';
 export { WaitError } from './WaitError';
-export { configure } from './config';
+export const KEY_VALUE_CELLS = Symbol('valueCells');
 const cellxProto = {
     __proto__: Function.prototype,
     cell: null,
@@ -60,21 +61,15 @@ export function cellx(value, options) {
     return $cellx;
 }
 export function defineObservableProperty(obj, name, value) {
-    let cellName = name + 'Cell';
-    Object.defineProperty(obj, cellName, {
-        configurable: true,
-        enumerable: false,
-        writable: true,
-        value: value instanceof Cell ? value : new Cell(value, { context: obj })
-    });
+    (obj[KEY_VALUE_CELLS] || (obj[KEY_VALUE_CELLS] = new Map())).set(name, value instanceof Cell ? value : new Cell(value, { context: obj }));
     Object.defineProperty(obj, name, {
         configurable: true,
         enumerable: true,
         get() {
-            return this[cellName].get();
+            return this[KEY_VALUE_CELLS].get(name).get();
         },
         set(value) {
-            this[cellName].set(value);
+            this[KEY_VALUE_CELLS].get(name).set(value);
         }
     });
     return obj;

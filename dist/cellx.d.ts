@@ -1,11 +1,11 @@
 import { Cell, ICellOptions, TCellPull } from './Cell';
 import { IEvent, TListener } from './EventEmitter';
+export { configure } from './config';
 export { IEvent, TListener, IRegisteredEvent, EventEmitter } from './EventEmitter';
 export { TObservableMapEntries, ObservableMap } from './collections/ObservableMap';
 export { TObservableListItemComparator, TObservableListItems, IObservableListOptions, ObservableList } from './collections/ObservableList';
 export { TCellPull, ICellOptions, ICellChangeEvent, ICellErrorEvent, TCellEvent, Cell } from './Cell';
 export { WaitError } from './WaitError';
-export { configure } from './config';
 export interface ICellx<T = any, M = any> {
     (value?: T): T;
     cell: Cell<T, M>;
@@ -23,6 +23,7 @@ export interface ICellx<T = any, M = any> {
     reap(): Cell<T, M>;
     dispose(): Cell<T, M>;
 }
+export declare const KEY_VALUE_CELLS: unique symbol;
 export declare function cellx<T = any, M = any>(value: T | TCellPull<T>, options?: ICellOptions<T, M>): ICellx<T>;
 export declare function defineObservableProperty<T extends object = object>(obj: T, name: string, value: any): T;
 export declare function defineObservableProperties<T extends object = object>(obj: T, props: Record<string, any>): T;
