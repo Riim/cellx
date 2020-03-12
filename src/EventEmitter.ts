@@ -1,3 +1,5 @@
+import { Cell } from './Cell';
+import { KEY_VALUE_CELLS } from './cellx';
 import { logError } from './utils';
 
 const hasOwn = Object.prototype.hasOwnProperty;
@@ -151,11 +153,13 @@ export class EventEmitter {
 			let propName = type.slice(index + 1);
 
 			currentlySubscribing = true;
-			(this[propName + 'Cell'] || (this[propName], this[propName + 'Cell'])).on(
-				type.slice(0, index),
-				listener,
-				context
-			);
+			(
+				(
+					(this[KEY_VALUE_CELLS] as Map<string, Cell>) ||
+					(this[KEY_VALUE_CELLS] = new Map())
+				).get(propName) ||
+				(this[propName], this[KEY_VALUE_CELLS] as Map<string, Cell>).get(propName)!
+			).on(type.slice(0, index), listener, context);
 			currentlySubscribing = false;
 		} else {
 			let events = this._events.get(type);
@@ -175,13 +179,13 @@ export class EventEmitter {
 		let index: number;
 
 		if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
-			let propName = type.slice(index + 1);
+			let valueCell =
+				this[KEY_VALUE_CELLS] &&
+				(this[KEY_VALUE_CELLS] as Map<string, Cell>).get(type.slice(index + 1));
 
-			(this[propName + 'Cell'] || (this[propName], this[propName + 'Cell'])).off(
-				type.slice(0, index),
-				listener,
-				context
-			);
+			if (valueCell) {
+				valueCell.off(type.slice(0, index), listener, context);
+			}
 		} else {
 			let events = this._events.get(type);
 
