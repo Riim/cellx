@@ -32,7 +32,7 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     static EVENT_CHANGE: string;
     static EVENT_ERROR: string;
     static get currentlyPulling(): boolean;
-    static autorun(cb: Function, context?: any): () => void;
+    static autorun<T = any>(cb: (next: T | undefined, disposer: () => void) => T, context?: any): () => void;
     static release(): void;
     static afterRelease(cb: Function): void;
     debugKey: string | undefined;

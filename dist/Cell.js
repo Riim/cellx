@@ -87,13 +87,13 @@ export class Cell extends EventEmitter {
     }
     static autorun(cb, context) {
         let disposer;
-        new Cell(function () {
+        new Cell((cell, next) => {
             if (!disposer) {
                 disposer = () => {
-                    this.dispose();
+                    cell.dispose();
                 };
             }
-            cb.call(context, disposer);
+            return cb.call(context, next, disposer);
         }, {
             onChange() { }
         });
