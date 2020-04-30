@@ -435,7 +435,7 @@ export class ObservableList<T = any> extends EventEmitter {
 	clone(deep?: boolean): ObservableList<T> {
 		return new (this.constructor as typeof ObservableList)(
 			deep
-				? this._items.map(item =>
+				? this._items.map((item) =>
 						item && typeof item == 'object' && (item as any).clone
 							? (item as any).clone.length
 								? (item as any).clone(true)
@@ -503,12 +503,12 @@ export class ObservableList<T = any> extends EventEmitter {
 	}
 
 	toData<I = any>(): Array<I> {
-		return this._items.map(item =>
+		return this._items.map((item) =>
 			item && typeof item == 'object' && (item as any).toData ? (item as any).toData() : item
 		);
 	}
 
-	_insertSortedValue(value: T) {
+	_insertSortedValue(value: T): void {
 		let items = this._items;
 		let comparator = this._comparator!;
 		let low = 0;
@@ -530,21 +530,16 @@ export class ObservableList<T = any> extends EventEmitter {
 	declare [Symbol.iterator]: () => Iterator<T>;
 }
 
-['forEach', 'map', 'filter', 'every', 'some'].forEach(name => {
-	ObservableList.prototype[name] = function(cb: Function, context?: any) {
-		return this._items[name](function(item: any, index: number): any {
-			return cb.call(context, item, index, this);
-		}, this);
+['forEach', 'map', 'filter', 'every', 'some'].forEach((name) => {
+	ObservableList.prototype[name] = function (cb: Function, context?: any): any {
+		return this._items[name]((item: any, index: number) => cb.call(context, item, index, this));
 	};
 });
 
-['reduce', 'reduceRight'].forEach(name => {
-	ObservableList.prototype[name] = function(cb: Function, initialValue?: any): any {
-		let list = this;
-
-		function wrapper(accumulator: any, item: any, index: number): any {
-			return cb(accumulator, item, index, list);
-		}
+['reduce', 'reduceRight'].forEach((name) => {
+	ObservableList.prototype[name] = function (cb: Function, initialValue?: any): any {
+		let wrapper = (accumulator: any, item: any, index: number): any =>
+			cb(accumulator, item, index, this);
 
 		return arguments.length >= 2
 			? this._items[name](wrapper, initialValue)
@@ -559,13 +554,13 @@ export class ObservableList<T = any> extends EventEmitter {
 ].forEach((settings: [string, (index: number, item: any) => any]) => {
 	let getStepValue = settings[1];
 
-	ObservableList.prototype[settings[0]] = function() {
+	ObservableList.prototype[settings[0]] = function (): Iterator<any> {
 		let items = this._items;
 		let index = 0;
 		let done = false;
 
 		return {
-			next() {
+			next(): IteratorResult<any> {
 				if (!done) {
 					if (index < items.length) {
 						return {
@@ -589,7 +584,6 @@ export class ObservableList<T = any> extends EventEmitter {
 ObservableList.prototype[Symbol.iterator] = ObservableList.prototype.values;
 
 declare module './ObservableList' {
-	/* tslint:disable-next-line */
 	interface ObservableList<T = any> {
 		forEach(cb: (item: T, index: number, list: this) => void, context?: any): void;
 

@@ -1,10 +1,12 @@
 {
+  "arrowParens": "always",
+  "bracketSpacing": true,
+  "endOfLine": "lf",
+  "parser": "typescript",
   "printWidth": 100,
-  "tabWidth": 4,
-  "useTabs": true,
   "semi": true,
   "singleQuote": true,
+  "tabWidth": 4,
   "trailingComma": "none",
-  "bracketSpacing": true,
-  "parser": "typescript"
+  "useTabs": true
 }

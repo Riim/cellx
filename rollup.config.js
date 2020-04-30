@@ -1,5 +1,5 @@
 import resolve from 'rollup-plugin-node-resolve';
-import tslint from 'rollup-plugin-tslint';
+import { eslint } from 'rollup-plugin-eslint';
 import typescript from 'rollup-plugin-typescript2';
 
 export default {
@@ -11,9 +11,10 @@ export default {
 		name: 'cellx'
 	},
 
+	// prettier-ignore
 	plugins: [
 		resolve({ browser: true }),
-		tslint(),
+		eslint(),
 		typescript({ clean: true })
 	]
 };

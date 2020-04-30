@@ -20,28 +20,9 @@ export interface ICellOptions<T, M> {
 	onError?: TListener;
 }
 
-export interface ICellChangeEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
-	type: typeof Cell.EVENT_CHANGE;
-	data: {
-		prevValue: any;
-		value: any;
-	};
-}
-
-export interface ICellErrorEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
-	type: typeof Cell.EVENT_ERROR;
-	data: {
-		error: any;
-	};
-}
-
-export type TCellEvent<T extends EventEmitter = EventEmitter> =
-	| ICellChangeEvent<T>
-	| ICellErrorEvent<T>;
-
 const KEY_LISTENER_WRAPPERS = Symbol('listenerWrappers');
 
-function defaultPut(cell: Cell, value: any) {
+function defaultPut(cell: Cell, value: any): void {
 	cell.push(value);
 }
 
@@ -56,7 +37,7 @@ const $error: { error: Error | null } = { error: null };
 
 let lastUpdationId = 0;
 
-function release() {
+function release(): void {
 	while (pendingCellsIndex < pendingCells.length) {
 		let cell = pendingCells[pendingCellsIndex++];
 
@@ -95,7 +76,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		new Cell(
 			function (cell, next) {
 				if (!disposer) {
-					disposer = () => {
+					disposer = (): void => {
 						cell.dispose();
 					};
 				}
@@ -107,18 +88,18 @@ export class Cell<T = any, M = any> extends EventEmitter {
 					? cellOptions
 					: {
 							...cellOptions,
-							onChange() {}
+							onChange(): void {}
 					  })
 		);
 
 		return disposer!;
 	}
 
-	static release() {
+	static release(): void {
 		release();
 	}
 
-	static afterRelease(cb: Function) {
+	static afterRelease(cb: Function): void {
 		(afterRelease || (afterRelease = [])).push(cb);
 	}
 
@@ -218,7 +199,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		listeners: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>,
 		context?: any
 	): this;
-	on(type: string | Record<string, TListener>, listener?: any, context?: any) {
+	on(type: string | Record<string, TListener>, listener?: any, context?: any): this {
 		if (this._dependencies !== null) {
 			this.actualize();
 		}
@@ -245,7 +226,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		listeners?: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>,
 		context?: any
 	): this;
-	off(type?: string | Record<string, TListener>, listener?: any, context?: any) {
+	off(type?: string | Record<string, TListener>, listener?: any, context?: any): this {
 		if (this._dependencies !== null) {
 			this.actualize();
 		}
@@ -338,14 +319,14 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		);
 	}
 
-	_addReaction(reaction: Cell, actual: boolean) {
+	_addReaction(reaction: Cell, actual: boolean): void {
 		this._reactions.push(reaction);
 		this._hasSubscribers = true;
 
 		this._activate(actual);
 	}
 
-	_deleteReaction(reaction: Cell) {
+	_deleteReaction(reaction: Cell): void {
 		this._reactions.splice(this._reactions.indexOf(reaction), 1);
 
 		if (
@@ -363,7 +344,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 	}
 
-	_activate(actual: boolean) {
+	_activate(actual: boolean): void {
 		if (this._active || !this._pull) {
 			return;
 		}
@@ -385,7 +366,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 	}
 
-	_deactivate() {
+	_deactivate(): void {
 		if (!this._active) {
 			return;
 		}
@@ -402,13 +383,12 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		this._active = false;
 	}
 
-	_onValueChange(evt: IEvent) {
+	_onValueChange(evt: IEvent): void {
 		this._inited = true;
 		this._updationId = ++lastUpdationId;
 
 		let reactions = this._reactions;
 
-		// tslint:disable-next-line:prefer-for-of
 		for (let i = 0; i < reactions.length; i++) {
 			reactions[i]._addToRelease(true);
 		}
@@ -416,7 +396,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		this.handleEvent(evt);
 	}
 
-	_addToRelease(dirty: boolean) {
+	_addToRelease(dirty: boolean): void {
 		this._state = dirty ? 'dirty' : 'check';
 
 		let reactions = this._reactions;
@@ -433,7 +413,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 	}
 
-	actualize() {
+	actualize(): void {
 		if (this._state == 'dirty') {
 			this.pull();
 		} else if (this._state == 'check') {
@@ -609,7 +589,6 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		if (changed) {
 			let reactions = this._reactions;
 
-			// tslint:disable-next-line:prefer-for-of
 			for (let i = 0; i < reactions.length; i++) {
 				reactions[i]._addToRelease(true);
 			}
@@ -649,7 +628,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		return isWaitError;
 	}
 
-	_setError(err: Error | null) {
+	_setError(err: Error | null): void {
 		this._error = err;
 
 		this._updationId = ++lastUpdationId;
@@ -665,7 +644,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 	}
 
-	_handleErrorEvent(evt: IEvent<this>) {
+	_handleErrorEvent(evt: IEvent<this>): void {
 		if (this._lastErrorEvent === evt) {
 			return;
 		}
@@ -675,13 +654,12 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 		let reactions = this._reactions;
 
-		// tslint:disable-next-line:prefer-for-of
 		for (let i = 0; i < reactions.length; i++) {
 			reactions[i]._handleErrorEvent(evt);
 		}
 	}
 
-	wait() {
+	wait(): never {
 		throw new WaitError();
 	}
 
@@ -690,7 +668,6 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 		let reactions = this._reactions;
 
-		// tslint:disable-next-line:prefer-for-of
 		for (let i = 0; i < reactions.length; i++) {
 			reactions[i].reap();
 		}
@@ -702,3 +679,22 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		return this.reap();
 	}
 }
+
+export interface ICellChangeEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
+	type: typeof Cell.EVENT_CHANGE;
+	data: {
+		prevValue: any;
+		value: any;
+	};
+}
+
+export interface ICellErrorEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
+	type: typeof Cell.EVENT_ERROR;
+	data: {
+		error: any;
+	};
+}
+
+export type TCellEvent<T extends EventEmitter = EventEmitter> =
+	| ICellChangeEvent<T>
+	| ICellErrorEvent<T>;

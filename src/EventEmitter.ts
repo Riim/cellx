@@ -32,7 +32,7 @@ export class EventEmitter {
 		return currentlySubscribing;
 	}
 
-	static transact(cb: Function) {
+	static transact(cb: Function): void {
 		transactionLevel++;
 
 		try {
@@ -54,7 +54,7 @@ export class EventEmitter {
 		}
 	}
 
-	static silently(cb: Function) {
+	static silently(cb: Function): void {
 		silently++;
 
 		try {
@@ -72,7 +72,9 @@ export class EventEmitter {
 
 	getEvents(): Map<string | symbol, Array<IRegisteredEvent>>;
 	getEvents(type: string | symbol): Array<IRegisteredEvent>;
-	getEvents(type?: string | symbol) {
+	getEvents(
+		type?: string | symbol
+	): Map<string | symbol, Array<IRegisteredEvent>> | Array<IRegisteredEvent> {
 		if (type) {
 			let events = this._events.get(type);
 
@@ -94,7 +96,11 @@ export class EventEmitter {
 
 	on(type: string | symbol, listener: TListener, context?: any): this;
 	on(listeners: Record<string | symbol, TListener>, context?: any): this;
-	on(type: string | symbol | Record<string | symbol, TListener>, listener?: any, context?: any) {
+	on(
+		type: string | symbol | Record<string | symbol, TListener>,
+		listener?: any,
+		context?: any
+	): this {
 		if (typeof type == 'object') {
 			context = listener !== undefined ? listener : this;
 
@@ -122,7 +128,7 @@ export class EventEmitter {
 		type?: string | symbol | Record<string | symbol, TListener>,
 		listener?: any,
 		context?: any
-	) {
+	): this {
 		if (type) {
 			if (typeof type == 'object') {
 				context = listener !== undefined ? listener : this;
@@ -148,7 +154,7 @@ export class EventEmitter {
 		return this;
 	}
 
-	_on(type: string | symbol, listener: TListener, context: any) {
+	_on(type: string | symbol, listener: TListener, context: any): void {
 		let index: number;
 
 		if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
@@ -175,7 +181,7 @@ export class EventEmitter {
 		}
 	}
 
-	_off(type: string | symbol, listener: TListener, context: any) {
+	_off(type: string | symbol, listener: TListener, context: any): void {
 		let index: number;
 
 		if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
@@ -222,7 +228,7 @@ export class EventEmitter {
 			context = this;
 		}
 
-		function wrapper(evt: IEvent) {
+		function wrapper(evt: IEvent): any {
 			this._off(type, wrapper, context);
 			return listener.call(this, evt);
 		}
@@ -288,7 +294,7 @@ export class EventEmitter {
 		return evt as IEvent;
 	}
 
-	handleEvent(evt: IEvent) {
+	handleEvent(evt: IEvent): void {
 		let events = this._events.get(evt.type);
 
 		if (!events) {
@@ -303,7 +309,6 @@ export class EventEmitter {
 			} else {
 				events = events.slice();
 
-				// tslint:disable-next-line:prefer-for-of
 				for (let i = 0; i < events.length; i++) {
 					if (this._tryEventListener(events[i], evt) === false) {
 						evt.propagationStopped = true;

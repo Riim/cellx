@@ -127,7 +127,7 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 		return true;
 	}
 
-	forEach(cb: (value: V, key: K, map: this) => void, context?: any) {
+	forEach(cb: (value: V, key: K, map: this) => void, context?: any): void {
 		for (let [key, value] of this._entries) {
 			cb.call(context, value, key, this);
 		}

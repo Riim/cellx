@@ -118,8 +118,7 @@ export function cellx<T = any, M = any>(
 	value: T | TCellPull<T>,
 	options?: ICellOptions<T, M>
 ): ICellx<T> {
-	// tslint:disable-next-line:only-arrow-functions
-	let $cellx = function(value: any) {
+	let $cellx = function (value: any) {
 		if (arguments.length) {
 			$cellx.cell.set(value);
 			return value;
@@ -164,7 +163,7 @@ export function defineObservableProperties<T extends object = object>(
 	obj: T,
 	props: Record<string, any>
 ): T {
-	Object.keys(props).forEach(name => {
+	Object.keys(props).forEach((name) => {
 		defineObservableProperty(obj, name, props[name]);
 	});
 
@@ -173,7 +172,7 @@ export function defineObservableProperties<T extends object = object>(
 
 export function define<T extends object = object>(obj: T, name: string, value: any): T;
 export function define<T extends object = object>(obj: T, props: Record<string, any>): T;
-export function define(obj: object, name: string | Record<string, any>, value?: any) {
+export function define(obj: object, name: string | Record<string, any>, value?: any): object {
 	if (typeof name == 'string') {
 		defineObservableProperty(obj, name, value);
 	} else {
