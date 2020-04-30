@@ -86,25 +86,29 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		return !!currentCell;
 	}
 
-	static autorun<T = any>(
+	static autorun<T = any, M = any>(
 		cb: (next: T | undefined, disposer: () => void) => T,
-		context?: any
+		cellOptions?: ICellOptions<T, M>
 	): () => void {
 		let disposer: (() => void) | undefined;
 
 		new Cell(
-			(cell, next) => {
+			function (cell, next) {
 				if (!disposer) {
 					disposer = () => {
 						cell.dispose();
 					};
 				}
 
-				return cb.call(context, next, disposer);
+				return cb.call(this, next, disposer);
 			},
-			{
-				onChange() {}
-			}
+			cellOptions &&
+				(cellOptions.onChange
+					? cellOptions
+					: {
+							...cellOptions,
+							onChange() {}
+					  })
 		);
 
 		return disposer!;
