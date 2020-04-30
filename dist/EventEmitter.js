@@ -215,7 +215,6 @@ export class EventEmitter {
             }
             else {
                 events = events.slice();
-                // tslint:disable-next-line:prefer-for-of
                 for (let i = 0; i < events.length; i++) {
                     if (this._tryEventListener(events[i], evt) === false) {
                         evt.propagationStopped = true;

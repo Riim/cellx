@@ -47,7 +47,6 @@ const cellxProto = {
     }
 };
 export function cellx(value, options) {
-    // tslint:disable-next-line:only-arrow-functions
     let $cellx = function (value) {
         if (arguments.length) {
             $cellx.cell.set(value);
@@ -75,7 +74,7 @@ export function defineObservableProperty(obj, name, value) {
     return obj;
 }
 export function defineObservableProperties(obj, props) {
-    Object.keys(props).forEach(name => {
+    Object.keys(props).forEach((name) => {
         defineObservableProperty(obj, name, props[name]);
     });
     return obj;

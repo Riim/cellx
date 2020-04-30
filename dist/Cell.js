@@ -85,18 +85,19 @@ export class Cell extends EventEmitter {
     static get currentlyPulling() {
         return !!currentCell;
     }
-    static autorun(cb, context) {
+    static autorun(cb, cellOptions) {
         let disposer;
-        new Cell((cell, next) => {
+        new Cell(function (cell, next) {
             if (!disposer) {
                 disposer = () => {
                     cell.dispose();
                 };
             }
-            return cb.call(context, next, disposer);
-        }, {
-            onChange() { }
-        });
+            return cb.call(this, next, disposer);
+        }, cellOptions &&
+            (cellOptions.onChange
+                ? cellOptions
+                : Object.assign(Object.assign({}, cellOptions), { onChange() { } })));
         return disposer;
     }
     static release() {
@@ -234,7 +235,6 @@ export class Cell extends EventEmitter {
         this._inited = true;
         this._updationId = ++lastUpdationId;
         let reactions = this._reactions;
-        // tslint:disable-next-line:prefer-for-of
         for (let i = 0; i < reactions.length; i++) {
             reactions[i]._addToRelease(true);
         }
@@ -399,7 +399,6 @@ export class Cell extends EventEmitter {
         this._updationId = ++lastUpdationId;
         if (changed) {
             let reactions = this._reactions;
-            // tslint:disable-next-line:prefer-for-of
             for (let i = 0; i < reactions.length; i++) {
                 reactions[i]._addToRelease(true);
             }
@@ -450,7 +449,6 @@ export class Cell extends EventEmitter {
         this._lastErrorEvent = evt;
         this.handleEvent(evt);
         let reactions = this._reactions;
-        // tslint:disable-next-line:prefer-for-of
         for (let i = 0; i < reactions.length; i++) {
             reactions[i]._handleErrorEvent(evt);
         }
@@ -461,7 +459,6 @@ export class Cell extends EventEmitter {
     reap() {
         this.off();
         let reactions = this._reactions;
-        // tslint:disable-next-line:prefer-for-of
         for (let i = 0; i < reactions.length; i++) {
             reactions[i].reap();
         }

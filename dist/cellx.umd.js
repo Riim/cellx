@@ -252,7 +252,6 @@
                 }
                 else {
                     events = events.slice();
-                    // tslint:disable-next-line:prefer-for-of
                     for (let i = 0; i < events.length; i++) {
                         if (this._tryEventListener(events[i], evt) === false) {
                             evt.propagationStopped = true;
@@ -360,18 +359,19 @@
         static get currentlyPulling() {
             return !!currentCell;
         }
-        static autorun(cb, context) {
+        static autorun(cb, cellOptions) {
             let disposer;
-            new Cell((cell, next) => {
+            new Cell(function (cell, next) {
                 if (!disposer) {
                     disposer = () => {
                         cell.dispose();
                     };
                 }
-                return cb.call(context, next, disposer);
-            }, {
-                onChange() { }
-            });
+                return cb.call(this, next, disposer);
+            }, cellOptions &&
+                (cellOptions.onChange
+                    ? cellOptions
+                    : Object.assign(Object.assign({}, cellOptions), { onChange() { } })));
             return disposer;
         }
         static release() {
@@ -509,7 +509,6 @@
             this._inited = true;
             this._updationId = ++lastUpdationId;
             let reactions = this._reactions;
-            // tslint:disable-next-line:prefer-for-of
             for (let i = 0; i < reactions.length; i++) {
                 reactions[i]._addToRelease(true);
             }
@@ -674,7 +673,6 @@
             this._updationId = ++lastUpdationId;
             if (changed) {
                 let reactions = this._reactions;
-                // tslint:disable-next-line:prefer-for-of
                 for (let i = 0; i < reactions.length; i++) {
                     reactions[i]._addToRelease(true);
                 }
@@ -725,7 +723,6 @@
             this._lastErrorEvent = evt;
             this.handleEvent(evt);
             let reactions = this._reactions;
-            // tslint:disable-next-line:prefer-for-of
             for (let i = 0; i < reactions.length; i++) {
                 reactions[i]._handleErrorEvent(evt);
             }
@@ -736,7 +733,6 @@
         reap() {
             this.off();
             let reactions = this._reactions;
-            // tslint:disable-next-line:prefer-for-of
             for (let i = 0; i < reactions.length; i++) {
                 reactions[i].reap();
             }
@@ -1256,7 +1252,7 @@
         }
         clone(deep) {
             return new this.constructor(deep
-                ? this._items.map(item => item && typeof item == 'object' && item.clone
+                ? this._items.map((item) => item && typeof item == 'object' && item.clone
                     ? item.clone.length
                         ? item.clone(true)
                         : item.clone()
@@ -1309,7 +1305,7 @@
             return this._items.join();
         }
         toData() {
-            return this._items.map(item => item && typeof item == 'object' && item.toData ? item.toData() : item);
+            return this._items.map((item) => item && typeof item == 'object' && item.toData ? item.toData() : item);
         }
         _insertSortedValue(value) {
             let items = this._items;
@@ -1329,19 +1325,14 @@
         }
     }
     ObservableList.EVENT_CHANGE = 'change';
-    ['forEach', 'map', 'filter', 'every', 'some'].forEach(name => {
+    ['forEach', 'map', 'filter', 'every', 'some'].forEach((name) => {
         ObservableList.prototype[name] = function (cb, context) {
-            return this._items[name](function (item, index) {
-                return cb.call(context, item, index, this);
-            }, this);
+            return this._items[name]((item, index) => cb.call(context, item, index, this));
         };
     });
-    ['reduce', 'reduceRight'].forEach(name => {
+    ['reduce', 'reduceRight'].forEach((name) => {
         ObservableList.prototype[name] = function (cb, initialValue) {
-            let list = this;
-            function wrapper(accumulator, item, index) {
-                return cb(accumulator, item, index, list);
-            }
+            let wrapper = (accumulator, item, index) => cb(accumulator, item, index, this);
             return arguments.length >= 2
                 ? this._items[name](wrapper, initialValue)
                 : this._items[name](wrapper);
@@ -1420,7 +1411,6 @@
         }
     };
     function cellx(value, options) {
-        // tslint:disable-next-line:only-arrow-functions
         let $cellx = function (value) {
             if (arguments.length) {
                 $cellx.cell.set(value);
@@ -1448,7 +1438,7 @@
         return obj;
     }
     function defineObservableProperties(obj, props) {
-        Object.keys(props).forEach(name => {
+        Object.keys(props).forEach((name) => {
             defineObservableProperty(obj, name, props[name]);
         });
         return obj;

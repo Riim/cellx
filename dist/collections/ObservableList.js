@@ -323,7 +323,7 @@ export class ObservableList extends EventEmitter {
     }
     clone(deep) {
         return new this.constructor(deep
-            ? this._items.map(item => item && typeof item == 'object' && item.clone
+            ? this._items.map((item) => item && typeof item == 'object' && item.clone
                 ? item.clone.length
                     ? item.clone(true)
                     : item.clone()
@@ -376,7 +376,7 @@ export class ObservableList extends EventEmitter {
         return this._items.join();
     }
     toData() {
-        return this._items.map(item => item && typeof item == 'object' && item.toData ? item.toData() : item);
+        return this._items.map((item) => item && typeof item == 'object' && item.toData ? item.toData() : item);
     }
     _insertSortedValue(value) {
         let items = this._items;
@@ -396,19 +396,14 @@ export class ObservableList extends EventEmitter {
     }
 }
 ObservableList.EVENT_CHANGE = 'change';
-['forEach', 'map', 'filter', 'every', 'some'].forEach(name => {
+['forEach', 'map', 'filter', 'every', 'some'].forEach((name) => {
     ObservableList.prototype[name] = function (cb, context) {
-        return this._items[name](function (item, index) {
-            return cb.call(context, item, index, this);
-        }, this);
+        return this._items[name]((item, index) => cb.call(context, item, index, this));
     };
 });
-['reduce', 'reduceRight'].forEach(name => {
+['reduce', 'reduceRight'].forEach((name) => {
     ObservableList.prototype[name] = function (cb, initialValue) {
-        let list = this;
-        function wrapper(accumulator, item, index) {
-            return cb(accumulator, item, index, list);
-        }
+        let wrapper = (accumulator, item, index) => cb(accumulator, item, index, this);
         return arguments.length >= 2
             ? this._items[name](wrapper, initialValue)
             : this._items[name](wrapper);
