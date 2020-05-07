@@ -368,10 +368,9 @@
                     };
                 }
                 return cb.call(this, next, disposer);
-            }, cellOptions &&
-                (cellOptions.onChange
-                    ? cellOptions
-                    : Object.assign(Object.assign({}, cellOptions), { onChange() { } })));
+            }, cellOptions && cellOptions.onChange
+                ? cellOptions
+                : Object.assign(Object.assign({}, cellOptions), { onChange() { } }));
             return disposer;
         }
         static release() {
@@ -854,7 +853,7 @@
         entries() {
             return this._entries.entries();
         }
-        clone(deep) {
+        clone(deep = false) {
             let entries;
             if (deep) {
                 entries = [];
@@ -977,7 +976,7 @@
         offChange(listener, context) {
             return this.off(ObservableList.EVENT_CHANGE, listener, context);
         }
-        _validateIndex(index, allowEndIndex) {
+        _validateIndex(index, allowEndIndex = false) {
             if (index === undefined) {
                 return index;
             }
@@ -1054,7 +1053,7 @@
             }
             return this;
         }
-        add(value, unique) {
+        add(value, unique = false) {
             if (unique && this._items.indexOf(value) != -1) {
                 return this;
             }
@@ -1067,7 +1066,7 @@
             this.emit(ObservableList.EVENT_CHANGE);
             return this;
         }
-        addRange(values, unique) {
+        addRange(values, unique = false) {
             if (values instanceof ObservableList) {
                 values = values._items;
             }
@@ -1250,7 +1249,7 @@
             }
             return -1;
         }
-        clone(deep) {
+        clone(deep = false) {
             return new this.constructor(deep
                 ? this._items.map((item) => item && typeof item == 'object' && item.clone
                     ? item.clone.length

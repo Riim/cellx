@@ -94,10 +94,9 @@ export class Cell extends EventEmitter {
                 };
             }
             return cb.call(this, next, disposer);
-        }, cellOptions &&
-            (cellOptions.onChange
-                ? cellOptions
-                : Object.assign(Object.assign({}, cellOptions), { onChange() { } })));
+        }, cellOptions && cellOptions.onChange
+            ? cellOptions
+            : Object.assign(Object.assign({}, cellOptions), { onChange() { } }));
         return disposer;
     }
     static release() {

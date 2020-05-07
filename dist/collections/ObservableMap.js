@@ -108,7 +108,7 @@ export class ObservableMap extends EventEmitter {
     entries() {
         return this._entries.entries();
     }
-    clone(deep) {
+    clone(deep = false) {
         let entries;
         if (deep) {
             entries = [];

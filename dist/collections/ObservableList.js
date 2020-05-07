@@ -48,7 +48,7 @@ export class ObservableList extends EventEmitter {
     offChange(listener, context) {
         return this.off(ObservableList.EVENT_CHANGE, listener, context);
     }
-    _validateIndex(index, allowEndIndex) {
+    _validateIndex(index, allowEndIndex = false) {
         if (index === undefined) {
             return index;
         }
@@ -125,7 +125,7 @@ export class ObservableList extends EventEmitter {
         }
         return this;
     }
-    add(value, unique) {
+    add(value, unique = false) {
         if (unique && this._items.indexOf(value) != -1) {
             return this;
         }
@@ -138,7 +138,7 @@ export class ObservableList extends EventEmitter {
         this.emit(ObservableList.EVENT_CHANGE);
         return this;
     }
-    addRange(values, unique) {
+    addRange(values, unique = false) {
         if (values instanceof ObservableList) {
             values = values._items;
         }
@@ -321,7 +321,7 @@ export class ObservableList extends EventEmitter {
         }
         return -1;
     }
-    clone(deep) {
+    clone(deep = false) {
         return new this.constructor(deep
             ? this._items.map((item) => item && typeof item == 'object' && item.clone
                 ? item.clone.length
