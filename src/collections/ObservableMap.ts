@@ -145,7 +145,7 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 		return this._entries.entries();
 	}
 
-	clone(deep?: boolean): ObservableMap<K, V> {
+	clone(deep = false): ObservableMap<K, V> {
 		let entries: Array<[K, V]> | undefined;
 
 		if (deep) {

@@ -83,13 +83,12 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 				return cb.call(this, next, disposer);
 			},
-			cellOptions &&
-				(cellOptions.onChange
-					? cellOptions
-					: {
-							...cellOptions,
-							onChange(): void {}
-					  })
+			cellOptions && cellOptions.onChange
+				? cellOptions
+				: {
+						...cellOptions,
+						onChange(): void {}
+				  }
 		);
 
 		return disposer!;
