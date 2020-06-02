@@ -55,6 +55,8 @@ export interface ICellx<T = any, M = any> {
 
 	value: T;
 
+	pull(): boolean;
+
 	reap(): Cell<T, M>;
 	dispose(): Cell<T, M>;
 }

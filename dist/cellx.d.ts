@@ -20,6 +20,7 @@ export interface ICellx<T = any, M = any> {
     subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): Cell<T, M>;
     unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): Cell<T, M>;
     value: T;
+    pull(): boolean;
     reap(): Cell<T, M>;
     dispose(): Cell<T, M>;
 }
