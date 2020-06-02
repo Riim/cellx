@@ -1,4 +1,4 @@
 export declare const config: {
-    logError: (...args: any[]) => void;
+    logError: (...args: Array<any>) => void;
 };
 export declare function configure(options: Partial<typeof config>): typeof config;

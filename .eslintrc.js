@@ -1,6 +1,7 @@
 module.exports = {
 	root: true,
 	parser: '@typescript-eslint/parser',
+	ignorePatterns: ['**/*.js'],
 	plugins: ['@typescript-eslint'],
 	extends: [
 		'eslint:recommended',
@@ -9,19 +10,15 @@ module.exports = {
 		'prettier/@typescript-eslint'
 	],
 	rules: {
-		'@typescript-eslint/explicit-function-return-type': [
-			'error',
-			{
-				allowTypedFunctionExpressions: true,
-				allowHigherOrderFunctions: true
-			}
-		],
-		'@typescript-eslint/interface-name-prefix': 'off',
-		'@typescript-eslint/no-empty-function': 'off',
-		'@typescript-eslint/no-explicit-any': 'off',
-		'@typescript-eslint/no-non-null-assertion': 'off',
-		'no-mixed-spaces-and-tabs': 'off',
-		'prefer-const': 'off',
-		'space-before-function-paren': 'off'
+		'@typescript-eslint/ban-types': 0,
+		'@typescript-eslint/explicit-function-return-type': 0,
+		'@typescript-eslint/explicit-module-boundary-types': 0,
+		'@typescript-eslint/interface-name-prefix': 0,
+		'@typescript-eslint/no-empty-function': 0,
+		'@typescript-eslint/no-explicit-any': 0,
+		'@typescript-eslint/no-non-null-assertion': 0,
+		'no-mixed-spaces-and-tabs': 0,
+		'prefer-const': 0,
+		'space-before-function-paren': 0
 	}
 };

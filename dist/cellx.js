@@ -39,6 +39,9 @@ const cellxProto = {
     set value(value) {
         this.cell.value = value;
     },
+    pull() {
+        return this.cell.pull();
+    },
     reap() {
         return this.cell.reap();
     },
@@ -79,12 +82,12 @@ export function defineObservableProperties(obj, props) {
     });
     return obj;
 }
-export function define(obj, name, value) {
-    if (typeof name == 'string') {
-        defineObservableProperty(obj, name, value);
+export function define(obj, nameOrProps, value) {
+    if (typeof nameOrProps == 'object') {
+        defineObservableProperties(obj, nameOrProps);
     }
     else {
-        defineObservableProperties(obj, name);
+        defineObservableProperty(obj, nameOrProps, value);
     }
     return obj;
 }

@@ -25,7 +25,7 @@ export interface ICellx<T = any, M = any> {
 }
 export declare const KEY_VALUE_CELLS: unique symbol;
 export declare function cellx<T = any, M = any>(value: T | TCellPull<T>, options?: ICellOptions<T, M>): ICellx<T>;
-export declare function defineObservableProperty<T extends object = object>(obj: T, name: string, value: any): T;
-export declare function defineObservableProperties<T extends object = object>(obj: T, props: Record<string, any>): T;
-export declare function define<T extends object = object>(obj: T, name: string, value: any): T;
-export declare function define<T extends object = object>(obj: T, props: Record<string, any>): T;
+export declare function defineObservableProperty<T extends object = object>(obj: T, name: string | symbol, value: any): T;
+export declare function defineObservableProperties<T extends object = object>(obj: T, props: Record<string | symbol, any>): T;
+export declare function define<T extends object = object>(obj: T, name: string | symbol, value: any): T;
+export declare function define<T extends object = object>(obj: T, props: Record<string | symbol, any>): T;

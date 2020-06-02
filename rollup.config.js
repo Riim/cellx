@@ -1,4 +1,4 @@
-import resolve from 'rollup-plugin-node-resolve';
+import nodeResolve from 'rollup-plugin-node-resolve';
 import { eslint } from 'rollup-plugin-eslint';
 import typescript from 'rollup-plugin-typescript2';
 
@@ -13,7 +13,7 @@ export default {
 
 	// prettier-ignore
 	plugins: [
-		resolve({ browser: true }),
+		nodeResolve({ browser: true }),
 		eslint(),
 		typescript({ clean: true })
 	]
