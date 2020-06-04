@@ -513,7 +513,7 @@ let list = new cellx.ObservableList([1, 2, 3]);
 
 Like `cellx.ObservableMap`, list generates an event `change` upon any change of its records.
 
-During initialization the list may take option `comparator`, which will implement the assortment of its values:
+During initialization the list may take option `itemComparator`, which will implement the assortment of its values:
 
 ```js
 let list = new cellx.ObservableList([
@@ -521,7 +521,7 @@ let list = new cellx.ObservableList([
     { x: 1 },
     { x: 10 }
 ], {
-    comparator: (a, b) => {
+    itemComparator: (a, b) => {
         if (a.x < b.x) { return -1; }
         if (a.x > b.x) { return 1; }
         return 0;
@@ -537,7 +537,7 @@ console.log(list.toArray());
 // => [{ x: -100 }, { x: 1 }, { x: 5 }, { x: 7 }, { x: 10 }, { x: 100 }]
 ```
 
-If instead of `comparator` you pass the option `sorted` with the value `true`, it will use the standard `comparator`:
+If instead of `itemComparator` you pass the option `sorted` with the value `true`, it will use the standard `itemComparator`:
 
 ```js
 let list = new cellx.ObservableList([5, 1, 10], { sorted: true });
@@ -557,7 +557,7 @@ console.log(list.toArray());
 
 Length of the list. Read-only.
 
-##### comparator
+##### itemComparator
 
 Function for comparing values in the sorted list. Read-only.
 

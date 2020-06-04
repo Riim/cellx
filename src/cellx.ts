@@ -68,54 +68,54 @@ const cellxProto = {
 
 	cell: null,
 
-	on(type: string | Record<string, TListener>, listener?: any, context?: any): Cell {
+	on(type: string | Record<string, TListener>, listener?: any, context?: any) {
 		return (this as ICellx).cell.on(type as any, listener, context);
 	},
 
-	off(type?: string | Record<string, TListener>, listener?: any, context?: any): Cell {
+	off(type?: string | Record<string, TListener>, listener?: any, context?: any) {
 		return (this as ICellx).cell.off(type as any, listener, context);
 	},
 
-	onChange(listener: TListener, context?: any): Cell {
+	onChange(listener: TListener, context?: any) {
 		return (this as ICellx).cell.onChange(listener, context);
 	},
 
-	offChange(listener: TListener, context?: any): Cell {
+	offChange(listener: TListener, context?: any) {
 		return (this as ICellx).cell.offChange(listener, context);
 	},
 
-	onError(listener: TListener, context?: any): Cell {
+	onError(listener: TListener, context?: any) {
 		return (this as ICellx).cell.onError(listener, context);
 	},
 
-	offError(listener: TListener, context?: any): Cell {
+	offError(listener: TListener, context?: any) {
 		return (this as ICellx).cell.offError(listener, context);
 	},
 
-	subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): Cell {
+	subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any) {
 		return (this as ICellx).cell.subscribe(listener, context);
 	},
 
-	unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): Cell {
+	unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any) {
 		return (this as ICellx).cell.unsubscribe(listener, context);
 	},
 
-	get value(): any {
+	get value() {
 		return (this as ICellx).cell.value;
 	},
 	set value(value: any) {
 		(this as ICellx).cell.value = value;
 	},
 
-	pull(): boolean {
+	pull() {
 		return (this as ICellx).cell.pull();
 	},
 
-	reap(): Cell {
+	reap() {
 		return (this as ICellx).cell.reap();
 	},
 
-	dispose(): Cell {
+	dispose() {
 		return (this as ICellx).cell.dispose();
 	}
 };
@@ -181,7 +181,7 @@ export function define(
 	obj: object,
 	nameOrProps: string | symbol | Record<string | symbol, any>,
 	value?: any
-): object {
+) {
 	if (typeof nameOrProps == 'object') {
 		defineObservableProperties(obj, nameOrProps);
 	} else {

@@ -1,5 +1,5 @@
 export const config = {
-	logError: (...args: Array<any>): void => {
+	logError: (...args: Array<any>) => {
 		console.error(...args);
 	}
 };

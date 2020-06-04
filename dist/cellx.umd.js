@@ -750,9 +750,12 @@
     const hasOwn$1 = Object.prototype.hasOwnProperty;
     let ObservableMap = /** @class */ (() => {
         class ObservableMap extends EventEmitter {
-            constructor(entries) {
+            constructor(entries, options) {
                 super();
                 this._entries = new Map();
+                if (options && options.valueEquals) {
+                    this._valueEquals = options.valueEquals;
+                }
                 if (entries) {
                     let mapEntries = this._entries;
                     if (entries instanceof Map || entries instanceof ObservableMap) {
@@ -776,6 +779,9 @@
             }
             get size() {
                 return this._entries.size;
+            }
+            get valueEquals() {
+                return this._valueEquals;
             }
             onChange(listener, context) {
                 return this.on(ObservableMap.EVENT_CHANGE, listener, context);
@@ -836,8 +842,22 @@
                 if (this.size != that.size) {
                     return false;
                 }
-                for (let entry of this) {
-                    if (entry[1] !== that.get(entry[0])) {
+                for (let [key, value] of this) {
+                    if (!that.has(key)) {
+                        return false;
+                    }
+                    let thatValue = that.get(key);
+                    if (this._valueEquals
+                        ? !this._valueEquals(value, thatValue)
+                        : value !== thatValue &&
+                            !(value &&
+                                thatValue &&
+                                typeof value == 'object' &&
+                                typeof thatValue == 'object' &&
+                                value.equals &&
+                                value.equals ===
+                                    thatValue.equals &&
+                                value.equals(thatValue))) {
                         return false;
                     }
                 }
@@ -883,7 +903,17 @@
                 for (let [key, value] of entries) {
                     if (that.has(key)) {
                         let thatValue = that.get(key);
-                        if (value !== thatValue) {
+                        if (this._valueEquals
+                            ? !this._valueEquals(value, thatValue)
+                            : value !== thatValue &&
+                                !(value &&
+                                    thatValue &&
+                                    typeof value == 'object' &&
+                                    typeof thatValue == 'object' &&
+                                    value.equals &&
+                                    value.equals ===
+                                        thatValue.equals &&
+                                    value.equals(thatValue))) {
                             if (value &&
                                 thatValue &&
                                 typeof value == 'object' &&
@@ -935,7 +965,7 @@
 
     const push = Array.prototype.push;
     const splice = Array.prototype.splice;
-    const defaultComparator = (a, b) => {
+    const defaultItemComparator = (a, b) => {
         return a < b ? -1 : a > b ? 1 : 0;
     };
     let ObservableList = /** @class */ (() => {
@@ -943,13 +973,18 @@
             constructor(items, options) {
                 super();
                 this._items = [];
-                if (options && (options.sorted || (options.comparator && options.sorted !== false))) {
-                    this._comparator = options.comparator || defaultComparator;
-                    this._sorted = true;
-                }
-                else {
-                    this._comparator = null;
-                    this._sorted = false;
+                if (options) {
+                    if (options.itemEquals) {
+                        this._itemEquals = options.itemEquals;
+                    }
+                    if ((options.itemComparator && options.sorted !== false) || options.sorted) {
+                        this._itemComparator = options.itemComparator || defaultItemComparator;
+                        this._sorted = true;
+                    }
+                    else {
+                        this._itemComparator = null;
+                        this._sorted = false;
+                    }
                 }
                 if (items) {
                     if (this._sorted) {
@@ -977,6 +1012,15 @@
                     this._items.length = value;
                 }
             }
+            get itemEquals() {
+                return this._itemEquals;
+            }
+            get itemComparator() {
+                return this._itemComparator;
+            }
+            get sorted() {
+                return this._sorted;
+            }
             onChange(listener, context) {
                 return this.on(ObservableList.EVENT_CHANGE, listener, context);
             }
@@ -998,14 +1042,14 @@
                 }
                 return index;
             }
-            contains(value) {
-                return this._items.indexOf(value) != -1;
+            contains(item) {
+                return this._items.indexOf(item) != -1;
             }
-            indexOf(value, fromIndex) {
-                return this._items.indexOf(value, this._validateIndex(fromIndex, true));
+            indexOf(item, fromIndex) {
+                return this._items.indexOf(item, this._validateIndex(fromIndex, true));
             }
-            lastIndexOf(value, fromIndex) {
-                return this._items.lastIndexOf(value, fromIndex === undefined ? -1 : this._validateIndex(fromIndex, true));
+            lastIndexOf(item, fromIndex) {
+                return this._items.lastIndexOf(item, fromIndex === undefined ? -1 : this._validateIndex(fromIndex, true));
             }
             get(index) {
                 return this._items[this._validateIndex(index, true)];
@@ -1020,38 +1064,38 @@
                 }
                 return this._items.slice(index, index + count);
             }
-            set(index, value) {
+            set(index, item) {
                 if (this._sorted) {
                     throw TypeError('Cannot set to sorted list');
                 }
                 index = this._validateIndex(index, true);
-                if (!Object.is(value, this._items[index])) {
-                    this._items[index] = value;
+                if (!Object.is(item, this._items[index])) {
+                    this._items[index] = item;
                     this.emit(ObservableList.EVENT_CHANGE);
                 }
                 return this;
             }
-            setRange(index, values) {
+            setRange(index, items) {
                 if (this._sorted) {
                     throw TypeError('Cannot set to sorted list');
                 }
                 index = this._validateIndex(index, true);
-                if (values instanceof ObservableList) {
-                    values = values._items;
+                if (items instanceof ObservableList) {
+                    items = items._items;
                 }
-                let valueCount = values.length;
-                if (!valueCount) {
+                let itemCount = items.length;
+                if (!itemCount) {
                     return this;
                 }
-                let items = this._items;
-                if (index + valueCount > items.length) {
-                    throw RangeError('Sum of "index" and "values.length" out of valid range');
+                let listItems = this._items;
+                if (index + itemCount > listItems.length) {
+                    throw RangeError('Sum of "index" and "items.length" out of valid range');
                 }
                 let changed = false;
-                for (let i = index + valueCount; i > index;) {
-                    let value = values[--i - index];
-                    if (!Object.is(value, items[i])) {
-                        items[i] = value;
+                for (let i = index + itemCount; i > index;) {
+                    let item = items[--i - index];
+                    if (!Object.is(item, listItems[i])) {
+                        listItems[i] = item;
                         changed = true;
                     }
                 }
@@ -1060,35 +1104,35 @@
                 }
                 return this;
             }
-            add(value, unique = false) {
-                if (unique && this._items.indexOf(value) != -1) {
+            add(item, unique = false) {
+                if (unique && this._items.indexOf(item) != -1) {
                     return this;
                 }
                 if (this._sorted) {
-                    this._insertSortedValue(value);
+                    this._insertSortedValue(item);
                 }
                 else {
-                    this._items.push(value);
+                    this._items.push(item);
                 }
                 this.emit(ObservableList.EVENT_CHANGE);
                 return this;
             }
-            addRange(values, unique = false) {
-                if (values instanceof ObservableList) {
-                    values = values._items;
+            addRange(items, unique = false) {
+                if (items instanceof ObservableList) {
+                    items = items._items;
                 }
-                if (values.length) {
+                if (items.length) {
                     if (unique) {
-                        let items = this._items;
+                        let listItems = this._items;
                         let sorted = this._sorted;
                         let changed = false;
-                        for (let value of values) {
-                            if (items.indexOf(value) == -1) {
+                        for (let item of items) {
+                            if (listItems.indexOf(item) == -1) {
                                 if (sorted) {
-                                    this._insertSortedValue(value);
+                                    this._insertSortedValue(item);
                                 }
                                 else {
-                                    items.push(value);
+                                    listItems.push(item);
                                 }
                                 changed = true;
                             }
@@ -1099,42 +1143,42 @@
                     }
                     else {
                         if (this._sorted) {
-                            for (let i = 0, l = values.length; i < l; i++) {
-                                this._insertSortedValue(values[i]);
+                            for (let i = 0, l = items.length; i < l; i++) {
+                                this._insertSortedValue(items[i]);
                             }
                         }
                         else {
-                            push.apply(this._items, values);
+                            push.apply(this._items, items);
                         }
                         this.emit(ObservableList.EVENT_CHANGE);
                     }
                 }
                 return this;
             }
-            insert(index, value) {
+            insert(index, item) {
                 if (this._sorted) {
                     throw TypeError('Cannot insert to sorted list');
                 }
-                this._items.splice(this._validateIndex(index, true), 0, value);
+                this._items.splice(this._validateIndex(index, true), 0, item);
                 this.emit(ObservableList.EVENT_CHANGE);
                 return this;
             }
-            insertRange(index, values) {
+            insertRange(index, items) {
                 if (this._sorted) {
                     throw TypeError('Cannot insert to sorted list');
                 }
                 index = this._validateIndex(index, true);
-                if (values instanceof ObservableList) {
-                    values = values._items;
+                if (items instanceof ObservableList) {
+                    items = items._items;
                 }
-                if (values.length) {
-                    splice.apply(this._items, [index, 0].concat(values));
+                if (items.length) {
+                    splice.apply(this._items, [index, 0].concat(items));
                     this.emit(ObservableList.EVENT_CHANGE);
                 }
                 return this;
             }
-            remove(value, fromIndex) {
-                let index = this._items.indexOf(value, this._validateIndex(fromIndex, true));
+            remove(item, fromIndex) {
+                let index = this._items.indexOf(item, this._validateIndex(fromIndex, true));
                 if (index == -1) {
                     return false;
                 }
@@ -1142,11 +1186,11 @@
                 this.emit(ObservableList.EVENT_CHANGE);
                 return true;
             }
-            removeAll(value, fromIndex) {
+            removeAll(item, fromIndex) {
                 let index = this._validateIndex(fromIndex, true);
                 let items = this._items;
                 let changed = false;
-                while ((index = items.indexOf(value, index)) != -1) {
+                while ((index = items.indexOf(item, index)) != -1) {
                     items.splice(index, 1);
                     changed = true;
                 }
@@ -1155,17 +1199,17 @@
                 }
                 return changed;
             }
-            removeEach(values, fromIndex) {
+            removeEach(items, fromIndex) {
                 fromIndex = this._validateIndex(fromIndex, true);
-                if (values instanceof ObservableList) {
-                    values = values._items.slice();
+                if (items instanceof ObservableList) {
+                    items = items._items.slice();
                 }
-                let items = this._items;
+                let listItems = this._items;
                 let changed = false;
-                for (let i = 0, l = values.length; i < l; i++) {
-                    let index = items.indexOf(values[i], fromIndex);
+                for (let i = 0, l = items.length; i < l; i++) {
+                    let index = listItems.indexOf(items[i], fromIndex);
                     if (index != -1) {
-                        items.splice(index, 1);
+                        listItems.splice(index, 1);
                         changed = true;
                     }
                 }
@@ -1175,9 +1219,9 @@
                 return changed;
             }
             removeAt(index) {
-                let value = this._items.splice(this._validateIndex(index), 1)[0];
+                let item = this._items.splice(this._validateIndex(index), 1)[0];
                 this.emit(ObservableList.EVENT_CHANGE);
-                return value;
+                return item;
             }
             removeRange(index, count) {
                 index = this._validateIndex(index, true);
@@ -1195,9 +1239,9 @@
                         throw RangeError('Sum of "index" and "count" out of valid range');
                     }
                 }
-                let values = this._items.splice(index, count);
+                let removedItems = this._items.splice(index, count);
                 this.emit(ObservableList.EVENT_CHANGE);
-                return values;
+                return removedItems;
             }
             replace(oldValue, newValue) {
                 if (this._sorted) {
@@ -1228,7 +1272,19 @@
                     return false;
                 }
                 for (let i = items.length; i;) {
-                    if (items[--i] !== thatItems[i]) {
+                    let item = items[--i];
+                    let thatItem = thatItems[i];
+                    if (this._itemEquals
+                        ? !this._itemEquals(item, thatItem)
+                        : item !== thatItem &&
+                            !(item &&
+                                thatItem &&
+                                typeof item == 'object' &&
+                                typeof thatItem == 'object' &&
+                                item.equals &&
+                                item.equals ===
+                                    thatItem.equals &&
+                                item.equals(thatItem))) {
                         return false;
                     }
                 }
@@ -1264,7 +1320,7 @@
                             : item.clone()
                         : item)
                     : this, {
-                    comparator: this._comparator || undefined,
+                    itemComparator: this._itemComparator || undefined,
                     sorted: this._sorted
                 });
             }
@@ -1282,7 +1338,17 @@
                 for (let i = items.length; i;) {
                     let item = items[--i];
                     let thatItem = thatItems[i];
-                    if (item !== thatItem) {
+                    if (this._itemEquals
+                        ? !this._itemEquals(item, thatItem)
+                        : item !== thatItem &&
+                            !(item &&
+                                thatItem &&
+                                typeof item == 'object' &&
+                                typeof thatItem == 'object' &&
+                                item.equals &&
+                                item.equals ===
+                                    thatItem.equals &&
+                                item.equals(thatItem))) {
                         if (item &&
                             thatItem &&
                             typeof item == 'object' &&
@@ -1313,21 +1379,21 @@
             toData() {
                 return this._items.map((item) => item && typeof item == 'object' && item.toData ? item.toData() : item);
             }
-            _insertSortedValue(value) {
+            _insertSortedValue(item) {
                 let items = this._items;
-                let comparator = this._comparator;
-                let low = 0;
-                let high = items.length;
-                while (low != high) {
-                    let mid = (low + high) >> 1;
-                    if (comparator(value, items[mid]) < 0) {
-                        high = mid;
+                let itemComparator = this._itemComparator;
+                let lowIndex = 0;
+                let highIndex = items.length;
+                while (lowIndex != highIndex) {
+                    let midIndex = (lowIndex + highIndex) >> 1;
+                    if (itemComparator(item, items[midIndex]) < 0) {
+                        highIndex = midIndex;
                     }
                     else {
-                        low = mid + 1;
+                        lowIndex = midIndex + 1;
                     }
                 }
-                items.splice(low, 0, value);
+                items.splice(lowIndex, 0, item);
             }
         }
         ObservableList.EVENT_CHANGE = 'change';

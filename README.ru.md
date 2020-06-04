@@ -499,7 +499,7 @@ let list = new cellx.ObservableList([1, 2, 3]);
 
 Список также как и `cellx.ObservableMap` генерирует событие `change` при любом изменении своих записей.
 
-При инициализации список может принимать `comparator`, с помощью которого будет происходить сортировка его значений:
+При инициализации список может принимать `itemComparator`, с помощью которого будет происходить сортировка его значений:
 
 ```js
 let list = new cellx.ObservableList([
@@ -507,7 +507,7 @@ let list = new cellx.ObservableList([
     { x: 1 },
     { x: 10 }
 ], {
-    comparator: (a, b) => {
+    itemComparator: (a, b) => {
         if (a.x < b.x) { return -1; }
         if (a.x > b.x) { return 1; }
         return 0;
@@ -523,7 +523,7 @@ console.log(list.toArray());
 // => [{ x: -100 }, { x: 1 }, { x: 5 }, { x: 7 }, { x: 10 }, { x: 100 }]
 ```
 
-Если вместо `comparator`-а передать опцию `sorted` со значением `true`, то будет использован стандартный `comparator`:
+Если вместо `itemComparator`-а передать опцию `sorted` со значением `true`, то будет использован стандартный `itemComparator`:
 
 ```js
 let list = new cellx.ObservableList([5, 1, 10], { sorted: true });
@@ -543,7 +543,7 @@ console.log(list.toArray());
 
 Длинна списка. Только для чтения.
 
-##### comparator
+##### itemComparator
 
 Функция для сравнения значений в сортированном списке. Только для чтения.
 

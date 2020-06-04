@@ -28,11 +28,11 @@ let transactionEvents: Array<IEvent> = [];
 let silently = 0;
 
 export class EventEmitter {
-	static get currentlySubscribing(): boolean {
+	static get currentlySubscribing() {
 		return currentlySubscribing;
 	}
 
-	static transact(cb: Function): void {
+	static transact(cb: Function) {
 		transactionLevel++;
 
 		try {
@@ -54,7 +54,7 @@ export class EventEmitter {
 		}
 	}
 
-	static silently(cb: Function): void {
+	static silently(cb: Function) {
 		silently++;
 
 		try {
@@ -154,7 +154,7 @@ export class EventEmitter {
 		return this;
 	}
 
-	_on(type: string | symbol, listener: TListener, context: any): void {
+	_on(type: string | symbol, listener: TListener, context: any) {
 		let index: number;
 
 		if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
@@ -181,7 +181,7 @@ export class EventEmitter {
 		}
 	}
 
-	_off(type: string | symbol, listener: TListener, context: any): void {
+	_off(type: string | symbol, listener: TListener, context: any) {
 		let index: number;
 
 		if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
@@ -294,7 +294,7 @@ export class EventEmitter {
 		return evt as IEvent;
 	}
 
-	handleEvent(evt: IEvent): void {
+	handleEvent(evt: IEvent) {
 		let events = this._events.get(evt.type);
 
 		if (!events) {
@@ -320,7 +320,7 @@ export class EventEmitter {
 		}
 	}
 
-	_tryEventListener(emEvt: IRegisteredEvent, evt: IEvent): any {
+	_tryEventListener(emEvt: IRegisteredEvent, evt: IEvent) {
 		try {
 			return emEvt.listener.call(emEvt.context, evt);
 		} catch (err) {

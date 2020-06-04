@@ -33,7 +33,7 @@
     "esm": "^3.2.25",
     "mocha": "^7.2.0",
     "nyc": "^15.1.0",
-    "rollup": "^2.12.0",
+    "rollup": "^2.13.1",
     "rollup-plugin-eslint": "^7.0.0",
     "rollup-plugin-node-resolve": "^5.2.0",
     "rollup-plugin-typescript2": "^0.27.1",

@@ -2,9 +2,12 @@ import { EventEmitter } from '../EventEmitter';
 const hasOwn = Object.prototype.hasOwnProperty;
 let ObservableMap = /** @class */ (() => {
     class ObservableMap extends EventEmitter {
-        constructor(entries) {
+        constructor(entries, options) {
             super();
             this._entries = new Map();
+            if (options && options.valueEquals) {
+                this._valueEquals = options.valueEquals;
+            }
             if (entries) {
                 let mapEntries = this._entries;
                 if (entries instanceof Map || entries instanceof ObservableMap) {
@@ -28,6 +31,9 @@ let ObservableMap = /** @class */ (() => {
         }
         get size() {
             return this._entries.size;
+        }
+        get valueEquals() {
+            return this._valueEquals;
         }
         onChange(listener, context) {
             return this.on(ObservableMap.EVENT_CHANGE, listener, context);
@@ -88,8 +94,22 @@ let ObservableMap = /** @class */ (() => {
             if (this.size != that.size) {
                 return false;
             }
-            for (let entry of this) {
-                if (entry[1] !== that.get(entry[0])) {
+            for (let [key, value] of this) {
+                if (!that.has(key)) {
+                    return false;
+                }
+                let thatValue = that.get(key);
+                if (this._valueEquals
+                    ? !this._valueEquals(value, thatValue)
+                    : value !== thatValue &&
+                        !(value &&
+                            thatValue &&
+                            typeof value == 'object' &&
+                            typeof thatValue == 'object' &&
+                            value.equals &&
+                            value.equals ===
+                                thatValue.equals &&
+                            value.equals(thatValue))) {
                     return false;
                 }
             }
@@ -135,7 +155,17 @@ let ObservableMap = /** @class */ (() => {
             for (let [key, value] of entries) {
                 if (that.has(key)) {
                     let thatValue = that.get(key);
-                    if (value !== thatValue) {
+                    if (this._valueEquals
+                        ? !this._valueEquals(value, thatValue)
+                        : value !== thatValue &&
+                            !(value &&
+                                thatValue &&
+                                typeof value == 'object' &&
+                                typeof thatValue == 'object' &&
+                                value.equals &&
+                                value.equals ===
+                                    thatValue.equals &&
+                                value.equals(thatValue))) {
                         if (value &&
                             thatValue &&
                             typeof value == 'object' &&
