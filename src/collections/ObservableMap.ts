@@ -190,9 +190,7 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 				entries!.push([
 					key,
 					value && typeof value == 'object' && (value as any).clone
-						? (value as any).clone.length
-							? (value as any).clone(true)
-							: (value as any).clone()
+						? (value as any).clone(true)
 						: value
 				]);
 			}

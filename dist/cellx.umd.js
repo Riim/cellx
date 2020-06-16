@@ -303,549 +303,599 @@
             }
         }
     }
-    let Cell = /** @class */ (() => {
-        class Cell extends EventEmitter {
-            constructor(value, options) {
-                super();
-                this._reactions = [];
-                this._error = null;
-                this._lastErrorEvent = null;
-                this._hasSubscribers = false;
-                this._active = false;
-                this._currentlyPulling = false;
-                this._updationId = -1;
-                this.debugKey = options && options.debugKey;
-                this.context = options && options.context !== undefined ? options.context : this;
-                this._pull =
-                    (options && options.pull) || (typeof value == 'function' ? value : null);
-                this._get = (options && options.get) || null;
-                this._validate = (options && options.validate) || null;
-                this._merge = (options && options.merge) || null;
-                this._put = (options && options.put) || defaultPut;
-                this._reap = (options && options.reap) || null;
-                this.meta = (options && options.meta) || null;
-                if (this._pull) {
-                    this._dependencies = undefined;
-                    this._value = undefined;
-                    this._state = 'dirty';
-                    this._inited = false;
+    class Cell extends EventEmitter {
+        constructor(value, options) {
+            super();
+            this._reactions = [];
+            this._error = null;
+            this._lastErrorEvent = null;
+            this._hasSubscribers = false;
+            this._active = false;
+            this._currentlyPulling = false;
+            this._updationId = -1;
+            this.debugKey = options && options.debugKey;
+            this.context = options && options.context !== undefined ? options.context : this;
+            this._pull =
+                (options && options.pull) || (typeof value == 'function' ? value : null);
+            this._get = (options && options.get) || null;
+            this._validate = (options && options.validate) || null;
+            this._merge = (options && options.merge) || null;
+            this._put = (options && options.put) || defaultPut;
+            this._reap = (options && options.reap) || null;
+            this.meta = (options && options.meta) || null;
+            if (this._pull) {
+                this._dependencies = undefined;
+                this._value = undefined;
+                this._state = 'dirty';
+                this._inited = false;
+            }
+            else {
+                this._dependencies = null;
+                if (options && options.value !== undefined) {
+                    value = options.value;
                 }
-                else {
-                    this._dependencies = null;
-                    if (options && options.value !== undefined) {
-                        value = options.value;
-                    }
-                    if (this._validate) {
-                        this._validate(value, undefined);
-                    }
-                    if (this._merge) {
-                        value = this._merge(value, undefined);
-                    }
-                    this._value = value;
-                    this._state = 'actual';
-                    this._inited = true;
-                    if (value instanceof EventEmitter) {
-                        value.on('change', this._onValueChange, this);
-                    }
+                if (this._validate) {
+                    this._validate(value, undefined);
                 }
-                if (options) {
-                    if (options.onChange) {
-                        this.on('change', options.onChange);
-                    }
-                    if (options.onError) {
-                        this.on(Cell.EVENT_ERROR, options.onError);
-                    }
+                if (this._merge) {
+                    value = this._merge(value, undefined);
+                }
+                this._value = value;
+                this._state = 'actual';
+                this._inited = true;
+                if (value instanceof EventEmitter) {
+                    value.on('change', this._onValueChange, this);
                 }
             }
-            static get currentlyPulling() {
-                return !!currentCell;
-            }
-            static autorun(cb, cellOptions) {
-                let disposer;
-                new Cell(function (cell, next) {
-                    if (!disposer) {
-                        disposer = () => {
-                            cell.dispose();
-                        };
-                    }
-                    return cb.call(this, next, disposer);
-                }, cellOptions && cellOptions.onChange
-                    ? cellOptions
-                    : Object.assign(Object.assign({}, cellOptions), { onChange() { } }));
-                return disposer;
-            }
-            static release() {
-                release();
-            }
-            static afterRelease(cb) {
-                (afterRelease || (afterRelease = [])).push(cb);
-            }
-            on(type, listener, context) {
-                if (this._dependencies !== null) {
-                    this.actualize();
+            if (options) {
+                if (options.onChange) {
+                    this.on('change', options.onChange);
                 }
+                if (options.onError) {
+                    this.on(Cell.EVENT_ERROR, options.onError);
+                }
+            }
+        }
+        static get currentlyPulling() {
+            return !!currentCell;
+        }
+        static autorun(cb, cellOptions) {
+            let disposer;
+            new Cell(function (cell, next) {
+                if (!disposer) {
+                    disposer = () => {
+                        cell.dispose();
+                    };
+                }
+                return cb.call(this, next, disposer);
+            }, cellOptions && cellOptions.onChange
+                ? cellOptions
+                : Object.assign(Object.assign({}, cellOptions), { onChange() { } }));
+            return disposer;
+        }
+        static release() {
+            release();
+        }
+        static afterRelease(cb) {
+            (afterRelease || (afterRelease = [])).push(cb);
+        }
+        on(type, listener, context) {
+            if (this._dependencies !== null) {
+                this.actualize();
+            }
+            if (typeof type == 'object') {
+                super.on(type, listener !== undefined ? listener : this.context);
+            }
+            else {
+                super.on(type, listener, context !== undefined ? context : this.context);
+            }
+            this._hasSubscribers = true;
+            this._activate(true);
+            return this;
+        }
+        off(type, listener, context) {
+            if (this._dependencies !== null) {
+                this.actualize();
+            }
+            if (type) {
                 if (typeof type == 'object') {
-                    super.on(type, listener !== undefined ? listener : this.context);
+                    super.off(type, listener !== undefined ? listener : this.context);
                 }
                 else {
-                    super.on(type, listener, context !== undefined ? context : this.context);
+                    super.off(type, listener, context !== undefined ? context : this.context);
                 }
-                this._hasSubscribers = true;
-                this._activate(true);
+            }
+            else {
+                super.off();
+            }
+            if (this._hasSubscribers &&
+                !this._reactions.length &&
+                !this._events.has(Cell.EVENT_CHANGE) &&
+                !this._events.has(Cell.EVENT_ERROR)) {
+                this._hasSubscribers = false;
+                this._deactivate();
+                if (this._reap) {
+                    this._reap.call(this.context);
+                }
+            }
+            return this;
+        }
+        onChange(listener, context) {
+            return this.on(Cell.EVENT_CHANGE, listener, context !== undefined ? context : this.context);
+        }
+        offChange(listener, context) {
+            return this.off(Cell.EVENT_CHANGE, listener, context !== undefined ? context : this.context);
+        }
+        onError(listener, context) {
+            return this.on(Cell.EVENT_ERROR, listener, context !== undefined ? context : this.context);
+        }
+        offError(listener, context) {
+            return this.off(Cell.EVENT_ERROR, listener, context !== undefined ? context : this.context);
+        }
+        subscribe(listener, context) {
+            let wrappers = listener[KEY_LISTENER_WRAPPERS] || (listener[KEY_LISTENER_WRAPPERS] = new Map());
+            if (wrappers.has(this)) {
                 return this;
             }
-            off(type, listener, context) {
-                if (this._dependencies !== null) {
-                    this.actualize();
-                }
-                if (type) {
-                    if (typeof type == 'object') {
-                        super.off(type, listener !== undefined ? listener : this.context);
-                    }
-                    else {
-                        super.off(type, listener, context !== undefined ? context : this.context);
-                    }
-                }
-                else {
-                    super.off();
-                }
-                if (this._hasSubscribers &&
-                    !this._reactions.length &&
-                    !this._events.has(Cell.EVENT_CHANGE) &&
-                    !this._events.has(Cell.EVENT_ERROR)) {
-                    this._hasSubscribers = false;
-                    this._deactivate();
-                    if (this._reap) {
-                        this._reap.call(this.context);
-                    }
-                }
+            function wrapper(evt) {
+                return listener.call(this, evt.data.error || null, evt);
+            }
+            wrappers.set(this, wrapper);
+            if (context === undefined) {
+                context = this.context;
+            }
+            return this.on(Cell.EVENT_CHANGE, wrapper, context).on(Cell.EVENT_ERROR, wrapper, context);
+        }
+        unsubscribe(listener, context) {
+            let wrappers = listener[KEY_LISTENER_WRAPPERS];
+            let wrapper = wrappers && wrappers.get(this);
+            if (!wrapper) {
                 return this;
             }
-            onChange(listener, context) {
-                return this.on(Cell.EVENT_CHANGE, listener, context !== undefined ? context : this.context);
+            wrappers.delete(this);
+            if (context === undefined) {
+                context = this.context;
             }
-            offChange(listener, context) {
-                return this.off(Cell.EVENT_CHANGE, listener, context !== undefined ? context : this.context);
-            }
-            onError(listener, context) {
-                return this.on(Cell.EVENT_ERROR, listener, context !== undefined ? context : this.context);
-            }
-            offError(listener, context) {
-                return this.off(Cell.EVENT_ERROR, listener, context !== undefined ? context : this.context);
-            }
-            subscribe(listener, context) {
-                let wrappers = listener[KEY_LISTENER_WRAPPERS] || (listener[KEY_LISTENER_WRAPPERS] = new Map());
-                if (wrappers.has(this)) {
-                    return this;
+            return this.off(Cell.EVENT_CHANGE, wrapper, context).off(Cell.EVENT_ERROR, wrapper, context);
+        }
+        _addReaction(reaction, actual) {
+            this._reactions.push(reaction);
+            this._hasSubscribers = true;
+            this._activate(actual);
+        }
+        _deleteReaction(reaction) {
+            this._reactions.splice(this._reactions.indexOf(reaction), 1);
+            if (this._hasSubscribers &&
+                !this._reactions.length &&
+                !this._events.has(Cell.EVENT_CHANGE) &&
+                !this._events.has(Cell.EVENT_ERROR)) {
+                this._hasSubscribers = false;
+                this._deactivate();
+                if (this._reap) {
+                    this._reap.call(this.context);
                 }
-                function wrapper(evt) {
-                    return listener.call(this, evt.data.error || null, evt);
-                }
-                wrappers.set(this, wrapper);
-                if (context === undefined) {
-                    context = this.context;
-                }
-                return this.on(Cell.EVENT_CHANGE, wrapper, context).on(Cell.EVENT_ERROR, wrapper, context);
             }
-            unsubscribe(listener, context) {
-                let wrappers = listener[KEY_LISTENER_WRAPPERS];
-                let wrapper = wrappers && wrappers.get(this);
-                if (!wrapper) {
-                    return this;
-                }
-                wrappers.delete(this);
-                if (context === undefined) {
-                    context = this.context;
-                }
-                return this.off(Cell.EVENT_CHANGE, wrapper, context).off(Cell.EVENT_ERROR, wrapper, context);
+        }
+        _activate(actual) {
+            if (this._active || !this._pull) {
+                return;
             }
-            _addReaction(reaction, actual) {
-                this._reactions.push(reaction);
-                this._hasSubscribers = true;
-                this._activate(actual);
+            let deps = this._dependencies;
+            if (deps) {
+                let i = deps.length;
+                do {
+                    deps[--i]._addReaction(this, actual);
+                } while (i);
+                if (actual) {
+                    this._state = 'actual';
+                }
+                this._active = true;
             }
-            _deleteReaction(reaction) {
-                this._reactions.splice(this._reactions.indexOf(reaction), 1);
-                if (this._hasSubscribers &&
-                    !this._reactions.length &&
-                    !this._events.has(Cell.EVENT_CHANGE) &&
-                    !this._events.has(Cell.EVENT_ERROR)) {
-                    this._hasSubscribers = false;
-                    this._deactivate();
-                    if (this._reap) {
-                        this._reap.call(this.context);
+        }
+        _deactivate() {
+            if (!this._active) {
+                return;
+            }
+            let deps = this._dependencies;
+            let i = deps.length;
+            do {
+                deps[--i]._deleteReaction(this);
+            } while (i);
+            this._state = 'dirty';
+            this._active = false;
+        }
+        _onValueChange(evt) {
+            this._inited = true;
+            this._updationId = ++lastUpdationId;
+            let reactions = this._reactions;
+            for (let i = 0; i < reactions.length; i++) {
+                reactions[i]._addToRelease(true);
+            }
+            this.handleEvent(evt);
+        }
+        _addToRelease(dirty) {
+            this._state = dirty ? 'dirty' : 'check';
+            let reactions = this._reactions;
+            let i = reactions.length;
+            if (i) {
+                do {
+                    if (reactions[--i]._state == 'actual') {
+                        reactions[i]._addToRelease(false);
                     }
-                }
+                } while (i);
             }
-            _activate(actual) {
-                if (this._active || !this._pull) {
-                    return;
-                }
+            else if (pendingCells.push(this) == 1) {
+                nextTick(release);
+            }
+        }
+        actualize() {
+            if (this._state == 'dirty') {
+                this.pull();
+            }
+            else if (this._state == 'check') {
                 let deps = this._dependencies;
+                for (let i = 0;;) {
+                    deps[i].actualize();
+                    if (this._state == 'dirty') {
+                        this.pull();
+                        break;
+                    }
+                    if (++i == deps.length) {
+                        this._state = 'actual';
+                        break;
+                    }
+                }
+            }
+        }
+        get value() {
+            return this.get();
+        }
+        set value(value) {
+            this.set(value);
+        }
+        get() {
+            if (this._state != 'actual' && this._updationId != lastUpdationId) {
+                this.actualize();
+            }
+            if (currentCell) {
+                if (currentCell._dependencies) {
+                    if (currentCell._dependencies.indexOf(this) == -1) {
+                        currentCell._dependencies.push(this);
+                    }
+                }
+                else {
+                    currentCell._dependencies = [this];
+                }
+                if (this._error && this._error instanceof WaitError) {
+                    throw this._error;
+                }
+            }
+            return this._get ? this._get(this._value) : this._value;
+        }
+        pull() {
+            if (!this._pull) {
+                return false;
+            }
+            if (this._currentlyPulling) {
+                throw TypeError('Circular pulling detected');
+            }
+            this._currentlyPulling = true;
+            let prevDeps = this._dependencies;
+            this._dependencies = null;
+            let prevCell = currentCell;
+            currentCell = this;
+            let value;
+            try {
+                value = this._pull.length
+                    ? this._pull.call(this.context, this, this._value)
+                    : this._pull.call(this.context);
+            }
+            catch (err) {
+                $error.error = err;
+                value = $error;
+            }
+            currentCell = prevCell;
+            this._currentlyPulling = false;
+            if (this._hasSubscribers) {
+                let deps = this._dependencies;
+                let newDepCount = 0;
                 if (deps) {
                     let i = deps.length;
                     do {
-                        deps[--i]._addReaction(this, actual);
+                        let dep = deps[--i];
+                        if (!prevDeps || prevDeps.indexOf(dep) == -1) {
+                            dep._addReaction(this, false);
+                            newDepCount++;
+                        }
                     } while (i);
-                    if (actual) {
-                        this._state = 'actual';
+                }
+                if (prevDeps && (!deps || deps.length - newDepCount < prevDeps.length)) {
+                    for (let i = prevDeps.length; i;) {
+                        i--;
+                        if (!deps || deps.indexOf(prevDeps[i]) == -1) {
+                            prevDeps[i]._deleteReaction(this);
+                        }
                     }
+                }
+                if (deps) {
                     this._active = true;
                 }
-            }
-            _deactivate() {
-                if (!this._active) {
-                    return;
+                else {
+                    this._state = 'actual';
+                    this._active = false;
                 }
-                let deps = this._dependencies;
-                let i = deps.length;
-                do {
-                    deps[--i]._deleteReaction(this);
-                } while (i);
-                this._state = 'dirty';
-                this._active = false;
             }
-            _onValueChange(evt) {
-                this._inited = true;
-                this._updationId = ++lastUpdationId;
+            else {
+                this._state = this._dependencies ? 'dirty' : 'actual';
+            }
+            return value === $error ? this.fail($error.error) : this.push(value);
+        }
+        set(value) {
+            if (!this._inited) {
+                // Не инициализированная ячейка не может иметь _state == 'check', поэтому вместо
+                // actualize сразу pull.
+                this.pull();
+            }
+            if (this._validate) {
+                this._validate(value, this._value);
+            }
+            if (this._merge) {
+                value = this._merge(value, this._value);
+            }
+            if (this._put.length >= 3) {
+                this._put.call(this.context, this, value, this._value);
+            }
+            else {
+                this._put.call(this.context, this, value);
+            }
+            return this;
+        }
+        push(value) {
+            this._inited = true;
+            if (this._error) {
+                this._setError(null);
+            }
+            let prevValue = this._value;
+            let changed = !Object.is(value, prevValue);
+            if (changed) {
+                this._value = value;
+                if (prevValue instanceof EventEmitter) {
+                    prevValue.off('change', this._onValueChange, this);
+                }
+                if (value instanceof EventEmitter) {
+                    value.on('change', this._onValueChange, this);
+                }
+            }
+            if (this._active) {
+                this._state = 'actual';
+            }
+            this._updationId = ++lastUpdationId;
+            if (changed) {
                 let reactions = this._reactions;
                 for (let i = 0; i < reactions.length; i++) {
                     reactions[i]._addToRelease(true);
                 }
-                this.handleEvent(evt);
-            }
-            _addToRelease(dirty) {
-                this._state = dirty ? 'dirty' : 'check';
-                let reactions = this._reactions;
-                let i = reactions.length;
-                if (i) {
-                    do {
-                        if (reactions[--i]._state == 'actual') {
-                            reactions[i]._addToRelease(false);
-                        }
-                    } while (i);
-                }
-                else if (pendingCells.push(this) == 1) {
-                    nextTick(release);
-                }
-            }
-            actualize() {
-                if (this._state == 'dirty') {
-                    this.pull();
-                }
-                else if (this._state == 'check') {
-                    let deps = this._dependencies;
-                    for (let i = 0;;) {
-                        deps[i].actualize();
-                        if (this._state == 'dirty') {
-                            this.pull();
-                            break;
-                        }
-                        if (++i == deps.length) {
-                            this._state = 'actual';
-                            break;
-                        }
-                    }
-                }
-            }
-            get value() {
-                return this.get();
-            }
-            set value(value) {
-                this.set(value);
-            }
-            get() {
-                if (this._state != 'actual' && this._updationId != lastUpdationId) {
-                    this.actualize();
-                }
-                if (currentCell) {
-                    if (currentCell._dependencies) {
-                        if (currentCell._dependencies.indexOf(this) == -1) {
-                            currentCell._dependencies.push(this);
-                        }
-                    }
-                    else {
-                        currentCell._dependencies = [this];
-                    }
-                    if (this._error && this._error instanceof WaitError) {
-                        throw this._error;
-                    }
-                }
-                return this._get ? this._get(this._value) : this._value;
-            }
-            pull() {
-                if (!this._pull) {
-                    return false;
-                }
-                if (this._currentlyPulling) {
-                    throw TypeError('Circular pulling detected');
-                }
-                this._currentlyPulling = true;
-                let prevDeps = this._dependencies;
-                this._dependencies = null;
-                let prevCell = currentCell;
-                currentCell = this;
-                let value;
-                try {
-                    value = this._pull.length
-                        ? this._pull.call(this.context, this, this._value)
-                        : this._pull.call(this.context);
-                }
-                catch (err) {
-                    $error.error = err;
-                    value = $error;
-                }
-                currentCell = prevCell;
-                this._currentlyPulling = false;
-                if (this._hasSubscribers) {
-                    let deps = this._dependencies;
-                    let newDepCount = 0;
-                    if (deps) {
-                        let i = deps.length;
-                        do {
-                            let dep = deps[--i];
-                            if (!prevDeps || prevDeps.indexOf(dep) == -1) {
-                                dep._addReaction(this, false);
-                                newDepCount++;
-                            }
-                        } while (i);
-                    }
-                    if (prevDeps && (!deps || deps.length - newDepCount < prevDeps.length)) {
-                        for (let i = prevDeps.length; i;) {
-                            i--;
-                            if (!deps || deps.indexOf(prevDeps[i]) == -1) {
-                                prevDeps[i]._deleteReaction(this);
-                            }
-                        }
-                    }
-                    if (deps) {
-                        this._active = true;
-                    }
-                    else {
-                        this._state = 'actual';
-                        this._active = false;
-                    }
-                }
-                else {
-                    this._state = this._dependencies ? 'dirty' : 'actual';
-                }
-                return value === $error ? this.fail($error.error) : this.push(value);
-            }
-            set(value) {
-                if (!this._inited) {
-                    // Не инициализированная ячейка не может иметь _state == 'check', поэтому вместо
-                    // actualize сразу pull.
-                    this.pull();
-                }
-                if (this._validate) {
-                    this._validate(value, this._value);
-                }
-                if (this._merge) {
-                    value = this._merge(value, this._value);
-                }
-                if (this._put.length >= 3) {
-                    this._put.call(this.context, this, value, this._value);
-                }
-                else {
-                    this._put.call(this.context, this, value);
-                }
-                return this;
-            }
-            push(value) {
-                this._inited = true;
-                if (this._error) {
-                    this._setError(null);
-                }
-                let prevValue = this._value;
-                let changed = !Object.is(value, prevValue);
-                if (changed) {
-                    this._value = value;
-                    if (prevValue instanceof EventEmitter) {
-                        prevValue.off('change', this._onValueChange, this);
-                    }
-                    if (value instanceof EventEmitter) {
-                        value.on('change', this._onValueChange, this);
-                    }
-                }
-                if (this._active) {
-                    this._state = 'actual';
-                }
-                this._updationId = ++lastUpdationId;
-                if (changed) {
-                    let reactions = this._reactions;
-                    for (let i = 0; i < reactions.length; i++) {
-                        reactions[i]._addToRelease(true);
-                    }
-                    this.emit(Cell.EVENT_CHANGE, {
-                        prevValue,
-                        value
-                    });
-                }
-                return changed;
-            }
-            fail(err) {
-                this._inited = true;
-                let isWaitError = err instanceof WaitError;
-                if (!isWaitError) {
-                    if (this.debugKey) {
-                        logError('[' + this.debugKey + ']', err);
-                    }
-                    else {
-                        logError(err);
-                    }
-                    if (!(err instanceof Error)) {
-                        err = new Error(String(err));
-                    }
-                }
-                this._setError(err);
-                if (this._active) {
-                    this._state = 'actual';
-                }
-                return isWaitError;
-            }
-            _setError(err) {
-                this._error = err;
-                this._updationId = ++lastUpdationId;
-                if (err) {
-                    this._handleErrorEvent({
-                        target: this,
-                        type: Cell.EVENT_ERROR,
-                        data: {
-                            error: err
-                        }
-                    });
-                }
-            }
-            _handleErrorEvent(evt) {
-                if (this._lastErrorEvent === evt) {
-                    return;
-                }
-                this._lastErrorEvent = evt;
-                this.handleEvent(evt);
-                let reactions = this._reactions;
-                for (let i = 0; i < reactions.length; i++) {
-                    reactions[i]._handleErrorEvent(evt);
-                }
-            }
-            wait() {
-                throw new WaitError();
-            }
-            reap() {
-                this.off();
-                let reactions = this._reactions;
-                for (let i = 0; i < reactions.length; i++) {
-                    reactions[i].reap();
-                }
-                return this;
-            }
-            dispose() {
-                return this.reap();
-            }
-        }
-        Cell.EVENT_CHANGE = 'change';
-        Cell.EVENT_ERROR = 'error';
-        return Cell;
-    })();
-
-    const hasOwn$1 = Object.prototype.hasOwnProperty;
-    let ObservableMap = /** @class */ (() => {
-        class ObservableMap extends EventEmitter {
-            constructor(entries, options) {
-                super();
-                this._entries = new Map();
-                if (options && options.valueEquals) {
-                    this._valueEquals = options.valueEquals;
-                }
-                if (entries) {
-                    let mapEntries = this._entries;
-                    if (entries instanceof Map || entries instanceof ObservableMap) {
-                        for (let [key, value] of entries instanceof Map ? entries : entries._entries) {
-                            mapEntries.set(key, value);
-                        }
-                    }
-                    else if (Array.isArray(entries)) {
-                        for (let i = 0, l = entries.length; i < l; i++) {
-                            mapEntries.set(entries[i][0], entries[i][1]);
-                        }
-                    }
-                    else {
-                        for (let key in entries) {
-                            if (hasOwn$1.call(entries, key)) {
-                                mapEntries.set(key, entries[key]);
-                            }
-                        }
-                    }
-                }
-            }
-            get size() {
-                return this._entries.size;
-            }
-            get valueEquals() {
-                return this._valueEquals;
-            }
-            onChange(listener, context) {
-                return this.on(ObservableMap.EVENT_CHANGE, listener, context);
-            }
-            offChange(listener, context) {
-                return this.off(ObservableMap.EVENT_CHANGE, listener, context);
-            }
-            has(key) {
-                return this._entries.has(key);
-            }
-            get(key) {
-                return this._entries.get(key);
-            }
-            set(key, value) {
-                let entries = this._entries;
-                let hasKey = entries.has(key);
-                let prev;
-                if (hasKey) {
-                    prev = entries.get(key);
-                    if (Object.is(value, prev)) {
-                        return this;
-                    }
-                }
-                entries.set(key, value);
-                this.emit(ObservableMap.EVENT_CHANGE, {
-                    subtype: hasKey ? 'update' : 'add',
-                    key,
-                    prevValue: prev,
+                this.emit(Cell.EVENT_CHANGE, {
+                    prevValue,
                     value
                 });
-                return this;
             }
-            delete(key) {
-                let entries = this._entries;
-                if (entries.has(key)) {
-                    let value = entries.get(key);
-                    entries.delete(key);
-                    this.emit(ObservableMap.EVENT_CHANGE, {
-                        subtype: 'delete',
-                        key,
-                        value
-                    });
-                    return true;
+            return changed;
+        }
+        fail(err) {
+            this._inited = true;
+            let isWaitError = err instanceof WaitError;
+            if (!isWaitError) {
+                if (this.debugKey) {
+                    logError('[' + this.debugKey + ']', err);
                 }
+                else {
+                    logError(err);
+                }
+                if (!(err instanceof Error)) {
+                    err = new Error(String(err));
+                }
+            }
+            this._setError(err);
+            if (this._active) {
+                this._state = 'actual';
+            }
+            return isWaitError;
+        }
+        _setError(err) {
+            this._error = err;
+            this._updationId = ++lastUpdationId;
+            if (err) {
+                this._handleErrorEvent({
+                    target: this,
+                    type: Cell.EVENT_ERROR,
+                    data: {
+                        error: err
+                    }
+                });
+            }
+        }
+        _handleErrorEvent(evt) {
+            if (this._lastErrorEvent === evt) {
+                return;
+            }
+            this._lastErrorEvent = evt;
+            this.handleEvent(evt);
+            let reactions = this._reactions;
+            for (let i = 0; i < reactions.length; i++) {
+                reactions[i]._handleErrorEvent(evt);
+            }
+        }
+        wait() {
+            throw new WaitError();
+        }
+        reap() {
+            this.off();
+            let reactions = this._reactions;
+            for (let i = 0; i < reactions.length; i++) {
+                reactions[i].reap();
+            }
+            return this;
+        }
+        dispose() {
+            return this.reap();
+        }
+    }
+    Cell.EVENT_CHANGE = 'change';
+    Cell.EVENT_ERROR = 'error';
+
+    const hasOwn$1 = Object.prototype.hasOwnProperty;
+    class ObservableMap extends EventEmitter {
+        constructor(entries, options) {
+            super();
+            this._entries = new Map();
+            if (options && options.valueEquals) {
+                this._valueEquals = options.valueEquals;
+            }
+            if (entries) {
+                let mapEntries = this._entries;
+                if (entries instanceof Map || entries instanceof ObservableMap) {
+                    for (let [key, value] of entries instanceof Map ? entries : entries._entries) {
+                        mapEntries.set(key, value);
+                    }
+                }
+                else if (Array.isArray(entries)) {
+                    for (let i = 0, l = entries.length; i < l; i++) {
+                        mapEntries.set(entries[i][0], entries[i][1]);
+                    }
+                }
+                else {
+                    for (let key in entries) {
+                        if (hasOwn$1.call(entries, key)) {
+                            mapEntries.set(key, entries[key]);
+                        }
+                    }
+                }
+            }
+        }
+        get size() {
+            return this._entries.size;
+        }
+        get valueEquals() {
+            return this._valueEquals;
+        }
+        onChange(listener, context) {
+            return this.on(ObservableMap.EVENT_CHANGE, listener, context);
+        }
+        offChange(listener, context) {
+            return this.off(ObservableMap.EVENT_CHANGE, listener, context);
+        }
+        has(key) {
+            return this._entries.has(key);
+        }
+        get(key) {
+            return this._entries.get(key);
+        }
+        set(key, value) {
+            let entries = this._entries;
+            let hasKey = entries.has(key);
+            let prev;
+            if (hasKey) {
+                prev = entries.get(key);
+                if (Object.is(value, prev)) {
+                    return this;
+                }
+            }
+            entries.set(key, value);
+            this.emit(ObservableMap.EVENT_CHANGE, {
+                subtype: hasKey ? 'update' : 'add',
+                key,
+                prevValue: prev,
+                value
+            });
+            return this;
+        }
+        delete(key) {
+            let entries = this._entries;
+            if (entries.has(key)) {
+                let value = entries.get(key);
+                entries.delete(key);
+                this.emit(ObservableMap.EVENT_CHANGE, {
+                    subtype: 'delete',
+                    key,
+                    value
+                });
+                return true;
+            }
+            return false;
+        }
+        clear() {
+            if (this._entries.size) {
+                this._entries.clear();
+                this.emit(ObservableMap.EVENT_CHANGE, { subtype: 'clear' });
+            }
+            return this;
+        }
+        equals(that) {
+            if (!(that instanceof ObservableMap)) {
                 return false;
             }
-            clear() {
-                if (this._entries.size) {
-                    this._entries.clear();
-                    this.emit(ObservableMap.EVENT_CHANGE, { subtype: 'clear' });
-                }
-                return this;
+            if (this.size != that.size) {
+                return false;
             }
-            equals(that) {
-                if (!(that instanceof ObservableMap)) {
+            for (let [key, value] of this) {
+                if (!that.has(key)) {
                     return false;
                 }
-                if (this.size != that.size) {
+                let thatValue = that.get(key);
+                if (this._valueEquals
+                    ? !this._valueEquals(value, thatValue)
+                    : value !== thatValue &&
+                        !(value &&
+                            thatValue &&
+                            typeof value == 'object' &&
+                            typeof thatValue == 'object' &&
+                            value.equals &&
+                            value.equals ===
+                                thatValue.equals &&
+                            value.equals(thatValue))) {
                     return false;
                 }
-                for (let [key, value] of this) {
-                    if (!that.has(key)) {
-                        return false;
-                    }
+            }
+            return true;
+        }
+        forEach(cb, context) {
+            for (let [key, value] of this._entries) {
+                cb.call(context, value, key, this);
+            }
+        }
+        keys() {
+            return this._entries.keys();
+        }
+        values() {
+            return this._entries.values();
+        }
+        entries() {
+            return this._entries.entries();
+        }
+        clone(deep = false) {
+            let entries;
+            if (deep) {
+                entries = [];
+                for (let [key, value] of this._entries) {
+                    entries.push([
+                        key,
+                        value && typeof value == 'object' && value.clone
+                            ? value.clone(true)
+                            : value
+                    ]);
+                }
+            }
+            return new this.constructor(entries || this);
+        }
+        absorbFrom(that) {
+            if (!(that instanceof ObservableMap)) {
+                throw TypeError('"that" must be instance of ObservableMap');
+            }
+            let entries = this._entries;
+            let changed = false;
+            for (let [key, value] of entries) {
+                if (that.has(key)) {
                     let thatValue = that.get(key);
                     if (this._valueEquals
                         ? !this._valueEquals(value, thatValue)
@@ -858,109 +908,51 @@
                                 value.equals ===
                                     thatValue.equals &&
                                 value.equals(thatValue))) {
-                        return false;
-                    }
-                }
-                return true;
-            }
-            forEach(cb, context) {
-                for (let [key, value] of this._entries) {
-                    cb.call(context, value, key, this);
-                }
-            }
-            keys() {
-                return this._entries.keys();
-            }
-            values() {
-                return this._entries.values();
-            }
-            entries() {
-                return this._entries.entries();
-            }
-            clone(deep = false) {
-                let entries;
-                if (deep) {
-                    entries = [];
-                    for (let [key, value] of this._entries) {
-                        entries.push([
-                            key,
-                            value && typeof value == 'object' && value.clone
-                                ? value.clone.length
-                                    ? value.clone(true)
-                                    : value.clone()
-                                : value
-                        ]);
-                    }
-                }
-                return new this.constructor(entries || this);
-            }
-            absorbFrom(that) {
-                if (!(that instanceof ObservableMap)) {
-                    throw TypeError('"that" must be instance of ObservableMap');
-                }
-                let entries = this._entries;
-                let changed = false;
-                for (let [key, value] of entries) {
-                    if (that.has(key)) {
-                        let thatValue = that.get(key);
-                        if (this._valueEquals
-                            ? !this._valueEquals(value, thatValue)
-                            : value !== thatValue &&
-                                !(value &&
-                                    thatValue &&
-                                    typeof value == 'object' &&
-                                    typeof thatValue == 'object' &&
-                                    value.equals &&
-                                    value.equals ===
-                                        thatValue.equals &&
-                                    value.equals(thatValue))) {
-                            if (value &&
-                                thatValue &&
-                                typeof value == 'object' &&
-                                typeof thatValue == 'object' &&
-                                value.absorbFrom &&
-                                value.absorbFrom ===
-                                    thatValue.absorbFrom) {
-                                if (value.absorbFrom(thatValue)) {
-                                    changed = true;
-                                }
-                            }
-                            else {
-                                entries.set(key, thatValue);
+                        if (value &&
+                            thatValue &&
+                            typeof value == 'object' &&
+                            typeof thatValue == 'object' &&
+                            value.absorbFrom &&
+                            value.absorbFrom ===
+                                thatValue.absorbFrom) {
+                            if (value.absorbFrom(thatValue)) {
                                 changed = true;
                             }
                         }
-                    }
-                    else {
-                        entries.delete(key);
-                        changed = true;
-                    }
-                }
-                for (let [key, value] of that) {
-                    if (!entries.has(key)) {
-                        entries.set(key, value);
-                        changed = true;
+                        else {
+                            entries.set(key, thatValue);
+                            changed = true;
+                        }
                     }
                 }
-                if (changed) {
-                    this.emit(ObservableMap.EVENT_CHANGE, { subtype: 'absorbFrom' });
+                else {
+                    entries.delete(key);
+                    changed = true;
                 }
-                return changed;
             }
-            toData() {
-                let data = {};
-                for (let [key, value] of this._entries) {
-                    data[key] =
-                        value && typeof value == 'object' && value.toData
-                            ? value.toData()
-                            : value;
+            for (let [key, value] of that) {
+                if (!entries.has(key)) {
+                    entries.set(key, value);
+                    changed = true;
                 }
-                return data;
             }
+            if (changed) {
+                this.emit(ObservableMap.EVENT_CHANGE, { subtype: 'absorbFrom' });
+            }
+            return changed;
         }
-        ObservableMap.EVENT_CHANGE = 'change';
-        return ObservableMap;
-    })();
+        toData() {
+            let data = {};
+            for (let [key, value] of this._entries) {
+                data[key] =
+                    value && typeof value == 'object' && value.toData
+                        ? value.toData()
+                        : value;
+            }
+            return data;
+        }
+    }
+    ObservableMap.EVENT_CHANGE = 'change';
     ObservableMap.prototype[Symbol.iterator] = ObservableMap.prototype.entries;
 
     const push = Array.prototype.push;
@@ -968,437 +960,432 @@
     const defaultItemComparator = (a, b) => {
         return a < b ? -1 : a > b ? 1 : 0;
     };
-    let ObservableList = /** @class */ (() => {
-        class ObservableList extends EventEmitter {
-            constructor(items, options) {
-                super();
-                this._items = [];
-                if (options) {
-                    if (options.itemEquals) {
-                        this._itemEquals = options.itemEquals;
+    class ObservableList extends EventEmitter {
+        constructor(items, options) {
+            super();
+            this._items = [];
+            if (options) {
+                if (options.itemEquals) {
+                    this._itemEquals = options.itemEquals;
+                }
+                if ((options.itemComparator && options.sorted !== false) || options.sorted) {
+                    this._itemComparator = options.itemComparator || defaultItemComparator;
+                    this._sorted = true;
+                }
+                else {
+                    this._itemComparator = null;
+                    this._sorted = false;
+                }
+            }
+            if (items) {
+                if (this._sorted) {
+                    if (items instanceof ObservableList) {
+                        items = items._items;
                     }
-                    if ((options.itemComparator && options.sorted !== false) || options.sorted) {
-                        this._itemComparator = options.itemComparator || defaultItemComparator;
-                        this._sorted = true;
-                    }
-                    else {
-                        this._itemComparator = null;
-                        this._sorted = false;
+                    for (let i = 0, l = items.length; i < l; i++) {
+                        this._insertSortedValue(items[i]);
                     }
                 }
-                if (items) {
-                    if (this._sorted) {
-                        if (items instanceof ObservableList) {
-                            items = items._items;
+                else {
+                    push.apply(this._items, items instanceof ObservableList ? items._items : items);
+                }
+            }
+        }
+        get length() {
+            return this._items.length;
+        }
+        set length(value) {
+            if (this._items.length != value) {
+                if (value > this._items.length) {
+                    throw RangeError('Length out of valid range');
+                }
+                this.emit(ObservableList.EVENT_CHANGE);
+                this._items.length = value;
+            }
+        }
+        get itemEquals() {
+            return this._itemEquals;
+        }
+        get itemComparator() {
+            return this._itemComparator;
+        }
+        get sorted() {
+            return this._sorted;
+        }
+        onChange(listener, context) {
+            return this.on(ObservableList.EVENT_CHANGE, listener, context);
+        }
+        offChange(listener, context) {
+            return this.off(ObservableList.EVENT_CHANGE, listener, context);
+        }
+        _validateIndex(index, allowEndIndex = false) {
+            if (index === undefined) {
+                return index;
+            }
+            if (index < 0) {
+                index += this._items.length;
+                if (index < 0) {
+                    throw RangeError('Index out of valid range');
+                }
+            }
+            else if (index > this._items.length - (allowEndIndex ? 0 : 1)) {
+                throw RangeError('Index out of valid range');
+            }
+            return index;
+        }
+        contains(item) {
+            return this._items.indexOf(item) != -1;
+        }
+        indexOf(item, fromIndex) {
+            return this._items.indexOf(item, this._validateIndex(fromIndex, true));
+        }
+        lastIndexOf(item, fromIndex) {
+            return this._items.lastIndexOf(item, fromIndex === undefined ? -1 : this._validateIndex(fromIndex, true));
+        }
+        get(index) {
+            return this._items[this._validateIndex(index, true)];
+        }
+        getRange(index, count) {
+            index = this._validateIndex(index, true);
+            if (count === undefined) {
+                return this._items.slice(index);
+            }
+            if (index + count > this._items.length) {
+                throw RangeError('Sum of "index" and "count" out of valid range');
+            }
+            return this._items.slice(index, index + count);
+        }
+        set(index, item) {
+            if (this._sorted) {
+                throw TypeError('Cannot set to sorted list');
+            }
+            index = this._validateIndex(index, true);
+            if (!Object.is(item, this._items[index])) {
+                this._items[index] = item;
+                this.emit(ObservableList.EVENT_CHANGE);
+            }
+            return this;
+        }
+        setRange(index, items) {
+            if (this._sorted) {
+                throw TypeError('Cannot set to sorted list');
+            }
+            index = this._validateIndex(index, true);
+            if (items instanceof ObservableList) {
+                items = items._items;
+            }
+            let itemCount = items.length;
+            if (!itemCount) {
+                return this;
+            }
+            let listItems = this._items;
+            if (index + itemCount > listItems.length) {
+                throw RangeError('Sum of "index" and "items.length" out of valid range');
+            }
+            let changed = false;
+            for (let i = index + itemCount; i > index;) {
+                let item = items[--i - index];
+                if (!Object.is(item, listItems[i])) {
+                    listItems[i] = item;
+                    changed = true;
+                }
+            }
+            if (changed) {
+                this.emit(ObservableList.EVENT_CHANGE);
+            }
+            return this;
+        }
+        add(item, unique = false) {
+            if (unique && this._items.indexOf(item) != -1) {
+                return this;
+            }
+            if (this._sorted) {
+                this._insertSortedValue(item);
+            }
+            else {
+                this._items.push(item);
+            }
+            this.emit(ObservableList.EVENT_CHANGE);
+            return this;
+        }
+        addRange(items, unique = false) {
+            if (items instanceof ObservableList) {
+                items = items._items;
+            }
+            if (items.length) {
+                if (unique) {
+                    let listItems = this._items;
+                    let sorted = this._sorted;
+                    let changed = false;
+                    for (let item of items) {
+                        if (listItems.indexOf(item) == -1) {
+                            if (sorted) {
+                                this._insertSortedValue(item);
+                            }
+                            else {
+                                listItems.push(item);
+                            }
+                            changed = true;
                         }
+                    }
+                    if (changed) {
+                        this.emit(ObservableList.EVENT_CHANGE);
+                    }
+                }
+                else {
+                    if (this._sorted) {
                         for (let i = 0, l = items.length; i < l; i++) {
                             this._insertSortedValue(items[i]);
                         }
                     }
                     else {
-                        push.apply(this._items, items instanceof ObservableList ? items._items : items);
-                    }
-                }
-            }
-            get length() {
-                return this._items.length;
-            }
-            set length(value) {
-                if (this._items.length != value) {
-                    if (value > this._items.length) {
-                        throw RangeError('Length out of valid range');
+                        push.apply(this._items, items);
                     }
                     this.emit(ObservableList.EVENT_CHANGE);
-                    this._items.length = value;
                 }
             }
-            get itemEquals() {
-                return this._itemEquals;
+            return this;
+        }
+        insert(index, item) {
+            if (this._sorted) {
+                throw TypeError('Cannot insert to sorted list');
             }
-            get itemComparator() {
-                return this._itemComparator;
+            this._items.splice(this._validateIndex(index, true), 0, item);
+            this.emit(ObservableList.EVENT_CHANGE);
+            return this;
+        }
+        insertRange(index, items) {
+            if (this._sorted) {
+                throw TypeError('Cannot insert to sorted list');
             }
-            get sorted() {
-                return this._sorted;
+            index = this._validateIndex(index, true);
+            if (items instanceof ObservableList) {
+                items = items._items;
             }
-            onChange(listener, context) {
-                return this.on(ObservableList.EVENT_CHANGE, listener, context);
+            if (items.length) {
+                splice.apply(this._items, [index, 0].concat(items));
+                this.emit(ObservableList.EVENT_CHANGE);
             }
-            offChange(listener, context) {
-                return this.off(ObservableList.EVENT_CHANGE, listener, context);
+            return this;
+        }
+        remove(item, fromIndex) {
+            let index = this._items.indexOf(item, this._validateIndex(fromIndex, true));
+            if (index == -1) {
+                return false;
             }
-            _validateIndex(index, allowEndIndex = false) {
-                if (index === undefined) {
-                    return index;
+            this._items.splice(index, 1);
+            this.emit(ObservableList.EVENT_CHANGE);
+            return true;
+        }
+        removeAll(item, fromIndex) {
+            let index = this._validateIndex(fromIndex, true);
+            let items = this._items;
+            let changed = false;
+            while ((index = items.indexOf(item, index)) != -1) {
+                items.splice(index, 1);
+                changed = true;
+            }
+            if (changed) {
+                this.emit(ObservableList.EVENT_CHANGE);
+            }
+            return changed;
+        }
+        removeEach(items, fromIndex) {
+            fromIndex = this._validateIndex(fromIndex, true);
+            if (items instanceof ObservableList) {
+                items = items._items.slice();
+            }
+            let listItems = this._items;
+            let changed = false;
+            for (let i = 0, l = items.length; i < l; i++) {
+                let index = listItems.indexOf(items[i], fromIndex);
+                if (index != -1) {
+                    listItems.splice(index, 1);
+                    changed = true;
                 }
-                if (index < 0) {
-                    index += this._items.length;
-                    if (index < 0) {
-                        throw RangeError('Index out of valid range');
-                    }
+            }
+            if (changed) {
+                this.emit(ObservableList.EVENT_CHANGE);
+            }
+            return changed;
+        }
+        removeAt(index) {
+            let item = this._items.splice(this._validateIndex(index), 1)[0];
+            this.emit(ObservableList.EVENT_CHANGE);
+            return item;
+        }
+        removeRange(index, count) {
+            index = this._validateIndex(index, true);
+            if (count === undefined) {
+                count = this._items.length - index;
+                if (!count) {
+                    return [];
                 }
-                else if (index > this._items.length - (allowEndIndex ? 0 : 1)) {
-                    throw RangeError('Index out of valid range');
-                }
-                return index;
             }
-            contains(item) {
-                return this._items.indexOf(item) != -1;
-            }
-            indexOf(item, fromIndex) {
-                return this._items.indexOf(item, this._validateIndex(fromIndex, true));
-            }
-            lastIndexOf(item, fromIndex) {
-                return this._items.lastIndexOf(item, fromIndex === undefined ? -1 : this._validateIndex(fromIndex, true));
-            }
-            get(index) {
-                return this._items[this._validateIndex(index, true)];
-            }
-            getRange(index, count) {
-                index = this._validateIndex(index, true);
-                if (count === undefined) {
-                    return this._items.slice(index);
+            else {
+                if (!count) {
+                    return [];
                 }
                 if (index + count > this._items.length) {
                     throw RangeError('Sum of "index" and "count" out of valid range');
                 }
-                return this._items.slice(index, index + count);
             }
-            set(index, item) {
-                if (this._sorted) {
-                    throw TypeError('Cannot set to sorted list');
-                }
-                index = this._validateIndex(index, true);
-                if (!Object.is(item, this._items[index])) {
-                    this._items[index] = item;
-                    this.emit(ObservableList.EVENT_CHANGE);
-                }
-                return this;
+            let removedItems = this._items.splice(index, count);
+            this.emit(ObservableList.EVENT_CHANGE);
+            return removedItems;
+        }
+        replace(oldValue, newValue) {
+            if (this._sorted) {
+                throw TypeError('Cannot replace in sorted list');
             }
-            setRange(index, items) {
-                if (this._sorted) {
-                    throw TypeError('Cannot set to sorted list');
-                }
-                index = this._validateIndex(index, true);
-                if (items instanceof ObservableList) {
-                    items = items._items;
-                }
-                let itemCount = items.length;
-                if (!itemCount) {
-                    return this;
-                }
-                let listItems = this._items;
-                if (index + itemCount > listItems.length) {
-                    throw RangeError('Sum of "index" and "items.length" out of valid range');
-                }
-                let changed = false;
-                for (let i = index + itemCount; i > index;) {
-                    let item = items[--i - index];
-                    if (!Object.is(item, listItems[i])) {
-                        listItems[i] = item;
-                        changed = true;
-                    }
-                }
-                if (changed) {
-                    this.emit(ObservableList.EVENT_CHANGE);
-                }
-                return this;
-            }
-            add(item, unique = false) {
-                if (unique && this._items.indexOf(item) != -1) {
-                    return this;
-                }
-                if (this._sorted) {
-                    this._insertSortedValue(item);
-                }
-                else {
-                    this._items.push(item);
-                }
-                this.emit(ObservableList.EVENT_CHANGE);
-                return this;
-            }
-            addRange(items, unique = false) {
-                if (items instanceof ObservableList) {
-                    items = items._items;
-                }
-                if (items.length) {
-                    if (unique) {
-                        let listItems = this._items;
-                        let sorted = this._sorted;
-                        let changed = false;
-                        for (let item of items) {
-                            if (listItems.indexOf(item) == -1) {
-                                if (sorted) {
-                                    this._insertSortedValue(item);
-                                }
-                                else {
-                                    listItems.push(item);
-                                }
-                                changed = true;
-                            }
-                        }
-                        if (changed) {
-                            this.emit(ObservableList.EVENT_CHANGE);
-                        }
-                    }
-                    else {
-                        if (this._sorted) {
-                            for (let i = 0, l = items.length; i < l; i++) {
-                                this._insertSortedValue(items[i]);
-                            }
-                        }
-                        else {
-                            push.apply(this._items, items);
-                        }
-                        this.emit(ObservableList.EVENT_CHANGE);
-                    }
-                }
-                return this;
-            }
-            insert(index, item) {
-                if (this._sorted) {
-                    throw TypeError('Cannot insert to sorted list');
-                }
-                this._items.splice(this._validateIndex(index, true), 0, item);
-                this.emit(ObservableList.EVENT_CHANGE);
-                return this;
-            }
-            insertRange(index, items) {
-                if (this._sorted) {
-                    throw TypeError('Cannot insert to sorted list');
-                }
-                index = this._validateIndex(index, true);
-                if (items instanceof ObservableList) {
-                    items = items._items;
-                }
-                if (items.length) {
-                    splice.apply(this._items, [index, 0].concat(items));
-                    this.emit(ObservableList.EVENT_CHANGE);
-                }
-                return this;
-            }
-            remove(item, fromIndex) {
-                let index = this._items.indexOf(item, this._validateIndex(fromIndex, true));
-                if (index == -1) {
-                    return false;
-                }
-                this._items.splice(index, 1);
+            let index = this._items.indexOf(oldValue);
+            if (index != -1) {
+                this._items[index] = newValue;
                 this.emit(ObservableList.EVENT_CHANGE);
                 return true;
             }
-            removeAll(item, fromIndex) {
-                let index = this._validateIndex(fromIndex, true);
-                let items = this._items;
-                let changed = false;
-                while ((index = items.indexOf(item, index)) != -1) {
-                    items.splice(index, 1);
-                    changed = true;
-                }
-                if (changed) {
-                    this.emit(ObservableList.EVENT_CHANGE);
-                }
-                return changed;
-            }
-            removeEach(items, fromIndex) {
-                fromIndex = this._validateIndex(fromIndex, true);
-                if (items instanceof ObservableList) {
-                    items = items._items.slice();
-                }
-                let listItems = this._items;
-                let changed = false;
-                for (let i = 0, l = items.length; i < l; i++) {
-                    let index = listItems.indexOf(items[i], fromIndex);
-                    if (index != -1) {
-                        listItems.splice(index, 1);
-                        changed = true;
-                    }
-                }
-                if (changed) {
-                    this.emit(ObservableList.EVENT_CHANGE);
-                }
-                return changed;
-            }
-            removeAt(index) {
-                let item = this._items.splice(this._validateIndex(index), 1)[0];
+            return false;
+        }
+        clear() {
+            if (this._items.length) {
+                this._items.length = 0;
                 this.emit(ObservableList.EVENT_CHANGE);
-                return item;
             }
-            removeRange(index, count) {
-                index = this._validateIndex(index, true);
-                if (count === undefined) {
-                    count = this._items.length - index;
-                    if (!count) {
-                        return [];
-                    }
-                }
-                else {
-                    if (!count) {
-                        return [];
-                    }
-                    if (index + count > this._items.length) {
-                        throw RangeError('Sum of "index" and "count" out of valid range');
-                    }
-                }
-                let removedItems = this._items.splice(index, count);
-                this.emit(ObservableList.EVENT_CHANGE);
-                return removedItems;
-            }
-            replace(oldValue, newValue) {
-                if (this._sorted) {
-                    throw TypeError('Cannot replace in sorted list');
-                }
-                let index = this._items.indexOf(oldValue);
-                if (index != -1) {
-                    this._items[index] = newValue;
-                    this.emit(ObservableList.EVENT_CHANGE);
-                    return true;
-                }
+            return this;
+        }
+        equals(that) {
+            if (!(that instanceof ObservableList)) {
                 return false;
             }
-            clear() {
-                if (this._items.length) {
-                    this._items.length = 0;
-                    this.emit(ObservableList.EVENT_CHANGE);
-                }
-                return this;
+            let items = this._items;
+            let thatItems = that._items;
+            if (items.length != thatItems.length) {
+                return false;
             }
-            equals(that) {
-                if (!(that instanceof ObservableList)) {
-                    return false;
-                }
-                let items = this._items;
-                let thatItems = that._items;
-                if (items.length != thatItems.length) {
-                    return false;
-                }
-                for (let i = items.length; i;) {
-                    let item = items[--i];
-                    let thatItem = thatItems[i];
-                    if (this._itemEquals
-                        ? !this._itemEquals(item, thatItem)
-                        : item !== thatItem &&
-                            !(item &&
-                                thatItem &&
-                                typeof item == 'object' &&
-                                typeof thatItem == 'object' &&
-                                item.equals &&
-                                item.equals ===
-                                    thatItem.equals &&
-                                item.equals(thatItem))) {
-                        return false;
-                    }
-                }
-                return true;
-            }
-            join(separator) {
-                return this._items.join(separator);
-            }
-            find(cb, context) {
-                let items = this._items;
-                for (let i = 0, l = items.length; i < l; i++) {
-                    let item = items[i];
-                    if (cb.call(context, item, i, this)) {
-                        return item;
-                    }
-                }
-                return;
-            }
-            findIndex(cb, context) {
-                let items = this._items;
-                for (let i = 0, l = items.length; i < l; i++) {
-                    if (cb.call(context, items[i], i, this)) {
-                        return i;
-                    }
-                }
-                return -1;
-            }
-            clone(deep = false) {
-                return new this.constructor(deep
-                    ? this._items.map((item) => item && typeof item == 'object' && item.clone
-                        ? item.clone.length
-                            ? item.clone(true)
-                            : item.clone()
-                        : item)
-                    : this, {
-                    itemComparator: this._itemComparator || undefined,
-                    sorted: this._sorted
-                });
-            }
-            absorbFrom(that) {
-                if (!(that instanceof ObservableList)) {
-                    throw TypeError('"that" must be instance of ObservableList');
-                }
-                let items = this._items;
-                let thatItems = that._items;
-                let changed = false;
-                if (items.length != that.length) {
-                    items.length = that.length;
-                    changed = true;
-                }
-                for (let i = items.length; i;) {
-                    let item = items[--i];
-                    let thatItem = thatItems[i];
-                    if (this._itemEquals
-                        ? !this._itemEquals(item, thatItem)
-                        : item !== thatItem &&
-                            !(item &&
-                                thatItem &&
-                                typeof item == 'object' &&
-                                typeof thatItem == 'object' &&
-                                item.equals &&
-                                item.equals ===
-                                    thatItem.equals &&
-                                item.equals(thatItem))) {
-                        if (item &&
+            for (let i = items.length; i;) {
+                let item = items[--i];
+                let thatItem = thatItems[i];
+                if (this._itemEquals
+                    ? !this._itemEquals(item, thatItem)
+                    : item !== thatItem &&
+                        !(item &&
                             thatItem &&
                             typeof item == 'object' &&
                             typeof thatItem == 'object' &&
-                            item.absorbFrom &&
-                            item.absorbFrom === thatItem.absorbFrom) {
-                            if (item.absorbFrom(thatItem)) {
-                                changed = true;
-                            }
-                        }
-                        else {
-                            items[i] = thatItem;
+                            item.equals &&
+                            item.equals ===
+                                thatItem.equals &&
+                            item.equals(thatItem))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        join(separator) {
+            return this._items.join(separator);
+        }
+        find(cb, context) {
+            let items = this._items;
+            for (let i = 0, l = items.length; i < l; i++) {
+                let item = items[i];
+                if (cb.call(context, item, i, this)) {
+                    return item;
+                }
+            }
+            return;
+        }
+        findIndex(cb, context) {
+            let items = this._items;
+            for (let i = 0, l = items.length; i < l; i++) {
+                if (cb.call(context, items[i], i, this)) {
+                    return i;
+                }
+            }
+            return -1;
+        }
+        clone(deep = false) {
+            return new this.constructor(deep
+                ? this._items.map((item) => item && typeof item == 'object' && item.clone
+                    ? item.clone(true)
+                    : item)
+                : this, {
+                itemComparator: this._itemComparator || undefined,
+                sorted: this._sorted
+            });
+        }
+        absorbFrom(that) {
+            if (!(that instanceof ObservableList)) {
+                throw TypeError('"that" must be instance of ObservableList');
+            }
+            let items = this._items;
+            let thatItems = that._items;
+            let changed = false;
+            if (items.length != that.length) {
+                items.length = that.length;
+                changed = true;
+            }
+            for (let i = items.length; i;) {
+                let item = items[--i];
+                let thatItem = thatItems[i];
+                if (this._itemEquals
+                    ? !this._itemEquals(item, thatItem)
+                    : item !== thatItem &&
+                        !(item &&
+                            thatItem &&
+                            typeof item == 'object' &&
+                            typeof thatItem == 'object' &&
+                            item.equals &&
+                            item.equals ===
+                                thatItem.equals &&
+                            item.equals(thatItem))) {
+                    if (item &&
+                        thatItem &&
+                        typeof item == 'object' &&
+                        typeof thatItem == 'object' &&
+                        item.absorbFrom &&
+                        item.absorbFrom === thatItem.absorbFrom) {
+                        if (item.absorbFrom(thatItem)) {
                             changed = true;
                         }
                     }
-                }
-                if (changed) {
-                    this.emit(ObservableList.EVENT_CHANGE);
-                }
-                return changed;
-            }
-            toArray() {
-                return this._items.slice();
-            }
-            toString() {
-                return this._items.join();
-            }
-            toData() {
-                return this._items.map((item) => item && typeof item == 'object' && item.toData ? item.toData() : item);
-            }
-            _insertSortedValue(item) {
-                let items = this._items;
-                let itemComparator = this._itemComparator;
-                let lowIndex = 0;
-                let highIndex = items.length;
-                while (lowIndex != highIndex) {
-                    let midIndex = (lowIndex + highIndex) >> 1;
-                    if (itemComparator(item, items[midIndex]) < 0) {
-                        highIndex = midIndex;
-                    }
                     else {
-                        lowIndex = midIndex + 1;
+                        items[i] = thatItem;
+                        changed = true;
                     }
                 }
-                items.splice(lowIndex, 0, item);
             }
+            if (changed) {
+                this.emit(ObservableList.EVENT_CHANGE);
+            }
+            return changed;
         }
-        ObservableList.EVENT_CHANGE = 'change';
-        return ObservableList;
-    })();
+        toArray() {
+            return this._items.slice();
+        }
+        toString() {
+            return this._items.join();
+        }
+        toData() {
+            return this._items.map((item) => item && typeof item == 'object' && item.toData ? item.toData() : item);
+        }
+        _insertSortedValue(item) {
+            let items = this._items;
+            let itemComparator = this._itemComparator;
+            let lowIndex = 0;
+            let highIndex = items.length;
+            while (lowIndex != highIndex) {
+                let midIndex = (lowIndex + highIndex) >> 1;
+                if (itemComparator(item, items[midIndex]) < 0) {
+                    highIndex = midIndex;
+                }
+                else {
+                    lowIndex = midIndex + 1;
+                }
+            }
+            items.splice(lowIndex, 0, item);
+        }
+    }
+    ObservableList.EVENT_CHANGE = 'change';
     ['forEach', 'map', 'filter', 'every', 'some'].forEach((name) => {
         ObservableList.prototype[name] = function (cb, context) {
             return this._items[name]((item, index) => cb.call(context, item, index, this));

@@ -474,9 +474,7 @@ export class ObservableList<I = any> extends EventEmitter {
 			deep
 				? this._items.map((item) =>
 						item && typeof item == 'object' && (item as any).clone
-							? (item as any).clone.length
-								? (item as any).clone(true)
-								: (item as any).clone()
+							? (item as any).clone(true)
 							: item
 				  )
 				: this,
