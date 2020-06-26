@@ -309,8 +309,8 @@ export class ObservableList extends EventEmitter {
         for (let i = items.length; i;) {
             let item = items[--i];
             let thatItem = thatItems[i];
-            if (this._itemEquals
-                ? !this._itemEquals(item, thatItem)
+            if (this._itemEquals || that._itemEquals
+                ? !(this._itemEquals || that._itemEquals)(item, thatItem)
                 : item !== thatItem &&
                     !(item &&
                         thatItem &&
@@ -364,15 +364,15 @@ export class ObservableList extends EventEmitter {
         let items = this._items;
         let thatItems = that._items;
         let changed = false;
-        if (items.length != that.length) {
-            items.length = that.length;
+        if (items.length != thatItems.length) {
+            items.length = thatItems.length;
             changed = true;
         }
         for (let i = items.length; i;) {
             let item = items[--i];
             let thatItem = thatItems[i];
-            if (this._itemEquals
-                ? !this._itemEquals(item, thatItem)
+            if (this._itemEquals || that._itemEquals
+                ? !(this._itemEquals || that._itemEquals)(item, thatItem)
                 : item !== thatItem &&
                     !(item &&
                         thatItem &&

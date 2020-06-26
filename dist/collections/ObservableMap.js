@@ -98,8 +98,8 @@ export class ObservableMap extends EventEmitter {
                 return false;
             }
             let thatValue = that.get(key);
-            if (this._valueEquals
-                ? !this._valueEquals(value, thatValue)
+            if (this._valueEquals || that._valueEquals
+                ? !(this._valueEquals || that._valueEquals)(value, thatValue)
                 : value !== thatValue &&
                     !(value &&
                         thatValue &&
@@ -152,8 +152,8 @@ export class ObservableMap extends EventEmitter {
         for (let [key, value] of entries) {
             if (that.has(key)) {
                 let thatValue = that.get(key);
-                if (this._valueEquals
-                    ? !this._valueEquals(value, thatValue)
+                if (this._valueEquals || that._valueEquals
+                    ? !(this._valueEquals || that._valueEquals)(value, thatValue)
                     : value !== thatValue &&
                         !(value &&
                             thatValue &&

@@ -100,7 +100,7 @@ export class EventEmitter {
 		type: string | symbol | Record<string | symbol, TListener>,
 		listener?: any,
 		context?: any
-	): this {
+	) {
 		if (typeof type == 'object') {
 			context = listener !== undefined ? listener : this;
 
@@ -128,7 +128,7 @@ export class EventEmitter {
 		type?: string | symbol | Record<string | symbol, TListener>,
 		listener?: any,
 		context?: any
-	): this {
+	) {
 		if (type) {
 			if (typeof type == 'object') {
 				context = listener !== undefined ? listener : this;
@@ -251,7 +251,7 @@ export class EventEmitter {
 			| string
 			| symbol,
 		data?: Record<string, any>
-	): IEvent {
+	) {
 		if (typeof evt == 'object') {
 			if (!evt.target) {
 				evt.target = this;

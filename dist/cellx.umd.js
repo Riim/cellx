@@ -843,8 +843,8 @@
                     return false;
                 }
                 let thatValue = that.get(key);
-                if (this._valueEquals
-                    ? !this._valueEquals(value, thatValue)
+                if (this._valueEquals || that._valueEquals
+                    ? !(this._valueEquals || that._valueEquals)(value, thatValue)
                     : value !== thatValue &&
                         !(value &&
                             thatValue &&
@@ -897,8 +897,8 @@
             for (let [key, value] of entries) {
                 if (that.has(key)) {
                     let thatValue = that.get(key);
-                    if (this._valueEquals
-                        ? !this._valueEquals(value, thatValue)
+                    if (this._valueEquals || that._valueEquals
+                        ? !(this._valueEquals || that._valueEquals)(value, thatValue)
                         : value !== thatValue &&
                             !(value &&
                                 thatValue &&
@@ -1265,8 +1265,8 @@
             for (let i = items.length; i;) {
                 let item = items[--i];
                 let thatItem = thatItems[i];
-                if (this._itemEquals
-                    ? !this._itemEquals(item, thatItem)
+                if (this._itemEquals || that._itemEquals
+                    ? !(this._itemEquals || that._itemEquals)(item, thatItem)
                     : item !== thatItem &&
                         !(item &&
                             thatItem &&
@@ -1320,15 +1320,15 @@
             let items = this._items;
             let thatItems = that._items;
             let changed = false;
-            if (items.length != that.length) {
-                items.length = that.length;
+            if (items.length != thatItems.length) {
+                items.length = thatItems.length;
                 changed = true;
             }
             for (let i = items.length; i;) {
                 let item = items[--i];
                 let thatItem = thatItems[i];
-                if (this._itemEquals
-                    ? !this._itemEquals(item, thatItem)
+                if (this._itemEquals || that._itemEquals
+                    ? !(this._itemEquals || that._itemEquals)(item, thatItem)
                     : item !== thatItem &&
                         !(item &&
                             thatItem &&

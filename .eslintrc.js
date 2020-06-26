@@ -18,6 +18,7 @@ module.exports = {
 		'@typescript-eslint/no-explicit-any': 0,
 		'@typescript-eslint/no-non-null-assertion': 0,
 		'no-mixed-spaces-and-tabs': 0,
+		'no-prototype-builtins': 0,
 		'prefer-const': 0,
 		'space-before-function-paren': 0
 	}

@@ -35,7 +35,7 @@ export declare class EventEmitter {
         defaultPrevented?: boolean;
         propagationStopped?: boolean;
         data?: Record<string, any>;
-    } | string | symbol, data?: Record<string, any>): IEvent;
+    } | string | symbol, data?: Record<string, any>): IEvent<EventEmitter>;
     handleEvent(evt: IEvent): void;
     _tryEventListener(emEvt: IRegisteredEvent, evt: IEvent): any;
 }
