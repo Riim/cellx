@@ -492,19 +492,21 @@ export class ObservableList<I = any> extends EventEmitter {
 
 		let items = this._items;
 		let thatItems = that._items;
+		let itemsLen = items.length;
+		let thanItemsLen = thatItems.length;
 		let changed = false;
 
-		if (items.length != thatItems.length) {
-			items.length = thatItems.length;
+		if (itemsLen != thanItemsLen) {
+			items.length = thanItemsLen;
 			changed = true;
 		}
 
-		for (let i = items.length; i; ) {
+		for (let i = thanItemsLen; i; ) {
 			let item: any = items[--i];
 			let thatItem = thatItems[i];
 
 			if (
-				this._itemEquals || that._itemEquals
+				i < itemsLen && (this._itemEquals || that._itemEquals)
 					? !(this._itemEquals || that._itemEquals)!(item, thatItem)
 					: item !== thatItem &&
 					  !(
