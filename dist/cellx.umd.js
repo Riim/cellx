@@ -847,12 +847,8 @@
                     ? !(this._valueEquals || that._valueEquals)(value, thatValue)
                     : value !== thatValue &&
                         !(value &&
-                            thatValue &&
                             typeof value == 'object' &&
-                            typeof thatValue == 'object' &&
                             value.equals &&
-                            value.equals ===
-                                thatValue.equals &&
                             value.equals(thatValue))) {
                     return false;
                 }
@@ -901,12 +897,8 @@
                         ? !(this._valueEquals || that._valueEquals)(value, thatValue)
                         : value !== thatValue &&
                             !(value &&
-                                thatValue &&
                                 typeof value == 'object' &&
-                                typeof thatValue == 'object' &&
                                 value.equals &&
-                                value.equals ===
-                                    thatValue.equals &&
                                 value.equals(thatValue))) {
                         if (value &&
                             thatValue &&
@@ -1269,12 +1261,8 @@
                     ? !(this._itemEquals || that._itemEquals)(item, thatItem)
                     : item !== thatItem &&
                         !(item &&
-                            thatItem &&
                             typeof item == 'object' &&
-                            typeof thatItem == 'object' &&
                             item.equals &&
-                            item.equals ===
-                                thatItem.equals &&
                             item.equals(thatItem))) {
                     return false;
                 }
@@ -1333,12 +1321,8 @@
                     ? !(this._itemEquals || that._itemEquals)(item, thatItem)
                     : item !== thatItem &&
                         !(item &&
-                            thatItem &&
                             typeof item == 'object' &&
-                            typeof thatItem == 'object' &&
                             item.equals &&
-                            item.equals ===
-                                thatItem.equals &&
                             item.equals(thatItem))) {
                     if (item &&
                         thatItem &&

@@ -102,12 +102,8 @@ export class ObservableMap extends EventEmitter {
                 ? !(this._valueEquals || that._valueEquals)(value, thatValue)
                 : value !== thatValue &&
                     !(value &&
-                        thatValue &&
                         typeof value == 'object' &&
-                        typeof thatValue == 'object' &&
                         value.equals &&
-                        value.equals ===
-                            thatValue.equals &&
                         value.equals(thatValue))) {
                 return false;
             }
@@ -156,12 +152,8 @@ export class ObservableMap extends EventEmitter {
                     ? !(this._valueEquals || that._valueEquals)(value, thatValue)
                     : value !== thatValue &&
                         !(value &&
-                            thatValue &&
                             typeof value == 'object' &&
-                            typeof thatValue == 'object' &&
                             value.equals &&
-                            value.equals ===
-                                thatValue.equals &&
                             value.equals(thatValue))) {
                     if (value &&
                         thatValue &&

@@ -313,12 +313,8 @@ export class ObservableList extends EventEmitter {
                 ? !(this._itemEquals || that._itemEquals)(item, thatItem)
                 : item !== thatItem &&
                     !(item &&
-                        thatItem &&
                         typeof item == 'object' &&
-                        typeof thatItem == 'object' &&
                         item.equals &&
-                        item.equals ===
-                            thatItem.equals &&
                         item.equals(thatItem))) {
                 return false;
             }
@@ -377,12 +373,8 @@ export class ObservableList extends EventEmitter {
                 ? !(this._itemEquals || that._itemEquals)(item, thatItem)
                 : item !== thatItem &&
                     !(item &&
-                        thatItem &&
                         typeof item == 'object' &&
-                        typeof thatItem == 'object' &&
                         item.equals &&
-                        item.equals ===
-                            thatItem.equals &&
                         item.equals(thatItem))) {
                 if (item &&
                     thatItem &&

@@ -1,12 +1,12 @@
 import { Cell } from './Cell';
 import { KEY_VALUE_CELLS } from './cellx';
-export interface IEvent<T extends EventEmitter = EventEmitter> {
+export interface IEvent<T extends EventEmitter = EventEmitter, D extends object = Record<string, any>> {
     target: T;
     type: string | symbol;
     bubbles?: boolean;
     defaultPrevented?: boolean;
     propagationStopped?: boolean;
-    data: Record<string, any>;
+    data: D;
 }
 export declare type TListener<T extends EventEmitter = EventEmitter> = (evt: IEvent<T>) => any;
 export interface IRegisteredEvent {
@@ -35,7 +35,7 @@ export declare class EventEmitter {
         defaultPrevented?: boolean;
         propagationStopped?: boolean;
         data?: Record<string, any>;
-    } | string | symbol, data?: Record<string, any>): IEvent<EventEmitter>;
+    } | string | symbol, data?: Record<string, any>): IEvent<EventEmitter, Record<string, any>>;
     handleEvent(evt: IEvent): void;
     _tryEventListener(emEvt: IRegisteredEvent, evt: IEvent): any;
 }
