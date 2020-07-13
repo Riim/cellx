@@ -4,13 +4,16 @@ import { logError } from './utils';
 
 const hasOwn = Object.prototype.hasOwnProperty;
 
-export interface IEvent<T extends EventEmitter = EventEmitter> {
+export interface IEvent<
+	T extends EventEmitter = EventEmitter,
+	D extends object = Record<string, any>
+> {
 	target: T;
 	type: string | symbol;
 	bubbles?: boolean;
 	defaultPrevented?: boolean;
 	propagationStopped?: boolean;
-	data: Record<string, any>;
+	data: D;
 }
 
 export type TListener<T extends EventEmitter = EventEmitter> = (evt: IEvent<T>) => any;
@@ -96,11 +99,7 @@ export class EventEmitter {
 
 	on(type: string | symbol, listener: TListener, context?: any): this;
 	on(listeners: Record<string | symbol, TListener>, context?: any): this;
-	on(
-		type: string | symbol | Record<string | symbol, TListener>,
-		listener?: any,
-		context?: any
-	) {
+	on(type: string | symbol | Record<string | symbol, TListener>, listener?: any, context?: any) {
 		if (typeof type == 'object') {
 			context = listener !== undefined ? listener : this;
 
