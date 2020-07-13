@@ -146,12 +146,8 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 					: value !== thatValue &&
 					  !(
 							value &&
-							thatValue &&
 							typeof value == 'object' &&
-							typeof thatValue == 'object' &&
 							((value as any) as ObservableMap).equals &&
-							((value as any) as ObservableMap).equals ===
-								(thatValue as ObservableMap).equals &&
 							((value as any) as ObservableMap).equals(thatValue)
 					  )
 			) {
@@ -217,12 +213,8 @@ export class ObservableMap<K = any, V = any> extends EventEmitter {
 						: value !== thatValue &&
 						  !(
 								value &&
-								thatValue &&
 								typeof value == 'object' &&
-								typeof thatValue == 'object' &&
 								(value as ObservableMap).equals &&
-								(value as ObservableMap).equals ===
-									(thatValue as ObservableMap).equals &&
 								(value as ObservableMap).equals(thatValue)
 						  )
 				) {

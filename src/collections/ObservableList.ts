@@ -423,12 +423,8 @@ export class ObservableList<I = any> extends EventEmitter {
 					: item !== thatItem &&
 					  !(
 							item &&
-							thatItem &&
 							typeof item == 'object' &&
-							typeof thatItem == 'object' &&
 							(item as ObservableList).equals &&
-							(item as ObservableList).equals ===
-								(thatItem as ObservableList).equals &&
 							(item as ObservableList).equals(thatItem)
 					  )
 			) {
@@ -511,12 +507,8 @@ export class ObservableList<I = any> extends EventEmitter {
 					: item !== thatItem &&
 					  !(
 							item &&
-							thatItem &&
 							typeof item == 'object' &&
-							typeof thatItem == 'object' &&
 							(item as ObservableList).equals &&
-							(item as ObservableList).equals ===
-								(thatItem as ObservableList).equals &&
 							(item as ObservableList).equals(thatItem)
 					  )
 			) {
