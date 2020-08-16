@@ -152,12 +152,12 @@ export class ObservableList extends EventEmitter {
         this.emit(ObservableList.EVENT_CHANGE);
         return this;
     }
-    addRange(items, unique = false) {
+    addRange(items, uniques = false) {
         if (items instanceof ObservableList) {
             items = items._items;
         }
         if (items.length) {
-            if (unique) {
+            if (uniques) {
                 let listItems = this._items;
                 let sorted = this._sorted;
                 let changed = false;
@@ -234,25 +234,6 @@ export class ObservableList extends EventEmitter {
         }
         return changed;
     }
-    removeEach(items, fromIndex) {
-        fromIndex = this._validateIndex(fromIndex, true);
-        if (items instanceof ObservableList) {
-            items = items._items.slice();
-        }
-        let listItems = this._items;
-        let changed = false;
-        for (let i = 0, l = items.length; i < l; i++) {
-            let index = listItems.indexOf(items[i], fromIndex);
-            if (index != -1) {
-                listItems.splice(index, 1);
-                changed = true;
-            }
-        }
-        if (changed) {
-            this.emit(ObservableList.EVENT_CHANGE);
-        }
-        return changed;
-    }
     removeAt(index) {
         let item = this._items.splice(this._validateIndex(index), 1)[0];
         this.emit(ObservableList.EVENT_CHANGE);
@@ -278,17 +259,33 @@ export class ObservableList extends EventEmitter {
         this.emit(ObservableList.EVENT_CHANGE);
         return removedItems;
     }
-    replace(oldValue, newValue) {
+    replace(oldItem, newItem, fromIndex) {
         if (this._sorted) {
             throw TypeError('Cannot replace in sorted list');
         }
-        let index = this._items.indexOf(oldValue);
-        if (index != -1) {
-            this._items[index] = newValue;
-            this.emit(ObservableList.EVENT_CHANGE);
-            return true;
+        let index = this._items.indexOf(oldItem, this._validateIndex(fromIndex, true));
+        if (index == -1) {
+            return false;
         }
-        return false;
+        this._items[index] = newItem;
+        this.emit(ObservableList.EVENT_CHANGE);
+        return true;
+    }
+    replaceAll(oldItem, newItem, fromIndex) {
+        if (this._sorted) {
+            throw TypeError('Cannot replace in sorted list');
+        }
+        let index = this._validateIndex(fromIndex, true);
+        let items = this._items;
+        let changed = false;
+        while ((index = items.indexOf(oldItem, index)) != -1) {
+            items[index] = newItem;
+            changed = true;
+        }
+        if (changed) {
+            this.emit(ObservableList.EVENT_CHANGE);
+        }
+        return changed;
     }
     clear() {
         if (this._items.length) {
@@ -324,21 +321,34 @@ export class ObservableList extends EventEmitter {
     join(separator) {
         return this._items.join(separator);
     }
-    find(cb, context) {
-        let items = this._items;
-        for (let i = 0, l = items.length; i < l; i++) {
-            let item = items[i];
-            if (cb.call(context, item, i, this)) {
-                return item;
-            }
-        }
-        return;
+    find(cb, fromIndex) {
+        let foundIndex = this.findIndex(cb, fromIndex);
+        return foundIndex == -1 ? undefined : this._items[foundIndex];
     }
-    findIndex(cb, context) {
+    findLast(cb, fromIndex) {
+        let foundIndex = this.findLastIndex(cb, fromIndex);
+        return foundIndex == -1 ? undefined : this._items[foundIndex];
+    }
+    findIndex(cb, fromIndex = 0) {
         let items = this._items;
-        for (let i = 0, l = items.length; i < l; i++) {
+        for (let i = this._validateIndex(fromIndex, true), l = items.length; i < l; i++) {
             if (cb.call(context, items[i], i, this)) {
                 return i;
+            }
+        }
+        return -1;
+    }
+    findLastIndex(cb, fromIndex) {
+        let items = this._items;
+        let index = fromIndex === undefined ? items.length - 1 : this._validateIndex(fromIndex, true);
+        if (index >= 0) {
+            for (;; index--) {
+                if (cb.call(context, items[index], index, this)) {
+                    return index;
+                }
+                if (!index) {
+                    break;
+                }
             }
         }
         return -1;
