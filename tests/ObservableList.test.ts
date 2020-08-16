@@ -184,14 +184,6 @@ describe('ObservableList', () => {
 		expect(list.toArray()).to.eql([2, 3, 2]);
 	});
 
-	it('#removeEach()', () => {
-		let list = new ObservableList([1, 2, 3, 2, 1]);
-
-		expect(list.removeEach([2, 3, 1], 1)).to.be.true;
-		expect(list.removeEach([1], 1)).to.be.false;
-		expect(list.toArray()).to.eql([1, 2]);
-	});
-
 	it('#removeAt()', () => {
 		let list = new ObservableList([1, 2, 3, 2, 1]);
 

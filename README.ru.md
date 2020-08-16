@@ -483,7 +483,6 @@ let map = new cellx.ObservableMap({
 [Map](https://developer.mozilla.org/ru/docs/Web/JavaScript/Reference/Global_Objects/Map) из ECMAScript 2015,
 за исключением следующих отличий:
 - наследует от `cellx.EventEmitter`-а и генерирует событие `change` при изменении своих записей;
-- имеет метод `contains`, позволяющий узнать, содержится ли значение в map-е без перебора всех его значений;
 - содержит метод `clone`, создающий копию map-а;
 - данные при инициализации может принимать не только в виде массива, но и в виде объекта (в этом случае ключами
 будут только строки, ключевое отличие объекта от Map-а как раз в том, что ключи в Map-е могут быть любого типа)
@@ -499,7 +498,7 @@ let list = new cellx.ObservableList([1, 2, 3]);
 
 Список также как и `cellx.ObservableMap` генерирует событие `change` при любом изменении своих записей.
 
-При инициализации список может принимать `itemComparator`, с помощью которого будет происходить сортировка его значений:
+При инициализации список может принимать `itemComparator`, с помощью которого будет происходить сортировка его элементов:
 
 ```js
 let list = new cellx.ObservableList([
@@ -545,7 +544,7 @@ console.log(list.toArray());
 
 ##### itemComparator
 
-Функция для сравнения значений в сортированном списке. Только для чтения.
+Функция для сравнения элементов в сортированном списке. Только для чтения.
 
 ##### sorted
 
@@ -554,31 +553,30 @@ console.log(list.toArray());
 #### Методы cellx.ObservableList
 
 Важным отличем списка от массива, является то, что список не может содержать так называемых "дырок",
-то есть при попытке прочитать или установить значение по индексу вне существующего диапазона элементов,
+то есть при попытке прочитать или установить элемент по индексу вне существующего диапазона индексов,
 будет генерироваться исключение.
 Расширение диапазона (добавление элементов) происходит через методы `add`, `addRange`, `insert` и `insertRange`.
 При этом у последних двух передаваемый `index` не может быть больше длинны списка.
 
-Сортированный список предполагает, что его значения всегда находятся в отсортированном порядке. Методы
+Сортированный список предполагает, что его элементы всегда находятся в отсортированном порядке. Методы
 `set`, `setRange`, `insert` и `insertRange` идут вразрез с этим утверждением, они либо будут ломать правильный порядок
-сортировки, либо, для сохранения этого порядка, будут устанавливать/вставлять мимо указанного индекса, то есть
-работать неверно. Поэтому при вызове на сортированном списке они всегда генерируют исключение. Добавить значения в
+сортировки, либо, для сохранения этого порядка, будут устанавливать/вставлять мимо указанного индекса.
+Поэтому при вызове на сортированном списке они всегда генерируют исключение. Добавить элемент в
 отсортированный список можно методами `add` и `addRange`, либо при инициализации списка.
 
 ##### contains
 
-Сигнатура вызова: `(value) -> boolean;`.
+Сигнатура вызова: `(item) -> boolean;`.
 
-Проверяет содержится ли значение в списке. При большом колличестве значений в списке, может быть существенно быстрее
-чем `list.indexOf(value) != -1`.
+Проверяет содержится ли элемент в списке.
 
 ##### indexOf
 
-Сигнатура вызова: `(value, fromIndex?: int) -> int;`.
+Сигнатура вызова: `(item, fromIndex?: int) -> int;`.
 
 ##### lastIndexOf
 
-Сигнатура вызова: `(value, fromIndex?: int) -> int;`.
+Сигнатура вызова: `(item, fromIndex?: int) -> int;`.
 
 ##### get
 
@@ -592,43 +590,39 @@ console.log(list.toArray());
 
 ##### set
 
-Сигнатура вызова: `(index: int, value) -> cellx.ObservableList;`.
+Сигнатура вызова: `(index: int, item) -> cellx.ObservableList;`.
 
 ##### setRange
 
-Сигнатура вызова: `(index: int, values: Array) -> cellx.ObservableList;`.
+Сигнатура вызова: `(index: int, items: Array) -> cellx.ObservableList;`.
 
 ##### add
 
-Сигнатура вызова: `(value, unique?: boolean) -> cellx.ObservableList;`.
+Сигнатура вызова: `(item, unique?: boolean) -> cellx.ObservableList;`.
 
 ##### addRange
 
-Сигнатура вызова: `(values: Array, unique?: boolean) -> cellx.ObservableList;`.
+Сигнатура вызова: `(items: Array, uniques?: boolean) -> cellx.ObservableList;`.
 
 ##### insert
 
-Сигнатура вызова: `(index: int, value) -> cellx.ObservableList;`.
+Сигнатура вызова: `(index: int, item) -> cellx.ObservableList;`.
 
 ##### insertRange
 
-Сигнатура вызова: `(index: int, values: Array) -> cellx.ObservableList;`.
+Сигнатура вызова: `(index: int, items: Array) -> cellx.ObservableList;`.
 
 ##### remove
 
-Сигнатура вызова: `(values, fromIndex?: int) -> boolean;`.
+Сигнатура вызова: `(item, fromIndex?: int) -> boolean;`.
 
-Удаляет первое вхождениие `values` в списке.
+Удаляет первое вхождениие `item` в списке.
 
 ##### removeAll
 
-Сигнатура вызова: `(values, fromIndex?: int) -> boolean;`.
+Сигнатура вызова: `(item, fromIndex?: int) -> boolean;`.
 
-Удаляет все вхождениия `values` в списке.
-
-##### removeEach
-
-Сигнатура вызова: `(values: Array, fromIndex?: int) -> boolean;`.
+Удаляет все вхождениия `item` в списке.
 
 ##### removeAt
 
@@ -639,6 +633,14 @@ console.log(list.toArray());
 Сигнатура вызова: `(index: int, count?: uint) -> Array;`.
 
 При неуказанном `count`-е удалит всё до конца списка.
+
+##### replace
+
+Сигнатура вызова: `(oldItem, newItem, fromIndex?: int) -> boolean;`.
+
+##### replaceAll
+
+Сигнатура вызова: `(oldItem, newItem, fromIndex?: int) -> boolean;`.
 
 ##### clear
 
@@ -660,14 +662,6 @@ console.log(list.toArray());
 
 Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> Array;`.
 
-##### find
-
-Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> *;`.
-
-##### findIndex
-
-Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> int;`.
-
 ##### every
 
 Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, context?) -> boolean;`.
@@ -683,6 +677,22 @@ console.log(list.toArray());
 ##### reduceRight
 
 Сигнатура вызова: `(cb: (accumulator, item, index: uint, list: cellx.ObservableList) -> *, initialValue?) -> *;`.
+
+##### find
+
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, fromIndex?: int) -> *;`.
+
+##### findLast
+
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, fromIndex?: int) -> *;`.
+
+##### findIndex
+
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, fromIndex?: int) -> int;`.
+
+##### findLastIndex
+
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, fromIndex?: int) -> int;`.
 
 ##### clone
 

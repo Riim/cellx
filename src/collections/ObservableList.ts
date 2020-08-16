@@ -18,10 +18,10 @@ const defaultItemComparator: TObservableListItemComparator<any> = (a, b) => {
 	return a < b ? -1 : a > b ? 1 : 0;
 };
 
-export class ObservableList<I = any> extends EventEmitter {
+export class ObservableList<T = any> extends EventEmitter {
 	static EVENT_CHANGE = 'change';
 
-	_items: Array<I> = [];
+	_items: Array<T> = [];
 
 	get length() {
 		return this._items.length;
@@ -37,12 +37,12 @@ export class ObservableList<I = any> extends EventEmitter {
 		}
 	}
 
-	_itemEquals: TObservableListItemEquals<I> | null;
+	_itemEquals: TObservableListItemEquals<T> | null;
 	get itemEquals() {
 		return this._itemEquals;
 	}
 
-	_itemComparator: TObservableListItemComparator<I> | null;
+	_itemComparator: TObservableListItemComparator<T> | null;
 	get itemComparator() {
 		return this._itemComparator;
 	}
@@ -52,7 +52,7 @@ export class ObservableList<I = any> extends EventEmitter {
 		return this._sorted;
 	}
 
-	constructor(items?: TObservableListItems<I> | null, options?: IObservableListOptions<I>) {
+	constructor(items?: TObservableListItems<T> | null, options?: IObservableListOptions<T>) {
 		super();
 
 		if (options) {
@@ -110,22 +110,22 @@ export class ObservableList<I = any> extends EventEmitter {
 		return index;
 	}
 
-	contains(item: I) {
+	contains(item: T) {
 		return this._items.indexOf(item) != -1;
 	}
 
-	indexOf(item: I, fromIndex?: number) {
+	indexOf(item: T, fromIndex?: number) {
 		return this._items.indexOf(item, this._validateIndex(fromIndex, true));
 	}
 
-	lastIndexOf(item: I, fromIndex?: number) {
+	lastIndexOf(item: T, fromIndex?: number) {
 		return this._items.lastIndexOf(
 			item,
 			fromIndex === undefined ? -1 : this._validateIndex(fromIndex, true)
 		);
 	}
 
-	get(index: number): I | undefined {
+	get(index: number): T | undefined {
 		return this._items[this._validateIndex(index, true)!];
 	}
 
@@ -143,7 +143,7 @@ export class ObservableList<I = any> extends EventEmitter {
 		return this._items.slice(index, index + count);
 	}
 
-	set(index: number, item: I) {
+	set(index: number, item: T) {
 		if (this._sorted) {
 			throw TypeError('Cannot set to sorted list');
 		}
@@ -158,7 +158,7 @@ export class ObservableList<I = any> extends EventEmitter {
 		return this;
 	}
 
-	setRange(index: number, items: TObservableListItems<I>) {
+	setRange(index: number, items: TObservableListItems<T>) {
 		if (this._sorted) {
 			throw TypeError('Cannot set to sorted list');
 		}
@@ -199,7 +199,7 @@ export class ObservableList<I = any> extends EventEmitter {
 		return this;
 	}
 
-	add(item: I, unique = false) {
+	add(item: T, unique = false) {
 		if (unique && this._items.indexOf(item) != -1) {
 			return this;
 		}
@@ -215,13 +215,13 @@ export class ObservableList<I = any> extends EventEmitter {
 		return this;
 	}
 
-	addRange(items: TObservableListItems<I>, unique = false) {
+	addRange(items: TObservableListItems<T>, uniques = false) {
 		if (items instanceof ObservableList) {
 			items = items._items;
 		}
 
 		if (items.length) {
-			if (unique) {
+			if (uniques) {
 				let listItems = this._items;
 				let sorted = this._sorted;
 				let changed = false;
@@ -257,7 +257,7 @@ export class ObservableList<I = any> extends EventEmitter {
 		return this;
 	}
 
-	insert(index: number, item: I) {
+	insert(index: number, item: T) {
 		if (this._sorted) {
 			throw TypeError('Cannot insert to sorted list');
 		}
@@ -268,7 +268,7 @@ export class ObservableList<I = any> extends EventEmitter {
 		return this;
 	}
 
-	insertRange(index: number, items: TObservableListItems<I>) {
+	insertRange(index: number, items: TObservableListItems<T>) {
 		if (this._sorted) {
 			throw TypeError('Cannot insert to sorted list');
 		}
@@ -287,7 +287,7 @@ export class ObservableList<I = any> extends EventEmitter {
 		return this;
 	}
 
-	remove(item: I, fromIndex?: number) {
+	remove(item: T, fromIndex?: number) {
 		let index = this._items.indexOf(item, this._validateIndex(fromIndex, true));
 
 		if (index == -1) {
@@ -300,7 +300,7 @@ export class ObservableList<I = any> extends EventEmitter {
 		return true;
 	}
 
-	removeAll(item: I, fromIndex?: number) {
+	removeAll(item: T, fromIndex?: number) {
 		let index = this._validateIndex(fromIndex, true);
 		let items = this._items;
 		let changed = false;
@@ -308,32 +308,6 @@ export class ObservableList<I = any> extends EventEmitter {
 		while ((index = items.indexOf(item, index)) != -1) {
 			items.splice(index, 1);
 			changed = true;
-		}
-
-		if (changed) {
-			this.emit(ObservableList.EVENT_CHANGE);
-		}
-
-		return changed;
-	}
-
-	removeEach(items: TObservableListItems<I>, fromIndex?: number) {
-		fromIndex = this._validateIndex(fromIndex, true);
-
-		if (items instanceof ObservableList) {
-			items = items._items.slice();
-		}
-
-		let listItems = this._items;
-		let changed = false;
-
-		for (let i = 0, l = items.length; i < l; i++) {
-			let index = listItems.indexOf(items[i], fromIndex);
-
-			if (index != -1) {
-				listItems.splice(index, 1);
-				changed = true;
-			}
 		}
 
 		if (changed) {
@@ -375,21 +349,42 @@ export class ObservableList<I = any> extends EventEmitter {
 		return removedItems;
 	}
 
-	replace(oldValue: I, newValue: I) {
+	replace(oldItem: T, newItem: T, fromIndex?: number) {
 		if (this._sorted) {
 			throw TypeError('Cannot replace in sorted list');
 		}
 
-		let index = this._items.indexOf(oldValue);
+		let index = this._items.indexOf(oldItem, this._validateIndex(fromIndex, true));
 
-		if (index != -1) {
-			this._items[index] = newValue;
-			this.emit(ObservableList.EVENT_CHANGE);
-
-			return true;
+		if (index == -1) {
+			return false;
 		}
 
-		return false;
+		this._items[index] = newItem;
+		this.emit(ObservableList.EVENT_CHANGE);
+
+		return true;
+	}
+
+	replaceAll(oldItem: T, newItem: T, fromIndex?: number) {
+		if (this._sorted) {
+			throw TypeError('Cannot replace in sorted list');
+		}
+
+		let index = this._validateIndex(fromIndex, true);
+		let items = this._items;
+		let changed = false;
+
+		while ((index = items.indexOf(oldItem, index)) != -1) {
+			items[index] = newItem;
+			changed = true;
+		}
+
+		if (changed) {
+			this.emit(ObservableList.EVENT_CHANGE);
+		}
+
+		return changed;
 	}
 
 	clear() {
@@ -439,24 +434,20 @@ export class ObservableList<I = any> extends EventEmitter {
 		return this._items.join(separator);
 	}
 
-	find(cb: (item: I, index: number, list: this) => any, context?: any) {
-		let items = this._items;
-
-		for (let i = 0, l = items.length; i < l; i++) {
-			let item = items[i];
-
-			if (cb.call(context, item, i, this)) {
-				return item;
-			}
-		}
-
-		return;
+	find(cb: (item: T, index: number, list: this) => any, fromIndex?: number) {
+		let foundIndex = this.findIndex(cb, fromIndex);
+		return foundIndex == -1 ? undefined : this._items[foundIndex];
 	}
 
-	findIndex(cb: (item: I, index: number, list: this) => any, context?: any) {
+	findLast(cb: (item: T, index: number, list: this) => any, fromIndex?: number) {
+		let foundIndex = this.findLastIndex(cb, fromIndex);
+		return foundIndex == -1 ? undefined : this._items[foundIndex];
+	}
+
+	findIndex(cb: (item: T, index: number, list: this) => any, fromIndex = 0) {
 		let items = this._items;
 
-		for (let i = 0, l = items.length; i < l; i++) {
+		for (let i = this._validateIndex(fromIndex, true)!, l = items.length; i < l; i++) {
 			if (cb.call(context, items[i], i, this)) {
 				return i;
 			}
@@ -465,7 +456,27 @@ export class ObservableList<I = any> extends EventEmitter {
 		return -1;
 	}
 
-	clone(deep = false): ObservableList<I> {
+	findLastIndex(cb: (item: T, index: number, list: this) => any, fromIndex?: number) {
+		let items = this._items;
+		let index =
+			fromIndex === undefined ? items.length - 1 : this._validateIndex(fromIndex, true)!;
+
+		if (index >= 0) {
+			for (; ; index--) {
+				if (cb.call(context, items[index], index, this)) {
+					return index;
+				}
+
+				if (!index) {
+					break;
+				}
+			}
+		}
+
+		return -1;
+	}
+
+	clone(deep = false): ObservableList<T> {
 		return new (this.constructor as typeof ObservableList)(
 			deep
 				? this._items.map((item) =>
@@ -551,7 +562,7 @@ export class ObservableList<I = any> extends EventEmitter {
 		);
 	}
 
-	_insertSortedValue(item: I) {
+	_insertSortedValue(item: T) {
 		let items = this._items;
 		let itemComparator = this._itemComparator!;
 		let lowIndex = 0;
@@ -570,7 +581,7 @@ export class ObservableList<I = any> extends EventEmitter {
 		items.splice(lowIndex, 0, item);
 	}
 
-	declare [Symbol.iterator]: () => Iterator<I>;
+	declare [Symbol.iterator]: () => Iterator<T>;
 }
 
 ['forEach', 'map', 'filter', 'every', 'some'].forEach((name) => {
@@ -627,35 +638,35 @@ export class ObservableList<I = any> extends EventEmitter {
 ObservableList.prototype[Symbol.iterator] = ObservableList.prototype.values;
 
 declare module './ObservableList' {
-	interface ObservableList<I = any> {
-		forEach(cb: (item: I, index: number, list: this) => void, context?: any): void;
+	interface ObservableList<T = any> {
+		forEach(cb: (item: T, index: number, list: this) => void, context?: any): void;
 
-		map<R>(cb: (item: I, index: number, list: this) => R, context?: any): Array<R>;
+		map<R>(cb: (item: T, index: number, list: this) => R, context?: any): Array<R>;
 
-		filter<R extends I>(
-			cb: (item: I, index: number, list: this) => item is R,
+		filter<R extends T>(
+			cb: (item: T, index: number, list: this) => item is R,
 			context?: any
 		): Array<R>;
-		filter(cb: (item: I, index: number, list: this) => any, context?: any): Array<I>;
+		filter(cb: (item: T, index: number, list: this) => any, context?: any): Array<T>;
 
-		every(cb: (item: I, index: number, list: this) => any, context?: any): boolean;
+		every(cb: (item: T, index: number, list: this) => any, context?: any): boolean;
 
-		some(cb: (item: I, index: number, list: this) => any, context?: any): boolean;
+		some(cb: (item: T, index: number, list: this) => any, context?: any): boolean;
 
-		reduce<R = I>(
-			cb: (accumulator: R, item: I, index: number, list: this) => R,
+		reduce<R = T>(
+			cb: (accumulator: R, item: T, index: number, list: this) => R,
 			initialValue?: R
 		): R;
 
-		reduceRight<R = I>(
-			cb: (accumulator: R, item: I, index: number, list: this) => R,
+		reduceRight<R = T>(
+			cb: (accumulator: R, item: T, index: number, list: this) => R,
 			initialValue?: R
 		): R;
 
 		keys(): Iterator<number>;
 
-		values(): Iterator<I>;
+		values(): Iterator<T>;
 
-		entries(): Iterator<[number, I]>;
+		entries(): Iterator<[number, T]>;
 	}
 }
