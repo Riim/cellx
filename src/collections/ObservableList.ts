@@ -448,7 +448,7 @@ export class ObservableList<T = any> extends EventEmitter {
 		let items = this._items;
 
 		for (let i = this._validateIndex(fromIndex, true)!, l = items.length; i < l; i++) {
-			if (cb.call(context, items[i], i, this)) {
+			if (cb(items[i], i, this)) {
 				return i;
 			}
 		}
@@ -463,7 +463,7 @@ export class ObservableList<T = any> extends EventEmitter {
 
 		if (index >= 0) {
 			for (; ; index--) {
-				if (cb.call(context, items[index], index, this)) {
+				if (cb(items[index], index, this)) {
 					return index;
 				}
 
