@@ -1223,10 +1223,9 @@
             if (this._sorted) {
                 throw TypeError('Cannot replace in sorted list');
             }
-            let index = this._validateIndex(fromIndex, true);
             let items = this._items;
             let changed = false;
-            while ((index = items.indexOf(oldItem, index)) != -1) {
+            for (let index = items.indexOf(oldItem, this._validateIndex(fromIndex, true)); index != -1; index = items.indexOf(oldItem, index + 1)) {
                 items[index] = newItem;
                 changed = true;
             }
@@ -1269,14 +1268,6 @@
         join(separator) {
             return this._items.join(separator);
         }
-        find(cb, fromIndex) {
-            let foundIndex = this.findIndex(cb, fromIndex);
-            return foundIndex == -1 ? undefined : this._items[foundIndex];
-        }
-        findLast(cb, fromIndex) {
-            let foundIndex = this.findLastIndex(cb, fromIndex);
-            return foundIndex == -1 ? undefined : this._items[foundIndex];
-        }
         findIndex(cb, fromIndex = 0) {
             let items = this._items;
             for (let i = this._validateIndex(fromIndex, true), l = items.length; i < l; i++) {
@@ -1300,6 +1291,14 @@
                 }
             }
             return -1;
+        }
+        find(cb, fromIndex) {
+            let foundIndex = this.findIndex(cb, fromIndex);
+            return foundIndex == -1 ? undefined : this._items[foundIndex];
+        }
+        findLast(cb, fromIndex) {
+            let foundIndex = this.findLastIndex(cb, fromIndex);
+            return foundIndex == -1 ? undefined : this._items[foundIndex];
         }
         clone(deep = false) {
             return new this.constructor(deep

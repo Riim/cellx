@@ -42,10 +42,10 @@ export declare class ObservableList<T = any> extends EventEmitter {
     clear(): this;
     equals(that: any): boolean;
     join(separator?: string): string;
-    find(cb: (item: T, index: number, list: this) => any, fromIndex?: number): T | undefined;
-    findLast(cb: (item: T, index: number, list: this) => any, fromIndex?: number): T | undefined;
     findIndex(cb: (item: T, index: number, list: this) => any, fromIndex?: number): number;
     findLastIndex(cb: (item: T, index: number, list: this) => any, fromIndex?: number): number;
+    find(cb: (item: T, index: number, list: this) => any, fromIndex?: number): T | undefined;
+    findLast(cb: (item: T, index: number, list: this) => any, fromIndex?: number): T | undefined;
     clone(deep?: boolean): ObservableList<T>;
     absorbFrom(that: ObservableList): boolean;
     toArray(): T[];

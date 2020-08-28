@@ -678,14 +678,6 @@ console.log(list.toArray());
 
 Сигнатура вызова: `(cb: (accumulator, item, index: uint, list: cellx.ObservableList) -> *, initialValue?) -> *;`.
 
-##### find
-
-Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, fromIndex?: int) -> *;`.
-
-##### findLast
-
-Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, fromIndex?: int) -> *;`.
-
 ##### findIndex
 
 Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, fromIndex?: int) -> int;`.
@@ -693,6 +685,14 @@ console.log(list.toArray());
 ##### findLastIndex
 
 Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, fromIndex?: int) -> int;`.
+
+##### find
+
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, fromIndex?: int) -> *;`.
+
+##### findLast
+
+Сигнатура вызова: `(cb: (item, index: uint, list: cellx.ObservableList) -> ?boolean, fromIndex?: int) -> *;`.
 
 ##### clone
 

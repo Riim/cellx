@@ -371,11 +371,14 @@ export class ObservableList<T = any> extends EventEmitter {
 			throw TypeError('Cannot replace in sorted list');
 		}
 
-		let index = this._validateIndex(fromIndex, true);
 		let items = this._items;
 		let changed = false;
 
-		while ((index = items.indexOf(oldItem, index)) != -1) {
+		for (
+			let index = items.indexOf(oldItem, this._validateIndex(fromIndex, true));
+			index != -1;
+			index = items.indexOf(oldItem, index + 1)
+		) {
 			items[index] = newItem;
 			changed = true;
 		}
@@ -434,16 +437,6 @@ export class ObservableList<T = any> extends EventEmitter {
 		return this._items.join(separator);
 	}
 
-	find(cb: (item: T, index: number, list: this) => any, fromIndex?: number) {
-		let foundIndex = this.findIndex(cb, fromIndex);
-		return foundIndex == -1 ? undefined : this._items[foundIndex];
-	}
-
-	findLast(cb: (item: T, index: number, list: this) => any, fromIndex?: number) {
-		let foundIndex = this.findLastIndex(cb, fromIndex);
-		return foundIndex == -1 ? undefined : this._items[foundIndex];
-	}
-
 	findIndex(cb: (item: T, index: number, list: this) => any, fromIndex = 0) {
 		let items = this._items;
 
@@ -474,6 +467,16 @@ export class ObservableList<T = any> extends EventEmitter {
 		}
 
 		return -1;
+	}
+
+	find(cb: (item: T, index: number, list: this) => any, fromIndex?: number) {
+		let foundIndex = this.findIndex(cb, fromIndex);
+		return foundIndex == -1 ? undefined : this._items[foundIndex];
+	}
+
+	findLast(cb: (item: T, index: number, list: this) => any, fromIndex?: number) {
+		let foundIndex = this.findLastIndex(cb, fromIndex);
+		return foundIndex == -1 ? undefined : this._items[foundIndex];
 	}
 
 	clone(deep = false): ObservableList<T> {
