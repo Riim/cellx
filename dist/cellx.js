@@ -1,8 +1,6 @@
 import { Cell } from './Cell';
 export { configure } from './config';
 export { EventEmitter } from './EventEmitter';
-export { ObservableMap } from './collections/ObservableMap';
-export { ObservableList } from './collections/ObservableList';
 export { Cell } from './Cell';
 export { WaitError } from './WaitError';
 export const KEY_VALUE_CELLS = Symbol('valueCells');

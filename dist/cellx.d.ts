@@ -2,8 +2,6 @@ import { Cell, ICellOptions, TCellPull } from './Cell';
 import { IEvent, TListener } from './EventEmitter';
 export { configure } from './config';
 export { IEvent, TListener, IRegisteredEvent, EventEmitter } from './EventEmitter';
-export { TObservableMapEntries, ObservableMap } from './collections/ObservableMap';
-export { TObservableListItemComparator, TObservableListItems, IObservableListOptions, ObservableList } from './collections/ObservableList';
 export { TCellPull, ICellOptions, ICellChangeEvent, ICellErrorEvent, TCellEvent, Cell } from './Cell';
 export { WaitError } from './WaitError';
 export interface ICellx<T = any, M = any> {
