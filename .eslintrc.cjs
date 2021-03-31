@@ -7,7 +7,7 @@ module.exports = {
 		'eslint:recommended',
 		'plugin:@typescript-eslint/eslint-recommended',
 		'plugin:@typescript-eslint/recommended',
-		'prettier/@typescript-eslint'
+		'prettier'
 	],
 	rules: {
 		'@typescript-eslint/ban-types': 0,
