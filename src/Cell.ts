@@ -3,7 +3,7 @@ import { EventEmitter, IEvent, TListener } from './EventEmitter';
 import { logError } from './utils';
 import { WaitError } from './WaitError';
 
-export type TCellPull<T> = (cell: Cell<T>, next: any) => any;
+export type TCellPull<T, R = T> = (cell: Cell<T>, next: any) => R;
 
 export interface ICellOptions<T, M> {
 	debugKey?: string;
