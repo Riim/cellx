@@ -1,5 +1,5 @@
 import { EventEmitter, IEvent, TListener } from './EventEmitter';
-export declare type TCellPull<T> = (cell: Cell<T>, next: any) => any;
+export declare type TCellPull<T, R = T> = (cell: Cell<T>, next: any) => R;
 export interface ICellOptions<T, M> {
     debugKey?: string;
     context?: object;
