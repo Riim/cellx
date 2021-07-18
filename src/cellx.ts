@@ -1,6 +1,8 @@
 import { Cell, ICellOptions, TCellPull } from './Cell';
 import { IEvent, TListener } from './EventEmitter';
+import { KEY_VALUE_CELLS } from './keys';
 
+export { KEY_VALUE_CELLS } from './keys';
 export { configure } from './config';
 export { IEvent, TListener, IRegisteredEvent, EventEmitter } from './EventEmitter';
 export {
@@ -53,8 +55,6 @@ export interface ICellx<T = any, M = any> {
 	reap(): Cell<T, M>;
 	dispose(): Cell<T, M>;
 }
-
-export const KEY_VALUE_CELLS = Symbol('valueCells');
 
 const cellxProto = {
 	__proto__: Function.prototype,
@@ -134,23 +134,23 @@ export function cellx<T = any, M = any>(
 
 export function defineObservableProperty<T extends object = object>(
 	obj: T,
-	name: string | symbol,
+	key: string | symbol,
 	value: any
 ): T {
 	(
 		(obj[KEY_VALUE_CELLS] as Map<string | symbol, Cell>) || (obj[KEY_VALUE_CELLS] = new Map())
-	).set(name, value instanceof Cell ? value : new Cell(value, { context: obj }));
+	).set(key, value instanceof Cell ? value : new Cell(value, { context: obj }));
 
-	Object.defineProperty(obj, name, {
+	Object.defineProperty(obj, key, {
 		configurable: true,
 		enumerable: true,
 
 		get() {
-			return (this[KEY_VALUE_CELLS] as Map<string | symbol, Cell>).get(name)!.get();
+			return (this[KEY_VALUE_CELLS] as Map<string | symbol, Cell>).get(key)!.get();
 		},
 
 		set(value) {
-			(this[KEY_VALUE_CELLS] as Map<string | symbol, Cell>).get(name)!.set(value);
+			(this[KEY_VALUE_CELLS] as Map<string | symbol, Cell>).get(key)!.set(value);
 		}
 	});
 
@@ -161,24 +161,24 @@ export function defineObservableProperties<T extends object = object>(
 	obj: T,
 	props: Record<string | symbol, any>
 ): T {
-	Object.keys(props).forEach((name) => {
-		defineObservableProperty(obj, name, props[name]);
-	});
+	for (let key of Object.keys(props)) {
+		defineObservableProperty(obj, key, props[key]);
+	}
 
 	return obj;
 }
 
-export function define<T extends object = object>(obj: T, name: string | symbol, value: any): T;
+export function define<T extends object = object>(obj: T, key: string | symbol, value: any): T;
 export function define<T extends object = object>(obj: T, props: Record<string | symbol, any>): T;
 export function define(
 	obj: object,
-	nameOrProps: string | symbol | Record<string | symbol, any>,
+	keyOrProps: string | symbol | Record<string | symbol, any>,
 	value?: any
 ) {
-	if (typeof nameOrProps == 'object') {
-		defineObservableProperties(obj, nameOrProps);
+	if (typeof keyOrProps == 'object') {
+		defineObservableProperties(obj, keyOrProps);
 	} else {
-		defineObservableProperty(obj, nameOrProps, value);
+		defineObservableProperty(obj, keyOrProps, value);
 	}
 
 	return obj;

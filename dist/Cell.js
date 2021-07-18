@@ -31,6 +31,7 @@ function release() {
 }
 export class Cell extends EventEmitter {
     constructor(value, options) {
+        var _a, _b, _c, _d, _e, _f, _g;
         super();
         this._reactions = [];
         this._error = null;
@@ -39,16 +40,15 @@ export class Cell extends EventEmitter {
         this._active = false;
         this._currentlyPulling = false;
         this._updationId = -1;
-        this.debugKey = options && options.debugKey;
+        this.debugKey = options === null || options === void 0 ? void 0 : options.debugKey;
         this.context = options && options.context !== undefined ? options.context : this;
-        this._pull =
-            (options && options.pull) || (typeof value == 'function' ? value : null);
-        this._get = (options && options.get) || null;
-        this._validate = (options && options.validate) || null;
-        this._merge = (options && options.merge) || null;
-        this._put = (options && options.put) || defaultPut;
-        this._reap = (options && options.reap) || null;
-        this.meta = (options && options.meta) || null;
+        this._pull = (_a = options === null || options === void 0 ? void 0 : options.pull) !== null && _a !== void 0 ? _a : (typeof value == 'function' ? value : null);
+        this._get = (_b = options === null || options === void 0 ? void 0 : options.get) !== null && _b !== void 0 ? _b : null;
+        this._validate = (_c = options === null || options === void 0 ? void 0 : options.validate) !== null && _c !== void 0 ? _c : null;
+        this._merge = (_d = options === null || options === void 0 ? void 0 : options.merge) !== null && _d !== void 0 ? _d : null;
+        this._put = (_e = options === null || options === void 0 ? void 0 : options.put) !== null && _e !== void 0 ? _e : defaultPut;
+        this._reap = (_f = options === null || options === void 0 ? void 0 : options.reap) !== null && _f !== void 0 ? _f : null;
+        this.meta = (_g = options === null || options === void 0 ? void 0 : options.meta) !== null && _g !== void 0 ? _g : null;
         if (this._pull) {
             this._dependencies = undefined;
             this._value = undefined;
@@ -94,16 +94,18 @@ export class Cell extends EventEmitter {
                 };
             }
             return cb.call(this, next, disposer);
-        }, cellOptions && cellOptions.onChange
+        }, (cellOptions === null || cellOptions === void 0 ? void 0 : cellOptions.onChange)
             ? cellOptions
-            : Object.assign(Object.assign({}, cellOptions), { onChange() { } }));
+            : Object.assign(Object.assign({}, cellOptions), { 
+                // eslint-disable-next-line @typescript-eslint/no-empty-function
+                onChange() { } }));
         return disposer;
     }
     static release() {
         release();
     }
     static afterRelease(cb) {
-        (afterRelease || (afterRelease = [])).push(cb);
+        (afterRelease !== null && afterRelease !== void 0 ? afterRelease : (afterRelease = [])).push(cb);
     }
     on(type, listener, context) {
         if (this._dependencies !== null) {
@@ -164,7 +166,7 @@ export class Cell extends EventEmitter {
             return this;
         }
         function wrapper(evt) {
-            return listener.call(this, evt.data.error || null, evt);
+            return listener.call(this, evt.data['error'] || null, evt);
         }
         wrappers.set(this, wrapper);
         if (context === undefined) {
@@ -174,7 +176,7 @@ export class Cell extends EventEmitter {
     }
     unsubscribe(listener, context) {
         let wrappers = listener[KEY_LISTENER_WRAPPERS];
-        let wrapper = wrappers && wrappers.get(this);
+        let wrapper = wrappers === null || wrappers === void 0 ? void 0 : wrappers.get(this);
         if (!wrapper) {
             return this;
         }

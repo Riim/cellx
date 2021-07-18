@@ -20,6 +20,25 @@ export interface ICellOptions<T, M> {
 	onError?: TListener;
 }
 
+export interface ICellChangeEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
+	type: typeof Cell.EVENT_CHANGE;
+	data: {
+		prevValue: any;
+		value: any;
+	};
+}
+
+export interface ICellErrorEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
+	type: typeof Cell.EVENT_ERROR;
+	data: {
+		error: any;
+	};
+}
+
+export type TCellEvent<T extends EventEmitter = EventEmitter> =
+	| ICellChangeEvent<T>
+	| ICellErrorEvent<T>;
+
 const KEY_LISTENER_WRAPPERS = Symbol('listenerWrappers');
 
 function defaultPut(cell: Cell, value: any) {
@@ -51,6 +70,7 @@ function release() {
 
 	if (afterRelease) {
 		let afterRelease_ = afterRelease;
+
 		afterRelease = null;
 
 		for (let cb of afterRelease_) {
@@ -83,10 +103,11 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 				return cb.call(this, next, disposer);
 			},
-			cellOptions && cellOptions.onChange
+			cellOptions?.onChange
 				? cellOptions
 				: {
 						...cellOptions,
+						// eslint-disable-next-line @typescript-eslint/no-empty-function
 						onChange() {}
 				  }
 		);
@@ -99,7 +120,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	}
 
 	static afterRelease(cb: Function) {
-		(afterRelease || (afterRelease = [])).push(cb);
+		(afterRelease ?? (afterRelease = [])).push(cb);
 	}
 
 	debugKey: string | undefined;
@@ -134,21 +155,20 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	constructor(value: T | TCellPull<T>, options?: ICellOptions<T, M>) {
 		super();
 
-		this.debugKey = options && options.debugKey;
+		this.debugKey = options?.debugKey;
 
 		this.context = options && options.context !== undefined ? options.context : this;
 
-		this._pull =
-			(options && options.pull) || (typeof value == 'function' ? (value as any) : null);
-		this._get = (options && options.get) || null;
+		this._pull = options?.pull ?? (typeof value == 'function' ? (value as any) : null);
+		this._get = options?.get ?? null;
 
-		this._validate = (options && options.validate) || null;
-		this._merge = (options && options.merge) || null;
-		this._put = (options && options.put) || defaultPut;
+		this._validate = options?.validate ?? null;
+		this._merge = options?.merge ?? null;
+		this._put = options?.put ?? defaultPut;
 
-		this._reap = (options && options.reap) || null;
+		this._reap = options?.reap ?? null;
 
-		this.meta = (options && options.meta) || null;
+		this.meta = options?.meta ?? null;
 
 		if (this._pull) {
 			this._dependencies = undefined;
@@ -189,16 +209,16 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 	}
 
-	on(
+	override on(
 		type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR,
 		listener: TListener,
 		context?: any
 	): this;
-	on(
+	override on(
 		listeners: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>,
 		context?: any
 	): this;
-	on(type: string | Record<string, TListener>, listener?: any, context?: any) {
+	override on(type: string | Record<string, TListener>, listener?: any, context?: any) {
 		if (this._dependencies !== null) {
 			this.actualize();
 		}
@@ -216,16 +236,16 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		return this;
 	}
 
-	off(
+	override off(
 		type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR,
 		listener: TListener,
 		context?: any
 	): this;
-	off(
+	override off(
 		listeners?: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>,
 		context?: any
 	): this;
-	off(type?: string | Record<string, TListener>, listener?: any, context?: any) {
+	override off(type?: string | Record<string, TListener>, listener?: any, context?: any) {
 		if (this._dependencies !== null) {
 			this.actualize();
 		}
@@ -286,7 +306,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 
 		function wrapper(evt: IEvent): any {
-			return listener.call(this, evt.data.error || null, evt);
+			return listener.call(this, evt.data['error'] || null, evt);
 		}
 		wrappers.set(this, wrapper);
 
@@ -299,7 +319,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 	unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this {
 		let wrappers: Map<Cell, TListener> | undefined = listener[KEY_LISTENER_WRAPPERS];
-		let wrapper = wrappers && wrappers.get(this);
+		let wrapper = wrappers?.get(this);
 
 		if (!wrapper) {
 			return this;
@@ -483,9 +503,9 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		let value;
 
 		try {
-			value = this._pull!.length
-				? this._pull!.call(this.context, this, this._value)
-				: this._pull!.call(this.context);
+			value = this._pull.length
+				? this._pull.call(this.context, this, this._value)
+				: this._pull.call(this.context);
 		} catch (err) {
 			$error.error = err;
 			value = $error;
@@ -678,22 +698,3 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		return this.reap();
 	}
 }
-
-export interface ICellChangeEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
-	type: typeof Cell.EVENT_CHANGE;
-	data: {
-		prevValue: any;
-		value: any;
-	};
-}
-
-export interface ICellErrorEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
-	type: typeof Cell.EVENT_ERROR;
-	data: {
-		error: any;
-	};
-}
-
-export type TCellEvent<T extends EventEmitter = EventEmitter> =
-	| ICellChangeEvent<T>
-	| ICellErrorEvent<T>;

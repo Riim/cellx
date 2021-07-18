@@ -1,6 +1,5 @@
-import { KEY_VALUE_CELLS } from './cellx';
+import { KEY_VALUE_CELLS } from './keys';
 import { logError } from './utils';
-const hasOwn = Object.prototype.hasOwnProperty;
 let currentlySubscribing = false;
 let transactionLevel = 0;
 let transactionEvents = [];
@@ -58,7 +57,7 @@ export class EventEmitter {
             context = listener !== undefined ? listener : this;
             let listeners = type;
             for (type in listeners) {
-                if (hasOwn.call(listeners, type)) {
+                if (Object.prototype.hasOwnProperty.call(listeners, type)) {
                     this._on(type, listeners[type], context);
                 }
             }
@@ -77,7 +76,7 @@ export class EventEmitter {
                 context = listener !== undefined ? listener : this;
                 let listeners = type;
                 for (type in listeners) {
-                    if (hasOwn.call(listeners, type)) {
+                    if (Object.prototype.hasOwnProperty.call(listeners, type)) {
                         this._off(type, listeners[type], context);
                     }
                 }
@@ -95,11 +94,12 @@ export class EventEmitter {
         return this;
     }
     _on(type, listener, context) {
+        var _a, _b;
         let index;
         if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
             let propName = type.slice(index + 1);
             currentlySubscribing = true;
-            ((this[KEY_VALUE_CELLS] || (this[KEY_VALUE_CELLS] = new Map())).get(propName) || (this[propName], this[KEY_VALUE_CELLS]).get(propName)).on(type.slice(0, index), listener, context);
+            ((_b = ((_a = this[KEY_VALUE_CELLS]) !== null && _a !== void 0 ? _a : (this[KEY_VALUE_CELLS] = new Map())).get(propName)) !== null && _b !== void 0 ? _b : (this[propName], this[KEY_VALUE_CELLS]).get(propName)).on(type.slice(0, index), listener, context);
             currentlySubscribing = false;
         }
         else {
@@ -117,9 +117,10 @@ export class EventEmitter {
         }
     }
     _off(type, listener, context) {
+        var _a;
         let index;
         if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
-            let valueCell = this[KEY_VALUE_CELLS] && this[KEY_VALUE_CELLS].get(type.slice(index + 1));
+            let valueCell = (_a = this[KEY_VALUE_CELLS]) === null || _a === void 0 ? void 0 : _a.get(type.slice(index + 1));
             if (valueCell) {
                 valueCell.off(type.slice(0, index), listener, context);
             }
@@ -184,13 +185,23 @@ export class EventEmitter {
             if (transactionLevel) {
                 for (let i = transactionEvents.length;;) {
                     if (!i) {
-                        (evt.data || (evt.data = {})).prevEvent = null;
+                        if (evt.data) {
+                            evt.data['prevEvent'] = null;
+                        }
+                        else {
+                            evt.data = { prevEvent: null };
+                        }
                         transactionEvents.push(evt);
                         break;
                     }
                     let event = transactionEvents[--i];
                     if (event.target == this && event.type === evt.type) {
-                        (evt.data || (evt.data = {})).prevEvent = event;
+                        if (evt.data) {
+                            evt.data['prevEvent'] = event;
+                        }
+                        else {
+                            evt.data = { prevEvent: event };
+                        }
                         transactionEvents[i] = evt;
                         break;
                     }

@@ -78,7 +78,7 @@ describe('cellx', () => {
 		});
 
 		b.onError(evt => {
-			expect(evt.data.error).to.be.instanceOf(RangeError);
+			expect(evt.data['error']).to.be.instanceOf(RangeError);
 
 			done();
 		});

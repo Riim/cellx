@@ -14,6 +14,20 @@ export interface ICellOptions<T, M> {
     onChange?: TListener;
     onError?: TListener;
 }
+export interface ICellChangeEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
+    type: typeof Cell.EVENT_CHANGE;
+    data: {
+        prevValue: any;
+        value: any;
+    };
+}
+export interface ICellErrorEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
+    type: typeof Cell.EVENT_ERROR;
+    data: {
+        error: any;
+    };
+}
+export declare type TCellEvent<T extends EventEmitter = EventEmitter> = ICellChangeEvent<T> | ICellErrorEvent<T>;
 export declare class Cell<T = any, M = any> extends EventEmitter {
     static EVENT_CHANGE: string;
     static EVENT_ERROR: string;
@@ -72,17 +86,3 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     reap(): this;
     dispose(): this;
 }
-export interface ICellChangeEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
-    type: typeof Cell.EVENT_CHANGE;
-    data: {
-        prevValue: any;
-        value: any;
-    };
-}
-export interface ICellErrorEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
-    type: typeof Cell.EVENT_ERROR;
-    data: {
-        error: any;
-    };
-}
-export declare type TCellEvent<T extends EventEmitter = EventEmitter> = ICellChangeEvent<T> | ICellErrorEvent<T>;

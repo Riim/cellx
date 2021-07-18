@@ -1,5 +1,5 @@
 import { Cell } from './Cell';
-import { KEY_VALUE_CELLS } from './cellx';
+import { KEY_VALUE_CELLS } from './keys';
 export interface IEvent<T extends EventEmitter = EventEmitter, D extends object = Record<string, any>> {
     target: T;
     type: string | symbol;

@@ -1,9 +1,10 @@
 import { Cell } from './Cell';
+import { KEY_VALUE_CELLS } from './keys';
+export { KEY_VALUE_CELLS } from './keys';
 export { configure } from './config';
 export { EventEmitter } from './EventEmitter';
 export { Cell } from './Cell';
 export { WaitError } from './WaitError';
-export const KEY_VALUE_CELLS = Symbol('valueCells');
 const cellxProto = {
     __proto__: Function.prototype,
     cell: null,
@@ -60,32 +61,32 @@ export function cellx(value, options) {
     $cellx.cell = new Cell(value, options);
     return $cellx;
 }
-export function defineObservableProperty(obj, name, value) {
-    (obj[KEY_VALUE_CELLS] || (obj[KEY_VALUE_CELLS] = new Map())).set(name, value instanceof Cell ? value : new Cell(value, { context: obj }));
-    Object.defineProperty(obj, name, {
+export function defineObservableProperty(obj, key, value) {
+    (obj[KEY_VALUE_CELLS] || (obj[KEY_VALUE_CELLS] = new Map())).set(key, value instanceof Cell ? value : new Cell(value, { context: obj }));
+    Object.defineProperty(obj, key, {
         configurable: true,
         enumerable: true,
         get() {
-            return this[KEY_VALUE_CELLS].get(name).get();
+            return this[KEY_VALUE_CELLS].get(key).get();
         },
         set(value) {
-            this[KEY_VALUE_CELLS].get(name).set(value);
+            this[KEY_VALUE_CELLS].get(key).set(value);
         }
     });
     return obj;
 }
 export function defineObservableProperties(obj, props) {
-    Object.keys(props).forEach((name) => {
-        defineObservableProperty(obj, name, props[name]);
-    });
+    for (let key of Object.keys(props)) {
+        defineObservableProperty(obj, key, props[key]);
+    }
     return obj;
 }
-export function define(obj, nameOrProps, value) {
-    if (typeof nameOrProps == 'object') {
-        defineObservableProperties(obj, nameOrProps);
+export function define(obj, keyOrProps, value) {
+    if (typeof keyOrProps == 'object') {
+        defineObservableProperties(obj, keyOrProps);
     }
     else {
-        defineObservableProperty(obj, nameOrProps, value);
+        defineObservableProperty(obj, keyOrProps, value);
     }
     return obj;
 }

@@ -1,8 +1,6 @@
 import { Cell } from './Cell';
-import { KEY_VALUE_CELLS } from './cellx';
+import { KEY_VALUE_CELLS } from './keys';
 import { logError } from './utils';
-
-const hasOwn = Object.prototype.hasOwnProperty;
 
 export interface IEvent<
 	T extends EventEmitter = EventEmitter,
@@ -106,7 +104,7 @@ export class EventEmitter {
 			let listeners = type;
 
 			for (type in listeners) {
-				if (hasOwn.call(listeners, type)) {
+				if (Object.prototype.hasOwnProperty.call(listeners, type)) {
 					this._on(type, listeners[type], context);
 				}
 			}
@@ -135,7 +133,7 @@ export class EventEmitter {
 				let listeners = type;
 
 				for (type in listeners) {
-					if (hasOwn.call(listeners, type)) {
+					if (Object.prototype.hasOwnProperty.call(listeners, type)) {
 						this._off(type, listeners[type], context);
 					}
 				}
@@ -161,9 +159,9 @@ export class EventEmitter {
 
 			currentlySubscribing = true;
 			(
-				(this[KEY_VALUE_CELLS] || (this[KEY_VALUE_CELLS] = new Map<string, Cell>())).get(
+				(this[KEY_VALUE_CELLS] ?? (this[KEY_VALUE_CELLS] = new Map<string, Cell>())).get(
 					propName
-				) || (this[propName], this[KEY_VALUE_CELLS]!).get(propName)!
+				) ?? (this[propName], this[KEY_VALUE_CELLS]!).get(propName)!
 			).on(type.slice(0, index), listener, context);
 			currentlySubscribing = false;
 		} else {
@@ -184,8 +182,7 @@ export class EventEmitter {
 		let index: number;
 
 		if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
-			let valueCell =
-				this[KEY_VALUE_CELLS] && this[KEY_VALUE_CELLS]!.get(type.slice(index + 1));
+			let valueCell = this[KEY_VALUE_CELLS]?.get(type.slice(index + 1));
 
 			if (valueCell) {
 				valueCell.off(type.slice(0, index), listener, context);
@@ -272,16 +269,28 @@ export class EventEmitter {
 			if (transactionLevel) {
 				for (let i = transactionEvents.length; ; ) {
 					if (!i) {
-						(evt.data || (evt.data = {})).prevEvent = null;
+						if (evt.data) {
+							evt.data['prevEvent'] = null;
+						} else {
+							evt.data = { prevEvent: null };
+						}
+
 						transactionEvents.push(evt as IEvent);
+
 						break;
 					}
 
 					let event = transactionEvents[--i];
 
 					if (event.target == this && event.type === evt.type) {
-						(evt.data || (evt.data = {})).prevEvent = event;
+						if (evt.data) {
+							evt.data['prevEvent'] = event;
+						} else {
+							evt.data = { prevEvent: event };
+						}
+
 						transactionEvents[i] = evt as IEvent;
+
 						break;
 					}
 				}

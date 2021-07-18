@@ -54,13 +54,11 @@ body {
 	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="jin-atom"><span></span>$jin.atom</label>
 	<br>
 	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="mol_atom"><span></span>$mol_atom</label>
-	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="warp9"><span></span>Warp9</label>
 	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="reactor"><span></span>Reactor.js</label>
 	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="reactive"><span></span>Reactive.js</label>
 	<br>
 	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="kefir"><span></span>Kefir.js</label>
 	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="mobx"><span></span>MobX</label>
-	<label class="-radiobox"><input type="radio" name="rdbLibrary" value="matreshka"><span></span>Matreshka.js</label>
 </p>
 
 <hr>
@@ -76,14 +74,14 @@ body {
 	<pre><output id="tfOutput">&nbsp;</output></pre>
 </p>
 
-<script src="lib/jquery.js"></script>
-<script src="lib/knockout-3.4.0.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/knockout/3.4.0/knockout-min.js"></script>
 <script src="lib/prop1.js"></script>
 <script src="lib/mol_atom.web.js"></script>
 <script src="lib/reactor.js"></script>
 <script src="lib/reactive.js"></script>
-<script src="lib/kefir.js"></script>
-<script src="lib/mobx.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/kefir/3.2.0/kefir.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mobx/3.6.2/mobx.umd.min.js"></script>
 <script src="../dist/cellx.umd.js"></script>
 <script>
 
@@ -132,10 +130,6 @@ function runTest(lib, layerCount) {
 				testMolAtom(report, layerCount, onDone);
 				break;
 			}
-			case 'warp9': {
-				testWarp9(report, layerCount, onDone);
-				break;
-			}
 			case 'reactor': {
 				testReactor(report, layerCount, onDone);
 				break;
@@ -150,10 +144,6 @@ function runTest(lib, layerCount) {
 			}
 			case 'mobx': {
 				testMobX(report, layerCount, onDone);
-				break;
-			}
-			case 'matreshka': {
-				testMatreshka(report, layerCount, onDone);
 				break;
 			}
 		}
@@ -462,66 +452,6 @@ function testMolAtom(report, layerCount, done) {
 	done();
 }
 
-function testWarp9(report, layerCount, done) {
-	var start = {
-		prop1: new warp9.Cell(1),
-		prop2: new warp9.Cell(2),
-		prop3: new warp9.Cell(3),
-		prop4: new warp9.Cell(4)
-	};
-	var layer = start;
-
-	for (var i = layerCount; i--;) {
-		layer = (function(m) {
-			var s = {
-				prop1: m.prop2.lift(function(v) { return v; }),
-				prop2: m.prop1.lift(function(v) { return v - m.prop3.get(); }),
-				prop3: m.prop2.lift(function(v) { return v + m.prop4.get(); }),
-				prop4: m.prop3.lift(function(v) { return v; })
-			};
-
-			s.prop1.onChange(function() {});
-			s.prop2.onChange(function() {});
-			s.prop3.onChange(function() {});
-			s.prop4.onChange(function() {});
-
-			s.prop1.get();
-			s.prop2.get();
-			s.prop3.get();
-			s.prop4.get();
-
-			return s;
-		})(layer);
-	}
-
-	var end = layer;
-
-	report.beforeChange = [
-		end.prop1.get(),
-		end.prop2.get(),
-		end.prop3.get(),
-		end.prop4.get()
-	];
-
-	var st = performance.now();
-
-	start.prop1.set(4);
-	start.prop2.set(3);
-	start.prop3.set(2);
-	start.prop4.set(1);
-
-	report.afterChange = [
-		end.prop1.get(),
-		end.prop2.get(),
-		end.prop3.get(),
-		end.prop4.get()
-	];
-
-	report.recalculationTime = performance.now() - st;
-
-	done();
-}
-
 function testReactor(report, layerCount, done) {
 	var start = {
 		prop1: Signal(1),
@@ -754,77 +684,6 @@ function testMobX(report, layerCount, done) {
 		end.prop2.get(),
 		end.prop3.get(),
 		end.prop4.get()
-	];
-
-	report.recalculationTime = performance.now() - st;
-
-	done();
-}
-
-function testMatreshka(report, layerCount, done) {
-	var MatreshkaObject = Class({ 'extends': Matreshka });
-
-	var start = new MatreshkaObject();
-	start.prop1 = 1;
-	start.prop2 = 2;
-	start.prop3 = 3;
-	start.prop4 = 4;
-
-	var layer = start;
-
-	for (var i = layerCount; i--;) {
-		layer = (function(m) {
-			var s = new MatreshkaObject();
-			s.props = m;
-
-			MK.linkProps(s, 'prop1', 'props.prop2', function(prop2Value) {
-				return prop2Value;
-			});
-			MK.linkProps(s, 'prop2', 'props.prop1 props.prop3', function(prop1Value, prop3Value) {
-				return prop1Value - prop3Value;
-			});
-			MK.linkProps(s, 'prop3', 'props.prop2 props.prop4', function(prop2Value, prop4Value) {
-				return prop2Value + prop4Value;
-			});
-			MK.linkProps(s, 'prop4', 'props.prop3', function(prop3Value) {
-				return prop3Value;
-			});
-
-			s.on('change:prop1', function() {});
-			s.on('change:prop2', function() {});
-			s.on('change:prop3', function() {});
-			s.on('change:prop4', function() {});
-
-			s.prop1;
-			s.prop2;
-			s.prop3;
-			s.prop4;
-
-			return s;
-		})(layer);
-	}
-
-	var end = layer;
-
-	report.beforeChange = [
-		end.prop1,
-		end.prop2,
-		end.prop3,
-		end.prop4
-	];
-
-	var st = performance.now();
-
-	start.prop1 = 4;
-	start.prop2 = 3;
-	start.prop3 = 2;
-	start.prop4 = 1;
-
-	report.afterChange = [
-		end.prop1,
-		end.prop2,
-		end.prop3,
-		end.prop4
 	];
 
 	report.recalculationTime = performance.now() - st;
