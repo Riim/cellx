@@ -14,6 +14,11 @@ export interface ICellOptions<T, M> {
     onChange?: TListener;
     onError?: TListener;
 }
+export declare enum State {
+    ACTUAL = "actual",
+    DIRTY = "dirty",
+    CHECK = "check"
+}
 export interface ICellChangeEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
     type: typeof Cell.EVENT_CHANGE;
     data: {
@@ -49,7 +54,7 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     _value: any;
     _error: Error | null;
     _lastErrorEvent: IEvent<this> | null;
-    _state: 'actual' | 'dirty' | 'check';
+    _state: State;
     _inited: boolean;
     _hasSubscribers: boolean;
     _active: boolean;

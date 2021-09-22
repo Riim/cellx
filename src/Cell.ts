@@ -20,6 +20,12 @@ export interface ICellOptions<T, M> {
 	onError?: TListener;
 }
 
+export enum State {
+	ACTUAL = 'actual',
+	DIRTY = 'dirty',
+	CHECK = 'check'
+}
+
 export interface ICellChangeEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
 	type: typeof Cell.EVENT_CHANGE;
 	data: {
@@ -84,7 +90,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	static EVENT_ERROR = 'error';
 
 	static get currentlyPulling() {
-		return !!currentCell;
+		return currentCell != null;
 	}
 
 	static autorun<T = any, M = any>(
@@ -145,7 +151,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	_error: Error | null = null;
 	_lastErrorEvent: IEvent<this> | null = null;
 
-	_state: 'actual' | 'dirty' | 'check';
+	_state: State;
 	_inited: boolean;
 	_hasSubscribers = false;
 	_active = false;
@@ -173,7 +179,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		if (this._pull) {
 			this._dependencies = undefined;
 			this._value = undefined;
-			this._state = 'dirty';
+			this._state = State.DIRTY;
 			this._inited = false;
 		} else {
 			this._dependencies = null;
@@ -191,7 +197,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 			this._value = value;
 
-			this._state = 'actual';
+			this._state = State.ACTUAL;
 			this._inited = true;
 
 			if (value instanceof EventEmitter) {
@@ -262,7 +268,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 		if (
 			this._hasSubscribers &&
-			!this._reactions.length &&
+			this._reactions.length == 0 &&
 			!this._events.has(Cell.EVENT_CHANGE) &&
 			!this._events.has(Cell.EVENT_ERROR)
 		) {
@@ -350,7 +356,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 		if (
 			this._hasSubscribers &&
-			!this._reactions.length &&
+			this._reactions.length == 0 &&
 			!this._events.has(Cell.EVENT_CHANGE) &&
 			!this._events.has(Cell.EVENT_ERROR)
 		) {
@@ -375,10 +381,10 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 			do {
 				deps[--i]._addReaction(this, actual);
-			} while (i);
+			} while (i != 0);
 
 			if (actual) {
-				this._state = 'actual';
+				this._state = State.ACTUAL;
 			}
 
 			this._active = true;
@@ -395,9 +401,9 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 		do {
 			deps[--i]._deleteReaction(this);
-		} while (i);
+		} while (i != 0);
 
-		this._state = 'dirty';
+		this._state = State.DIRTY;
 
 		this._active = false;
 	}
@@ -416,38 +422,38 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	}
 
 	_addToRelease(dirty: boolean) {
-		this._state = dirty ? 'dirty' : 'check';
+		this._state = dirty ? State.DIRTY : State.CHECK;
 
 		let reactions = this._reactions;
 		let i = reactions.length;
 
-		if (i) {
+		if (i != 0) {
 			do {
-				if (reactions[--i]._state == 'actual') {
+				if (reactions[--i]._state == State.ACTUAL) {
 					reactions[i]._addToRelease(false);
 				}
-			} while (i);
+			} while (i != 0);
 		} else if (pendingCells.push(this) == 1) {
 			nextTick(release);
 		}
 	}
 
 	actualize() {
-		if (this._state == 'dirty') {
+		if (this._state == State.DIRTY) {
 			this.pull();
-		} else if (this._state == 'check') {
+		} else if (this._state == State.CHECK) {
 			let deps = this._dependencies!;
 
 			for (let i = 0; ; ) {
 				deps[i].actualize();
 
-				if ((this._state as any) == 'dirty') {
+				if ((this._state as State) == State.DIRTY) {
 					this.pull();
 					break;
 				}
 
 				if (++i == deps.length) {
-					this._state = 'actual';
+					this._state = State.ACTUAL;
 					break;
 				}
 			}
@@ -462,7 +468,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	}
 
 	get(): T {
-		if (this._state != 'actual' && this._updationId != lastUpdationId) {
+		if (this._state != State.ACTUAL && this._updationId != lastUpdationId) {
 			this.actualize();
 		}
 
@@ -503,9 +509,10 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		let value;
 
 		try {
-			value = this._pull.length
-				? this._pull.call(this.context, this, this._value)
-				: this._pull.call(this.context);
+			value =
+				this._pull.length != 0
+					? this._pull.call(this.context, this, this._value)
+					: this._pull.call(this.context);
 		} catch (err) {
 			$error.error = err;
 			value = $error;
@@ -516,11 +523,11 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		this._currentlyPulling = false;
 
 		if (this._hasSubscribers) {
-			let deps = this._dependencies;
+			let deps = this._dependencies as Array<Cell> | null;
 			let newDepCount = 0;
 
 			if (deps) {
-				let i = (deps as any).length;
+				let i = deps.length;
 
 				do {
 					let dep: Cell = deps[--i];
@@ -529,14 +536,14 @@ export class Cell<T = any, M = any> extends EventEmitter {
 						dep._addReaction(this, false);
 						newDepCount++;
 					}
-				} while (i);
+				} while (i != 0);
 			}
 
-			if (prevDeps && (!deps || (deps as any).length - newDepCount < prevDeps.length)) {
-				for (let i = prevDeps.length; i; ) {
+			if (prevDeps && (!deps || deps.length - newDepCount < prevDeps.length)) {
+				for (let i = prevDeps.length; i != 0; ) {
 					i--;
 
-					if (!deps || (deps as any).indexOf(prevDeps[i]) == -1) {
+					if (!deps || deps.indexOf(prevDeps[i]) == -1) {
 						prevDeps[i]._deleteReaction(this);
 					}
 				}
@@ -545,11 +552,11 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			if (deps) {
 				this._active = true;
 			} else {
-				this._state = 'actual';
+				this._state = State.ACTUAL;
 				this._active = false;
 			}
 		} else {
-			this._state = this._dependencies ? 'dirty' : 'actual';
+			this._state = this._dependencies ? State.DIRTY : State.ACTUAL;
 		}
 
 		return value === $error ? this.fail($error.error) : this.push(value);
@@ -557,7 +564,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 	set(value: T) {
 		if (!this._inited) {
-			// Не инициализированная ячейка не может иметь _state == 'check', поэтому вместо
+			// Не инициализированная ячейка не может иметь _state == State.CHECK, поэтому вместо
 			// actualize сразу pull.
 			this.pull();
 		}
@@ -581,7 +588,9 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	push(value: any) {
 		this._inited = true;
 
-		if (this._error) {
+		let err = this._error;
+
+		if (err) {
 			this._setError(null);
 		}
 
@@ -600,22 +609,24 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 
 		if (this._active) {
-			this._state = 'actual';
+			this._state = State.ACTUAL;
 		}
 
 		this._updationId = ++lastUpdationId;
 
-		if (changed) {
+		if (changed || err instanceof WaitError) {
 			let reactions = this._reactions;
 
 			for (let i = 0; i < reactions.length; i++) {
 				reactions[i]._addToRelease(true);
 			}
 
-			this.emit(Cell.EVENT_CHANGE, {
-				prevValue,
-				value
-			});
+			if (changed) {
+				this.emit(Cell.EVENT_CHANGE, {
+					prevValue,
+					value
+				});
+			}
 		}
 
 		return changed;
@@ -627,7 +638,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		let isWaitError = err instanceof WaitError;
 
 		if (!isWaitError) {
-			if (this.debugKey) {
+			if (this.debugKey != undefined) {
 				logError('[' + this.debugKey + ']', err);
 			} else {
 				logError(err);
@@ -641,7 +652,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		this._setError(err);
 
 		if (this._active) {
-			this._state = 'actual';
+			this._state = State.ACTUAL;
 		}
 
 		return isWaitError;

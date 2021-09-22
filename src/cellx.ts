@@ -118,7 +118,7 @@ export function cellx<T = any, M = any>(
 	options?: ICellOptions<T, M>
 ): ICellx<T> {
 	let $cellx = function (value: any) {
-		if (arguments.length) {
+		if (arguments.length != 0) {
 			$cellx.cell.set(value);
 			return value;
 		}

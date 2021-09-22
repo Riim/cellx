@@ -50,7 +50,7 @@ const cellxProto = {
 };
 export function cellx(value, options) {
     let $cellx = function (value) {
-        if (arguments.length) {
+        if (arguments.length != 0) {
             $cellx.cell.set(value);
             return value;
         }

@@ -42,7 +42,7 @@ export class EventEmitter {
 			logError(err);
 		}
 
-		if (--transactionLevel) {
+		if (--transactionLevel != 0) {
 			return;
 		}
 
@@ -201,7 +201,7 @@ export class EventEmitter {
 			} else if (events.length == 1) {
 				evt = events[0];
 			} else {
-				for (let i = events.length; i; ) {
+				for (let i = events.length; i != 0; ) {
 					evt = events[--i];
 
 					if (evt.listener == listener && evt.context === context) {
@@ -265,10 +265,10 @@ export class EventEmitter {
 			evt.data = data;
 		}
 
-		if (!silently) {
-			if (transactionLevel) {
+		if (silently == 0) {
+			if (transactionLevel != 0) {
 				for (let i = transactionEvents.length; ; ) {
-					if (!i) {
+					if (i == 0) {
 						if (evt.data) {
 							evt.data['prevEvent'] = null;
 						} else {
