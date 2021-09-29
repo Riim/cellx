@@ -610,9 +610,9 @@
 	            else {
 	                currentCell._dependencies = [this];
 	            }
-	            if (this._error) {
-	                throw this._error;
-	            }
+	        }
+	        if (this._error) {
+	            throw this._error;
 	        }
 	        return this._get ? this._get(this._value) : this._value;
 	    }

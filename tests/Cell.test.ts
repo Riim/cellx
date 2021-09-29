@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import * as sinon from 'sinon';
+import { State } from '../src/Cell';
 import { Cell, define, EventEmitter } from '../src/cellx';
 
 afterEach(() => {
@@ -309,10 +310,15 @@ describe('Cell', () => {
 
 			a.set(2);
 
-			Cell.release();
+			try {
+				Cell.release();
+			} catch {}
 
-			expect(b.get()).to.equal(2);
 			expect(t).to.equal(2);
+
+			expect(b._state).to.equal(State.ACTUAL);
+
+			expect(b.get.bind(b)).throw();
 		});
 
 		it('запись в родительскую ячейку в pull', () => {
