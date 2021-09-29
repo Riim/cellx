@@ -38,21 +38,18 @@
 	})));
 	}(nextTick_umd, nextTick_umd.exports));
 
-	const KEY_VALUE_CELLS = Symbol('valueCells');
-
 	const config = {
 	    logError: (...args) => {
 	        console.error(...args);
-	    }
+	    },
+	    confirmValues: Object.is
 	};
 	function configure(options) {
 	    Object.assign(config, options);
 	    return config;
 	}
 
-	function logError(...args) {
-	    config.logError(...args);
-	}
+	const KEY_VALUE_CELLS = Symbol('valueCells');
 
 	let currentlySubscribing = false;
 	let transactionLevel = 0;
@@ -71,7 +68,7 @@
 	            cb();
 	        }
 	        catch (err) {
-	            logError(err);
+	            config.logError(err);
 	        }
 	        if (--transactionLevel != 0) {
 	            return;
@@ -88,7 +85,7 @@
 	            cb();
 	        }
 	        catch (err) {
-	            logError(err);
+	            config.logError(err);
 	        }
 	        silently--;
 	    }
@@ -296,7 +293,7 @@
 	            return emEvt.listener.call(emEvt.context, evt);
 	        }
 	        catch (err) {
-	            logError(err);
+	            config.logError(err);
 	        }
 	    }
 	}
@@ -339,9 +336,10 @@
 	}
 	class Cell extends EventEmitter {
 	    constructor(value, options) {
-	        var _a, _b, _c, _d, _e, _f, _g;
+	        var _a, _b, _c, _d, _e, _f, _g, _h;
 	        super();
 	        this._reactions = [];
+	        this._errorCell = null;
 	        this._error = null;
 	        this._lastErrorEvent = null;
 	        this._hasSubscribers = false;
@@ -356,7 +354,8 @@
 	        this._merge = (_d = options === null || options === void 0 ? void 0 : options.merge) !== null && _d !== void 0 ? _d : null;
 	        this._put = (_e = options === null || options === void 0 ? void 0 : options.put) !== null && _e !== void 0 ? _e : defaultPut;
 	        this._reap = (_f = options === null || options === void 0 ? void 0 : options.reap) !== null && _f !== void 0 ? _f : null;
-	        this.meta = (_g = options === null || options === void 0 ? void 0 : options.meta) !== null && _g !== void 0 ? _g : null;
+	        this._confirmValues = (_g = options === null || options === void 0 ? void 0 : options.confirmValues) !== null && _g !== void 0 ? _g : config.confirmValues;
+	        this.meta = (_h = options === null || options === void 0 ? void 0 : options.meta) !== null && _h !== void 0 ? _h : null;
 	        if (this._pull) {
 	            this._dependencies = undefined;
 	            this._value = undefined;
@@ -414,6 +413,15 @@
 	    }
 	    static afterRelease(cb) {
 	        (afterRelease !== null && afterRelease !== void 0 ? afterRelease : (afterRelease = [])).push(cb);
+	    }
+	    get error() {
+	        if (currentCell) {
+	            if (!this._errorCell) {
+	                this._errorCell = new Cell(this._error);
+	            }
+	            return this._errorCell.get();
+	        }
+	        return this._error;
 	    }
 	    on(type, listener, context) {
 	        if (this._dependencies !== null) {
@@ -602,7 +610,7 @@
 	            else {
 	                currentCell._dependencies = [this];
 	            }
-	            if (this._error && this._error instanceof WaitError) {
+	            if (this._error) {
 	                throw this._error;
 	            }
 	        }
@@ -694,7 +702,7 @@
 	            this._setError(null);
 	        }
 	        let prevValue = this._value;
-	        let changed = !Object.is(value, prevValue);
+	        let changed = !this._confirmValues(value, prevValue);
 	        if (changed) {
 	            this._value = value;
 	            if (prevValue instanceof EventEmitter) {
@@ -727,10 +735,10 @@
 	        let isWaitError = err instanceof WaitError;
 	        if (!isWaitError) {
 	            if (this.debugKey != undefined) {
-	                logError('[' + this.debugKey + ']', err);
+	                config.logError('[' + this.debugKey + ']', err);
 	            }
 	            else {
-	                logError(err);
+	                config.logError(err);
 	            }
 	            if (!(err instanceof Error)) {
 	                err = new Error(String(err));
@@ -743,27 +751,31 @@
 	        return isWaitError;
 	    }
 	    _setError(err) {
-	        this._error = err;
-	        this._updationId = ++lastUpdationId;
-	        if (err) {
-	            this._handleErrorEvent({
-	                target: this,
-	                type: Cell.EVENT_ERROR,
-	                data: {
-	                    error: err
-	                }
-	            });
-	        }
+	        this._setError_(err && {
+	            target: this,
+	            type: Cell.EVENT_ERROR,
+	            data: {
+	                error: err
+	            }
+	        });
 	    }
-	    _handleErrorEvent(evt) {
+	    _setError_(evt) {
 	        if (this._lastErrorEvent === evt) {
 	            return;
 	        }
+	        let err = evt && evt.data.error;
+	        if (this._errorCell) {
+	            this._errorCell.set(err);
+	        }
+	        this._error = err;
 	        this._lastErrorEvent = evt;
-	        this.handleEvent(evt);
+	        this._updationId = ++lastUpdationId;
+	        if (evt) {
+	            this.handleEvent(evt);
+	        }
 	        let reactions = this._reactions;
 	        for (let i = 0; i < reactions.length; i++) {
-	            reactions[i]._handleErrorEvent(evt);
+	            reactions[i]._setError_(evt);
 	        }
 	    }
 	    wait() {
@@ -771,6 +783,9 @@
 	    }
 	    reap() {
 	        this.off();
+	        if (this._errorCell) {
+	            this._errorCell.reap();
+	        }
 	        let reactions = this._reactions;
 	        for (let i = 0; i < reactions.length; i++) {
 	            reactions[i].reap();

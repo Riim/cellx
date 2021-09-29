@@ -1,5 +1,5 @@
+import { config } from './config';
 import { KEY_VALUE_CELLS } from './keys';
-import { logError } from './utils';
 let currentlySubscribing = false;
 let transactionLevel = 0;
 let transactionEvents = [];
@@ -17,7 +17,7 @@ export class EventEmitter {
             cb();
         }
         catch (err) {
-            logError(err);
+            config.logError(err);
         }
         if (--transactionLevel != 0) {
             return;
@@ -34,7 +34,7 @@ export class EventEmitter {
             cb();
         }
         catch (err) {
-            logError(err);
+            config.logError(err);
         }
         silently--;
     }
@@ -242,7 +242,7 @@ export class EventEmitter {
             return emEvt.listener.call(emEvt.context, evt);
         }
         catch (err) {
-            logError(err);
+            config.logError(err);
         }
     }
 }

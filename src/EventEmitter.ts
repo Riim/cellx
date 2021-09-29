@@ -1,6 +1,6 @@
 import { Cell } from './Cell';
+import { config } from './config';
 import { KEY_VALUE_CELLS } from './keys';
-import { logError } from './utils';
 
 export interface IEvent<
 	T extends EventEmitter = EventEmitter,
@@ -39,7 +39,7 @@ export class EventEmitter {
 		try {
 			cb();
 		} catch (err) {
-			logError(err);
+			config.logError(err);
 		}
 
 		if (--transactionLevel != 0) {
@@ -61,7 +61,7 @@ export class EventEmitter {
 		try {
 			cb();
 		} catch (err) {
-			logError(err);
+			config.logError(err);
 		}
 
 		silently--;
@@ -332,7 +332,7 @@ export class EventEmitter {
 		try {
 			return emEvt.listener.call(emEvt.context, evt);
 		} catch (err) {
-			logError(err);
+			config.logError(err);
 		}
 	}
 }

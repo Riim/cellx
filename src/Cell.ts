@@ -1,6 +1,6 @@
 import { nextTick } from '@riim/next-tick';
+import { config } from './config';
 import { EventEmitter, IEvent, TListener } from './EventEmitter';
-import { logError } from './utils';
 import { WaitError } from './WaitError';
 
 export type TCellPull<T, R = T> = (cell: Cell<T>, next: any) => R;
@@ -14,6 +14,7 @@ export interface ICellOptions<T, M> {
 	merge?: (next: T, value: any) => any;
 	put?: (cell: Cell<T>, next: any, value: any) => void;
 	reap?: () => void;
+	confirmValues?: (value1: T, value2: T) => boolean;
 	meta?: M;
 	value?: T;
 	onChange?: TListener;
@@ -142,14 +143,29 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 	_reap: (() => void) | null;
 
+	_confirmValues: (value1: T, value2: T) => boolean;
+
 	meta: M | null;
 
 	_dependencies: Array<Cell> | null | undefined;
 	_reactions: Array<Cell> = [];
 
 	_value: any;
+	_errorCell: Cell<Error | null> | null = null;
 	_error: Error | null = null;
 	_lastErrorEvent: IEvent<this> | null = null;
+
+	get error() {
+		if (currentCell) {
+			if (!this._errorCell) {
+				this._errorCell = new Cell<Error | null>(this._error);
+			}
+
+			return this._errorCell.get();
+		}
+
+		return this._error;
+	}
 
 	_state: State;
 	_inited: boolean;
@@ -173,6 +189,8 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		this._put = options?.put ?? defaultPut;
 
 		this._reap = options?.reap ?? null;
+
+		this._confirmValues = options?.confirmValues ?? config.confirmValues;
 
 		this.meta = options?.meta ?? null;
 
@@ -481,7 +499,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 				currentCell._dependencies = [this];
 			}
 
-			if (this._error && this._error instanceof WaitError) {
+			if (this._error) {
 				throw this._error;
 			}
 		}
@@ -595,7 +613,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 
 		let prevValue = this._value;
-		let changed = !Object.is(value, prevValue);
+		let changed = !this._confirmValues(value, prevValue);
 
 		if (changed) {
 			this._value = value;
@@ -639,9 +657,9 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 		if (!isWaitError) {
 			if (this.debugKey != undefined) {
-				logError('[' + this.debugKey + ']', err);
+				config.logError('[' + this.debugKey + ']', err);
 			} else {
-				logError(err);
+				config.logError(err);
 			}
 
 			if (!(err instanceof Error)) {
@@ -659,33 +677,42 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	}
 
 	_setError(err: Error | null) {
-		this._error = err;
-
-		this._updationId = ++lastUpdationId;
-
-		if (err) {
-			this._handleErrorEvent({
+		this._setError_(
+			err && {
 				target: this,
 				type: Cell.EVENT_ERROR,
 				data: {
 					error: err
 				}
-			});
-		}
+			}
+		);
 	}
 
-	_handleErrorEvent(evt: IEvent<this>) {
+	_setError_(evt: IEvent<this, { error: any }> | null) {
 		if (this._lastErrorEvent === evt) {
 			return;
 		}
 
+		let err = evt && evt.data.error;
+
+		if (this._errorCell) {
+			this._errorCell.set(err);
+		}
+
+		this._error = err;
+
 		this._lastErrorEvent = evt;
-		this.handleEvent(evt);
+
+		this._updationId = ++lastUpdationId;
+
+		if (evt) {
+			this.handleEvent(evt);
+		}
 
 		let reactions = this._reactions;
 
 		for (let i = 0; i < reactions.length; i++) {
-			reactions[i]._handleErrorEvent(evt);
+			reactions[i]._setError_(evt);
 		}
 	}
 
@@ -695,6 +722,10 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 	reap() {
 		this.off();
+
+		if (this._errorCell) {
+			this._errorCell.reap();
+		}
 
 		let reactions = this._reactions;
 

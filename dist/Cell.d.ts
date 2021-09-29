@@ -9,6 +9,7 @@ export interface ICellOptions<T, M> {
     merge?: (next: T, value: any) => any;
     put?: (cell: Cell<T>, next: any, value: any) => void;
     reap?: () => void;
+    confirmValues?: (value1: T, value2: T) => boolean;
     meta?: M;
     value?: T;
     onChange?: TListener;
@@ -48,12 +49,15 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     _merge: ((next: T, value: any) => any) | null;
     _put: (cell: Cell<T>, next: any, value: any) => void;
     _reap: (() => void) | null;
+    _confirmValues: (value1: T, value2: T) => boolean;
     meta: M | null;
     _dependencies: Array<Cell> | null | undefined;
     _reactions: Array<Cell>;
     _value: any;
+    _errorCell: Cell<Error | null> | null;
     _error: Error | null;
     _lastErrorEvent: IEvent<this> | null;
+    get error(): Error | null;
     _state: State;
     _inited: boolean;
     _hasSubscribers: boolean;
@@ -86,7 +90,9 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     push(value: any): boolean;
     fail(err: any): boolean;
     _setError(err: Error | null): void;
-    _handleErrorEvent(evt: IEvent<this>): void;
+    _setError_(evt: IEvent<this, {
+        error: any;
+    }> | null): void;
     wait(): never;
     reap(): this;
     dispose(): this;
