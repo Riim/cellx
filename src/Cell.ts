@@ -14,7 +14,7 @@ export interface ICellOptions<T, M> {
 	merge?: (next: T, value: any) => any;
 	put?: (cell: Cell<T>, next: any, value: any) => void;
 	reap?: () => void;
-	confirmValues?: (value1: T, value2: T) => boolean;
+	compareValues?: (value1: T, value2: T) => boolean;
 	meta?: M;
 	value?: T;
 	onChange?: TListener;
@@ -143,7 +143,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 	_reap: (() => void) | null;
 
-	_confirmValues: (value1: T, value2: T) => boolean;
+	_compareValues: (value1: T, value2: T) => boolean;
 
 	meta: M | null;
 
@@ -190,7 +190,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 		this._reap = options?.reap ?? null;
 
-		this._confirmValues = options?.confirmValues ?? config.confirmValues;
+		this._compareValues = options?.compareValues ?? config.compareValues;
 
 		this.meta = options?.meta ?? null;
 
@@ -613,7 +613,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 
 		let prevValue = this._value;
-		let changed = !this._confirmValues(value, prevValue);
+		let changed = !this._compareValues(value, prevValue);
 
 		if (changed) {
 			this._value = value;

@@ -9,7 +9,7 @@ export interface ICellOptions<T, M> {
     merge?: (next: T, value: any) => any;
     put?: (cell: Cell<T>, next: any, value: any) => void;
     reap?: () => void;
-    confirmValues?: (value1: T, value2: T) => boolean;
+    compareValues?: (value1: T, value2: T) => boolean;
     meta?: M;
     value?: T;
     onChange?: TListener;
@@ -49,7 +49,7 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     _merge: ((next: T, value: any) => any) | null;
     _put: (cell: Cell<T>, next: any, value: any) => void;
     _reap: (() => void) | null;
-    _confirmValues: (value1: T, value2: T) => boolean;
+    _compareValues: (value1: T, value2: T) => boolean;
     meta: M | null;
     _dependencies: Array<Cell> | null | undefined;
     _reactions: Array<Cell>;

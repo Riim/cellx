@@ -3,7 +3,7 @@ export const config = {
 		console.error(...args);
 	},
 
-	confirmValues: Object.is
+	compareValues: Object.is
 };
 
 export function configure(options: Partial<typeof config>) {

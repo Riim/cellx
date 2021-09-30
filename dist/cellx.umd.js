@@ -42,7 +42,7 @@
 	    logError: (...args) => {
 	        console.error(...args);
 	    },
-	    confirmValues: Object.is
+	    compareValues: Object.is
 	};
 	function configure(options) {
 	    Object.assign(config, options);
@@ -354,7 +354,7 @@
 	        this._merge = (_d = options === null || options === void 0 ? void 0 : options.merge) !== null && _d !== void 0 ? _d : null;
 	        this._put = (_e = options === null || options === void 0 ? void 0 : options.put) !== null && _e !== void 0 ? _e : defaultPut;
 	        this._reap = (_f = options === null || options === void 0 ? void 0 : options.reap) !== null && _f !== void 0 ? _f : null;
-	        this._confirmValues = (_g = options === null || options === void 0 ? void 0 : options.confirmValues) !== null && _g !== void 0 ? _g : config.confirmValues;
+	        this._compareValues = (_g = options === null || options === void 0 ? void 0 : options.compareValues) !== null && _g !== void 0 ? _g : config.compareValues;
 	        this.meta = (_h = options === null || options === void 0 ? void 0 : options.meta) !== null && _h !== void 0 ? _h : null;
 	        if (this._pull) {
 	            this._dependencies = undefined;
@@ -702,7 +702,7 @@
 	            this._setError(null);
 	        }
 	        let prevValue = this._value;
-	        let changed = !this._confirmValues(value, prevValue);
+	        let changed = !this._compareValues(value, prevValue);
 	        if (changed) {
 	            this._value = value;
 	            if (prevValue instanceof EventEmitter) {
