@@ -500,7 +500,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			}
 		}
 
-		if (this._error) {
+		if (this._error && (currentCell || !(this._error instanceof WaitError))) {
 			throw this._error;
 		}
 

@@ -312,7 +312,7 @@ export class Cell extends EventEmitter {
                 currentCell._dependencies = [this];
             }
         }
-        if (this._error) {
+        if (this._error && (currentCell || !(this._error instanceof WaitError))) {
             throw this._error;
         }
         return this._get ? this._get(this._value) : this._value;
