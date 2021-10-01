@@ -52,7 +52,7 @@
 	const KEY_VALUE_CELLS = Symbol('valueCells');
 
 	let currentlySubscribing = false;
-	let transactionLevel = 0;
+	let transactionLevel$1 = 0;
 	let transactionEvents = [];
 	let silently = 0;
 	class EventEmitter {
@@ -63,14 +63,14 @@
 	        return currentlySubscribing;
 	    }
 	    static transact(cb) {
-	        transactionLevel++;
+	        transactionLevel$1++;
 	        try {
 	            cb();
 	        }
 	        catch (err) {
 	            config.logError(err);
 	        }
-	        if (--transactionLevel != 0) {
+	        if (--transactionLevel$1 != 0) {
 	            return;
 	        }
 	        let events = transactionEvents;
@@ -233,7 +233,7 @@
 	            evt.data = data;
 	        }
 	        if (silently == 0) {
-	            if (transactionLevel != 0) {
+	            if (transactionLevel$1 != 0) {
 	                for (let i = transactionEvents.length;;) {
 	                    if (i == 0) {
 	                        if (evt.data) {
@@ -301,12 +301,12 @@
 	class WaitError extends Error {
 	}
 
-	var State;
-	(function (State) {
-	    State["ACTUAL"] = "actual";
-	    State["DIRTY"] = "dirty";
-	    State["CHECK"] = "check";
-	})(State || (State = {}));
+	var CellState;
+	(function (CellState) {
+	    CellState["ACTUAL"] = "actual";
+	    CellState["DIRTY"] = "dirty";
+	    CellState["CHECK"] = "check";
+	})(CellState || (CellState = {}));
 	const KEY_LISTENER_WRAPPERS = Symbol('listenerWrappers');
 	function defaultPut(cell, value) {
 	    cell.push(value);
@@ -317,6 +317,10 @@
 	let currentCell = null;
 	const $error = { error: null };
 	let lastUpdationId = 0;
+	let transactionLevel = 0;
+	const transactionPrimaryCells = [];
+	const transactionSecondaryCells = [];
+	let transactionFailure = false;
 	function release() {
 	    while (pendingCellsIndex < pendingCells.length) {
 	        let cell = pendingCells[pendingCellsIndex++];
@@ -358,8 +362,9 @@
 	        this.meta = (_h = options === null || options === void 0 ? void 0 : options.meta) !== null && _h !== void 0 ? _h : null;
 	        if (this._pull) {
 	            this._dependencies = undefined;
+	            this._prevValue = undefined;
 	            this._value = undefined;
-	            this._state = State.DIRTY;
+	            this._state = CellState.DIRTY;
 	            this._inited = false;
 	        }
 	        else {
@@ -373,8 +378,9 @@
 	            if (this._merge) {
 	                value = this._merge(value, undefined);
 	            }
+	            this._prevValue = undefined;
 	            this._value = value;
-	            this._state = State.ACTUAL;
+	            this._state = CellState.ACTUAL;
 	            this._inited = true;
 	            if (value instanceof EventEmitter) {
 	                value.on('change', this._onValueChange, this);
@@ -413,6 +419,50 @@
 	    }
 	    static afterRelease(cb) {
 	        (afterRelease !== null && afterRelease !== void 0 ? afterRelease : (afterRelease = [])).push(cb);
+	    }
+	    static transact(cb) {
+	        if (transactionLevel++ == 0 && pendingCells.length != 0) {
+	            release();
+	        }
+	        try {
+	            cb();
+	            transactionLevel--;
+	        }
+	        catch (err) {
+	            transactionFailure = true;
+	            if (--transactionLevel == 0) {
+	                config.logError(err);
+	            }
+	            else {
+	                throw err;
+	            }
+	        }
+	        if (transactionFailure) {
+	            for (let cell of transactionPrimaryCells) {
+	                cell._value = cell._prevValue;
+	                cell._prevValue = undefined;
+	            }
+	            for (let cell of transactionSecondaryCells) {
+	                cell._state = CellState.ACTUAL;
+	            }
+	            pendingCells.length = 0;
+	            pendingCellsIndex = 0;
+	            transactionPrimaryCells.length = 0;
+	            transactionSecondaryCells.length = 0;
+	            transactionFailure = false;
+	        }
+	        else {
+	            if (transactionLevel == 0) {
+	                for (let cell of transactionPrimaryCells) {
+	                    cell._prevValue = undefined;
+	                }
+	                transactionPrimaryCells.length = 0;
+	                transactionSecondaryCells.length = 0;
+	                if (pendingCells.length != 0) {
+	                    release();
+	                }
+	            }
+	        }
 	    }
 	    get error() {
 	        if (currentCell) {
@@ -531,7 +581,7 @@
 	                deps[--i]._addReaction(this, actual);
 	            } while (i != 0);
 	            if (actual) {
-	                this._state = State.ACTUAL;
+	                this._state = CellState.ACTUAL;
 	            }
 	            this._active = true;
 	        }
@@ -545,7 +595,7 @@
 	        do {
 	            deps[--i]._deleteReaction(this);
 	        } while (i != 0);
-	        this._state = State.DIRTY;
+	        this._state = CellState.DIRTY;
 	        this._active = false;
 	    }
 	    _onValueChange(evt) {
@@ -558,12 +608,15 @@
 	        this.handleEvent(evt);
 	    }
 	    _addToRelease(dirty) {
-	        this._state = dirty ? State.DIRTY : State.CHECK;
+	        this._state = dirty ? CellState.DIRTY : CellState.CHECK;
+	        if (transactionLevel != 0) {
+	            transactionSecondaryCells.push(this);
+	        }
 	        let reactions = this._reactions;
 	        let i = reactions.length;
 	        if (i != 0) {
 	            do {
-	                if (reactions[--i]._state == State.ACTUAL) {
+	                if (reactions[--i]._state == CellState.ACTUAL) {
 	                    reactions[i]._addToRelease(false);
 	                }
 	            } while (i != 0);
@@ -573,19 +626,19 @@
 	        }
 	    }
 	    actualize() {
-	        if (this._state == State.DIRTY) {
+	        if (this._state == CellState.DIRTY) {
 	            this.pull();
 	        }
-	        else if (this._state == State.CHECK) {
+	        else if (this._state == CellState.CHECK) {
 	            let deps = this._dependencies;
 	            for (let i = 0;;) {
 	                deps[i].actualize();
-	                if (this._state == State.DIRTY) {
+	                if (this._state == CellState.DIRTY) {
 	                    this.pull();
 	                    break;
 	                }
 	                if (++i == deps.length) {
-	                    this._state = State.ACTUAL;
+	                    this._state = CellState.ACTUAL;
 	                    break;
 	                }
 	            }
@@ -598,7 +651,7 @@
 	        this.set(value);
 	    }
 	    get() {
-	        if (this._state != State.ACTUAL && this._updationId != lastUpdationId) {
+	        if (this._state != CellState.ACTUAL && this._updationId != lastUpdationId) {
 	            this.actualize();
 	        }
 	        if (currentCell) {
@@ -666,12 +719,12 @@
 	                this._active = true;
 	            }
 	            else {
-	                this._state = State.ACTUAL;
+	                this._state = CellState.ACTUAL;
 	                this._active = false;
 	            }
 	        }
 	        else {
-	            this._state = this._dependencies ? State.DIRTY : State.ACTUAL;
+	            this._state = this._dependencies ? CellState.DIRTY : CellState.ACTUAL;
 	        }
 	        return value === $error ? this.fail($error.error) : this.push(value);
 	    }
@@ -705,6 +758,10 @@
 	        let changed = !this._compareValues(value, prevValue);
 	        if (changed) {
 	            this._value = value;
+	            if (transactionLevel != 0) {
+	                this._prevValue = prevValue;
+	                transactionPrimaryCells.push(this);
+	            }
 	            if (prevValue instanceof EventEmitter) {
 	                prevValue.off('change', this._onValueChange, this);
 	            }
@@ -713,7 +770,7 @@
 	            }
 	        }
 	        if (this._active) {
-	            this._state = State.ACTUAL;
+	            this._state = CellState.ACTUAL;
 	        }
 	        this._updationId = ++lastUpdationId;
 	        if (changed || err instanceof WaitError) {
@@ -746,7 +803,7 @@
 	        }
 	        this._setError(err);
 	        if (this._active) {
-	            this._state = State.ACTUAL;
+	            this._state = CellState.ACTUAL;
 	        }
 	        return isWaitError;
 	    }

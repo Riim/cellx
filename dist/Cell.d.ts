@@ -15,7 +15,7 @@ export interface ICellOptions<T, M> {
     onChange?: TListener;
     onError?: TListener;
 }
-export declare enum State {
+export declare enum CellState {
     ACTUAL = "actual",
     DIRTY = "dirty",
     CHECK = "check"
@@ -41,6 +41,7 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     static autorun<T = any, M = any>(cb: (next: T | undefined, disposer: () => void) => T, cellOptions?: ICellOptions<T, M>): () => void;
     static release(): void;
     static afterRelease(cb: Function): void;
+    static transact(cb: Function): void;
     debugKey: string | undefined;
     context: object;
     _pull: TCellPull<T> | null;
@@ -53,12 +54,13 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     meta: M | null;
     _dependencies: Array<Cell> | null | undefined;
     _reactions: Array<Cell>;
+    _prevValue: any;
     _value: any;
     _errorCell: Cell<Error | null> | null;
     _error: Error | null;
     _lastErrorEvent: IEvent<this> | null;
     get error(): Error | null;
-    _state: State;
+    _state: CellState;
     _inited: boolean;
     _hasSubscribers: boolean;
     _active: boolean;

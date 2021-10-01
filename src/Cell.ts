@@ -21,7 +21,7 @@ export interface ICellOptions<T, M> {
 	onError?: TListener;
 }
 
-export enum State {
+export enum CellState {
 	ACTUAL = 'actual',
 	DIRTY = 'dirty',
 	CHECK = 'check'
@@ -62,6 +62,11 @@ let currentCell: Cell | null = null;
 const $error: { error: Error | null } = { error: null };
 
 let lastUpdationId = 0;
+
+let transactionLevel = 0;
+const transactionPrimaryCells: Array<Cell> = [];
+const transactionSecondaryCells: Array<Cell> = [];
+let transactionFailure = false;
 
 function release() {
 	while (pendingCellsIndex < pendingCells.length) {
@@ -130,6 +135,55 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		(afterRelease ?? (afterRelease = [])).push(cb);
 	}
 
+	static override transact(cb: Function) {
+		if (transactionLevel++ == 0 && pendingCells.length != 0) {
+			release();
+		}
+
+		try {
+			cb();
+			transactionLevel--;
+		} catch (err) {
+			transactionFailure = true;
+
+			if (--transactionLevel == 0) {
+				config.logError(err);
+			} else {
+				throw err;
+			}
+		}
+
+		if (transactionFailure) {
+			for (let cell of transactionPrimaryCells) {
+				cell._value = cell._prevValue;
+				cell._prevValue = undefined;
+			}
+			for (let cell of transactionSecondaryCells) {
+				cell._state = CellState.ACTUAL;
+			}
+
+			pendingCells.length = 0;
+			pendingCellsIndex = 0;
+
+			transactionPrimaryCells.length = 0;
+			transactionSecondaryCells.length = 0;
+			transactionFailure = false;
+		} else {
+			if (transactionLevel == 0) {
+				for (let cell of transactionPrimaryCells) {
+					cell._prevValue = undefined;
+				}
+
+				transactionPrimaryCells.length = 0;
+				transactionSecondaryCells.length = 0;
+
+				if (pendingCells.length != 0) {
+					release();
+				}
+			}
+		}
+	}
+
 	debugKey: string | undefined;
 
 	context: object;
@@ -150,6 +204,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	_dependencies: Array<Cell> | null | undefined;
 	_reactions: Array<Cell> = [];
 
+	_prevValue: any;
 	_value: any;
 	_errorCell: Cell<Error | null> | null = null;
 	_error: Error | null = null;
@@ -167,7 +222,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		return this._error;
 	}
 
-	_state: State;
+	_state: CellState;
 	_inited: boolean;
 	_hasSubscribers = false;
 	_active = false;
@@ -196,8 +251,9 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 		if (this._pull) {
 			this._dependencies = undefined;
+			this._prevValue = undefined;
 			this._value = undefined;
-			this._state = State.DIRTY;
+			this._state = CellState.DIRTY;
 			this._inited = false;
 		} else {
 			this._dependencies = null;
@@ -213,9 +269,10 @@ export class Cell<T = any, M = any> extends EventEmitter {
 				value = this._merge(value as T, undefined);
 			}
 
+			this._prevValue = undefined;
 			this._value = value;
 
-			this._state = State.ACTUAL;
+			this._state = CellState.ACTUAL;
 			this._inited = true;
 
 			if (value instanceof EventEmitter) {
@@ -402,7 +459,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			} while (i != 0);
 
 			if (actual) {
-				this._state = State.ACTUAL;
+				this._state = CellState.ACTUAL;
 			}
 
 			this._active = true;
@@ -421,7 +478,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			deps[--i]._deleteReaction(this);
 		} while (i != 0);
 
-		this._state = State.DIRTY;
+		this._state = CellState.DIRTY;
 
 		this._active = false;
 	}
@@ -440,14 +497,18 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	}
 
 	_addToRelease(dirty: boolean) {
-		this._state = dirty ? State.DIRTY : State.CHECK;
+		this._state = dirty ? CellState.DIRTY : CellState.CHECK;
+
+		if (transactionLevel != 0) {
+			transactionSecondaryCells.push(this);
+		}
 
 		let reactions = this._reactions;
 		let i = reactions.length;
 
 		if (i != 0) {
 			do {
-				if (reactions[--i]._state == State.ACTUAL) {
+				if (reactions[--i]._state == CellState.ACTUAL) {
 					reactions[i]._addToRelease(false);
 				}
 			} while (i != 0);
@@ -457,21 +518,21 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	}
 
 	actualize() {
-		if (this._state == State.DIRTY) {
+		if (this._state == CellState.DIRTY) {
 			this.pull();
-		} else if (this._state == State.CHECK) {
+		} else if (this._state == CellState.CHECK) {
 			let deps = this._dependencies!;
 
 			for (let i = 0; ; ) {
 				deps[i].actualize();
 
-				if ((this._state as State) == State.DIRTY) {
+				if ((this._state as CellState) == CellState.DIRTY) {
 					this.pull();
 					break;
 				}
 
 				if (++i == deps.length) {
-					this._state = State.ACTUAL;
+					this._state = CellState.ACTUAL;
 					break;
 				}
 			}
@@ -486,7 +547,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	}
 
 	get(): T {
-		if (this._state != State.ACTUAL && this._updationId != lastUpdationId) {
+		if (this._state != CellState.ACTUAL && this._updationId != lastUpdationId) {
 			this.actualize();
 		}
 
@@ -570,11 +631,11 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			if (deps) {
 				this._active = true;
 			} else {
-				this._state = State.ACTUAL;
+				this._state = CellState.ACTUAL;
 				this._active = false;
 			}
 		} else {
-			this._state = this._dependencies ? State.DIRTY : State.ACTUAL;
+			this._state = this._dependencies ? CellState.DIRTY : CellState.ACTUAL;
 		}
 
 		return value === $error ? this.fail($error.error) : this.push(value);
@@ -618,6 +679,11 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		if (changed) {
 			this._value = value;
 
+			if (transactionLevel != 0) {
+				this._prevValue = prevValue;
+				transactionPrimaryCells.push(this);
+			}
+
 			if (prevValue instanceof EventEmitter) {
 				prevValue.off('change', this._onValueChange, this);
 			}
@@ -627,7 +693,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 
 		if (this._active) {
-			this._state = State.ACTUAL;
+			this._state = CellState.ACTUAL;
 		}
 
 		this._updationId = ++lastUpdationId;
@@ -670,7 +736,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		this._setError(err);
 
 		if (this._active) {
-			this._state = State.ACTUAL;
+			this._state = CellState.ACTUAL;
 		}
 
 		return isWaitError;
