@@ -106,7 +106,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		let disposer: (() => void) | undefined;
 
 		new Cell(
-			function (cell, next) {
+			function (this: any, cell, next) {
 				if (!disposer) {
 					disposer = () => {
 						cell.dispose();
@@ -386,7 +386,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			return this;
 		}
 
-		function wrapper(evt: IEvent): any {
+		function wrapper(this: any, evt: IEvent): any {
 			return listener.call(this, evt.data['error'] || null, evt);
 		}
 		wrappers.set(this, wrapper);
@@ -591,7 +591,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			value =
 				this._pull.length != 0
 					? this._pull.call(this.context, this, this._value)
-					: this._pull.call(this.context);
+					: (this._pull as Function).call(this.context);
 		} catch (err) {
 			$error.error = err;
 			value = $error;
@@ -658,7 +658,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		if (this._put.length >= 3) {
 			this._put.call(this.context, this, value, this._value);
 		} else {
-			this._put.call(this.context, this, value);
+			(this._put as Function).call(this.context, this, value);
 		}
 
 		return this;

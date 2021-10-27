@@ -224,7 +224,7 @@ export class EventEmitter {
 			context = this;
 		}
 
-		function wrapper(evt: IEvent): any {
+		function wrapper(this: any, evt: IEvent): any {
 			this._off(type, wrapper, context);
 			return listener.call(this, evt);
 		}

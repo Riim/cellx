@@ -61,55 +61,55 @@ const cellxProto = {
 
 	cell: null,
 
-	on(type: string | Record<string, TListener>, listener?: any, context?: any) {
-		return (this as ICellx).cell.on(type as any, listener, context);
+	on(this: ICellx, type: string | Record<string, TListener>, listener?: any, context?: any) {
+		return this.cell.on(type as any, listener, context);
 	},
 
-	off(type?: string | Record<string, TListener>, listener?: any, context?: any) {
-		return (this as ICellx).cell.off(type as any, listener, context);
+	off(this: ICellx, type?: string | Record<string, TListener>, listener?: any, context?: any) {
+		return this.cell.off(type as any, listener, context);
 	},
 
-	onChange(listener: TListener, context?: any) {
-		return (this as ICellx).cell.onChange(listener, context);
+	onChange(this: ICellx, listener: TListener, context?: any) {
+		return this.cell.onChange(listener, context);
 	},
 
-	offChange(listener: TListener, context?: any) {
-		return (this as ICellx).cell.offChange(listener, context);
+	offChange(this: ICellx, listener: TListener, context?: any) {
+		return this.cell.offChange(listener, context);
 	},
 
-	onError(listener: TListener, context?: any) {
-		return (this as ICellx).cell.onError(listener, context);
+	onError(this: ICellx, listener: TListener, context?: any) {
+		return this.cell.onError(listener, context);
 	},
 
-	offError(listener: TListener, context?: any) {
-		return (this as ICellx).cell.offError(listener, context);
+	offError(this: ICellx, listener: TListener, context?: any) {
+		return this.cell.offError(listener, context);
 	},
 
-	subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any) {
-		return (this as ICellx).cell.subscribe(listener, context);
+	subscribe(this: ICellx, listener: (err: Error | null, evt: IEvent) => any, context?: any) {
+		return this.cell.subscribe(listener, context);
 	},
 
-	unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any) {
-		return (this as ICellx).cell.unsubscribe(listener, context);
+	unsubscribe(this: ICellx, listener: (err: Error | null, evt: IEvent) => any, context?: any) {
+		return this.cell.unsubscribe(listener, context);
 	},
 
 	get value() {
-		return (this as ICellx).cell.value;
+		return (this as any as ICellx).cell.value;
 	},
 	set value(value: any) {
-		(this as ICellx).cell.value = value;
+		(this as any as ICellx).cell.value = value;
 	},
 
-	pull() {
-		return (this as ICellx).cell.pull();
+	pull(this: ICellx) {
+		return this.cell.pull();
 	},
 
-	reap() {
-		return (this as ICellx).cell.reap();
+	reap(this: ICellx) {
+		return this.cell.reap();
 	},
 
-	dispose() {
-		return (this as ICellx).cell.dispose();
+	dispose(this: ICellx) {
+		return this.cell.dispose();
 	}
 };
 
