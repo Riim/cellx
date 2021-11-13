@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<script src="https://unpkg.com/cellx@1.10.26/dist/cellx.umd.js"></script>
+</head>
+<body>
+	<div id="canvas" style="position: relative; width: 600px; height: 400px; background: #06f;">
+		<div id="draggable" style="position: absolute; top: 100px; left: 100px; width: 100px; height: 100px; background: #f06;"></div>
+	</div>
+
+	<script>
+
+	const $cell = cellx.cellx;
+
+	function MouseXY(el) {
+		let xy = $cell();
+
+		el.addEventListener('mousemove', (evt) => {
+			xy({ x: evt.clientX, y: evt.clientY });
+		});
+
+		return xy;
+	}
+
+	function MouseGrab(el) {
+		let grab = $cell(null);
+
+		el.addEventListener('mousedown', (evt) => {
+			grab({
+				x: evt.clientX - parseFloat(el.style.left, 10),
+				y: evt.clientY - parseFloat(el.style.top, 10)
+			});
+
+			document.addEventListener('mouseup', function _(evt) {
+				document.removeEventListener('mouseup', _);
+				grab(null);
+			});
+		});
+
+		return grab;
+	}
+
+	function RAF(source) {
+		let waited = false;
+		let lastValue;
+
+		return $cell((cell) => {
+			lastValue = source();
+
+			if (waited) {
+				cell.wait();
+			}
+
+			waited = true;
+
+			// setTimeout(() => {
+			requestAnimationFrame(() => {
+				cell.push(lastValue);
+				waited = false;
+			// }, 100);
+			});
+
+			cell.wait();
+		});
+	}
+
+	function boundedXY(minX, maxX, minY, maxY, xy) {
+		return $cell(() =>
+			xy()
+				? {
+					x: Math.min(maxX, Math.max(minX, xy().x)),
+					y: Math.min(maxY, Math.max(minY, xy().y))
+				}
+				: null
+		);
+	}
+
+	let canvasEl = document.getElementById('canvas');
+	let draggableEl = document.getElementById('draggable');
+	let mouseXY = RAF(MouseXY(canvasEl));
+	let mouseGrab = MouseGrab(draggableEl);
+	let draggableXY = boundedXY(
+		100,
+		500 - 100,
+		100,
+		300 - 100,
+		$cell(
+			() => mouseGrab()
+				? {
+					x: mouseXY().x - mouseGrab().x,
+					y: mouseXY().y - mouseGrab().y
+				}
+				: null
+		)
+	)
+
+	// mouseXY.onChange(() => {
+	// 	console.log(`mouseX: ${mouseXY().x}, mouseY: ${mouseXY().y}`);
+	// });
+	// mouseGrab.onChange(() => {
+	// 	console.log(`mouseGrab: ${mouseGrab()}`);
+	// });
+
+	cellx.Cell.autorun(() => {
+		if (draggableXY()) {
+			draggableEl.style.left = draggableXY().x + 'px';
+			draggableEl.style.top = draggableXY().y + 'px';
+		}
+	});
+
+	</script>
+</body>
+</html>
