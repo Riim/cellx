@@ -61,6 +61,7 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     _lastErrorEvent: IEvent<this> | null;
     get error(): Error | null;
     _state: CellState;
+    get state(): CellState;
     _inited: boolean;
     _hasSubscribers: boolean;
     _active: boolean;
@@ -77,9 +78,9 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     offError(listener: TListener, context?: any): this;
     subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this;
     unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this;
-    _addReaction(reaction: Cell, actual: boolean): void;
+    _addReaction(reaction: Cell): void;
     _deleteReaction(reaction: Cell): void;
-    _activate(actual: boolean): void;
+    _activate(): void;
     _deactivate(): void;
     _onValueChange(evt: IEvent): void;
     _addToRelease(dirty: boolean): void;

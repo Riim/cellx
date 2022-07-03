@@ -223,6 +223,11 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	}
 
 	_state: CellState;
+
+	get state() {
+		return this._state;
+	}
+
 	_inited: boolean;
 	_hasSubscribers = false;
 	_active = false;
@@ -312,7 +317,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 		this._hasSubscribers = true;
 
-		this._activate(true);
+		this._activate();
 
 		return this;
 	}
@@ -419,11 +424,11 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		);
 	}
 
-	_addReaction(reaction: Cell, actual: boolean) {
+	_addReaction(reaction: Cell) {
 		this._reactions.push(reaction);
 		this._hasSubscribers = true;
 
-		this._activate(actual);
+		this._activate();
 	}
 
 	_deleteReaction(reaction: Cell) {
@@ -444,7 +449,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 	}
 
-	_activate(actual: boolean) {
+	_activate() {
 		if (this._active || !this._pull) {
 			return;
 		}
@@ -455,12 +460,10 @@ export class Cell<T = any, M = any> extends EventEmitter {
 			let i = deps.length;
 
 			do {
-				deps[--i]._addReaction(this, actual);
+				deps[--i]._addReaction(this);
 			} while (i != 0);
 
-			if (actual) {
-				this._state = CellState.ACTUAL;
-			}
+			this._state = CellState.ACTUAL;
 
 			this._active = true;
 		}
@@ -612,7 +615,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 					let dep: Cell = deps[--i];
 
 					if (!prevDeps || prevDeps.indexOf(dep) == -1) {
-						dep._addReaction(this, false);
+						dep._addReaction(this);
 						newDepCount++;
 					}
 				} while (i != 0);

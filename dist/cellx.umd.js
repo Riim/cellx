@@ -473,6 +473,9 @@
 	        }
 	        return this._error;
 	    }
+	    get state() {
+	        return this._state;
+	    }
 	    on(type, listener, context) {
 	        if (this._dependencies !== null) {
 	            this.actualize();
@@ -484,7 +487,7 @@
 	            super.on(type, listener, context !== undefined ? context : this.context);
 	        }
 	        this._hasSubscribers = true;
-	        this._activate(true);
+	        this._activate();
 	        return this;
 	    }
 	    off(type, listener, context) {
@@ -552,10 +555,10 @@
 	        }
 	        return this.off(Cell.EVENT_CHANGE, wrapper, context).off(Cell.EVENT_ERROR, wrapper, context);
 	    }
-	    _addReaction(reaction, actual) {
+	    _addReaction(reaction) {
 	        this._reactions.push(reaction);
 	        this._hasSubscribers = true;
-	        this._activate(actual);
+	        this._activate();
 	    }
 	    _deleteReaction(reaction) {
 	        this._reactions.splice(this._reactions.indexOf(reaction), 1);
@@ -570,7 +573,7 @@
 	            }
 	        }
 	    }
-	    _activate(actual) {
+	    _activate() {
 	        if (this._active || !this._pull) {
 	            return;
 	        }
@@ -578,11 +581,9 @@
 	        if (deps) {
 	            let i = deps.length;
 	            do {
-	                deps[--i]._addReaction(this, actual);
+	                deps[--i]._addReaction(this);
 	            } while (i != 0);
-	            if (actual) {
-	                this._state = CellState.ACTUAL;
-	            }
+	            this._state = CellState.ACTUAL;
 	            this._active = true;
 	        }
 	    }
@@ -702,7 +703,7 @@
 	                do {
 	                    let dep = deps[--i];
 	                    if (!prevDeps || prevDeps.indexOf(dep) == -1) {
-	                        dep._addReaction(this, false);
+	                        dep._addReaction(this);
 	                        newDepCount++;
 	                    }
 	                } while (i != 0);

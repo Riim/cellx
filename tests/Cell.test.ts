@@ -69,7 +69,7 @@ describe('Cell', () => {
 	});
 
 	describe('events', () => {
-		it('событие change', done => {
+		it('событие change', (done) => {
 			let a = new Cell(1, {
 				onChange() {
 					expect(a.get()).to.equal(2);
@@ -80,7 +80,7 @@ describe('Cell', () => {
 			a.set(2);
 		});
 
-		it('событие change вычисляемой ячейки', done => {
+		it('событие change вычисляемой ячейки', (done) => {
 			let a = new Cell(1);
 			let b = new Cell(() => a.get() + 1, {
 				onChange() {
@@ -260,7 +260,7 @@ describe('Cell', () => {
 			expect(c.get()).to.equal(4);
 		});
 
-		it('запись в активную ячейку и последующее изменение её зависимости', done => {
+		it('запись в активную ячейку и последующее изменение её зависимости', (done) => {
 			let a = new Cell(1);
 			let b = new Cell(
 				(_cell, next) => {
@@ -293,7 +293,21 @@ describe('Cell', () => {
 			a.set(2);
 		});
 
-		it("вычисляемая ячейка лишаясь зависимостей получает _state == 'actual'", () => {
+		it('подключаемая, неактивная ячейка получает state == actual', () => {
+			let a = new Cell(() => (b.get() ? 1 : c.get()));
+			let b = new Cell(true);
+			let c = new Cell(() => d.get());
+			let d = new Cell(() => 1);
+
+			a.onChange(() => {});
+			b.set(false);
+
+			Cell.release();
+
+			expect(c.state).eq(CellState.ACTUAL);
+		});
+
+		it("вычисляемая ячейка лишаясь зависимостей получает state == actual", () => {
 			let a = new Cell(1);
 
 			let t = 0;
@@ -316,9 +330,9 @@ describe('Cell', () => {
 
 			expect(t).to.equal(2);
 
-			expect(b._state).to.equal(CellState.ACTUAL);
+			expect(b.state).to.equal(CellState.ACTUAL);
 
-			expect(b.get.bind(b)).throw();
+			expect(() => b.get()).to.throw();
 		});
 
 		it('запись в родительскую ячейку в pull', () => {
