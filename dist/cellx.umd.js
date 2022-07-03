@@ -298,6 +298,24 @@
 	    }
 	}
 
+	function indexOf(arr, value) {
+	    let len = arr.length;
+	    if (len != 0) {
+	        if (arr[0] === value) {
+	            return 0;
+	        }
+	        if (len >= 2 && arr[1] === value) {
+	            return 1;
+	        }
+	        for (let i = 2; i < len; i++) {
+	            if (arr[i] === value) {
+	                return i;
+	            }
+	        }
+	    }
+	    return -1;
+	}
+
 	class WaitError extends Error {
 	}
 
@@ -561,7 +579,7 @@
 	        this._activate();
 	    }
 	    _deleteReaction(reaction) {
-	        this._reactions.splice(this._reactions.indexOf(reaction), 1);
+	        this._reactions.splice(indexOf(this._reactions, reaction), 1);
 	        if (this._hasSubscribers &&
 	            this._reactions.length == 0 &&
 	            !this._events.has(Cell.EVENT_CHANGE) &&
@@ -657,7 +675,7 @@
 	        }
 	        if (currentCell) {
 	            if (currentCell._dependencies) {
-	                if (currentCell._dependencies.indexOf(this) == -1) {
+	                if (indexOf(currentCell._dependencies, this) == -1) {
 	                    currentCell._dependencies.push(this);
 	                }
 	            }
@@ -702,7 +720,7 @@
 	                let i = deps.length;
 	                do {
 	                    let dep = deps[--i];
-	                    if (!prevDeps || prevDeps.indexOf(dep) == -1) {
+	                    if (!prevDeps || indexOf(prevDeps, dep) == -1) {
 	                        dep._addReaction(this);
 	                        newDepCount++;
 	                    }
@@ -711,7 +729,7 @@
 	            if (prevDeps && (!deps || deps.length - newDepCount < prevDeps.length)) {
 	                for (let i = prevDeps.length; i != 0;) {
 	                    i--;
-	                    if (!deps || deps.indexOf(prevDeps[i]) == -1) {
+	                    if (!deps || indexOf(deps, prevDeps[i]) == -1) {
 	                        prevDeps[i]._deleteReaction(this);
 	                    }
 	                }

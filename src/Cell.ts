@@ -1,6 +1,7 @@
 import { nextTick } from '@riim/next-tick';
 import { config } from './config';
 import { EventEmitter, IEvent, TListener } from './EventEmitter';
+import { indexOf } from './utils/indexOf';
 import { WaitError } from './WaitError';
 
 export type TCellPull<T, R = T> = (cell: Cell<T>, next: any) => R;
@@ -432,7 +433,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	}
 
 	_deleteReaction(reaction: Cell) {
-		this._reactions.splice(this._reactions.indexOf(reaction), 1);
+		this._reactions.splice(indexOf(this._reactions, reaction), 1);
 
 		if (
 			this._hasSubscribers &&
@@ -556,7 +557,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 
 		if (currentCell) {
 			if (currentCell._dependencies) {
-				if (currentCell._dependencies.indexOf(this) == -1) {
+				if (indexOf(currentCell._dependencies, this) == -1) {
 					currentCell._dependencies.push(this);
 				}
 			} else {
@@ -614,7 +615,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 				do {
 					let dep: Cell = deps[--i];
 
-					if (!prevDeps || prevDeps.indexOf(dep) == -1) {
+					if (!prevDeps || indexOf(prevDeps, dep) == -1) {
 						dep._addReaction(this);
 						newDepCount++;
 					}
@@ -625,7 +626,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 				for (let i = prevDeps.length; i != 0; ) {
 					i--;
 
-					if (!deps || deps.indexOf(prevDeps[i]) == -1) {
+					if (!deps || indexOf(deps, prevDeps[i]) == -1) {
 						prevDeps[i]._deleteReaction(this);
 					}
 				}

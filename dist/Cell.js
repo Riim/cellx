@@ -1,6 +1,7 @@
 import { nextTick } from '@riim/next-tick';
 import { config } from './config';
 import { EventEmitter } from './EventEmitter';
+import { indexOf } from './utils/indexOf';
 import { WaitError } from './WaitError';
 export var CellState;
 (function (CellState) {
@@ -262,7 +263,7 @@ export class Cell extends EventEmitter {
         this._activate();
     }
     _deleteReaction(reaction) {
-        this._reactions.splice(this._reactions.indexOf(reaction), 1);
+        this._reactions.splice(indexOf(this._reactions, reaction), 1);
         if (this._hasSubscribers &&
             this._reactions.length == 0 &&
             !this._events.has(Cell.EVENT_CHANGE) &&
@@ -358,7 +359,7 @@ export class Cell extends EventEmitter {
         }
         if (currentCell) {
             if (currentCell._dependencies) {
-                if (currentCell._dependencies.indexOf(this) == -1) {
+                if (indexOf(currentCell._dependencies, this) == -1) {
                     currentCell._dependencies.push(this);
                 }
             }
@@ -403,7 +404,7 @@ export class Cell extends EventEmitter {
                 let i = deps.length;
                 do {
                     let dep = deps[--i];
-                    if (!prevDeps || prevDeps.indexOf(dep) == -1) {
+                    if (!prevDeps || indexOf(prevDeps, dep) == -1) {
                         dep._addReaction(this);
                         newDepCount++;
                     }
@@ -412,7 +413,7 @@ export class Cell extends EventEmitter {
             if (prevDeps && (!deps || deps.length - newDepCount < prevDeps.length)) {
                 for (let i = prevDeps.length; i != 0;) {
                     i--;
-                    if (!deps || deps.indexOf(prevDeps[i]) == -1) {
+                    if (!deps || indexOf(deps, prevDeps[i]) == -1) {
                         prevDeps[i]._deleteReaction(this);
                     }
                 }
