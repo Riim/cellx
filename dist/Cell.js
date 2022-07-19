@@ -1,4 +1,5 @@
 import { nextTick } from '@riim/next-tick';
+import { autorun } from './autorun';
 import { config } from './config';
 import { EventEmitter } from './EventEmitter';
 import { indexOf } from './utils/indexOf';
@@ -52,6 +53,7 @@ export class Cell extends EventEmitter {
         this._active = false;
         this._currentlyPulling = false;
         this._updationId = -1;
+        this._bound = false;
         this.debugKey = options === null || options === void 0 ? void 0 : options.debugKey;
         this.context = options && options.context !== undefined ? options.context : this;
         this._pull = (_a = options === null || options === void 0 ? void 0 : options.pull) !== null && _a !== void 0 ? _a : (typeof value == 'function' ? value : null);
@@ -99,22 +101,6 @@ export class Cell extends EventEmitter {
     }
     static get currentlyPulling() {
         return currentCell != null;
-    }
-    static autorun(cb, cellOptions) {
-        let disposer;
-        new Cell(function (cell, next) {
-            if (!disposer) {
-                disposer = () => {
-                    cell.dispose();
-                };
-            }
-            return cb.call(this, next, disposer);
-        }, (cellOptions === null || cellOptions === void 0 ? void 0 : cellOptions.onChange)
-            ? cellOptions
-            : Object.assign(Object.assign({}, cellOptions), { 
-                // eslint-disable-next-line @typescript-eslint/no-empty-function
-                onChange() { } }));
-        return disposer;
     }
     static release() {
         release();
@@ -386,10 +372,18 @@ export class Cell extends EventEmitter {
         currentCell = this;
         let value;
         try {
-            value =
-                this._pull.length != 0
-                    ? this._pull.call(this.context, this, this._value)
-                    : this._pull.call(this.context);
+            if (this._pull.length == 0) {
+                value = this._pull.call(this.context);
+            }
+            else {
+                if (!this._bound) {
+                    this.push = this.push.bind(this);
+                    this.fail = this.fail.bind(this);
+                    this.wait = this.wait.bind(this);
+                    this._bound = true;
+                }
+                value = this._pull.call(this.context, this, this._value);
+            }
         }
         catch (err) {
             $error.error = err;
@@ -558,3 +552,4 @@ export class Cell extends EventEmitter {
 }
 Cell.EVENT_CHANGE = 'change';
 Cell.EVENT_ERROR = 'error';
+Cell.autorun = autorun;

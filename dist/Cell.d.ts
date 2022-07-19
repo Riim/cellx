@@ -1,3 +1,4 @@
+import { autorun } from './autorun';
 import { EventEmitter, IEvent, TListener } from './EventEmitter';
 export declare type TCellPull<T, R = T> = (cell: Cell<T>, next: any) => R;
 export interface ICellOptions<T, M> {
@@ -38,7 +39,7 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     static EVENT_CHANGE: string;
     static EVENT_ERROR: string;
     static get currentlyPulling(): boolean;
-    static autorun<T = any, M = any>(cb: (next: T | undefined, disposer: () => void) => T, cellOptions?: ICellOptions<T, M>): () => void;
+    static autorun: typeof autorun;
     static release(): void;
     static afterRelease(cb: Function): void;
     static transact(cb: Function): void;
@@ -67,6 +68,7 @@ export declare class Cell<T = any, M = any> extends EventEmitter {
     _active: boolean;
     _currentlyPulling: boolean;
     _updationId: number;
+    _bound: boolean;
     constructor(value: T | TCellPull<T>, options?: ICellOptions<T, M>);
     on(type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, listener: TListener, context?: any): this;
     on(listeners: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>, context?: any): this;

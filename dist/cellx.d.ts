@@ -4,6 +4,7 @@ export { KEY_VALUE_CELLS } from './keys';
 export { configure } from './config';
 export { IEvent, TListener, IRegisteredEvent, EventEmitter } from './EventEmitter';
 export { TCellPull, ICellOptions, ICellChangeEvent, ICellErrorEvent, TCellEvent, Cell } from './Cell';
+export { autorun } from './autorun';
 export { WaitError } from './WaitError';
 export interface ICellx<T = any, M = any> {
     (value?: T): T;

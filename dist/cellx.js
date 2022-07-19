@@ -4,6 +4,7 @@ export { KEY_VALUE_CELLS } from './keys';
 export { configure } from './config';
 export { EventEmitter } from './EventEmitter';
 export { Cell } from './Cell';
+export { autorun } from './autorun';
 export { WaitError } from './WaitError';
 const cellxProto = {
     __proto__: Function.prototype,
