@@ -1,4 +1,5 @@
 import { nextTick } from '@riim/next-tick';
+import { autorun } from './autorun';
 import { config } from './config';
 import { EventEmitter, IEvent, TListener } from './EventEmitter';
 import { indexOf } from './utils/indexOf';
@@ -100,33 +101,7 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		return currentCell != null;
 	}
 
-	static autorun<T = any, M = any>(
-		cb: (next: T | undefined, disposer: () => void) => T,
-		cellOptions?: ICellOptions<T, M>
-	) {
-		let disposer: (() => void) | undefined;
-
-		new Cell(
-			function (this: any, cell, next) {
-				if (!disposer) {
-					disposer = () => {
-						cell.dispose();
-					};
-				}
-
-				return cb.call(this, next, disposer);
-			},
-			cellOptions?.onChange
-				? cellOptions
-				: {
-						...cellOptions,
-						// eslint-disable-next-line @typescript-eslint/no-empty-function
-						onChange() {}
-				  }
-		);
-
-		return disposer!;
-	}
+	static autorun = autorun;
 
 	static release() {
 		release();
@@ -234,6 +209,8 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	_active = false;
 	_currentlyPulling = false;
 	_updationId = -1;
+
+	_bound = false;
 
 	constructor(value: T | TCellPull<T>, options?: ICellOptions<T, M>) {
 		super();
@@ -592,10 +569,19 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		let value;
 
 		try {
-			value =
-				this._pull.length != 0
-					? this._pull.call(this.context, this, this._value)
-					: (this._pull as Function).call(this.context);
+			if (this._pull.length == 0) {
+				value = (this._pull as Function).call(this.context);
+			} else {
+				if (!this._bound) {
+					this.push = this.push.bind(this);
+					this.fail = this.fail.bind(this);
+					this.wait = this.wait.bind(this);
+
+					this._bound = true;
+				}
+
+				value = this._pull.call(this.context, this, this._value);
+			}
 		} catch (err) {
 			$error.error = err;
 			value = $error;

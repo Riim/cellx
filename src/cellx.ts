@@ -13,6 +13,7 @@ export {
 	TCellEvent,
 	Cell
 } from './Cell';
+export { autorun } from './autorun';
 export { WaitError } from './WaitError';
 
 export interface ICellx<T = any, M = any> {
