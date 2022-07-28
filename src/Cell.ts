@@ -465,7 +465,6 @@ export class Cell<T = any, M = any> extends EventEmitter {
 	}
 
 	_onValueChange(evt: IEvent) {
-		this._inited = true;
 		this._updationId = ++lastUpdationId;
 
 		let reactions = this._reactions;
