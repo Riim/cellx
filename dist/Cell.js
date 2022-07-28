@@ -288,7 +288,6 @@ export class Cell extends EventEmitter {
         this._active = false;
     }
     _onValueChange(evt) {
-        this._inited = true;
         this._updationId = ++lastUpdationId;
         let reactions = this._reactions;
         for (let i = 0; i < reactions.length; i++) {
