@@ -1,5 +1,5 @@
 export function indexOf<T>(arr: Array<T>, value: T): number {
-	let len = arr.length;
+	const len = arr.length;
 
 	if (len != 0) {
 		if (arr[0] === value) {
