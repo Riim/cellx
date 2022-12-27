@@ -38,20 +38,16 @@ export class EventEmitter {
 
 		try {
 			cb();
-		} catch (err) {
-			config.logError(err);
-		}
+		} finally {
+			if (--transactionLevel == 0) {
+				let events = transactionEvents;
 
-		if (--transactionLevel != 0) {
-			return;
-		}
+				transactionEvents = [];
 
-		let events = transactionEvents;
-
-		transactionEvents = [];
-
-		for (let evt of events) {
-			evt.target.handleEvent(evt);
+				for (let evt of events) {
+					evt.target.handleEvent(evt);
+				}
+			}
 		}
 	}
 
@@ -60,11 +56,9 @@ export class EventEmitter {
 
 		try {
 			cb();
-		} catch (err) {
-			config.logError(err);
+		} finally {
+			silently--;
 		}
-
-		silently--;
 	}
 
 	[KEY_VALUE_CELLS]?: Map<string, Cell>;

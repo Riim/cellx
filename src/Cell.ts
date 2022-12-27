@@ -484,14 +484,15 @@ export class Cell<T = any, M = any> extends EventEmitter {
 		}
 
 		let reactions = this._reactions;
-		let i = reactions.length;
 
-		if (i != 0) {
+		if (reactions.length != 0) {
+			let i = 0;
+
 			do {
-				if (reactions[--i]._state == CellState.ACTUAL) {
+				if (reactions[i]._state == CellState.ACTUAL) {
 					reactions[i]._addToRelease(false);
 				}
-			} while (i != 0);
+			} while (++i < reactions.length);
 		} else if (pendingCells.push(this) == 1) {
 			nextTick(release);
 		}
