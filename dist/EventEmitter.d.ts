@@ -8,7 +8,7 @@ export interface IEvent<T extends EventEmitter = EventEmitter, D extends object 
     propagationStopped?: boolean;
     data: D;
 }
-export declare type TListener<T extends EventEmitter = EventEmitter> = (evt: IEvent<T>) => any;
+export type TListener<T extends EventEmitter = EventEmitter> = (evt: IEvent<T>) => any;
 export interface IRegisteredEvent {
     listener: TListener;
     context: any;

@@ -16,16 +16,14 @@ export class EventEmitter {
         try {
             cb();
         }
-        catch (err) {
-            config.logError(err);
-        }
-        if (--transactionLevel != 0) {
-            return;
-        }
-        let events = transactionEvents;
-        transactionEvents = [];
-        for (let evt of events) {
-            evt.target.handleEvent(evt);
+        finally {
+            if (--transactionLevel == 0) {
+                let events = transactionEvents;
+                transactionEvents = [];
+                for (let evt of events) {
+                    evt.target.handleEvent(evt);
+                }
+            }
         }
     }
     static silently(cb) {
@@ -33,10 +31,9 @@ export class EventEmitter {
         try {
             cb();
         }
-        catch (err) {
-            config.logError(err);
+        finally {
+            silently--;
         }
-        silently--;
     }
     getEvents(type) {
         if (type) {

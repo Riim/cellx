@@ -42,63 +42,6 @@ function release() {
     }
 }
 export class Cell extends EventEmitter {
-    constructor(value, options) {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
-        super();
-        this._reactions = [];
-        this._errorCell = null;
-        this._error = null;
-        this._lastErrorEvent = null;
-        this._hasSubscribers = false;
-        this._active = false;
-        this._currentlyPulling = false;
-        this._updationId = -1;
-        this._bound = false;
-        this.debugKey = options === null || options === void 0 ? void 0 : options.debugKey;
-        this.context = options && options.context !== undefined ? options.context : this;
-        this._pull = (_a = options === null || options === void 0 ? void 0 : options.pull) !== null && _a !== void 0 ? _a : (typeof value == 'function' ? value : null);
-        this._get = (_b = options === null || options === void 0 ? void 0 : options.get) !== null && _b !== void 0 ? _b : null;
-        this._validate = (_c = options === null || options === void 0 ? void 0 : options.validate) !== null && _c !== void 0 ? _c : null;
-        this._merge = (_d = options === null || options === void 0 ? void 0 : options.merge) !== null && _d !== void 0 ? _d : null;
-        this._put = (_e = options === null || options === void 0 ? void 0 : options.put) !== null && _e !== void 0 ? _e : defaultPut;
-        this._reap = (_f = options === null || options === void 0 ? void 0 : options.reap) !== null && _f !== void 0 ? _f : null;
-        this._compareValues = (_g = options === null || options === void 0 ? void 0 : options.compareValues) !== null && _g !== void 0 ? _g : config.compareValues;
-        this.meta = (_h = options === null || options === void 0 ? void 0 : options.meta) !== null && _h !== void 0 ? _h : null;
-        if (this._pull) {
-            this._dependencies = undefined;
-            this._prevValue = undefined;
-            this._value = undefined;
-            this._state = CellState.DIRTY;
-            this._inited = false;
-        }
-        else {
-            this._dependencies = null;
-            if (options && options.value !== undefined) {
-                value = options.value;
-            }
-            if (this._validate) {
-                this._validate(value, undefined);
-            }
-            if (this._merge) {
-                value = this._merge(value, undefined);
-            }
-            this._prevValue = undefined;
-            this._value = value;
-            this._state = CellState.ACTUAL;
-            this._inited = true;
-            if (value instanceof EventEmitter) {
-                value.on('change', this._onValueChange, this);
-            }
-        }
-        if (options) {
-            if (options.onChange) {
-                this.on('change', options.onChange);
-            }
-            if (options.onError) {
-                this.on(Cell.EVENT_ERROR, options.onError);
-            }
-        }
-    }
     static get currentlyPulling() {
         return currentCell != null;
     }
@@ -163,6 +106,63 @@ export class Cell extends EventEmitter {
     }
     get state() {
         return this._state;
+    }
+    constructor(value, options) {
+        var _a, _b, _c, _d, _e, _f, _g, _h;
+        super();
+        this._reactions = [];
+        this._errorCell = null;
+        this._error = null;
+        this._lastErrorEvent = null;
+        this._hasSubscribers = false;
+        this._active = false;
+        this._currentlyPulling = false;
+        this._updationId = -1;
+        this._bound = false;
+        this.debugKey = options === null || options === void 0 ? void 0 : options.debugKey;
+        this.context = options && options.context !== undefined ? options.context : this;
+        this._pull = (_a = options === null || options === void 0 ? void 0 : options.pull) !== null && _a !== void 0 ? _a : (typeof value == 'function' ? value : null);
+        this._get = (_b = options === null || options === void 0 ? void 0 : options.get) !== null && _b !== void 0 ? _b : null;
+        this._validate = (_c = options === null || options === void 0 ? void 0 : options.validate) !== null && _c !== void 0 ? _c : null;
+        this._merge = (_d = options === null || options === void 0 ? void 0 : options.merge) !== null && _d !== void 0 ? _d : null;
+        this._put = (_e = options === null || options === void 0 ? void 0 : options.put) !== null && _e !== void 0 ? _e : defaultPut;
+        this._reap = (_f = options === null || options === void 0 ? void 0 : options.reap) !== null && _f !== void 0 ? _f : null;
+        this._compareValues = (_g = options === null || options === void 0 ? void 0 : options.compareValues) !== null && _g !== void 0 ? _g : config.compareValues;
+        this.meta = (_h = options === null || options === void 0 ? void 0 : options.meta) !== null && _h !== void 0 ? _h : null;
+        if (this._pull) {
+            this._dependencies = undefined;
+            this._prevValue = undefined;
+            this._value = undefined;
+            this._state = CellState.DIRTY;
+            this._inited = false;
+        }
+        else {
+            this._dependencies = null;
+            if (options && options.value !== undefined) {
+                value = options.value;
+            }
+            if (this._validate) {
+                this._validate(value, undefined);
+            }
+            if (this._merge) {
+                value = this._merge(value, undefined);
+            }
+            this._prevValue = undefined;
+            this._value = value;
+            this._state = CellState.ACTUAL;
+            this._inited = true;
+            if (value instanceof EventEmitter) {
+                value.on('change', this._onValueChange, this);
+            }
+        }
+        if (options) {
+            if (options.onChange) {
+                this.on('change', options.onChange);
+            }
+            if (options.onError) {
+                this.on(Cell.EVENT_ERROR, options.onError);
+            }
+        }
     }
     on(type, listener, context) {
         if (this._dependencies !== null) {
@@ -301,13 +301,13 @@ export class Cell extends EventEmitter {
             transactionSecondaryCells.push(this);
         }
         let reactions = this._reactions;
-        let i = reactions.length;
-        if (i != 0) {
+        if (reactions.length != 0) {
+            let i = 0;
             do {
-                if (reactions[--i]._state == CellState.ACTUAL) {
+                if (reactions[i]._state == CellState.ACTUAL) {
                     reactions[i]._addToRelease(false);
                 }
-            } while (i != 0);
+            } while (++i < reactions.length);
         }
         else if (pendingCells.push(this) == 1) {
             nextTick(release);

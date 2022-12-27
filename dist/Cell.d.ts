@@ -1,6 +1,6 @@
 import { autorun } from './autorun';
 import { EventEmitter, IEvent, TListener } from './EventEmitter';
-export declare type TCellPull<T, R = T> = (cell: Cell<T>, next: any) => R;
+export type TCellPull<T, R = T> = (cell: Cell<T>, next: any) => R;
 export interface ICellOptions<T, M> {
     debugKey?: string;
     context?: object;
@@ -34,7 +34,7 @@ export interface ICellErrorEvent<T extends EventEmitter = EventEmitter> extends 
         error: any;
     };
 }
-export declare type TCellEvent<T extends EventEmitter = EventEmitter> = ICellChangeEvent<T> | ICellErrorEvent<T>;
+export type TCellEvent<T extends EventEmitter = EventEmitter> = ICellChangeEvent<T> | ICellErrorEvent<T>;
 export declare class Cell<T = any, M = any> extends EventEmitter {
     static EVENT_CHANGE: string;
     static EVENT_ERROR: string;
