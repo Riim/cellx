@@ -9,7 +9,7 @@ export interface IEvent<T extends EventEmitter = EventEmitter, D extends object 
     data: D;
 }
 export type TListener<T extends EventEmitter = EventEmitter> = (evt: IEvent<T>) => any;
-export interface IRegisteredEvent {
+export interface I$Listener {
     listener: TListener;
     context: any;
 }
@@ -18,9 +18,9 @@ export declare class EventEmitter {
     static transact(cb: Function): void;
     static silently(cb: Function): void;
     [KEY_VALUE_CELLS]?: Map<string, Cell>;
-    _events: Map<string | symbol, IRegisteredEvent | IRegisteredEvent[]>;
-    getEvents(): Map<string | symbol, Array<IRegisteredEvent>>;
-    getEvents(type: string | symbol): Array<IRegisteredEvent>;
+    _$listeners: Map<string | symbol, I$Listener[]>;
+    get$Listeners(): ReadonlyMap<string | symbol, ReadonlyArray<I$Listener>>;
+    get$Listeners(type: string | symbol): ReadonlyArray<I$Listener>;
     on(type: string | symbol, listener: TListener, context?: any): this;
     on(listeners: Record<string | symbol, TListener>, context?: any): this;
     off(type: string | symbol, listener: TListener, context?: any): this;
@@ -37,5 +37,5 @@ export declare class EventEmitter {
         data?: Record<string, any>;
     } | string | symbol, data?: Record<string, any>): IEvent<EventEmitter, Record<string, any>>;
     handleEvent(evt: IEvent): void;
-    _tryEventListener(emEvt: IRegisteredEvent, evt: IEvent): any;
+    _tryEventListener($listener: I$Listener, evt: IEvent): any;
 }

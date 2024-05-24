@@ -16,7 +16,7 @@ export interface IEvent<
 
 export type TListener<T extends EventEmitter = EventEmitter> = (evt: IEvent<T>) => any;
 
-export interface IRegisteredEvent {
+export interface I$Listener {
 	listener: TListener;
 	context: any;
 }
@@ -44,8 +44,8 @@ export class EventEmitter {
 
 				transactionEvents = [];
 
-				for (let evt of events) {
-					evt.target.handleEvent(evt);
+				for (let i = 0; i < events.length; i++) {
+					events[i].target.handleEvent(events[i]);
 				}
 			}
 		}
@@ -63,30 +63,14 @@ export class EventEmitter {
 
 	[KEY_VALUE_CELLS]?: Map<string, Cell>;
 
-	_events = new Map<string | symbol, IRegisteredEvent | Array<IRegisteredEvent>>();
+	_$listeners = new Map<string | symbol, Array<I$Listener>>();
 
-	getEvents(): Map<string | symbol, Array<IRegisteredEvent>>;
-	getEvents(type: string | symbol): Array<IRegisteredEvent>;
-	getEvents(
+	get$Listeners(): ReadonlyMap<string | symbol, ReadonlyArray<I$Listener>>;
+	get$Listeners(type: string | symbol): ReadonlyArray<I$Listener>;
+	get$Listeners(
 		type?: string | symbol
-	): Map<string | symbol, Array<IRegisteredEvent>> | Array<IRegisteredEvent> {
-		if (type) {
-			let events = this._events.get(type);
-
-			if (!events) {
-				return [];
-			}
-
-			return Array.isArray(events) ? events : [events];
-		}
-
-		let events = new Map<string | symbol, Array<IRegisteredEvent>>();
-
-		for (let [type, typeEvents] of this._events) {
-			events.set(type, Array.isArray(typeEvents) ? typeEvents : [typeEvents]);
-		}
-
-		return events;
+	): ReadonlyMap<string | symbol, ReadonlyArray<I$Listener>> | ReadonlyArray<I$Listener> {
+		return type ? this._$listeners.get(type) ?? [] : this._$listeners;
 	}
 
 	on(type: string | symbol, listener: TListener, context?: any): this;
@@ -104,7 +88,7 @@ export class EventEmitter {
 			}
 
 			for (let type of Object.getOwnPropertySymbols(listeners)) {
-				this._on(type, listeners[type as any], context);
+				this._on(type, listeners[type], context);
 			}
 		} else {
 			this._on(type, listener, context !== undefined ? context : this);
@@ -133,13 +117,13 @@ export class EventEmitter {
 				}
 
 				for (let type of Object.getOwnPropertySymbols(listeners)) {
-					this._off(type, listeners[type as any], context);
+					this._off(type, listeners[type], context);
 				}
 			} else {
 				this._off(type, listener, context !== undefined ? context : this);
 			}
 		} else {
-			this._events.clear();
+			this._$listeners.clear();
 		}
 
 		return this;
@@ -152,22 +136,25 @@ export class EventEmitter {
 			let propName = type.slice(index + 1);
 
 			currentlySubscribing = true;
+
 			(
 				(this[KEY_VALUE_CELLS] ?? (this[KEY_VALUE_CELLS] = new Map<string, Cell>())).get(
 					propName
-				) ?? (this[propName], this[KEY_VALUE_CELLS]!).get(propName)!
+				) ?? (this[propName], this[KEY_VALUE_CELLS]).get(propName)!
 			).on(type.slice(0, index), listener, context);
+
 			currentlySubscribing = false;
 		} else {
-			let events = this._events.get(type);
-			let evt = { listener, context };
+			let type$Listeners = this._$listeners.get(type);
+			let $listener = {
+				listener,
+				context
+			};
 
-			if (!events) {
-				this._events.set(type, evt);
-			} else if (Array.isArray(events)) {
-				events.push(evt);
+			if (type$Listeners) {
+				type$Listeners.push($listener);
 			} else {
-				this._events.set(type, [events, evt]);
+				this._$listeners.set(type, [$listener]);
 			}
 		}
 	}
@@ -176,39 +163,40 @@ export class EventEmitter {
 		let index: number;
 
 		if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
-			let valueCell = this[KEY_VALUE_CELLS]?.get(type.slice(index + 1));
-
-			if (valueCell) {
-				valueCell.off(type.slice(0, index), listener, context);
-			}
+			this[KEY_VALUE_CELLS]?.get(type.slice(index + 1))?.off(
+				type.slice(0, index),
+				listener,
+				context
+			);
 		} else {
-			let events = this._events.get(type);
+			let type$Listeners = this._$listeners.get(type);
 
-			if (!events) {
+			if (!type$Listeners) {
 				return;
 			}
 
-			let evt;
-
-			if (!Array.isArray(events)) {
-				evt = events;
-			} else if (events.length == 1) {
-				evt = events[0];
+			if (type$Listeners.length == 1) {
+				if (
+					type$Listeners[0].listener == listener &&
+					type$Listeners[0].context === context
+				) {
+					this._$listeners.delete(type);
+				}
 			} else {
-				for (let i = events.length; i != 0; ) {
-					evt = events[--i];
+				for (let i = 0; ; i++) {
+					if (
+						type$Listeners[i].listener == listener &&
+						type$Listeners[i].context === context
+					) {
+						type$Listeners.splice(i, 1);
 
-					if (evt.listener == listener && evt.context === context) {
-						events.splice(i, 1);
+						break;
+					}
+
+					if (i + 1 == type$Listeners.length) {
 						break;
 					}
 				}
-
-				return;
-			}
-
-			if (evt.listener == listener && evt.context === context) {
-				this._events.delete(type);
 			}
 		}
 	}
@@ -220,6 +208,7 @@ export class EventEmitter {
 
 		function wrapper(this: any, evt: IEvent): any {
 			this._off(type, wrapper, context);
+
 			return listener.call(this, evt);
 		}
 
@@ -297,34 +286,30 @@ export class EventEmitter {
 	}
 
 	handleEvent(evt: IEvent) {
-		let events = this._events.get(evt.type);
+		let type$Listeners = this._$listeners.get(evt.type);
 
-		if (!events) {
+		if (!type$Listeners) {
 			return;
 		}
 
-		if (Array.isArray(events)) {
-			if (events.length == 1) {
-				if (this._tryEventListener(events[0], evt) === false) {
+		if (type$Listeners.length == 1) {
+			if (this._tryEventListener(type$Listeners[0], evt) === false) {
+				evt.propagationStopped = true;
+			}
+		} else {
+			type$Listeners = type$Listeners.slice();
+
+			for (let i = 0; i < type$Listeners.length; i++) {
+				if (this._tryEventListener(type$Listeners[i], evt) === false) {
 					evt.propagationStopped = true;
 				}
-			} else {
-				events = events.slice();
-
-				for (let i = 0; i < events.length; i++) {
-					if (this._tryEventListener(events[i], evt) === false) {
-						evt.propagationStopped = true;
-					}
-				}
 			}
-		} else if (this._tryEventListener(events, evt) === false) {
-			evt.propagationStopped = true;
 		}
 	}
 
-	_tryEventListener(emEvt: IRegisteredEvent, evt: IEvent) {
+	_tryEventListener($listener: I$Listener, evt: IEvent) {
 		try {
-			return emEvt.listener.call(emEvt.context, evt);
+			return $listener.listener.call($listener.context, evt);
 		} catch (err) {
 			config.logError(err);
 		}

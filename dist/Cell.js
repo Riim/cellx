@@ -1,8 +1,7 @@
-import { nextTick } from '@riim/next-tick';
-import { autorun } from './autorun';
 import { config } from './config';
 import { EventEmitter } from './EventEmitter';
-import { indexOf } from './utils/indexOf';
+import { fastIndexOf } from './utils/fastIndexOf';
+import { nextTick } from './utils/nextTick';
 import { WaitError } from './WaitError';
 export var CellState;
 (function (CellState) {
@@ -11,19 +10,13 @@ export var CellState;
     CellState["CHECK"] = "check";
 })(CellState || (CellState = {}));
 const KEY_LISTENER_WRAPPERS = Symbol('listenerWrappers');
-function defaultPut(cell, value) {
-    cell.push(value);
-}
 const pendingCells = [];
 let pendingCellsIndex = 0;
 let afterRelease;
 let currentCell = null;
 const $error = { error: null };
 let lastUpdationId = 0;
-let transactionLevel = 0;
-const transactionPrimaryCells = [];
-const transactionSecondaryCells = [];
-let transactionFailure = false;
+let transaction = null;
 function release() {
     while (pendingCellsIndex < pendingCells.length) {
         let cell = pendingCells[pendingCellsIndex++];
@@ -36,8 +29,8 @@ function release() {
     if (afterRelease) {
         let afterRelease_ = afterRelease;
         afterRelease = null;
-        for (let cb of afterRelease_) {
-            cb();
+        for (let i = 0; i < afterRelease_.length; i++) {
+            afterRelease_[i]();
         }
     }
 }
@@ -45,109 +38,120 @@ export class Cell extends EventEmitter {
     static get currentlyPulling() {
         return currentCell != null;
     }
+    static autorun(cb, cellOptions) {
+        let disposer;
+        new Cell(function (cell, value) {
+            if (!disposer) {
+                disposer = () => {
+                    cell.dispose();
+                };
+            }
+            return cb.call(this, value, disposer);
+        }, cellOptions?.onChange
+            ? cellOptions
+            : {
+                ...cellOptions,
+                onChange: () => { }
+            });
+        return disposer;
+    }
     static release() {
         release();
     }
     static afterRelease(cb) {
-        (afterRelease !== null && afterRelease !== void 0 ? afterRelease : (afterRelease = [])).push(cb);
+        (afterRelease ?? (afterRelease = [])).push(cb);
     }
     static transact(cb) {
-        if (transactionLevel++ == 0 && pendingCells.length != 0) {
+        if (pendingCells.length != 0) {
             release();
         }
+        if (transaction) {
+            throw TypeError('Nested transaction');
+        }
+        transaction = {
+            primaryCells: new Map(),
+            secondaryCells: new Set()
+        };
         try {
             cb();
-            transactionLevel--;
         }
         catch (err) {
-            transactionFailure = true;
-            if (--transactionLevel == 0) {
-                config.logError(err);
+            for (let [cell, value] of transaction.primaryCells) {
+                cell._value = value;
             }
-            else {
-                throw err;
-            }
-        }
-        if (transactionFailure) {
-            for (let cell of transactionPrimaryCells) {
-                cell._value = cell._prevValue;
-                cell._prevValue = undefined;
-            }
-            for (let cell of transactionSecondaryCells) {
+            for (let cell of transaction.secondaryCells) {
                 cell._state = CellState.ACTUAL;
             }
             pendingCells.length = 0;
             pendingCellsIndex = 0;
-            transactionPrimaryCells.length = 0;
-            transactionSecondaryCells.length = 0;
-            transactionFailure = false;
+            transaction = null;
+            throw err;
         }
-        else {
-            if (transactionLevel == 0) {
-                for (let cell of transactionPrimaryCells) {
-                    cell._prevValue = undefined;
-                }
-                transactionPrimaryCells.length = 0;
-                transactionSecondaryCells.length = 0;
-                if (pendingCells.length != 0) {
-                    release();
-                }
-            }
+        transaction = null;
+        if (pendingCells.length != 0) {
+            release();
         }
     }
     get error() {
-        if (currentCell) {
-            if (!this._errorCell) {
-                this._errorCell = new Cell(this._error);
-            }
-            return this._errorCell.get();
-        }
-        return this._error;
+        return currentCell
+            ? (this._errorCell ?? (this._errorCell = new Cell(this._error))).get()
+            : this._error;
     }
     get state() {
         return this._state;
     }
     constructor(value, options) {
-        var _a, _b, _c, _d, _e, _f, _g, _h;
         super();
         this._reactions = [];
         this._errorCell = null;
         this._error = null;
         this._lastErrorEvent = null;
-        this._hasSubscribers = false;
+        // hasSubscribers = reactions || listeners
+        // _hasSubscribers = false;
+        // active = deps && hasSubscribers
         this._active = false;
         this._currentlyPulling = false;
         this._updationId = -1;
         this._bound = false;
-        this.debugKey = options === null || options === void 0 ? void 0 : options.debugKey;
-        this.context = options && options.context !== undefined ? options.context : this;
-        this._pull = (_a = options === null || options === void 0 ? void 0 : options.pull) !== null && _a !== void 0 ? _a : (typeof value == 'function' ? value : null);
-        this._get = (_b = options === null || options === void 0 ? void 0 : options.get) !== null && _b !== void 0 ? _b : null;
-        this._validate = (_c = options === null || options === void 0 ? void 0 : options.validate) !== null && _c !== void 0 ? _c : null;
-        this._merge = (_d = options === null || options === void 0 ? void 0 : options.merge) !== null && _d !== void 0 ? _d : null;
-        this._put = (_e = options === null || options === void 0 ? void 0 : options.put) !== null && _e !== void 0 ? _e : defaultPut;
-        this._reap = (_f = options === null || options === void 0 ? void 0 : options.reap) !== null && _f !== void 0 ? _f : null;
-        this._compareValues = (_g = options === null || options === void 0 ? void 0 : options.compareValues) !== null && _g !== void 0 ? _g : config.compareValues;
-        this.meta = (_h = options === null || options === void 0 ? void 0 : options.meta) !== null && _h !== void 0 ? _h : null;
+        if (options) {
+            this.debugKey = options.debugKey;
+            this.context = (options.context ?? null);
+            this._pull = options.pull ?? (typeof value == 'function' ? value : null);
+            this._get = options.get ?? null;
+            this._validate = options.validate ?? null;
+            this._merge = options.merge ?? null;
+            this._put = options.put ?? null;
+            this._compareValues = options.compareValues ?? config.compareValues;
+            this._reap = options.reap ?? null;
+            this.meta = options.meta ?? null;
+        }
+        else {
+            this.debugKey = undefined;
+            this.context = null;
+            this._pull = typeof value == 'function' ? value : null;
+            this._get = null;
+            this._validate = null;
+            this._merge = null;
+            this._put = null;
+            this._compareValues = config.compareValues;
+            this._reap = null;
+            this.meta = null;
+        }
         if (this._pull) {
             this._dependencies = undefined;
-            this._prevValue = undefined;
             this._value = undefined;
             this._state = CellState.DIRTY;
             this._inited = false;
         }
         else {
             this._dependencies = null;
-            if (options && options.value !== undefined) {
+            if (options?.value !== undefined) {
                 value = options.value;
             }
-            if (this._validate) {
-                this._validate(value, undefined);
-            }
+            this._validate?.(value, undefined);
             if (this._merge) {
                 value = this._merge(value, undefined);
             }
-            this._prevValue = undefined;
             this._value = value;
             this._state = CellState.ACTUAL;
             this._inited = true;
@@ -174,7 +178,9 @@ export class Cell extends EventEmitter {
         else {
             super.on(type, listener, context !== undefined ? context : this.context);
         }
-        this._hasSubscribers = true;
+        // if (this._$listeners.has(Cell.EVENT_CHANGE) || this._$listeners.has(Cell.EVENT_ERROR)) {
+        // 	this._hasSubscribers = true;
+        // }
         this._activate();
         return this;
     }
@@ -182,6 +188,7 @@ export class Cell extends EventEmitter {
         if (this._dependencies !== null) {
             this.actualize();
         }
+        let hasListeners = this._$listeners.has(Cell.EVENT_CHANGE) || this._$listeners.has(Cell.EVENT_ERROR);
         if (type) {
             if (typeof type == 'object') {
                 super.off(type, listener !== undefined ? listener : this.context);
@@ -193,15 +200,16 @@ export class Cell extends EventEmitter {
         else {
             super.off();
         }
-        if (this._hasSubscribers &&
+        if (
+        // this._hasSubscribers &&
+        hasListeners &&
             this._reactions.length == 0 &&
-            !this._events.has(Cell.EVENT_CHANGE) &&
-            !this._events.has(Cell.EVENT_ERROR)) {
-            this._hasSubscribers = false;
+            (this._$listeners.size == 0 ||
+                (!this._$listeners.has(Cell.EVENT_CHANGE) &&
+                    !this._$listeners.has(Cell.EVENT_ERROR)))) {
+            // this._hasSubscribers = false;
             this._deactivate();
-            if (this._reap) {
-                this._reap.call(this.context);
-            }
+            this._reap?.call(this.context);
         }
         return this;
     }
@@ -233,7 +241,7 @@ export class Cell extends EventEmitter {
     }
     unsubscribe(listener, context) {
         let wrappers = listener[KEY_LISTENER_WRAPPERS];
-        let wrapper = wrappers === null || wrappers === void 0 ? void 0 : wrappers.get(this);
+        let wrapper = wrappers?.get(this);
         if (!wrapper) {
             return this;
         }
@@ -245,47 +253,57 @@ export class Cell extends EventEmitter {
     }
     _addReaction(reaction) {
         this._reactions.push(reaction);
-        this._hasSubscribers = true;
+        // this._hasSubscribers = true;
         this._activate();
     }
     _deleteReaction(reaction) {
-        this._reactions.splice(indexOf(this._reactions, reaction), 1);
-        if (this._hasSubscribers &&
-            this._reactions.length == 0 &&
-            !this._events.has(Cell.EVENT_CHANGE) &&
-            !this._events.has(Cell.EVENT_ERROR)) {
-            this._hasSubscribers = false;
+        this._reactions.splice(fastIndexOf(this._reactions, reaction), 1);
+        if (
+        // Всегда запускается с минимум одной реакцией, а значит hasSubscribers всегда true.
+        // this._hasSubscribers &&
+        this._reactions.length == 0 &&
+            (this._$listeners.size == 0 ||
+                (!this._$listeners.has(Cell.EVENT_CHANGE) &&
+                    !this._$listeners.has(Cell.EVENT_ERROR)))) {
+            // this._hasSubscribers = false;
             this._deactivate();
-            if (this._reap) {
-                this._reap.call(this.context);
-            }
+            this._reap?.call(this.context);
         }
     }
     _activate() {
-        if (this._active || !this._pull) {
+        // Проверка pull не имеет сиысла, тк. ниже есть проверка deps.
+        if (this._active /* || !this._pull*/) {
             return;
         }
         let deps = this._dependencies;
         if (deps) {
-            let i = deps.length;
-            do {
-                deps[--i]._addReaction(this);
-            } while (i != 0);
+            for (let i = 0;; i++) {
+                deps[i]._addReaction(this);
+                if (i + 1 == deps.length) {
+                    break;
+                }
+            }
             this._state = CellState.ACTUAL;
             this._active = true;
         }
     }
     _deactivate() {
-        if (!this._active) {
-            return;
-        }
+        // Всегда запускается при удалении последнего подписчика, то есть проверка deps ниже будет
+        // аналогична проверке active, тк. active = deps && hasSubscribers (только что стал false).
+        // if (!this._active) {
+        // 	return;
+        // }
         let deps = this._dependencies;
-        let i = deps.length;
-        do {
-            deps[--i]._deleteReaction(this);
-        } while (i != 0);
-        this._state = CellState.DIRTY;
-        this._active = false;
+        if (deps) {
+            for (let i = 0;; i++) {
+                deps[i]._deleteReaction(this);
+                if (i + 1 == deps.length) {
+                    break;
+                }
+            }
+            this._state = CellState.DIRTY;
+            this._active = false;
+        }
     }
     _onValueChange(evt) {
         this._updationId = ++lastUpdationId;
@@ -297,20 +315,24 @@ export class Cell extends EventEmitter {
     }
     _addToRelease(dirty) {
         this._state = dirty ? CellState.DIRTY : CellState.CHECK;
-        if (transactionLevel != 0) {
-            transactionSecondaryCells.push(this);
+        if (transaction) {
+            transaction.secondaryCells.add(this);
         }
         let reactions = this._reactions;
         if (reactions.length != 0) {
-            let i = 0;
-            do {
+            for (let i = 0;; i++) {
                 if (reactions[i]._state == CellState.ACTUAL) {
                     reactions[i]._addToRelease(false);
                 }
-            } while (++i < reactions.length);
+                if (i + 1 == reactions.length) {
+                    break;
+                }
+            }
         }
-        else if (pendingCells.push(this) == 1) {
-            nextTick(release);
+        else {
+            if (pendingCells.push(this) == 1) {
+                nextTick(release);
+            }
         }
     }
     actualize() {
@@ -319,13 +341,14 @@ export class Cell extends EventEmitter {
         }
         else if (this._state == CellState.CHECK) {
             let deps = this._dependencies;
-            for (let i = 0;;) {
+            for (let i = 0;; i++) {
                 deps[i].actualize();
+                // @ts-ignore
                 if (this._state == CellState.DIRTY) {
                     this.pull();
                     break;
                 }
-                if (++i == deps.length) {
+                if (i + 1 == deps.length) {
                     this._state = CellState.ACTUAL;
                     break;
                 }
@@ -344,7 +367,7 @@ export class Cell extends EventEmitter {
         }
         if (currentCell) {
             if (currentCell._dependencies) {
-                if (indexOf(currentCell._dependencies, this) == -1) {
+                if (fastIndexOf(currentCell._dependencies, this) == -1) {
                     currentCell._dependencies.push(this);
                 }
             }
@@ -362,7 +385,7 @@ export class Cell extends EventEmitter {
             return false;
         }
         if (this._currentlyPulling) {
-            throw TypeError('Circular pulling detected');
+            throw TypeError('Circular pulling');
         }
         this._currentlyPulling = true;
         let prevDeps = this._dependencies;
@@ -378,10 +401,14 @@ export class Cell extends EventEmitter {
                 if (!this._bound) {
                     this.push = this.push.bind(this);
                     this.fail = this.fail.bind(this);
-                    this.wait = this.wait.bind(this);
                     this._bound = true;
                 }
                 value = this._pull.call(this.context, this, this._value);
+            }
+            if (value instanceof Promise) {
+                value.then((value) => this.push(value), (err) => this.fail(err));
+                $error.error = new WaitError();
+                value = $error;
             }
         }
         catch (err) {
@@ -390,29 +417,38 @@ export class Cell extends EventEmitter {
         }
         currentCell = prevCell;
         this._currentlyPulling = false;
-        if (this._hasSubscribers) {
+        // if (this._hasSubscribers) {
+        if (this._reactions.length != 0 ||
+            this._$listeners.has(Cell.EVENT_CHANGE) ||
+            this._$listeners.has(Cell.EVENT_ERROR)) {
             let deps = this._dependencies;
             let newDepCount = 0;
             if (deps) {
-                let i = deps.length;
-                do {
-                    let dep = deps[--i];
-                    if (!prevDeps || indexOf(prevDeps, dep) == -1) {
+                for (let i = 0;; i++) {
+                    let dep = deps[i];
+                    if (!prevDeps || fastIndexOf(prevDeps, dep) == -1) {
                         dep._addReaction(this);
                         newDepCount++;
                     }
-                } while (i != 0);
+                    if (i + 1 == deps.length) {
+                        break;
+                    }
+                }
             }
             if (prevDeps && (!deps || deps.length - newDepCount < prevDeps.length)) {
-                for (let i = prevDeps.length; i != 0;) {
-                    i--;
-                    if (!deps || indexOf(deps, prevDeps[i]) == -1) {
+                for (let i = 0;; i++) {
+                    if (!deps || fastIndexOf(deps, prevDeps[i]) == -1) {
                         prevDeps[i]._deleteReaction(this);
+                    }
+                    if (i + 1 == prevDeps.length) {
+                        break;
                     }
                 }
             }
             if (deps) {
-                this._active = true;
+                if (!prevDeps) {
+                    this._active = true;
+                }
             }
             else {
                 this._state = CellState.ACTUAL;
@@ -426,21 +462,29 @@ export class Cell extends EventEmitter {
     }
     set(value) {
         if (!this._inited) {
-            // Не инициализированная ячейка не может иметь _state == State.CHECK, поэтому вместо
-            // actualize сразу pull.
+            // Не инициализированная ячейка не может иметь State.CHECK, поэтому сразу pull вместо
+            // actualize.
             this.pull();
         }
-        if (this._validate) {
-            this._validate(value, this._value);
-        }
+        this._validate?.(value, this._value);
         if (this._merge) {
             value = this._merge(value, this._value);
         }
-        if (this._put.length >= 3) {
-            this._put.call(this.context, this, value, this._value);
+        if (this._put) {
+            if (!this._bound) {
+                this.push = this.push.bind(this);
+                this.fail = this.fail.bind(this);
+                this._bound = true;
+            }
+            if (this._put.length >= 3) {
+                this._put.call(this.context, this, value, this._value);
+            }
+            else {
+                this._put.call(this.context, this, value);
+            }
         }
         else {
-            this._put.call(this.context, this, value);
+            this.push(value);
         }
         return this;
     }
@@ -454,9 +498,8 @@ export class Cell extends EventEmitter {
         let changed = !this._compareValues(value, prevValue);
         if (changed) {
             this._value = value;
-            if (transactionLevel != 0) {
-                this._prevValue = prevValue;
-                transactionPrimaryCells.push(this);
+            if (transaction && !transaction.primaryCells.has(this)) {
+                transaction.primaryCells.set(this, prevValue);
             }
             if (prevValue instanceof EventEmitter) {
                 prevValue.off('change', this._onValueChange, this);
@@ -494,41 +537,34 @@ export class Cell extends EventEmitter {
                 config.logError(err);
             }
             if (!(err instanceof Error)) {
-                err = new Error(String(err));
+                err = Error(String(err));
             }
         }
-        this._setError(err);
+        this._setError({
+            target: this,
+            type: Cell.EVENT_ERROR,
+            data: { error: err }
+        });
         if (this._active) {
             this._state = CellState.ACTUAL;
         }
         return isWaitError;
     }
-    _setError(err) {
-        this._setError_(err && {
-            target: this,
-            type: Cell.EVENT_ERROR,
-            data: {
-                error: err
-            }
-        });
-    }
-    _setError_(evt) {
-        if (this._lastErrorEvent === evt) {
+    _setError(errorEvent) {
+        if (this._lastErrorEvent === errorEvent) {
             return;
         }
-        let err = evt && evt.data.error;
-        if (this._errorCell) {
-            this._errorCell.set(err);
-        }
+        let err = errorEvent && errorEvent.data.error;
+        this._errorCell?.set(err);
         this._error = err;
-        this._lastErrorEvent = evt;
+        this._lastErrorEvent = errorEvent;
         this._updationId = ++lastUpdationId;
-        if (evt) {
-            this.handleEvent(evt);
+        if (errorEvent) {
+            this.handleEvent(errorEvent);
         }
         let reactions = this._reactions;
         for (let i = 0; i < reactions.length; i++) {
-            reactions[i]._setError_(evt);
+            reactions[i]._setError(errorEvent);
         }
     }
     wait() {
@@ -536,9 +572,7 @@ export class Cell extends EventEmitter {
     }
     reap() {
         this.off();
-        if (this._errorCell) {
-            this._errorCell.reap();
-        }
+        this._errorCell?.reap();
         let reactions = this._reactions;
         for (let i = 0; i < reactions.length; i++) {
             reactions[i].reap();
@@ -551,4 +585,3 @@ export class Cell extends EventEmitter {
 }
 Cell.EVENT_CHANGE = 'change';
 Cell.EVENT_ERROR = 'error';
-Cell.autorun = autorun;

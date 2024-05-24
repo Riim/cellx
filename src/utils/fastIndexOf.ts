@@ -1,4 +1,4 @@
-export function indexOf<T>(arr: Array<T>, value: T): number {
+export function fastIndexOf<T>(arr: Array<T>, value: T) {
 	let len = arr.length;
 
 	if (len != 0) {
@@ -6,11 +6,7 @@ export function indexOf<T>(arr: Array<T>, value: T): number {
 			return 0;
 		}
 
-		if (len >= 2 && arr[1] === value) {
-			return 1;
-		}
-
-		for (let i = 2; i < len; i++) {
+		for (let i = 1; i < len; i++) {
 			if (arr[i] === value) {
 				return i;
 			}

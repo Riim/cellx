@@ -1,18 +1,12 @@
-<p align="right">
-    <a href="https://github.com/Riim/cellx/blob/master/README.ru.md">Этот документ на русском</a>
-</p>
-
 <p>
     <img src="https://raw.githubusercontent.com/Riim/cellx/master/docs/images/logo.png" width="237" height="129">
 </p>
 
-Ultra-fast implementation of reactivity for javascript.
+Ultra-fast implementation of reactivity for javascript/typescript.
 
 [![NPM version](https://badge.fury.io/js/cellx.svg)](https://www.npmjs.com/package/cellx)
 [![Build Status](https://travis-ci.org/Riim/cellx.svg?branch=master)](https://travis-ci.org/Riim/cellx)
 [![Coverage Status](https://coveralls.io/repos/github/Riim/cellx/badge.svg?branch=master)](https://coveralls.io/github/Riim/cellx?branch=master)
-[![Dependency Status](https://david-dm.org/Riim/cellx/status.svg)](https://david-dm.org/Riim/cellx#info=dependencies)
-[![Dev Dependency Status](https://david-dm.org/Riim/cellx/dev-status.svg)](https://david-dm.org/Riim/cellx#info=devDependencies)
 
 ## Installation
 
@@ -25,24 +19,22 @@ npm install cellx --save
 
 ```js
 let user = {
-    firstName: cellx('Matroskin'),
-    lastName: cellx('Cat'),
+    firstName: cellx('Матроскин'),
+    lastName: cellx('Кот'),
 
-    fullName: cellx(function() {
-        return (user.firstName() + ' ' + user.lastName()).trim();
-    })
+    fullName: cellx(() => (user.firstName.value + ' ' + user.lastName.value).trim())
 };
 
-user.fullName.subscribe(function() {
-    console.log('fullName: ' + user.fullName());
+user.fullName.subscribe(() => {
+    console.log('fullName: ' + user.fullName.value);
 });
 
-console.log(user.fullName());
-// => 'Matroskin Cat'
+console.log(user.fullName.value);
+// => 'Матроскин Кот'
 
-user.firstName('Sharik');
-user.lastName('Dog');
-// => 'fullName: Sharik Dog'
+user.firstName.value = 'Шарик';
+user.lastName.value = 'Пёс';
+// => 'fullName: Шарик Пёс'
 ```
 
 Despite the fact that the two dependencies of the cell `fullName` has been changed, event handler worked only once.
@@ -72,8 +64,8 @@ Test results (in milliseconds) for different number of layers (for Google Chrome
 | [MobX](https://mobxjs.github.io/mobx/)                  |     <~1 |                               <~1 |                                 <~1 |       2 |       3 |      40 | RangeError: Maximum call stack size exceeded |
 
 Test sources can be found in the folder [perf](https://github.com/Riim/cellx/tree/master/perf).
-Density of connections in real applications is usually lower than in the present test, that is,
-if a certain delay in the test is visible in 100 calculated cells (25 layers), in a real application,
+Density of connections in real appliКотions is usually lower than in the present test, that is,
+if a certain delay in the test is visible in 100 calculated cells (25 layers), in a real appliКотion,
 this delay will either be visible in the greater number of cells, or cells formulas will include
 some complex calculations (e.g., computation of one array from other).
 
@@ -83,9 +75,9 @@ Cells can be stored in the variables:
 
 ```js
 let num = cellx(1);
-let plusOne = cellx(() => num() + 1);
+let plusOne = cellx(() => num.value + 1);
 
-console.log(plusOne());
+console.log(plusOne.value);
 // => 2
 ```
 
@@ -94,28 +86,12 @@ or in the callable properties:
 ```js
 function User(name) {
     this.name = cellx(name);
-    this.nameInitial = cellx(() => this.name().charAt(0).toUpperCase());
+    this.nameInitial = cellx(() => this.name.value.charAt(0).toUpperCase());
 }
 
-let user = new User('Matroskin');
+let user = new User('Матроскин');
 
-console.log(user.nameInitial());
-// => 'M'
-```
-
-or in simple properties:
-
-```js
-function User(name) {
-    cellx.define(this, {
-        name: name,
-        nameInitial: function() { return this.name.charAt(0).toUpperCase(); }
-    });
-}
-
-let user = new User('Matroskin');
-
-console.log(user.nameInitial);
+console.log(user.nameInitial.value);
 // => 'M'
 ```
 
@@ -143,15 +119,15 @@ Additional processing of value during reading:
 ```js
 // array that you can't mess up accidentally, the messed up thing will be a copy
 let arr = cellx([1, 2, 3], {
-    get: arr => arr.slice()
+    get: (arr) => arr.slice()
 });
 
-console.log(arr()[0]);
+console.log(arr.value[0]);
 // => 1
 
-arr()[0] = 5;
+arr.value[0] = 5;
 
-console.log(arr()[0]);
+console.log(arr.value[0]);
 // => 1
 ```
 
@@ -165,13 +141,13 @@ function User() {
     this.lastName = cellx('');
 
     this.fullName = cellx(
-		() => (this.firstName() + ' ' + this.lastName()).trim(),
+		() => (this.firstName.value + ' ' + this.lastName.value).trim(),
 		{
-			put: name => {
+			put: (_cell, name) => {
 				name = name.split(' ');
 
-				this.firstName(name[0]);
-				this.lastName(name[1]);
+				this.firstName.value = name[0];
+				this.lastName.value = name[1];
 			}
 		}
 	);
@@ -179,12 +155,12 @@ function User() {
 
 let user = new User();
 
-user.fullName('Matroskin Cat');
+user.fullName.value = 'Матроскин Кот';
 
-console.log(user.firstName());
-// => 'Matroskin'
-console.log(user.lastName());
-// => 'Cat'
+console.log(user.firstName.value);
+// => 'Матроскин'
+console.log(user.lastName.value);
+// => 'Кот'
 ```
 
 #### validate
@@ -195,48 +171,48 @@ Validation during recording into the cell:
 
 ```js
 let num = cellx(5, {
-    validate: value => {
+    validate: (value) => {
         if (typeof value != 'number') {
-            throw new TypeError('Oops!');
+            throw TypeError('Must be a number');
         }
     }
 });
 
 try {
-    num('I string');
+    num('I am string');
 } catch (err) {
     console.log(err.message);
-    // => 'Oops!'
+    // => 'Must be a number'
 }
 
-console.log(num());
+console.log(num.value);
 // => 5
 ```
 
 Validation during the calculation of the cell:
 
 ```js
-let value = cellx(5);
+let someValue = cellx(5);
 
-let num = cellx(() => value(), {
-    validate: value => {
+let num = cellx(() => someValue.value, {
+    validate: (value) => {
         if (typeof value != 'number') {
-            throw new TypeError('Oops!');
+            throw TypeError('Must be a number');
         }
     }
 });
 
-num.subscribe(err => {
+num.subscribe((err) => {
     console.log(err.message);
 });
 
-value('I string');
-// => 'Oops!'
+someValue.value = 'I am string';
+// => 'Must be a number'
 
-console.log(value());
-// => 'I string'
+console.log(value.value);
+// => 'I am string'
 
-console.log(num());
+console.log(num.value);
 // => 5
 ```
 
@@ -249,11 +225,11 @@ Adds a change listener:
 ```js
 let num = cellx(5);
 
-num.onChange(evt => {
+num.onChange((evt) => {
     console.log(evt);
 });
 
-num(10);
+num.value = 10;
 // => { prevValue: 5, value: 10 }
 ```
 
@@ -266,21 +242,21 @@ Removes previously added change listener.
 Adds a error listener:
 
 ```js
-let value = cellx(1);
+let someValue = cellx(1);
 
-let num = cellx(() => value(), {
-    validate: v => {
+let num = cellx(() => someValue.value, {
+    validate: (v) => {
         if (v > 1) {
-            throw new RangeError('Oops!');
+            throw RangeError('Oops!');
         }
     }
 });
 
-num.onError(evt => {
+num.onError((evt) => {
     console.log(evt.error.message);
 });
 
-value(2);
+someValue.value = 2;
 // => 'Oops!'
 ```
 
@@ -305,33 +281,6 @@ user.fullName.subscribe((err, evt) => {
 #### unsubscribe
 
 Unsubscribes from events `change` and `error`.
-
-#### Subscription to the properties created with help `cellx.define`
-
-Subscribe to changes in the properties created with help of `cellx.define` possible through `EventEmitter`:
-
-```js
-class User extends cellx.EventEmitter {
-    constructor(name) {
-        cellx.define(this, {
-            name,
-            nameInitial: function() { return this.name.charAt(0).toUpperCase(); }
-        });
-    }
-}
-
-let user = new User('Matroskin');
-
-user.on('change:nameInitial', evt => {
-    console.log('nameInitial: ' + evt.value);
-});
-
-console.log(user.nameInitial);
-// => 'M'
-
-user.name = 'Sharik';
-// => 'nameInitial: S'
-```
 
 #### dispose
 
@@ -362,9 +311,7 @@ let user = {
     firstName: cellx(''),
     lastName: cellx(''),
 
-    name: cellx(() => {
-        return this.firstName() || this.lastName();
-    })
+    name: cellx(() => this.firstName.value || this.lastName.value)
 };
 ```
 
@@ -380,18 +327,19 @@ to the `lastName`.
 
 ```js
 let foo = cellx(() => localStorage.foo || 'foo', {
-	put: function(cell, value) {
+	put: function({ push }, value) {
 		localStorage.foo = value;
-		cell.push(value);
+
+		push(value);
 	}
 });
 
-let foobar = cellx(() => foo() + 'bar');
+let foobar = cellx(() => foo.value + 'bar');
 
-console.log(foobar()); // => 'foobar'
+console.log(foobar.value); // => 'foobar'
 console.log(localStorage.foo); // => undefined
-foo('FOO');
-console.log(foobar()); // => 'FOObar'
+foo.value = 'FOO';
+console.log(foobar.value); // => 'FOObar'
 console.log(localStorage.foo); // => 'FOO'
 ```
 
@@ -402,7 +350,7 @@ let request = (() => {
 	let value = 1;
 
 	return {
-		get: url => new Promise((resolve, reject) => {
+		get: (url) => new Promise((resolve, reject) => {
             setTimeout(() => {
                 resolve({
                     ok: true,
@@ -415,49 +363,44 @@ let request = (() => {
             setTimeout(() => {
                 value = params.value;
 
-                resolve({
-                    ok: true
-                });
+                resolve({ ok: true });
             }, 1000);
         })
 	};
 })();
 
-let foo = cellx(function(cell, next = 0) {
+let foo = cellx(({ push, fail }, next = 0) => {
 	request.get('http://...').then((res) => {
 		if (res.ok) {
-			cell.push(res.value);
+			push(res.value);
 		} else {
-			cell.fail(res.error);
+			fail(res.error);
 		}
 	});
 
 	return next;
 }, {
-	put: (value, cell, next) => {
-		request.put('http://...', { value: value }).then(res => {
+	put: ({ push, fail }, next) => {
+		request.put('http://...', { value: next }).then((res) => {
 			if (res.ok) {
-				cell.push(value);
+				push(next);
 			} else {
-				cell.fail(res.error);
+				fail(res.error);
 			}
 		});
 	}
 });
 
 foo.subscribe(() => {
-	console.log('New foo value: ' + foo());
-	foo(5);
+	console.log('New foo value: ' + foo.value);
+
+	foo.value = 5;
 });
 
-console.log(foo());
+console.log(foo.value);
 // => 0
 
-foo('then', () => {
-    console.log(foo());
-});
 // => 'New foo value: 1'
-// => 1
 // => 'New foo value: 5'
 ```
 
@@ -465,4 +408,3 @@ foo('then', () => {
 
 - [Building a Reactive App Using Cellx and React](https://60devs.com/building-a-reactive-todo-app-using-cellx-and-react.html)
 - [Атом — минимальный кирпичик FRP приложения](http://habrahabr.ru/post/235121/)
-- [Knockout — Simplify dynamic JavaScript UIs with the Model-View-View Model (MVVM) pattern](http://knockoutjs.com/)

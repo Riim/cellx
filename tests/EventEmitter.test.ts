@@ -1,36 +1,31 @@
-import { expect } from 'chai';
+import { describe, expect, test } from '@jest/globals';
 import * as sinon from 'sinon';
 import { EventEmitter } from '../src/cellx';
 
 describe('EventEmitter', () => {
-	it('#on()', () => {
+	test('#on()', () => {
 		let emitter = new EventEmitter();
 		let onFoo = sinon.spy();
 		let onBar = sinon.spy();
 		let context = {};
 
 		emitter.on('foo', onFoo);
-		emitter.on(
-			{
-				bar: onBar
-			},
-			context
-		);
+		emitter.on({ bar: onBar }, context);
 
 		emitter.emit('foo');
 
-		expect(onFoo.calledOnce).to.be.true;
-		expect(onBar.notCalled).to.be.true;
+		expect(onFoo.calledOnce).toBeTruthy();
+		expect(onBar.notCalled).toBeTruthy();
 
 		emitter.emit('bar');
 
-		expect(onFoo.calledOnce).to.be.true;
-		expect(onFoo.firstCall.calledOn(emitter)).to.be.true;
-		expect(onBar.calledOnce).to.be.true;
-		expect(onBar.firstCall.calledOn(context)).to.be.true;
+		expect(onFoo.calledOnce).toBeTruthy();
+		expect(onFoo.firstCall.calledOn(emitter)).toBeTruthy();
+		expect(onBar.calledOnce).toBeTruthy();
+		expect(onBar.firstCall.calledOn(context)).toBeTruthy();
 	});
 
-	it('#on() (2)', () => {
+	test('#on() (2)', () => {
 		let EVENT_FOO = Symbol('foo');
 		let EVENT_BAR = Symbol('bar');
 		let emitter = new EventEmitter();
@@ -39,27 +34,22 @@ describe('EventEmitter', () => {
 		let context = {};
 
 		emitter.on(EVENT_FOO, onFoo);
-		emitter.on(
-			{
-				[EVENT_BAR]: onBar
-			},
-			context
-		);
+		emitter.on({ [EVENT_BAR]: onBar }, context);
 
 		emitter.emit(EVENT_FOO);
 
-		expect(onFoo.calledOnce).to.be.true;
-		expect(onBar.notCalled).to.be.true;
+		expect(onFoo.calledOnce).toBeTruthy();
+		expect(onBar.notCalled).toBeTruthy();
 
 		emitter.emit(EVENT_BAR);
 
-		expect(onFoo.calledOnce).to.be.true;
-		expect(onFoo.firstCall.calledOn(emitter)).to.be.true;
-		expect(onBar.calledOnce).to.be.true;
-		expect(onBar.firstCall.calledOn(context)).to.be.true;
+		expect(onFoo.calledOnce).toBeTruthy();
+		expect(onFoo.firstCall.calledOn(emitter)).toBeTruthy();
+		expect(onBar.calledOnce).toBeTruthy();
+		expect(onBar.firstCall.calledOn(context)).toBeTruthy();
 	});
 
-	it('#off()', () => {
+	test('#off()', () => {
 		let emitter = new EventEmitter();
 		let onFoo = sinon.spy();
 		let onBar = sinon.spy();
@@ -71,32 +61,25 @@ describe('EventEmitter', () => {
 
 		emitter.emit('foo');
 
-		expect(onFoo.notCalled).to.be.true;
+		expect(onFoo.notCalled).toBeTruthy();
 
 		emitter.on('bar', onBar);
 		emitter.on('bar', onBar);
 		emitter.on('baz', onBaz, context);
 
 		emitter.off('bar', onBar);
-		emitter.off({
-			bar: onBar
-		});
-		emitter.off(
-			{
-				baz: onBaz
-			},
-			context
-		);
+		emitter.off({ bar: onBar });
+		emitter.off({ baz: onBaz }, context);
 		emitter.off('qux', onFoo);
 
 		emitter.emit('bar');
 		emitter.emit('baz');
 
-		expect(onBar.notCalled).to.be.true;
-		expect(onBaz.notCalled).to.be.true;
+		expect(onBar.notCalled).toBeTruthy();
+		expect(onBaz.notCalled).toBeTruthy();
 	});
 
-	it('#off() (2)', () => {
+	test('#off() (2)', () => {
 		let EVENT_FOO = Symbol('foo');
 		let EVENT_BAR = Symbol('bar');
 		let EVENT_BAZ = Symbol('baz');
@@ -111,32 +94,25 @@ describe('EventEmitter', () => {
 
 		emitter.emit(EVENT_FOO);
 
-		expect(onFoo.notCalled).to.be.true;
+		expect(onFoo.notCalled).toBeTruthy();
 
 		emitter.on(EVENT_BAR, onBar);
 		emitter.on(EVENT_BAR, onBar);
 		emitter.on(EVENT_BAZ, onBaz, context);
 
 		emitter.off(EVENT_BAR, onBar);
-		emitter.off({
-			[EVENT_BAR]: onBar
-		});
-		emitter.off(
-			{
-				[EVENT_BAZ]: onBaz
-			},
-			context
-		);
+		emitter.off({ [EVENT_BAR]: onBar });
+		emitter.off({ [EVENT_BAZ]: onBaz }, context);
 		emitter.off('qux', onFoo);
 
 		emitter.emit(EVENT_BAR);
 		emitter.emit(EVENT_BAZ);
 
-		expect(onBar.notCalled).to.be.true;
-		expect(onBaz.notCalled).to.be.true;
+		expect(onBar.notCalled).toBeTruthy();
+		expect(onBaz.notCalled).toBeTruthy();
 	});
 
-	it('#once()', () => {
+	test('#once()', () => {
 		let emitter = new EventEmitter();
 		let onFoo = sinon.spy();
 
@@ -145,10 +121,10 @@ describe('EventEmitter', () => {
 		emitter.emit('foo');
 		emitter.emit('foo');
 
-		expect(onFoo.calledOnce).to.be.true;
+		expect(onFoo.calledOnce).toBeTruthy();
 	});
 
-	it('#emit()', () => {
+	test('#emit()', () => {
 		let emitter = new EventEmitter();
 		let onFoo = sinon.spy();
 
@@ -157,38 +133,38 @@ describe('EventEmitter', () => {
 
 		emitter.emit('foo');
 
-		expect(onFoo.calledTwice).to.be.true;
+		expect(onFoo.calledTwice).toBeTruthy();
 
 		emitter.off('foo', onFoo);
 
 		emitter.emit({ type: 'foo' });
 
-		expect(onFoo.calledThrice).to.be.true;
+		expect(onFoo.calledThrice).toBeTruthy();
 	});
 
-	it('#getEvents()', () => {
+	test('#get$Listeners()', () => {
 		let emitter = new EventEmitter();
 
-		expect(emitter.getEvents('foo').length).to.equal(0);
+		expect(emitter.get$Listeners('foo').length).toBe(0);
 
 		let onFoo = () => {};
 
 		emitter.on('foo', onFoo);
 
-		expect([...emitter.getEvents().keys()]).to.eql(['foo']);
-		expect(emitter.getEvents('foo').length).to.equal(1);
+		expect([...emitter.get$Listeners().keys()]).toEqual(['foo']);
+		expect(emitter.get$Listeners('foo').length).toBe(1);
 
 		emitter.on('foo', onFoo);
 
-		expect(emitter.getEvents('foo').length).to.equal(2);
+		expect(emitter.get$Listeners('foo').length).toBe(2);
 
 		emitter.on('foo', () => {});
 
-		expect([...emitter.getEvents().keys()]).to.eql(['foo']);
-		expect(emitter.getEvents('foo').length).to.equal(3);
+		expect([...emitter.get$Listeners().keys()]).toEqual(['foo']);
+		expect(emitter.get$Listeners('foo').length).toBe(3);
 	});
 
-	it('.transact()', () => {
+	test('.transact()', () => {
 		let emitter = new EventEmitter();
 		let onFoo = sinon.spy();
 
@@ -199,7 +175,7 @@ describe('EventEmitter', () => {
 			emitter.emit('foo');
 		});
 
-		expect(onFoo.calledOnce).to.be.true;
+		expect(onFoo.calledOnce).toBeTruthy();
 
 		EventEmitter.transact(() => {
 			emitter.emit('foo');
@@ -210,10 +186,10 @@ describe('EventEmitter', () => {
 			});
 		});
 
-		expect(onFoo.calledTwice).to.be.true;
+		expect(onFoo.calledTwice).toBeTruthy();
 	});
 
-	it('.silently()', () => {
+	test('.silently()', () => {
 		let emitter = new EventEmitter();
 		let onFoo = sinon.spy();
 
@@ -223,6 +199,6 @@ describe('EventEmitter', () => {
 			emitter.emit('foo');
 		});
 
-		expect(onFoo.notCalled).to.be.true;
+		expect(onFoo.notCalled).toBeTruthy();
 	});
 });

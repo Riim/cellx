@@ -17,20 +17,18 @@ let user = {
     firstName: cellx('Матроскин'),
     lastName: cellx('Кот'),
 
-    fullName: cellx(function() {
-        return (user.firstName() + ' ' + user.lastName()).trim();
-    })
+    fullName: cellx(() => (user.firstName.value + ' ' + user.lastName.value).trim())
 };
 
 user.fullName.subscribe(function() {
-    console.log('fullName: ' + user.fullName());
+    console.log('fullName: ' + user.fullName.value);
 });
 
-console.log(user.fullName());
+console.log(user.fullName.value);
 // => 'Матроскин Кот'
 
-user.firstName('Шарик');
-user.lastName('Пёс');
+user.firstName.value = 'Шарик';
+user.lastName.value = 'Пёс';
 // => 'fullName: Шарик Пёс'
 ```
 
@@ -70,39 +68,23 @@ user.lastName('Пёс');
 
 ```js
 let num = cellx(1);
-let plusOne = cellx(() => num() + 1);
+let plusOne = cellx(() => num.value + 1);
 
-console.log(plusOne());
+console.log(plusOne.value);
 // => 2
 ```
 
-в вызываемых свойствах:
+или в вызываемых свойствах:
 
 ```js
 function User(name) {
     this.name = cellx(name);
-    this.nameInitial = cellx(() => this.name().charAt(0).toUpperCase());
+    this.nameInitial = cellx(() => this.name.value.charAt(0).toUpperCase());
 }
 
 let user = new User('Матроскин');
 
-console.log(user.nameInitial());
-// => 'М'
-```
-
-или в обычных свойствах:
-
-```js
-function User(name) {
-    cellx.define(this, {
-        name: name,
-        nameInitial: function() { return this.name.charAt(0).toUpperCase(); }
-    });
-}
-
-let user = new User('Матроскин');
-
-console.log(user.nameInitial);
+console.log(user.nameInitial.value);
 // => 'М'
 ```
 
@@ -133,12 +115,12 @@ let arr = cellx([1, 2, 3], {
     get: arr => arr.slice()
 });
 
-console.log(arr()[0]);
+console.log(arr.value[0]);
 // => 1
 
-arr()[0] = 5;
+arr.value[0] = 5;
 
-console.log(arr()[0]);
+console.log(arr.value[0]);
 // => 1
 ```
 
@@ -152,13 +134,13 @@ function User() {
     this.lastName = cellx('');
 
     this.fullName = cellx(
-		() => (this.firstName() + ' ' + this.lastName()).trim(),
+		() => (this.firstName.value + ' ' + this.lastName.value).trim(),
 		{
-			put: name => {
+			put: (name) => {
 				name = name.split(' ');
 
-				this.firstName(name[0]);
-				this.lastName(name[1]);
+				this.firstName.value = name[0];
+				this.lastName.value = name[1];
 			}
 		}
 	);
@@ -166,11 +148,11 @@ function User() {
 
 let user = new User();
 
-user.fullName('Матроскин Кот');
+user.fullName.value = 'Матроскин Кот';
 
-console.log(user.firstName());
+console.log(user.firstName.value);
 // => 'Матроскин'
-console.log(user.lastName());
+console.log(user.lastName.value);
 // => 'Кот'
 ```
 
@@ -182,9 +164,9 @@ console.log(user.lastName());
 
 ```js
 let num = cellx(5, {
-    validate: value => {
+    validate: (value) => {
         if (typeof value != 'number') {
-            throw new TypeError('Oops!');
+            throw TypeError('Oops!');
         }
     }
 });
@@ -196,34 +178,34 @@ try {
     // => 'Oops!'
 }
 
-console.log(num());
+console.log(num.value);
 // => 5
 ```
 
 Валидация при вычислении ячейки:
 
 ```js
-let value = cellx(5);
+let someValue = cellx(5);
 
-let num = cellx(() => value(), {
-    validate: value => {
+let num = cellx(() => someValue.value, {
+    validate: (value) => {
         if (typeof value != 'number') {
-            throw new TypeError('Oops!');
+            throw TypeError('Oops!');
         }
     }
 });
 
-num.subscribe(err => {
+num.subscribe((err) => {
     console.log(err.message);
 });
 
-value('Йа строчка');
+someValue.value = 'Йа строчка';
 // => 'Oops!'
 
-console.log(value());
+console.log(someValue.value);
 // => 'Йа строчка'
 
-console.log(num());
+console.log(num.value);
 // => 5
 ```
 
@@ -236,11 +218,11 @@ console.log(num());
 ```js
 let num = cellx(5);
 
-num.onChange(evt => {
+num.onChange((evt) => {
     console.log(evt);
 });
 
-num(10);
+num.value = 10;
 // => { prevValue: 5, value: 10 }
 ```
 
@@ -253,12 +235,12 @@ num(10);
 Добавляет обработчик ошибки:
 
 ```js
-let value = cellx(1);
+let someValue = cellx(1);
 
-let num = cellx(() => value(), {
-    validate: v => {
+let num = cellx(() => someValue.value, {
+    validate: (v) => {
         if (v > 1) {
-            throw new RangeError('Oops!');
+            throw RangeError('Oops!');
         }
     }
 });
@@ -267,7 +249,7 @@ num.onError(evt => {
     console.log(evt.error.message);
 });
 
-value(2);
+someValue.value = 2;
 // => 'Oops!'
 ```
 
@@ -292,33 +274,6 @@ user.fullName.subscribe((err, evt) => {
 #### unsubscribe
 
 Отписывает от событий `change` и `error`.
-
-#### Подписка на свойства созданные с помощью `cellx.define`
-
-Подписаться на изменение свойства созданного с помощью `cellx.define` можно через `EventEmitter`:
-
-```js
-class User extends cellx.EventEmitter {
-    constructor(name) {
-        cellx.define(this, {
-            name,
-            nameInitial: function() { return this.name.charAt(0).toUpperCase(); }
-        });
-    }
-}
-
-let user = new User('Матроскин');
-
-user.on('change:nameInitial', evt => {
-    console.log('nameInitial: ' + evt.value);
-});
-
-console.log(user.nameInitial);
-// => 'М'
-
-user.name = 'Шарик';
-// => 'nameInitial: Ш'
-```
 
 #### dispose
 
@@ -349,9 +304,7 @@ let user = {
     firstName: cellx(''),
     lastName: cellx(''),
 
-    name: cellx(() => {
-        return this.firstName() || this.lastName();
-    })
+    name: cellx(() => this.firstName.value || this.lastName.value)
 };
 ```
 
@@ -367,18 +320,19 @@ let user = {
 
 ```js
 let foo = cellx(() => localStorage.foo || 'foo', {
-	put: function(cell, value) {
+	put: function({ push }, value) {
 		localStorage.foo = value;
-		cell.push(value);
+
+		push(value);
 	}
 });
 
-let foobar = cellx(() => foo() + 'bar');
+let foobar = cellx(() => foo.value + 'bar');
 
-console.log(foobar()); // => 'foobar'
+console.log(foobar.value); // => 'foobar'
 console.log(localStorage.foo); // => undefined
 foo('FOO');
-console.log(foobar()); // => 'FOObar'
+console.log(foobar.value); // => 'FOObar'
 console.log(localStorage.foo); // => 'FOO'
 ```
 
@@ -402,27 +356,25 @@ let request = (() => {
             setTimeout(() => {
                 value = params.value;
 
-                resolve({
-                    ok: true
-                });
+                resolve({ ok: true });
             }, 1000);
         })
 	};
 })();
 
-let foo = cellx(function(cell, next = 0) {
+let foo = cellx(({ push, fail }, next = 0) => {
 	request.get('http://...').then((res) => {
 		if (res.ok) {
-			cell.push(res.value);
+			push(res.value);
 		} else {
-			cell.fail(res.error);
+			fail(res.error);
 		}
 	});
 
 	return next;
 }, {
 	put: (value, cell, next) => {
-		request.put('http://...', { value: value }).then(res => {
+		request.put('http://...', { value: value }).then((res) => {
 			if (res.ok) {
 				cell.push(value);
 			} else {
@@ -433,23 +385,19 @@ let foo = cellx(function(cell, next = 0) {
 });
 
 foo.subscribe(() => {
-	console.log('New foo value: ' + foo());
-	foo(5);
+	console.log('New foo value: ' + foo.value);
+
+	foo.value = 5;
 });
 
-console.log(foo());
+console.log(foo.value);
 // => 0
 
-foo('then', () => {
-    console.log(foo());
-});
 // => 'New foo value: 1'
-// => 1
 // => 'New foo value: 5'
 ```
 
 ## Использованные материалы
 
-- [Пишем простое приложение на React с использованием библиотеки cellx](https://habrahabr.ru/post/313038/)
 - [Атом — минимальный кирпичик FRP приложения](http://habrahabr.ru/post/235121/)
-- [Knockout — Simplify dynamic JavaScript UIs with the Model-View-View Model (MVVM) pattern](http://knockoutjs.com/)
+- [Пишем простое приложение на React с использованием библиотеки cellx](https://habrahabr.ru/post/313038/)
