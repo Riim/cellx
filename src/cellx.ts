@@ -16,19 +16,19 @@ export { WaitError } from './WaitError';
 
 export const autorun = Cell.autorun;
 
-export function cellx<TInnerValue = any, TOuterValue = TInnerValue, TContext = any, TMeta = any>(
-	value: TCellPull<TInnerValue, TOuterValue, TContext, TMeta>,
-	options?: ICellOptions<TInnerValue, TOuterValue, TContext, TMeta>
-): Cell<TInnerValue, TOuterValue, TContext, TMeta>;
-export function cellx<TInnerValue = any, TOuterValue = TInnerValue, TContext = any, TMeta = any>(
-	value: TOuterValue,
-	options?: ICellOptions<TInnerValue, TOuterValue, TContext, TMeta>
-): Cell<TInnerValue, TOuterValue, TContext, TMeta>;
-export function cellx<TInnerValue = any, TOuterValue = TInnerValue, TContext = any, TMeta = any>(
-	value: TOuterValue | TCellPull<TInnerValue, TOuterValue, TContext, TMeta>,
-	options?: ICellOptions<TInnerValue, TOuterValue, TContext, TMeta>
+export function cellx<TValue = any, TContext = any, TMeta = any>(
+	value: TCellPull<TValue, TContext, TMeta>,
+	options?: ICellOptions<TValue, TContext, TMeta>
+): Cell<TValue, TContext, TMeta>;
+export function cellx<TValue = any, TContext = any, TMeta = any>(
+	value: TValue,
+	options?: ICellOptions<TValue, TContext, TMeta>
+): Cell<TValue, TContext, TMeta>;
+export function cellx<TValue = any, TContext = any, TMeta = any>(
+	value: TValue | TCellPull<TValue, TContext, TMeta>,
+	options?: ICellOptions<TValue, TContext, TMeta>
 ) {
-	return new Cell<TInnerValue, TOuterValue, TContext, TMeta>(value as any, options);
+	return new Cell<TValue, TContext, TMeta>(value as any, options);
 }
 
 export function defineObservableProperty<T extends object = object>(

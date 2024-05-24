@@ -4,36 +4,29 @@ import { fastIndexOf } from './utils/fastIndexOf';
 import { nextTick } from './utils/nextTick';
 import { WaitError } from './WaitError';
 
-export type TCellPull<TInnerValue = any, TOuterValue = TInnerValue, TContext = any, TMeta = any> = (
+export type TCellPull<TValue = any, TContext = any, TMeta = any> = (
 	this: TContext,
-	cell: Cell<TInnerValue, TOuterValue, TContext, TMeta>,
-	value: TInnerValue | undefined
-) => TInnerValue;
+	cell: Cell<TValue, TContext, TMeta>,
+	value: TValue | undefined
+) => TValue;
 
-export type TCellPut<TInnerValue = any, TOuterValue = TInnerValue, TContext = any, TMeta = any> = (
+export type TCellPut<TValue = any, TContext = any, TMeta = any> = (
 	this: TContext,
-	cell: Cell<TInnerValue, TOuterValue, TContext, TMeta>,
-	next: TOuterValue,
-	value: TInnerValue | undefined
+	cell: Cell<TValue, TContext, TMeta>,
+	next: TValue,
+	value: TValue | undefined
 ) => void;
 
-export interface ICellOptions<
-	TInnerValue = any,
-	TOuterValue = TInnerValue,
-	TContext = any,
-	TMeta = any
-> {
+export interface ICellOptions<TValue = any, TContext = any, TMeta = any> {
 	debugKey?: string;
 	context?: TContext;
-	pull?: TCellPull<TInnerValue, TOuterValue, TContext, TMeta>;
-	get?: (value: TInnerValue) => TOuterValue;
-	validate?: (next: TOuterValue, value: TInnerValue | undefined) => void;
-	merge?: (next: TOuterValue, value: TInnerValue | undefined) => TInnerValue;
-	put?: TCellPut<TInnerValue, TOuterValue, TContext, TMeta>;
-	compareValues?: (next: TInnerValue, value: TInnerValue | undefined) => boolean;
+	pull?: TCellPull<TValue, TContext, TMeta>;
+	validate?: (next: TValue, value: TValue | undefined) => void;
+	put?: TCellPut<TValue, TContext, TMeta>;
+	compareValues?: (next: TValue, value: TValue | undefined) => boolean;
 	reap?: (this: TContext) => void;
 	meta?: TMeta;
-	value?: TOuterValue;
+	value?: TValue;
 	onChange?: TListener;
 	onError?: TListener;
 }
@@ -102,12 +95,7 @@ function release() {
 	}
 }
 
-export class Cell<
-	TInnerValue = any,
-	TOuterValue = TInnerValue,
-	TContext = any,
-	TMeta = any
-> extends EventEmitter {
+export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitter {
 	static EVENT_CHANGE = 'change';
 	static EVENT_ERROR = 'error';
 
@@ -115,9 +103,9 @@ export class Cell<
 		return currentCell != null;
 	}
 
-	static autorun<TInnerValue = any, TOuterValue = TInnerValue, TContext = any, TMeta = any>(
-		cb: (value: TInnerValue | undefined, disposer: () => void) => TInnerValue,
-		cellOptions?: ICellOptions<TInnerValue, TOuterValue, TContext, TMeta>
+	static autorun<TValue = any, TContext = any, TMeta = any>(
+		cb: (value: TValue | undefined, disposer: () => void) => TValue,
+		cellOptions?: ICellOptions<TValue, TContext, TMeta>
 	) {
 		let disposer: (() => void) | undefined;
 
@@ -193,13 +181,11 @@ export class Cell<
 
 	context: TContext;
 
-	_pull: TCellPull<TInnerValue, TOuterValue, TContext, TMeta> | null;
-	_get: ((value: TInnerValue) => TOuterValue) | null;
+	_pull: TCellPull<TValue, TContext, TMeta> | null;
 
-	_validate: ((next: TOuterValue, value: TInnerValue | undefined) => void) | null;
-	_merge: ((next: TOuterValue, value: TInnerValue | undefined) => TInnerValue) | null;
-	_put: TCellPut<TInnerValue, TOuterValue, TContext, TMeta> | null;
-	_compareValues: (next: TInnerValue, value: TInnerValue | undefined) => boolean;
+	_validate: ((next: TValue, value: TValue | undefined) => void) | null;
+	_put: TCellPut<TValue, TContext, TMeta> | null;
+	_compareValues: (next: TValue, value: TValue | undefined) => boolean;
 
 	_reap: (() => void) | null;
 
@@ -208,7 +194,7 @@ export class Cell<
 	_dependencies: Array<Cell> | null | undefined;
 	_reactions: Array<Cell> = [];
 
-	_value: TInnerValue | undefined;
+	_value: TValue | undefined;
 	_errorCell: Cell<Error | null> | null = null;
 	_error: Error | null = null;
 	_lastErrorEvent: IEvent<this> | null = null;
@@ -226,9 +212,7 @@ export class Cell<
 	}
 
 	_inited: boolean;
-	// hasSubscribers = reactions || listeners
-	// _hasSubscribers = false;
-	// active = deps && hasSubscribers
+	// active = deps && (reactions || listeners)
 	_active = false;
 	_currentlyPulling = false;
 	_updationId = -1;
@@ -236,16 +220,13 @@ export class Cell<
 	_bound = false;
 
 	constructor(
-		value: TCellPull<TInnerValue, TOuterValue, TContext, TMeta>,
-		options?: ICellOptions<TInnerValue, TOuterValue, TContext, TMeta>
+		value: TCellPull<TValue, TContext, TMeta>,
+		options?: ICellOptions<TValue, TContext, TMeta>
 	);
+	constructor(value: TValue, options?: ICellOptions<TValue, TContext, TMeta>);
 	constructor(
-		value: TOuterValue,
-		options?: ICellOptions<TInnerValue, TOuterValue, TContext, TMeta>
-	);
-	constructor(
-		value: TOuterValue | TCellPull<TInnerValue, TOuterValue, TContext, TMeta>,
-		options?: ICellOptions<TInnerValue, TOuterValue, TContext, TMeta>
+		value: TValue | TCellPull<TValue, TContext, TMeta>,
+		options?: ICellOptions<TValue, TContext, TMeta>
 	) {
 		super();
 
@@ -255,10 +236,8 @@ export class Cell<
 			this.context = (options.context ?? null) as TContext;
 
 			this._pull = options.pull ?? (typeof value == 'function' ? (value as any) : null);
-			this._get = options.get ?? null;
 
 			this._validate = options.validate ?? null;
-			this._merge = options.merge ?? null;
 			this._put = options.put ?? null;
 			this._compareValues = options.compareValues ?? config.compareValues;
 
@@ -271,10 +250,8 @@ export class Cell<
 			this.context = null as TContext;
 
 			this._pull = typeof value == 'function' ? (value as any) : null;
-			this._get = null;
 
 			this._validate = null;
-			this._merge = null;
 			this._put = null;
 			this._compareValues = config.compareValues;
 
@@ -295,13 +272,9 @@ export class Cell<
 				value = options.value;
 			}
 
-			this._validate?.(value as TOuterValue, undefined);
+			this._validate?.(value as TValue, undefined);
 
-			if (this._merge) {
-				value = this._merge(value as TOuterValue, undefined) as any;
-			}
-
-			this._value = value as TInnerValue;
+			this._value = value as TValue;
 
 			this._state = CellState.ACTUAL;
 			this._inited = true;
@@ -341,10 +314,6 @@ export class Cell<
 			super.on(type, listener, context !== undefined ? context : this.context);
 		}
 
-		// if (this._$listeners.has(Cell.EVENT_CHANGE) || this._$listeners.has(Cell.EVENT_ERROR)) {
-		// 	this._hasSubscribers = true;
-		// }
-
 		this._activate();
 
 		return this;
@@ -378,15 +347,12 @@ export class Cell<
 		}
 
 		if (
-			// this._hasSubscribers &&
 			hasListeners &&
 			this._reactions.length == 0 &&
 			(this._$listeners.size == 0 ||
 				(!this._$listeners.has(Cell.EVENT_CHANGE) &&
 					!this._$listeners.has(Cell.EVENT_ERROR)))
 		) {
-			// this._hasSubscribers = false;
-
 			this._deactivate();
 
 			this._reap?.call(this.context);
@@ -459,8 +425,6 @@ export class Cell<
 	_addReaction(reaction: Cell) {
 		this._reactions.push(reaction);
 
-		// this._hasSubscribers = true;
-
 		this._activate();
 	}
 
@@ -468,15 +432,11 @@ export class Cell<
 		this._reactions.splice(fastIndexOf(this._reactions, reaction), 1);
 
 		if (
-			// Всегда запускается с минимум одной реакцией, а значит hasSubscribers всегда true.
-			// this._hasSubscribers &&
 			this._reactions.length == 0 &&
 			(this._$listeners.size == 0 ||
 				(!this._$listeners.has(Cell.EVENT_CHANGE) &&
 					!this._$listeners.has(Cell.EVENT_ERROR)))
 		) {
-			// this._hasSubscribers = false;
-
 			this._deactivate();
 
 			this._reap?.call(this.context);
@@ -484,8 +444,7 @@ export class Cell<
 	}
 
 	_activate() {
-		// Проверка pull не имеет сиысла, тк. ниже есть проверка deps.
-		if (this._active /* || !this._pull*/) {
+		if (this._active) {
 			return;
 		}
 
@@ -508,7 +467,7 @@ export class Cell<
 
 	_deactivate() {
 		// Всегда запускается при удалении последнего подписчика, то есть проверка deps ниже будет
-		// аналогична проверке active, тк. active = deps && hasSubscribers (только что стал false).
+		// аналогична проверке active, тк. active = deps && subscribers (только что стал false).
 		// if (!this._active) {
 		// 	return;
 		// }
@@ -596,11 +555,11 @@ export class Cell<
 	get value() {
 		return this.get();
 	}
-	set value(value: TOuterValue) {
+	set value(value: TValue) {
 		this.set(value);
 	}
 
-	get(): TOuterValue {
+	get(): TValue {
 		if (this._state != CellState.ACTUAL && this._updationId != lastUpdationId) {
 			this.actualize();
 		}
@@ -619,7 +578,7 @@ export class Cell<
 			throw this._error;
 		}
 
-		return this._get ? this._get(this._value as TInnerValue) : (this._value as TOuterValue);
+		return this._value as TValue;
 	}
 
 	pull() {
@@ -673,7 +632,6 @@ export class Cell<
 
 		this._currentlyPulling = false;
 
-		// if (this._hasSubscribers) {
 		if (
 			this._reactions.length != 0 ||
 			this._$listeners.has(Cell.EVENT_CHANGE) ||
@@ -724,7 +682,7 @@ export class Cell<
 		return value === $error ? this.fail($error.error) : this.push(value);
 	}
 
-	set(value: TOuterValue) {
+	set(value: TValue) {
 		if (!this._inited) {
 			// Не инициализированная ячейка не может иметь State.CHECK, поэтому сразу pull вместо
 			// actualize.
@@ -732,10 +690,6 @@ export class Cell<
 		}
 
 		this._validate?.(value, this._value);
-
-		if (this._merge) {
-			value = this._merge(value, this._value) as any;
-		}
 
 		if (this._put) {
 			if (!this._bound) {
@@ -757,7 +711,7 @@ export class Cell<
 		return this;
 	}
 
-	push(value: TInnerValue) {
+	push(value: TValue) {
 		this._inited = true;
 
 		let err = this._error;
