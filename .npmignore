@@ -2,19 +2,17 @@
 .vscode
 node_modules
 /coverage
-/.nyc_output
 
-/src
-/tests
+/benchmarks
 /docs
 /perf
+/src
+/tests
 /.editorconfig
-/.eslintrc.cjs
 /.gitignore
 /.npmrc
-/.nycrc.json
 /.prettierrc
 /.travis.yml
+/jest.config.js
 /rollup.config.js
 /tsconfig.json
-/tsconfig.tests.json
