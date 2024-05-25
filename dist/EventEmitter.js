@@ -3,7 +3,7 @@ import { KEY_VALUE_CELLS } from './keys';
 let currentlySubscribing = false;
 let transactionLevel = 0;
 let transactionEvents = [];
-let silently = 0;
+let silently = false;
 export class EventEmitter {
     constructor() {
         this._$listeners = new Map();
@@ -27,12 +27,16 @@ export class EventEmitter {
         }
     }
     static silently(cb) {
-        silently++;
+        if (silently) {
+            cb();
+            return;
+        }
+        silently = true;
         try {
             cb();
         }
         finally {
-            silently--;
+            silently = false;
         }
     }
     get$Listeners(type) {
@@ -160,7 +164,7 @@ export class EventEmitter {
         if (data) {
             evt.data = data;
         }
-        if (silently == 0) {
+        if (!silently) {
             if (transactionLevel != 0) {
                 for (let i = transactionEvents.length;;) {
                     if (i == 0) {

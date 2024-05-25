@@ -1,18 +1,18 @@
 import { EventEmitter, IEvent, TListener } from './EventEmitter';
-export type TCellPull<TInnerValue = any, TOuterValue = TInnerValue, TContext = any, TMeta = any> = (this: TContext, cell: Cell<TInnerValue, TOuterValue, TContext, TMeta>, value: TInnerValue | undefined) => TInnerValue;
-export type TCellPut<TInnerValue = any, TOuterValue = TInnerValue, TContext = any, TMeta = any> = (this: TContext, cell: Cell<TInnerValue, TOuterValue, TContext, TMeta>, next: TOuterValue, value: TInnerValue | undefined) => void;
-export interface ICellOptions<TInnerValue = any, TOuterValue = TInnerValue, TContext = any, TMeta = any> {
+export type TCellPull<TValue = any, TContext = any, TMeta = any> = (this: TContext, cell: Cell<TValue, TContext, TMeta>, value: TValue | undefined) => TValue;
+export type TCellPut<TValue = any, TContext = any, TMeta = any> = (this: TContext, cell: Cell<TValue, TContext, TMeta>, next: TValue, value: TValue | undefined) => void;
+export interface ICellOptions<TValue = any, TContext = any, TMeta = any> {
     debugKey?: string;
     context?: TContext;
-    pull?: TCellPull<TInnerValue, TOuterValue, TContext, TMeta>;
-    get?: (value: TInnerValue) => TOuterValue;
-    validate?: (next: TOuterValue, value: TInnerValue | undefined) => void;
-    merge?: (next: TOuterValue, value: TInnerValue | undefined) => TInnerValue;
-    put?: TCellPut<TInnerValue, TOuterValue, TContext, TMeta>;
-    compareValues?: (next: TInnerValue, value: TInnerValue | undefined) => boolean;
-    reap?: (this: TContext) => void;
     meta?: TMeta;
-    value?: TOuterValue;
+    slippery?: boolean;
+    sticky?: boolean;
+    pull?: TCellPull<TValue, TContext, TMeta>;
+    validate?: (next: TValue, value: TValue | undefined) => void;
+    put?: TCellPut<TValue, TContext, TMeta>;
+    compareValues?: (next: TValue, value: TValue | undefined) => boolean;
+    reap?: (this: TContext) => void;
+    value?: TValue;
     onChange?: TListener;
     onError?: TListener;
 }
@@ -35,27 +35,27 @@ export interface ICellErrorEvent<T extends EventEmitter = EventEmitter> extends 
     };
 }
 export type TCellEvent<T extends EventEmitter = EventEmitter> = ICellChangeEvent<T> | ICellErrorEvent<T>;
-export declare class Cell<TInnerValue = any, TOuterValue = TInnerValue, TContext = any, TMeta = any> extends EventEmitter {
+export declare class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitter {
     static EVENT_CHANGE: string;
     static EVENT_ERROR: string;
     static get currentlyPulling(): boolean;
-    static autorun<TInnerValue = any, TOuterValue = TInnerValue, TContext = any, TMeta = any>(cb: (value: TInnerValue | undefined, disposer: () => void) => TInnerValue, cellOptions?: ICellOptions<TInnerValue, TOuterValue, TContext, TMeta>): () => void;
+    static autorun<TValue = any, TContext = any, TMeta = any>(cb: (value: TValue | undefined, disposer: () => void) => TValue, cellOptions?: ICellOptions<TValue, TContext, TMeta>): () => void;
     static release(): void;
     static afterRelease(cb: Function): void;
     static transact(cb: Function): void;
     debugKey: string | undefined;
     context: TContext;
-    _pull: TCellPull<TInnerValue, TOuterValue, TContext, TMeta> | null;
-    _get: ((value: TInnerValue) => TOuterValue) | null;
-    _validate: ((next: TOuterValue, value: TInnerValue | undefined) => void) | null;
-    _merge: ((next: TOuterValue, value: TInnerValue | undefined) => TInnerValue) | null;
-    _put: TCellPut<TInnerValue, TOuterValue, TContext, TMeta> | null;
-    _compareValues: (next: TInnerValue, value: TInnerValue | undefined) => boolean;
-    _reap: (() => void) | null;
     meta: TMeta | null;
+    _slippery: boolean;
+    _sticky: boolean;
+    _pull: TCellPull<TValue, TContext, TMeta> | null;
+    _validate: ((next: TValue, value: TValue | undefined) => void) | null;
+    _put: TCellPut<TValue, TContext, TMeta> | null;
+    _compareValues: (next: TValue, value: TValue | undefined) => boolean;
+    _reap: (() => void) | null;
     _dependencies: Array<Cell> | null | undefined;
     _reactions: Array<Cell>;
-    _value: TInnerValue | undefined;
+    _value: TValue | undefined;
     _errorCell: Cell<Error | null> | null;
     _error: Error | null;
     _lastErrorEvent: IEvent<this> | null;
@@ -67,8 +67,8 @@ export declare class Cell<TInnerValue = any, TOuterValue = TInnerValue, TContext
     _currentlyPulling: boolean;
     _updationId: number;
     _bound: boolean;
-    constructor(value: TCellPull<TInnerValue, TOuterValue, TContext, TMeta>, options?: ICellOptions<TInnerValue, TOuterValue, TContext, TMeta>);
-    constructor(value: TOuterValue, options?: ICellOptions<TInnerValue, TOuterValue, TContext, TMeta>);
+    constructor(value: TCellPull<TValue, TContext, TMeta>, options?: ICellOptions<TValue, TContext, TMeta>);
+    constructor(value: TValue, options?: ICellOptions<TValue, TContext, TMeta>);
     on(type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, listener: TListener, context?: any): this;
     on(listeners: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>, context?: any): this;
     off(type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, listener: TListener, context?: any): this;
@@ -86,12 +86,12 @@ export declare class Cell<TInnerValue = any, TOuterValue = TInnerValue, TContext
     _onValueChange(evt: IEvent): void;
     _addToRelease(dirty: boolean): void;
     actualize(): void;
-    get value(): TOuterValue;
-    set value(value: TOuterValue);
-    get(): TOuterValue;
+    get value(): TValue;
+    set value(value: TValue);
+    get(sticky?: boolean): TValue;
     pull(): boolean;
-    set(value: TOuterValue): this;
-    push(value: TInnerValue): boolean;
+    set(value: TValue): this;
+    push(value: TValue): boolean;
     fail(err: any): boolean;
     _setError(errorEvent: IEvent<this, {
         error: Error;

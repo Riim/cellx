@@ -5,6 +5,5 @@ export const config = {
     compareValues: Object.is
 };
 export function configure(options) {
-    Object.assign(config, options);
-    return config;
+    return Object.assign(config, options);
 }

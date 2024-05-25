@@ -62,11 +62,12 @@ export class Cell extends EventEmitter {
         (afterRelease ?? (afterRelease = [])).push(cb);
     }
     static transact(cb) {
+        if (transaction) {
+            cb();
+            return;
+        }
         if (pendingCells.length != 0) {
             release();
-        }
-        if (transaction) {
-            throw TypeError('Nested transaction');
         }
         transaction = {
             primaryCells: new Map(),
@@ -106,37 +107,21 @@ export class Cell extends EventEmitter {
         this._errorCell = null;
         this._error = null;
         this._lastErrorEvent = null;
-        // hasSubscribers = reactions || listeners
-        // _hasSubscribers = false;
-        // active = deps && hasSubscribers
+        // active = deps && (reactions || listeners)
         this._active = false;
         this._currentlyPulling = false;
         this._updationId = -1;
         this._bound = false;
-        if (options) {
-            this.debugKey = options.debugKey;
-            this.context = (options.context ?? null);
-            this._pull = options.pull ?? (typeof value == 'function' ? value : null);
-            this._get = options.get ?? null;
-            this._validate = options.validate ?? null;
-            this._merge = options.merge ?? null;
-            this._put = options.put ?? null;
-            this._compareValues = options.compareValues ?? config.compareValues;
-            this._reap = options.reap ?? null;
-            this.meta = options.meta ?? null;
-        }
-        else {
-            this.debugKey = undefined;
-            this.context = null;
-            this._pull = typeof value == 'function' ? value : null;
-            this._get = null;
-            this._validate = null;
-            this._merge = null;
-            this._put = null;
-            this._compareValues = config.compareValues;
-            this._reap = null;
-            this.meta = null;
-        }
+        this.debugKey = options?.debugKey;
+        this.context = (options?.context ?? null);
+        this.meta = options?.meta ?? null;
+        this._slippery = options?.slippery ?? false;
+        this._sticky = options?.sticky ?? false;
+        this._pull = options?.pull ?? (typeof value == 'function' ? value : null);
+        this._validate = options?.validate ?? null;
+        this._put = options?.put ?? null;
+        this._compareValues = options?.compareValues ?? config.compareValues;
+        this._reap = options?.reap ?? null;
         if (this._pull) {
             this._dependencies = undefined;
             this._value = undefined;
@@ -149,9 +134,6 @@ export class Cell extends EventEmitter {
                 value = options.value;
             }
             this._validate?.(value, undefined);
-            if (this._merge) {
-                value = this._merge(value, undefined);
-            }
             this._value = value;
             this._state = CellState.ACTUAL;
             this._inited = true;
@@ -178,9 +160,6 @@ export class Cell extends EventEmitter {
         else {
             super.on(type, listener, context !== undefined ? context : this.context);
         }
-        // if (this._$listeners.has(Cell.EVENT_CHANGE) || this._$listeners.has(Cell.EVENT_ERROR)) {
-        // 	this._hasSubscribers = true;
-        // }
         this._activate();
         return this;
     }
@@ -200,14 +179,11 @@ export class Cell extends EventEmitter {
         else {
             super.off();
         }
-        if (
-        // this._hasSubscribers &&
-        hasListeners &&
+        if (hasListeners &&
             this._reactions.length == 0 &&
             (this._$listeners.size == 0 ||
                 (!this._$listeners.has(Cell.EVENT_CHANGE) &&
                     !this._$listeners.has(Cell.EVENT_ERROR)))) {
-            // this._hasSubscribers = false;
             this._deactivate();
             this._reap?.call(this.context);
         }
@@ -253,26 +229,20 @@ export class Cell extends EventEmitter {
     }
     _addReaction(reaction) {
         this._reactions.push(reaction);
-        // this._hasSubscribers = true;
         this._activate();
     }
     _deleteReaction(reaction) {
         this._reactions.splice(fastIndexOf(this._reactions, reaction), 1);
-        if (
-        // Всегда запускается с минимум одной реакцией, а значит hasSubscribers всегда true.
-        // this._hasSubscribers &&
-        this._reactions.length == 0 &&
+        if (this._reactions.length == 0 &&
             (this._$listeners.size == 0 ||
                 (!this._$listeners.has(Cell.EVENT_CHANGE) &&
                     !this._$listeners.has(Cell.EVENT_ERROR)))) {
-            // this._hasSubscribers = false;
             this._deactivate();
             this._reap?.call(this.context);
         }
     }
     _activate() {
-        // Проверка pull не имеет сиысла, тк. ниже есть проверка deps.
-        if (this._active /* || !this._pull*/) {
+        if (this._active) {
             return;
         }
         let deps = this._dependencies;
@@ -288,11 +258,6 @@ export class Cell extends EventEmitter {
         }
     }
     _deactivate() {
-        // Всегда запускается при удалении последнего подписчика, то есть проверка deps ниже будет
-        // аналогична проверке active, тк. active = deps && hasSubscribers (только что стал false).
-        // if (!this._active) {
-        // 	return;
-        // }
         let deps = this._dependencies;
         if (deps) {
             for (let i = 0;; i++) {
@@ -361,11 +326,12 @@ export class Cell extends EventEmitter {
     set value(value) {
         this.set(value);
     }
-    get() {
+    get(sticky) {
         if (this._state != CellState.ACTUAL && this._updationId != lastUpdationId) {
             this.actualize();
         }
-        if (currentCell) {
+        if (currentCell &&
+            (!currentCell._slippery || sticky || (this._sticky && sticky !== false))) {
             if (currentCell._dependencies) {
                 if (fastIndexOf(currentCell._dependencies, this) == -1) {
                     currentCell._dependencies.push(this);
@@ -378,7 +344,7 @@ export class Cell extends EventEmitter {
         if (this._error && (currentCell || !(this._error instanceof WaitError))) {
             throw this._error;
         }
-        return this._get ? this._get(this._value) : this._value;
+        return this._value;
     }
     pull() {
         if (!this._pull) {
@@ -417,7 +383,6 @@ export class Cell extends EventEmitter {
         }
         currentCell = prevCell;
         this._currentlyPulling = false;
-        // if (this._hasSubscribers) {
         if (this._reactions.length != 0 ||
             this._$listeners.has(Cell.EVENT_CHANGE) ||
             this._$listeners.has(Cell.EVENT_ERROR)) {
@@ -467,9 +432,6 @@ export class Cell extends EventEmitter {
             this.pull();
         }
         this._validate?.(value, this._value);
-        if (this._merge) {
-            value = this._merge(value, this._value);
-        }
         if (this._put) {
             if (!this._bound) {
                 this.push = this.push.bind(this);

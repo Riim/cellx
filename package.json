@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "1.10.30",
+  "version": "2.0.0",
   "description": "",
   "type": "commonjs",
   "main": "dist/cellx.umd.js",
