@@ -12,44 +12,45 @@ Ultra-fast implementation of reactivity for javascript/typescript.
 
 The following command installs cellx as a npm package:
 ```
-npm install cellx --save
+npm i -S cellx
 ```
 
-## Example
+## Usage example
 
 ```js
-let user = {
-    firstName: cellx('Матроскин'),
-    lastName: cellx('Кот'),
+let firstName = cellx('Матроскин');
+let lastName = cellx('Кот');
 
-    fullName: cellx(() => (user.firstName.value + ' ' + user.lastName.value).trim())
-};
+let fullName = cellx(() => firstName.value + ' ' + lastName.value)
 
-user.fullName.subscribe(() => {
-    console.log('fullName: ' + user.fullName.value);
+fullName.subscribe(() => {
+    console.log('fullName:', fullName.value);
 });
 
-console.log(user.fullName.value);
+console.log(fullName.value);
 // => 'Матроскин Кот'
 
-user.firstName.value = 'Шарик';
-user.lastName.value = 'Пёс';
+firstName.value = 'Шарик';
+lastName.value = 'Пёс';
 // => 'fullName: Шарик Пёс'
 ```
 
-Despite the fact that the two dependencies of the cell `fullName` has been changed, event handler worked only once.
-Important feature of cellx is that it tries to get rid of unnecessary calls
-of the event handlers as well as of unnecessary calls of the dependent cells calculation formulas.
-In combination with some special optimizations, this leads to an ideal speed of calculation of
-the complex dependencies networks.
+Despite the fact that the two dependencies of the cell `fullName` has been changed, change handler worked only once.
+Important feature of cellx is that it tries to get rid of unnecessary calls of the event handlers as well as of
+unnecessary calculations of the dependent cells.
+In combination with some special optimizations, this leads to an ideal speed of calculation of the complex dependencies
+networks.
+You can find out more about this in the article [Big State Managers Benchmark](https://habr.com/ru/articles/707600/).
+You may also be interested in the article
+[Разбираемся в сортах реактивности](https://habr.com/ru/companies/timeweb/articles/586450/).
 
 ## Benchmark
 
-One test, which is used for measuring the performance, generates grid with multiply "layers"
-each of which is composed of 4 cells. Cells are calculated from the previous layer of cells (except the first one,
-which contains initial values) by the formula A2=B1, B2=A1-C1, C2=B1+D1, D2=C1. After that start time is stored,
-values of all first layer cells are changed and time needed to update all last layer cells is measured.
-Test results (in milliseconds) for different number of layers (for Google Chrome 53.0.2785.116 (64-bit)):
+One test, which is used for measuring the performance, generates grid with multiple "layers" each of which is composed
+of 4 cells. Cells of each next layer are calculated from the previous layer cells (except the first layer, which
+contains initial values) by the formula A2=B1, B2=A1-C1, C2=B1+D1, D2=C1. After that start time is stored, values of all
+first layer cells are changed and time needed to update all last layer cells is measured.
+Test results (in milliseconds) for different number of layers:
 
 | Library ↓ \ Number of computed layers →                 | 10      | 20                                | 30                                  | 50      | 100     | 1000    | 5000                                         |
 |---------------------------------------------------------|---------|-----------------------------------|-------------------------------------|---------|---------|---------|----------------------------------------------|
@@ -58,20 +59,17 @@ Test results (in milliseconds) for different number of layers (for Google Chrome
 | [Knockout](http://knockoutjs.com/)                      |      10 | 750, increases in subsequent runs | 67250, increases in subsequent runs | >300000 | >300000 | >300000 |                                      >300000 |
 | [$jin.atom](https://github.com/nin-jin/pms-jin/)        |       2 |                                 3 |                                   3 |       4 |       6 |      40 |                                          230 |
 | [$mol_atom](https://github.com/nin-jin/mol)             |     <~1 |                               <~1 |                                 <~1 |       1 |       2 |      20 | RangeError: Maximum call stack size exceeded |
-| [Reactor.js](https://github.com/fynyky/reactor.js)      |     <~1 |                               <~1 |                                   2 |       3 |       5 |      50 |                                          230 |
-| [Reactive.js](https://github.com/mattbaker/Reactive.js) |     <~1 |                               <~1 |                                   2 |       3 |       5 |     140 | RangeError: Maximum call stack size exceeded |
 | [Kefir.js](https://rpominov.github.io/kefir/)           |      25 |                              2500 |                             >300000 | >300000 | >300000 | >300000 |                                      >300000 |
 | [MobX](https://mobxjs.github.io/mobx/)                  |     <~1 |                               <~1 |                                 <~1 |       2 |       3 |      40 | RangeError: Maximum call stack size exceeded |
 
 Test sources can be found in the folder [perf](https://github.com/Riim/cellx/tree/master/perf).
-Density of connections in real appliКотions is usually lower than in the present test, that is,
-if a certain delay in the test is visible in 100 calculated cells (25 layers), in a real appliКотion,
-this delay will either be visible in the greater number of cells, or cells formulas will include
-some complex calculations (e.g., computation of one array from other).
+Density of connections in real applications is usually lower than in the present test, that is, if a certain delay in
+the test is visible in 100 calculated cells (25 layers), in a real application, this delay will either be visible in the greater number of cells, or cells formulas will include some complex calculations (e.g., computation of one array from
+other).
 
 ## Usage
 
-Cells can be stored in the variables:
+Functional style:
 
 ```js
 let num = cellx(1);
@@ -81,59 +79,57 @@ console.log(plusOne.value);
 // => 2
 ```
 
-or in the callable properties:
+OOP style:
 
 ```js
-function User(name) {
-    this.name = cellx(name);
-    this.nameInitial = cellx(() => this.name.value.charAt(0).toUpperCase());
+import { cellx, define } from 'cellx';
+
+class User {
+	name: string;
+	nameInitial: string;
+
+	constructor(name: string) {
+		define(this, {
+			name,
+			nameInitial: cellx(() => this.name.charAt(0).toUpperCase())
+		});
+	}
 }
 
 let user = new User('Матроскин');
 
-console.log(user.nameInitial.value);
+console.log(user.nameInitial);
 // => 'M'
 ```
 
-### Usage with ES.Next
+OOP style with decorators:
 
-Use npm module [cellx-decorators](https://www.npmjs.com/package/cellx-decorators).
+```js
+import { Computed, Observable } from 'cellx-decorators';
 
-### Usage with React
+class User {
+	@Observable name: string;
 
-Use npm module [cellx-react](https://www.npmjs.com/package/cellx-react).
+	@Computed get nameInitial() {
+		return this.name.charAt(0).toUpperCase();
+	}
 
-### More modules for cellx
+	constructor(name: string) {
+		this.name = name;
+	}
+}
 
-* [cellx-indexed-collections](https://www.npmjs.com/package/cellx-indexed-collections)
-* [Rionite](https://www.npmjs.com/package/rionite)
+let user = new User('Матроскин');
+
+console.log(user.nameInitial);
+// => 'M'
+```
 
 ### Options
 
-When you create a cell, you can pass some options:
-
-#### get
-
-Additional processing of value during reading:
-
-```js
-// array that you can't mess up accidentally, the messed up thing will be a copy
-let arr = cellx([1, 2, 3], {
-    get: (arr) => arr.slice()
-});
-
-console.log(arr.value[0]);
-// => 1
-
-arr.value[0] = 5;
-
-console.log(arr.value[0]);
-// => 1
-```
-
 #### put
 
-Used to create recordable calculated cells:
+It can be used for value processing on write and write redirection:
 
 ```js
 function User() {
@@ -211,9 +207,6 @@ someValue.value = 'I am string';
 
 console.log(value.value);
 // => 'I am string'
-
-console.log(num.value);
-// => 5
 ```
 
 ### Methods
@@ -269,11 +262,11 @@ Removes previously added error listener.
 Subscribes to the events `change` and `error`. First argument comes into handler is an error object, second — an event.
 
 ```js
-user.fullName.subscribe((err, evt) => {
+fullName.subscribe((err, evt) => {
     if (err) {
-        //
+        // error handling
     } else {
-        //
+        // other
     }
 });
 ```
@@ -281,26 +274,6 @@ user.fullName.subscribe((err, evt) => {
 #### unsubscribe
 
 Unsubscribes from events `change` and `error`.
-
-#### dispose
-
-In many reactivity engines calculated cell (atom, observable-property) should be seen
-as a normal event handler for other cells, that is, for "killing" the cell it is not enough to simply remove
-all handlers from it and lose the link to it, it is also necessary to decouple it from its dependencies.
-Calculated cells in cellx constantly monitor the presence of handlers for themselves and all their descendants,
-and in cases of their (handlers) absence went to the passive updates mode, i.e. unsubscribe themselves from their
-dependencies and are evaluated immediately upon reading. Thus, to "kill" of the cell you just calculated
-remove from it all handlers added before and forget the link to it; you do not need to think about the other cells,
-from which it is calculated or which are calculated from it. After this, garbage collector will clean everything.
-
-You can call the `dispose`, just in case:
-
-```js
-user.name.dispose();
-```
-
-This will remove all the handlers, not only from the cell itself, but also from all cells calculated from it,
-and in the absence of links all branch of dependencies will "die".
 
 ## Dynamic actualisation of dependencies
 
@@ -311,13 +284,13 @@ let user = {
     firstName: cellx(''),
     lastName: cellx(''),
 
-    name: cellx(() => this.firstName.value || this.lastName.value)
+    name: cellx(() => user.firstName.value || user.lastName.value)
 };
 ```
 
-There, while `firstName` is still empty string, cell `name` is signed for `firstName` and `lastName`,
-and change in any of them will lead to the change in its value. If you assign to the `firstName` some not empty
-string, then during recalculation of value `name` it simply will not come to reading `lastName` in the formula,
+There, while `firstName` is empty string, cell `name` uses `firstName` and `lastName` for calculate self value
+and change in any of them will lead to calculating `name`. If you assign to the `firstName` some not empty
+string, then during recalculation value of cell `name` it will not come to reading `lastName` in the formula,
 i.e. the value of the cell `name` from this moment will not depend on `lastName`.
 In such cases, cells automatically unsubscribe from dependencies insignificant for them and are not recalculated
 when they change. In the future, if the `firstName` again become an empty string, the cell `name` will re-subscribe
@@ -327,7 +300,7 @@ to the `lastName`.
 
 ```js
 let foo = cellx(() => localStorage.foo || 'foo', {
-	put: function({ push }, value) {
+	put: ({ push }, value) => {
 		localStorage.foo = value;
 
 		push(value);
@@ -403,8 +376,3 @@ console.log(foo.value);
 // => 'New foo value: 1'
 // => 'New foo value: 5'
 ```
-
-## List of references
-
-- [Building a Reactive App Using Cellx and React](https://60devs.com/building-a-reactive-todo-app-using-cellx-and-react.html)
-- [Атом — минимальный кирпичик FRP приложения](http://habrahabr.ru/post/235121/)
