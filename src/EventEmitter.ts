@@ -26,7 +26,7 @@ let currentlySubscribing = false;
 let transactionLevel = 0;
 let transactionEvents: Array<IEvent> = [];
 
-let silently = 0;
+let silently = false;
 
 export class EventEmitter {
 	static get currentlySubscribing() {
@@ -52,12 +52,18 @@ export class EventEmitter {
 	}
 
 	static silently(cb: Function) {
-		silently++;
+		if (silently) {
+			cb();
+
+			return;
+		}
+
+		silently = true;
 
 		try {
 			cb();
 		} finally {
-			silently--;
+			silently = false;
 		}
 	}
 
@@ -248,7 +254,7 @@ export class EventEmitter {
 			evt.data = data;
 		}
 
-		if (silently == 0) {
+		if (!silently) {
 			if (transactionLevel != 0) {
 				for (let i = transactionEvents.length; ; ) {
 					if (i == 0) {

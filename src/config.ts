@@ -7,6 +7,5 @@ export const config = {
 };
 
 export function configure(options: Partial<typeof config>) {
-	Object.assign(config, options);
-	return config;
+	return Object.assign(config, options);
 }

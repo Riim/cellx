@@ -20,12 +20,14 @@ export type TCellPut<TValue = any, TContext = any, TMeta = any> = (
 export interface ICellOptions<TValue = any, TContext = any, TMeta = any> {
 	debugKey?: string;
 	context?: TContext;
+	meta?: TMeta;
+	slippery?: boolean;
+	sticky?: boolean;
 	pull?: TCellPull<TValue, TContext, TMeta>;
 	validate?: (next: TValue, value: TValue | undefined) => void;
 	put?: TCellPut<TValue, TContext, TMeta>;
 	compareValues?: (next: TValue, value: TValue | undefined) => boolean;
 	reap?: (this: TContext) => void;
-	meta?: TMeta;
 	value?: TValue;
 	onChange?: TListener;
 	onError?: TListener;
@@ -139,12 +141,14 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 	}
 
 	static override transact(cb: Function) {
-		if (pendingCells.length != 0) {
-			release();
+		if (transaction) {
+			cb();
+
+			return;
 		}
 
-		if (transaction) {
-			throw TypeError('Nested transaction');
+		if (pendingCells.length != 0) {
+			release();
 		}
 
 		transaction = {
@@ -181,6 +185,11 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 
 	context: TContext;
 
+	meta: TMeta | null;
+
+	_slippery: boolean;
+	_sticky: boolean;
+
 	_pull: TCellPull<TValue, TContext, TMeta> | null;
 
 	_validate: ((next: TValue, value: TValue | undefined) => void) | null;
@@ -188,8 +197,6 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 	_compareValues: (next: TValue, value: TValue | undefined) => boolean;
 
 	_reap: (() => void) | null;
-
-	meta: TMeta | null;
 
 	_dependencies: Array<Cell> | null | undefined;
 	_reactions: Array<Cell> = [];
@@ -230,35 +237,22 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 	) {
 		super();
 
-		if (options) {
-			this.debugKey = options.debugKey;
+		this.debugKey = options?.debugKey;
 
-			this.context = (options.context ?? null) as TContext;
+		this.context = (options?.context ?? null) as TContext;
 
-			this._pull = options.pull ?? (typeof value == 'function' ? (value as any) : null);
+		this.meta = options?.meta ?? null;
 
-			this._validate = options.validate ?? null;
-			this._put = options.put ?? null;
-			this._compareValues = options.compareValues ?? config.compareValues;
+		this._slippery = options?.slippery ?? false;
+		this._sticky = options?.sticky ?? false;
 
-			this._reap = options.reap ?? null;
+		this._pull = options?.pull ?? (typeof value == 'function' ? (value as any) : null);
 
-			this.meta = options.meta ?? null;
-		} else {
-			this.debugKey = undefined;
+		this._validate = options?.validate ?? null;
+		this._put = options?.put ?? null;
+		this._compareValues = options?.compareValues ?? config.compareValues;
 
-			this.context = null as TContext;
-
-			this._pull = typeof value == 'function' ? (value as any) : null;
-
-			this._validate = null;
-			this._put = null;
-			this._compareValues = config.compareValues;
-
-			this._reap = null;
-
-			this.meta = null;
-		}
+		this._reap = options?.reap ?? null;
 
 		if (this._pull) {
 			this._dependencies = undefined;
@@ -466,12 +460,6 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 	}
 
 	_deactivate() {
-		// Всегда запускается при удалении последнего подписчика, то есть проверка deps ниже будет
-		// аналогична проверке active, тк. active = deps && subscribers (только что стал false).
-		// if (!this._active) {
-		// 	return;
-		// }
-
 		let deps = this._dependencies;
 
 		if (deps) {
@@ -559,12 +547,15 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 		this.set(value);
 	}
 
-	get(): TValue {
+	get(sticky?: boolean): TValue {
 		if (this._state != CellState.ACTUAL && this._updationId != lastUpdationId) {
 			this.actualize();
 		}
 
-		if (currentCell) {
+		if (
+			currentCell &&
+			(!currentCell._slippery || sticky || (this._sticky && sticky !== false))
+		) {
 			if (currentCell._dependencies) {
 				if (fastIndexOf(currentCell._dependencies, this) == -1) {
 					currentCell._dependencies.push(this);
