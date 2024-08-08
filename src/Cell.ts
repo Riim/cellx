@@ -1,5 +1,5 @@
 import { config } from './config';
-import { EventEmitter, IEvent, TListener } from './EventEmitter';
+import { EventEmitter, IEvent } from './EventEmitter';
 import { fastIndexOf } from './utils/fastIndexOf';
 import { nextTick } from './utils/nextTick';
 import { WaitError } from './WaitError';
@@ -29,8 +29,8 @@ export interface ICellOptions<TValue = any, TContext = any, TMeta = any> {
 	compareValues?: (next: TValue, value: TValue | undefined) => boolean;
 	reap?: (this: TContext) => void;
 	value?: TValue;
-	onChange?: TListener;
-	onError?: TListener;
+	onChange?: Function;
+	onError?: Function;
 }
 
 export enum CellState {
@@ -39,7 +39,7 @@ export enum CellState {
 	CHECK = 'check'
 }
 
-export interface ICellChangeEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
+export interface ICellChangeEvent<T extends Cell = Cell> extends IEvent<any, T> {
 	type: typeof Cell.EVENT_CHANGE;
 	data: {
 		prevValue: any;
@@ -47,14 +47,12 @@ export interface ICellChangeEvent<T extends EventEmitter = EventEmitter> extends
 	};
 }
 
-export interface ICellErrorEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
+export interface ICellErrorEvent<T extends Cell = Cell> extends IEvent<any, T> {
 	type: typeof Cell.EVENT_ERROR;
 	data: { error: any };
 }
 
-export type TCellEvent<T extends EventEmitter = EventEmitter> =
-	| ICellChangeEvent<T>
-	| ICellErrorEvent<T>;
+export type TCellEvent<T extends Cell = Cell> = ICellChangeEvent<T> | ICellErrorEvent<T>;
 
 const KEY_LISTENER_WRAPPERS = Symbol('listenerWrappers');
 
@@ -204,7 +202,7 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 	_value: TValue | undefined;
 	_errorCell: Cell<Error | null> | null = null;
 	_error: Error | null = null;
-	_lastErrorEvent: IEvent<this> | null = null;
+	_lastErrorEvent: IEvent | null = null;
 
 	get error() {
 		return currentCell
@@ -290,14 +288,14 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 
 	override on(
 		type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR,
-		listener: TListener,
+		listener: Function,
 		context?: any
 	): this;
 	override on(
-		listeners: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>,
+		listeners: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, Function>,
 		context?: any
 	): this;
-	override on(type: string | Record<string, TListener>, listener?: any, context?: any) {
+	override on(type: string | Record<string, Function>, listener?: any, context?: any) {
 		if (this._dependencies !== null) {
 			this.actualize();
 		}
@@ -315,14 +313,14 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 
 	override off(
 		type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR,
-		listener: TListener,
+		listener: Function,
 		context?: any
 	): this;
 	override off(
-		listeners?: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>,
+		listeners?: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, Function>,
 		context?: any
 	): this;
-	override off(type?: string | Record<string, TListener>, listener?: any, context?: any) {
+	override off(type?: string | Record<string, Function>, listener?: any, context?: any) {
 		if (this._dependencies !== null) {
 			this.actualize();
 		}
@@ -355,11 +353,11 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 		return this;
 	}
 
-	onChange(listener: TListener, context?: any) {
+	onChange(listener: Function, context?: any) {
 		return this.on(Cell.EVENT_CHANGE, listener, context !== undefined ? context : this.context);
 	}
 
-	offChange(listener: TListener, context?: any) {
+	offChange(listener: Function, context?: any) {
 		return this.off(
 			Cell.EVENT_CHANGE,
 			listener,
@@ -367,16 +365,16 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 		);
 	}
 
-	onError(listener: TListener, context?: any) {
+	onError(listener: Function, context?: any) {
 		return this.on(Cell.EVENT_ERROR, listener, context !== undefined ? context : this.context);
 	}
 
-	offError(listener: TListener, context?: any) {
+	offError(listener: Function, context?: any) {
 		return this.off(Cell.EVENT_ERROR, listener, context !== undefined ? context : this.context);
 	}
 
 	subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any) {
-		let wrappers: Map<Cell, TListener> =
+		let wrappers: Map<Cell, Function> =
 			listener[KEY_LISTENER_WRAPPERS] || (listener[KEY_LISTENER_WRAPPERS] = new Map());
 
 		if (wrappers.has(this)) {
@@ -396,7 +394,7 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 	}
 
 	unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this {
-		let wrappers: Map<Cell, TListener> | undefined = listener[KEY_LISTENER_WRAPPERS];
+		let wrappers: Map<Cell, Function> | undefined = listener[KEY_LISTENER_WRAPPERS];
 		let wrapper = wrappers?.get(this);
 
 		if (!wrapper) {
@@ -783,7 +781,7 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 		return isWaitError;
 	}
 
-	_setError(errorEvent: IEvent<this, { error: Error }> | null) {
+	_setError(errorEvent: IEvent<{ error: Error }> | null) {
 		if (this._lastErrorEvent === errorEvent) {
 			return;
 		}

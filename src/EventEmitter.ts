@@ -2,10 +2,7 @@ import { Cell } from './Cell';
 import { config } from './config';
 import { KEY_VALUE_CELLS } from './keys';
 
-export interface IEvent<
-	T extends EventEmitter = EventEmitter,
-	D extends object = Record<string, any>
-> {
+export interface IEvent<D = any, T extends EventEmitter = EventEmitter> {
 	target: T;
 	type: string | symbol;
 	bubbles?: boolean;
@@ -14,10 +11,8 @@ export interface IEvent<
 	data: D;
 }
 
-export type TListener<T extends EventEmitter = EventEmitter> = (evt: IEvent<T>) => any;
-
 export interface I$Listener {
-	listener: TListener;
+	listener: Function;
 	context: any;
 }
 
@@ -76,12 +71,12 @@ export class EventEmitter {
 	get$Listeners(
 		type?: string | symbol
 	): ReadonlyMap<string | symbol, ReadonlyArray<I$Listener>> | ReadonlyArray<I$Listener> {
-		return type ? this._$listeners.get(type) ?? [] : this._$listeners;
+		return type ? (this._$listeners.get(type) ?? []) : this._$listeners;
 	}
 
-	on(type: string | symbol, listener: TListener, context?: any): this;
-	on(listeners: Record<string | symbol, TListener>, context?: any): this;
-	on(type: string | symbol | Record<string | symbol, TListener>, listener?: any, context?: any) {
+	on(type: string | symbol, listener: Function, context?: any): this;
+	on(listeners: Record<string | symbol, Function>, context?: any): this;
+	on(type: string | symbol | Record<string | symbol, Function>, listener?: any, context?: any) {
 		if (typeof type == 'object') {
 			context = listener !== undefined ? listener : this;
 
@@ -103,13 +98,9 @@ export class EventEmitter {
 		return this;
 	}
 
-	off(type: string | symbol, listener: TListener, context?: any): this;
-	off(listeners?: Record<string | symbol, TListener>, context?: any): this;
-	off(
-		type?: string | symbol | Record<string | symbol, TListener>,
-		listener?: any,
-		context?: any
-	) {
+	off(type: string | symbol, listener: Function, context?: any): this;
+	off(listeners?: Record<string | symbol, Function>, context?: any): this;
+	off(type?: string | symbol | Record<string | symbol, Function>, listener?: any, context?: any) {
 		if (type) {
 			if (typeof type == 'object') {
 				context = listener !== undefined ? listener : this;
@@ -135,7 +126,7 @@ export class EventEmitter {
 		return this;
 	}
 
-	_on(type: string | symbol, listener: TListener, context: any) {
+	_on(type: string | symbol, listener: Function, context: any) {
 		let index: number;
 
 		if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
@@ -165,7 +156,7 @@ export class EventEmitter {
 		}
 	}
 
-	_off(type: string | symbol, listener: TListener, context: any) {
+	_off(type: string | symbol, listener: Function, context: any) {
 		let index: number;
 
 		if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
@@ -207,7 +198,7 @@ export class EventEmitter {
 		}
 	}
 
-	once(type: string | symbol, listener: TListener, context?: any): TListener {
+	once(type: string | symbol, listener: Function, context?: any) {
 		if (context === undefined) {
 			context = this;
 		}
@@ -231,11 +222,11 @@ export class EventEmitter {
 					bubbles?: boolean;
 					defaultPrevented?: boolean;
 					propagationStopped?: boolean;
-					data?: Record<string, any>;
+					data?: any;
 			  }
 			| string
 			| symbol,
-		data?: Record<string, any>
+		data?: any
 	) {
 		if (typeof evt == 'object') {
 			if (!evt.target) {
