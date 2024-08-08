@@ -56,7 +56,7 @@
             }
         }
         get$Listeners(type) {
-            return type ? this._$listeners.get(type) ?? [] : this._$listeners;
+            return type ? (this._$listeners.get(type) ?? []) : this._$listeners;
         }
         on(type, listener, context) {
             if (typeof type == 'object') {

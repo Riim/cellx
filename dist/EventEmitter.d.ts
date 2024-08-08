@@ -1,6 +1,6 @@
 import { Cell } from './Cell';
 import { KEY_VALUE_CELLS } from './keys';
-export interface IEvent<T extends EventEmitter = EventEmitter, D extends object = Record<string, any>> {
+export interface IEvent<D = any, T extends EventEmitter = EventEmitter> {
     target: T;
     type: string | symbol;
     bubbles?: boolean;
@@ -8,9 +8,8 @@ export interface IEvent<T extends EventEmitter = EventEmitter, D extends object 
     propagationStopped?: boolean;
     data: D;
 }
-export type TListener<T extends EventEmitter = EventEmitter> = (evt: IEvent<T>) => any;
 export interface I$Listener {
-    listener: TListener;
+    listener: Function;
     context: any;
 }
 export declare class EventEmitter {
@@ -21,21 +20,21 @@ export declare class EventEmitter {
     _$listeners: Map<string | symbol, I$Listener[]>;
     get$Listeners(): ReadonlyMap<string | symbol, ReadonlyArray<I$Listener>>;
     get$Listeners(type: string | symbol): ReadonlyArray<I$Listener>;
-    on(type: string | symbol, listener: TListener, context?: any): this;
-    on(listeners: Record<string | symbol, TListener>, context?: any): this;
-    off(type: string | symbol, listener: TListener, context?: any): this;
-    off(listeners?: Record<string | symbol, TListener>, context?: any): this;
-    _on(type: string | symbol, listener: TListener, context: any): void;
-    _off(type: string | symbol, listener: TListener, context: any): void;
-    once(type: string | symbol, listener: TListener, context?: any): TListener;
+    on(type: string | symbol, listener: Function, context?: any): this;
+    on(listeners: Record<string | symbol, Function>, context?: any): this;
+    off(type: string | symbol, listener: Function, context?: any): this;
+    off(listeners?: Record<string | symbol, Function>, context?: any): this;
+    _on(type: string | symbol, listener: Function, context: any): void;
+    _off(type: string | symbol, listener: Function, context: any): void;
+    once(type: string | symbol, listener: Function, context?: any): (this: any, evt: IEvent) => any;
     emit(evt: {
         target?: EventEmitter;
         type: string | symbol;
         bubbles?: boolean;
         defaultPrevented?: boolean;
         propagationStopped?: boolean;
-        data?: Record<string, any>;
-    } | string | symbol, data?: Record<string, any>): IEvent<EventEmitter, Record<string, any>>;
+        data?: any;
+    } | string | symbol, data?: any): IEvent<any, EventEmitter>;
     handleEvent(evt: IEvent): void;
     _tryEventListener($listener: I$Listener, evt: IEvent): any;
 }

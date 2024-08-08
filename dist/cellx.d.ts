@@ -1,7 +1,7 @@
 import { Cell, ICellOptions, TCellPull } from './Cell';
 export { KEY_VALUE_CELLS } from './keys';
 export { configure } from './config';
-export { IEvent, TListener, I$Listener, EventEmitter } from './EventEmitter';
+export { IEvent, I$Listener, EventEmitter } from './EventEmitter';
 export { TCellPull, ICellOptions, ICellChangeEvent, ICellErrorEvent, TCellEvent, Cell } from './Cell';
 export { WaitError } from './WaitError';
 export declare const autorun: typeof Cell.autorun;

@@ -1,4 +1,4 @@
-import { EventEmitter, IEvent, TListener } from './EventEmitter';
+import { EventEmitter, IEvent } from './EventEmitter';
 export type TCellPull<TValue = any, TContext = any, TMeta = any> = (this: TContext, cell: Cell<TValue, TContext, TMeta>, value: TValue | undefined) => TValue;
 export type TCellPut<TValue = any, TContext = any, TMeta = any> = (this: TContext, cell: Cell<TValue, TContext, TMeta>, next: TValue, value: TValue | undefined) => void;
 export interface ICellOptions<TValue = any, TContext = any, TMeta = any> {
@@ -13,28 +13,28 @@ export interface ICellOptions<TValue = any, TContext = any, TMeta = any> {
     compareValues?: (next: TValue, value: TValue | undefined) => boolean;
     reap?: (this: TContext) => void;
     value?: TValue;
-    onChange?: TListener;
-    onError?: TListener;
+    onChange?: Function;
+    onError?: Function;
 }
 export declare enum CellState {
     ACTUAL = "actual",
     DIRTY = "dirty",
     CHECK = "check"
 }
-export interface ICellChangeEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
+export interface ICellChangeEvent<T extends Cell = Cell> extends IEvent<any, T> {
     type: typeof Cell.EVENT_CHANGE;
     data: {
         prevValue: any;
         value: any;
     };
 }
-export interface ICellErrorEvent<T extends EventEmitter = EventEmitter> extends IEvent<T> {
+export interface ICellErrorEvent<T extends Cell = Cell> extends IEvent<any, T> {
     type: typeof Cell.EVENT_ERROR;
     data: {
         error: any;
     };
 }
-export type TCellEvent<T extends EventEmitter = EventEmitter> = ICellChangeEvent<T> | ICellErrorEvent<T>;
+export type TCellEvent<T extends Cell = Cell> = ICellChangeEvent<T> | ICellErrorEvent<T>;
 export declare class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitter {
     static EVENT_CHANGE: string;
     static EVENT_ERROR: string;
@@ -58,7 +58,7 @@ export declare class Cell<TValue = any, TContext = any, TMeta = any> extends Eve
     _value: TValue | undefined;
     _errorCell: Cell<Error | null> | null;
     _error: Error | null;
-    _lastErrorEvent: IEvent<this> | null;
+    _lastErrorEvent: IEvent | null;
     get error(): Error | null;
     _state: CellState;
     get state(): CellState;
@@ -69,14 +69,14 @@ export declare class Cell<TValue = any, TContext = any, TMeta = any> extends Eve
     _bound: boolean;
     constructor(value: TCellPull<TValue, TContext, TMeta>, options?: ICellOptions<TValue, TContext, TMeta>);
     constructor(value: TValue, options?: ICellOptions<TValue, TContext, TMeta>);
-    on(type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, listener: TListener, context?: any): this;
-    on(listeners: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>, context?: any): this;
-    off(type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, listener: TListener, context?: any): this;
-    off(listeners?: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>, context?: any): this;
-    onChange(listener: TListener, context?: any): this;
-    offChange(listener: TListener, context?: any): this;
-    onError(listener: TListener, context?: any): this;
-    offError(listener: TListener, context?: any): this;
+    on(type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, listener: Function, context?: any): this;
+    on(listeners: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, Function>, context?: any): this;
+    off(type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, listener: Function, context?: any): this;
+    off(listeners?: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, Function>, context?: any): this;
+    onChange(listener: Function, context?: any): this;
+    offChange(listener: Function, context?: any): this;
+    onError(listener: Function, context?: any): this;
+    offError(listener: Function, context?: any): this;
     subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this;
     unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this;
     _addReaction(reaction: Cell): void;
@@ -93,7 +93,7 @@ export declare class Cell<TValue = any, TContext = any, TMeta = any> extends Eve
     set(value: TValue): this;
     push(value: TValue): boolean;
     fail(err: any): boolean;
-    _setError(errorEvent: IEvent<this, {
+    _setError(errorEvent: IEvent<{
         error: Error;
     }> | null): void;
     wait(): never;
