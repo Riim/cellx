@@ -1,4 +1,4 @@
-import { type TCellPull, type ICellOptions, Cell } from './Cell';
+import { Cell, type ICellOptions, type TCellPull } from './Cell';
 import { KEY_VALUE_CELLS } from './keys';
 
 export { KEY_VALUE_CELLS } from './keys';

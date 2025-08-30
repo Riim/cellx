@@ -1,8 +1,8 @@
-import { config } from './config';
 import { EventEmitter, IEvent } from './EventEmitter';
+import { WaitError } from './WaitError';
+import { config } from './config';
 import { fastIndexOf } from './utils/fastIndexOf';
 import { nextTick } from './utils/nextTick';
-import { WaitError } from './WaitError';
 
 export type TCellPull<TValue = any, TContext = any, TMeta = any> = (
 	this: TContext,
