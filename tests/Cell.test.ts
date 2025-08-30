@@ -482,12 +482,6 @@ describe('Cell', () => {
 			expect(a.get()).toBe(1);
 		});
 
-		test('[options.value]', () => {
-			let a = cellx(1, { value: 2 });
-
-			expect(a.get()).toBe(2);
-		});
-
 		test('[options.reap]', () => {
 			let reap = jest.fn();
 			let a = cellx(() => Math.random(), { reap });
@@ -506,7 +500,7 @@ describe('Cell', () => {
 
 			b.reap();
 
-			expect(b._active).toBeFalsy();
+			expect(b.active).toBeFalsy();
 		});
 	});
 });

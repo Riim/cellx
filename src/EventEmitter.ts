@@ -16,28 +16,30 @@ export interface I$Listener {
 	context: any;
 }
 
-let currentlySubscribing = false;
+export const EventEmitter_CommonState = {
+	currentlySubscribing: false,
 
-let transactionLevel = 0;
-let transactionEvents: Array<IEvent> = [];
+	transactionLevel: 0,
+	transactionEvents: [] as Array<IEvent>,
 
-let silently = false;
+	silently: false
+};
 
 export class EventEmitter {
 	static get currentlySubscribing() {
-		return currentlySubscribing;
+		return EventEmitter_CommonState.currentlySubscribing;
 	}
 
 	static transact(cb: Function) {
-		transactionLevel++;
+		EventEmitter_CommonState.transactionLevel++;
 
 		try {
 			cb();
 		} finally {
-			if (--transactionLevel == 0) {
-				let events = transactionEvents;
+			if (--EventEmitter_CommonState.transactionLevel == 0) {
+				let events = EventEmitter_CommonState.transactionEvents;
 
-				transactionEvents = [];
+				EventEmitter_CommonState.transactionEvents = [];
 
 				for (let i = 0; i < events.length; i++) {
 					events[i].target.handleEvent(events[i]);
@@ -47,24 +49,24 @@ export class EventEmitter {
 	}
 
 	static silently(cb: Function) {
-		if (silently) {
+		if (EventEmitter_CommonState.silently) {
 			cb();
 
 			return;
 		}
 
-		silently = true;
+		EventEmitter_CommonState.silently = true;
 
 		try {
 			cb();
 		} finally {
-			silently = false;
+			EventEmitter_CommonState.silently = false;
 		}
 	}
 
 	[KEY_VALUE_CELLS]?: Map<string, Cell>;
 
-	_$listeners = new Map<string | symbol, Array<I$Listener>>();
+	protected _$listeners = new Map<string | symbol, Array<I$Listener>>();
 
 	get$Listeners(): ReadonlyMap<string | symbol, ReadonlyArray<I$Listener>>;
 	get$Listeners(type: string | symbol): ReadonlyArray<I$Listener>;
@@ -126,13 +128,13 @@ export class EventEmitter {
 		return this;
 	}
 
-	_on(type: string | symbol, listener: Function, context: any) {
+	protected _on(type: string | symbol, listener: Function, context: any) {
 		let index: number;
 
 		if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
 			let propName = type.slice(index + 1);
 
-			currentlySubscribing = true;
+			EventEmitter_CommonState.currentlySubscribing = true;
 
 			(
 				(this[KEY_VALUE_CELLS] ?? (this[KEY_VALUE_CELLS] = new Map<string, Cell>())).get(
@@ -140,7 +142,7 @@ export class EventEmitter {
 				) ?? (this[propName], this[KEY_VALUE_CELLS]).get(propName)!
 			).on(type.slice(0, index), listener, context);
 
-			currentlySubscribing = false;
+			EventEmitter_CommonState.currentlySubscribing = false;
 		} else {
 			let type$Listeners = this._$listeners.get(type);
 			let $listener = {
@@ -156,7 +158,7 @@ export class EventEmitter {
 		}
 	}
 
-	_off(type: string | symbol, listener: Function, context: any) {
+	protected _off(type: string | symbol, listener: Function, context: any) {
 		let index: number;
 
 		if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
@@ -245,9 +247,9 @@ export class EventEmitter {
 			evt.data = data;
 		}
 
-		if (!silently) {
-			if (transactionLevel != 0) {
-				for (let i = transactionEvents.length; ; ) {
+		if (!EventEmitter_CommonState.silently) {
+			if (EventEmitter_CommonState.transactionLevel != 0) {
+				for (let i = EventEmitter_CommonState.transactionEvents.length; ; ) {
 					if (i == 0) {
 						if (evt.data) {
 							evt.data['prevEvent'] = null;
@@ -255,12 +257,12 @@ export class EventEmitter {
 							evt.data = { prevEvent: null };
 						}
 
-						transactionEvents.push(evt as IEvent);
+						EventEmitter_CommonState.transactionEvents.push(evt as IEvent);
 
 						break;
 					}
 
-					let event = transactionEvents[--i];
+					let event = EventEmitter_CommonState.transactionEvents[--i];
 
 					if (event.target == this && event.type === evt.type) {
 						if (evt.data) {
@@ -269,7 +271,7 @@ export class EventEmitter {
 							evt.data = { prevEvent: event };
 						}
 
-						transactionEvents[i] = evt as IEvent;
+						EventEmitter_CommonState.transactionEvents[i] = evt as IEvent;
 
 						break;
 					}
@@ -304,7 +306,7 @@ export class EventEmitter {
 		}
 	}
 
-	_tryEventListener($listener: I$Listener, evt: IEvent) {
+	protected _tryEventListener($listener: I$Listener, evt: IEvent) {
 		try {
 			return $listener.listener.call($listener.context, evt);
 		} catch (err) {
