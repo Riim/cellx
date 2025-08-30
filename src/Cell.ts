@@ -111,13 +111,13 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 
 		new Cell(
 			function (cell, value) {
-				if (!disposer) {
-					disposer = () => {
+				return cb.call(
+					this,
+					value,
+					(disposer ??= () => {
 						cell.dispose();
-					};
-				}
-
-				return cb.call(this, value, disposer);
+					})
+				);
 			},
 			cellOptions?.onChange
 				? cellOptions
@@ -375,14 +375,14 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 
 	subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any) {
 		let wrappers: Map<Cell, Function> =
-			listener[KEY_LISTENER_WRAPPERS] || (listener[KEY_LISTENER_WRAPPERS] = new Map());
+			listener[KEY_LISTENER_WRAPPERS] ?? (listener[KEY_LISTENER_WRAPPERS] = new Map());
 
 		if (wrappers.has(this)) {
 			return this;
 		}
 
 		function wrapper(this: any, evt: IEvent): any {
-			return listener.call(this, evt.data['error'] || null, evt);
+			return listener.call(this, evt.data['error'] ?? null, evt);
 		}
 		wrappers.set(this, wrapper);
 

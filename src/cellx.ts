@@ -1,15 +1,15 @@
-import { Cell, ICellOptions, TCellPull } from './Cell';
+import { type TCellPull, type ICellOptions, Cell } from './Cell';
 import { KEY_VALUE_CELLS } from './keys';
 
 export { KEY_VALUE_CELLS } from './keys';
 export { configure } from './config';
-export { IEvent, I$Listener, EventEmitter } from './EventEmitter';
+export { type IEvent, type I$Listener, EventEmitter } from './EventEmitter';
 export {
-	TCellPull,
-	ICellOptions,
-	ICellChangeEvent,
-	ICellErrorEvent,
-	TCellEvent,
+	type TCellPull,
+	type ICellOptions,
+	type ICellChangeEvent,
+	type ICellErrorEvent,
+	type TCellEvent,
 	Cell
 } from './Cell';
 export { WaitError } from './WaitError';

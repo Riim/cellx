@@ -1,5 +1,4 @@
 import { describe, expect, test } from '@jest/globals';
-import * as sinon from 'sinon';
 import { CellState } from '../src/Cell';
 import {
 	Cell,
@@ -64,14 +63,14 @@ describe('Cell', () => {
 		test('#pull()', () => {
 			let counter = 0;
 			let a = cellx(() => ++counter);
-			let onChange = sinon.spy();
+			let onChange = jest.fn();
 			let b = cellx(() => a.get() + 1, { onChange });
 
 			a.pull();
 
 			Cell.release();
 
-			expect(onChange.calledOnce).toBeTruthy();
+			expect(onChange.mock.calls.length).toBe(1);
 			expect(b.get()).toBe(3);
 		});
 	});
@@ -101,14 +100,14 @@ describe('Cell', () => {
 		});
 
 		test('нет события change при установке значения равного текущему', () => {
-			let onChange = sinon.spy();
+			let onChange = jest.fn();
 			let a = cellx(1, { onChange });
 
 			a.set(1);
 
 			Cell.release();
 
-			expect(onChange.notCalled).toBeTruthy();
+			expect(onChange.mock.calls.length).toBe(0);
 		});
 
 		test('нет события change при добавлении обработчика после изменения', () => {
@@ -117,20 +116,20 @@ describe('Cell', () => {
 
 			a.set(2);
 
-			let onChange = sinon.spy();
+			let onChange = jest.fn();
 
 			b.onChange(onChange);
 
 			Cell.release();
 
-			expect(onChange.notCalled).toBeTruthy();
+			expect(onChange.mock.calls.length).toBe(0);
 		});
 
 		test('нет события change при добавлении обработчика после изменения (2)', () => {
 			let a = cellx(1);
 			let b = cellx(() => a.get());
 
-			let onChange = sinon.spy();
+			let onChange = jest.fn();
 
 			b.onChange(onChange);
 			b.offChange(onChange);
@@ -143,12 +142,12 @@ describe('Cell', () => {
 
 			expect(b.get()).toBe(2);
 
-			expect(onChange.notCalled).toBeTruthy();
+			expect(onChange.mock.calls.length).toBe(0);
 		});
 
 		test('EventEmitter в качестве значения', () => {
 			let emitter = new EventEmitter();
-			let onChange = sinon.spy();
+			let onChange = jest.fn();
 
 			cellx(emitter, { onChange });
 
@@ -156,12 +155,12 @@ describe('Cell', () => {
 
 			Cell.release();
 
-			expect(onChange.called).toBeTruthy();
+			expect(onChange.mock.calls.length).not.toBe(0);
 		});
 
 		test('EventEmitter в качестве значения (2)', () => {
 			let emitter = new EventEmitter();
-			let onChange = sinon.spy();
+			let onChange = jest.fn();
 			let a = cellx(emitter);
 
 			cellx(() => a.get(), { onChange });
@@ -170,12 +169,12 @@ describe('Cell', () => {
 
 			Cell.release();
 
-			expect(onChange.called).toBeTruthy();
+			expect(onChange.mock.calls.length).not.toBe(0);
 		});
 
 		test('подписка через EventEmitter', () => {
 			let emitter = new EventEmitter();
-			let onChange = sinon.spy();
+			let onChange = jest.fn();
 
 			define(emitter, { foo: 1 });
 
@@ -183,7 +182,7 @@ describe('Cell', () => {
 
 			emitter['foo'] = 2;
 
-			expect(onChange.called).toBeTruthy();
+			expect(onChange.mock.calls.length).not.toBe(0);
 		});
 	});
 
@@ -191,36 +190,36 @@ describe('Cell', () => {
 		test('одно вычисление при изменении нескольких зависимостей', () => {
 			let a = cellx(1);
 			let b = cellx(2);
-			let getC = sinon.spy(() => a.get() + b.get());
+			let getC = jest.fn(() => a.get() + b.get());
 
 			cellx(getC, { onChange() {} });
 
-			getC.resetHistory();
+			getC.mockClear();
 
 			a.set(2);
 			b.set(3);
 
 			Cell.release();
 
-			expect(getC.calledOnce).toBeTruthy();
+			expect(getC.mock.calls.length).toBe(1);
 		});
 
 		test('одно вычисление при изменении нескольких зависимостей (2)', () => {
 			let a = cellx(1);
 			let b = cellx(2);
 			let c = cellx(() => b.get() + 1);
-			let getD = sinon.spy(() => a.get() + c.get());
+			let getD = jest.fn(() => a.get() + c.get());
 
 			cellx(getD, { onChange() {} });
 
-			getD.resetHistory();
+			getD.mockClear();
 
 			a.set(2);
 			b.set(3);
 
 			Cell.release();
 
-			expect(getD.calledOnce).toBeTruthy();
+			expect(getD.mock.calls.length).toBe(1);
 		});
 
 		test('одно вычисление при изменении нескольких зависимостей (3)', () => {
@@ -228,18 +227,18 @@ describe('Cell', () => {
 			let b = cellx(2);
 			let aa = cellx(() => a.get() + 1);
 			let bb = cellx(() => b.get() + 1);
-			let getC = sinon.spy(() => aa.get() + bb.get());
+			let getC = jest.fn(() => aa.get() + bb.get());
 
 			cellx(getC, { onChange() {} });
 
-			getC.resetHistory();
+			getC.mockClear();
 
 			a.set(2);
 			b.set(3);
 
 			Cell.release();
 
-			expect(getC.calledOnce).toBeTruthy();
+			expect(getC.mock.calls.length).toBe(1);
 		});
 
 		test('запись в неинициализированную ячейку отменяет pull', () => {
@@ -397,10 +396,10 @@ describe('Cell', () => {
 		});
 
 		test('событие error без дублирования', () => {
-			let bOnError = sinon.spy();
-			let c1OnError = sinon.spy();
-			let c2OnError = sinon.spy();
-			let dOnError = sinon.spy();
+			let bOnError = jest.fn();
+			let c1OnError = jest.fn();
+			let c2OnError = jest.fn();
+			let dOnError = jest.fn();
 
 			let a = cellx(1);
 
@@ -424,10 +423,10 @@ describe('Cell', () => {
 
 			Cell.release();
 
-			expect(bOnError.calledOnce).toBeTruthy();
-			expect(c1OnError.calledOnce).toBeTruthy();
-			expect(c2OnError.calledOnce).toBeTruthy();
-			expect(dOnError.calledOnce).toBeTruthy();
+			expect(bOnError.mock.calls.length).toBe(1);
+			expect(c1OnError.mock.calls.length).toBe(1);
+			expect(c2OnError.mock.calls.length).toBe(1);
+			expect(dOnError.mock.calls.length).toBe(1);
 		});
 	});
 
@@ -438,13 +437,13 @@ describe('Cell', () => {
 
 			a.set(2);
 
-			let afterReleaseCallback = sinon.spy();
+			let afterReleaseCallback = jest.fn();
 
 			Cell.afterRelease(afterReleaseCallback);
 
 			Cell.release();
 
-			expect(afterReleaseCallback.calledOnce).toBeTruthy();
+			expect(afterReleaseCallback.mock.calls.length).toBe(1);
 			expect(b.get()).toBe(3);
 		});
 
@@ -490,7 +489,7 @@ describe('Cell', () => {
 		});
 
 		test('[options.reap]', () => {
-			let reap = sinon.spy();
+			let reap = jest.fn();
 			let a = cellx(() => Math.random(), { reap });
 			let b = cellx(() => a.get() + 1);
 			let listener = () => {};
@@ -498,7 +497,7 @@ describe('Cell', () => {
 			b.on(Cell.EVENT_CHANGE, listener);
 			b.off(Cell.EVENT_CHANGE, listener);
 
-			expect(reap.calledOnce).toBeTruthy();
+			expect(reap.mock.calls.length).toBe(1);
 		});
 
 		test('#reap()', () => {

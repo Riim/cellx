@@ -34,7 +34,7 @@ export declare class EventEmitter {
         defaultPrevented?: boolean;
         propagationStopped?: boolean;
         data?: any;
-    } | string | symbol, data?: any): IEvent<any, EventEmitter>;
+    } | string | symbol, data?: any): IEvent;
     handleEvent(evt: IEvent): void;
     _tryEventListener($listener: I$Listener, evt: IEvent): any;
 }

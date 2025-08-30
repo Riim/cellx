@@ -4,10 +4,6 @@
 
 Ultra-fast implementation of reactivity for javascript/typescript.
 
-[![NPM version](https://badge.fury.io/js/cellx.svg)](https://www.npmjs.com/package/cellx)
-[![Build Status](https://travis-ci.org/Riim/cellx.svg?branch=master)](https://travis-ci.org/Riim/cellx)
-[![Coverage Status](https://coveralls.io/repos/github/Riim/cellx/badge.svg?branch=master)](https://coveralls.io/github/Riim/cellx?branch=master)
-
 ## Installation
 
 The following command installs cellx as a npm package:

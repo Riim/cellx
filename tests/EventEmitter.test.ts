@@ -1,12 +1,11 @@
 import { describe, expect, test } from '@jest/globals';
-import * as sinon from 'sinon';
 import { EventEmitter } from '../src/cellx';
 
 describe('EventEmitter', () => {
 	test('#on()', () => {
 		let emitter = new EventEmitter();
-		let onFoo = sinon.spy();
-		let onBar = sinon.spy();
+		let onFoo = jest.fn();
+		let onBar = jest.fn();
 		let context = {};
 
 		emitter.on('foo', onFoo);
@@ -14,23 +13,23 @@ describe('EventEmitter', () => {
 
 		emitter.emit('foo');
 
-		expect(onFoo.calledOnce).toBeTruthy();
-		expect(onBar.notCalled).toBeTruthy();
+		expect(onFoo.mock.calls.length).toBe(1);
+		expect(onBar.mock.calls.length).toBe(0);
 
 		emitter.emit('bar');
 
-		expect(onFoo.calledOnce).toBeTruthy();
-		expect(onFoo.firstCall.calledOn(emitter)).toBeTruthy();
-		expect(onBar.calledOnce).toBeTruthy();
-		expect(onBar.firstCall.calledOn(context)).toBeTruthy();
+		expect(onFoo.mock.calls.length).toBe(1);
+		expect(onFoo.mock.contexts[0]).toBe(emitter);
+		expect(onBar.mock.calls.length).toBe(1);
+		expect(onBar.mock.contexts[0]).toBe(context);
 	});
 
 	test('#on() (2)', () => {
 		let EVENT_FOO = Symbol('foo');
 		let EVENT_BAR = Symbol('bar');
 		let emitter = new EventEmitter();
-		let onFoo = sinon.spy();
-		let onBar = sinon.spy();
+		let onFoo = jest.fn();
+		let onBar = jest.fn();
 		let context = {};
 
 		emitter.on(EVENT_FOO, onFoo);
@@ -38,22 +37,22 @@ describe('EventEmitter', () => {
 
 		emitter.emit(EVENT_FOO);
 
-		expect(onFoo.calledOnce).toBeTruthy();
-		expect(onBar.notCalled).toBeTruthy();
+		expect(onFoo.mock.calls.length).toBe(1);
+		expect(onBar.mock.calls.length).toBe(0);
 
 		emitter.emit(EVENT_BAR);
 
-		expect(onFoo.calledOnce).toBeTruthy();
-		expect(onFoo.firstCall.calledOn(emitter)).toBeTruthy();
-		expect(onBar.calledOnce).toBeTruthy();
-		expect(onBar.firstCall.calledOn(context)).toBeTruthy();
+		expect(onFoo.mock.calls.length).toBe(1);
+		expect(onFoo.mock.contexts[0]).toBe(emitter);
+		expect(onBar.mock.calls.length).toBe(1);
+		expect(onBar.mock.contexts[0]).toBe(context);
 	});
 
 	test('#off()', () => {
 		let emitter = new EventEmitter();
-		let onFoo = sinon.spy();
-		let onBar = sinon.spy();
-		let onBaz = sinon.spy();
+		let onFoo = jest.fn();
+		let onBar = jest.fn();
+		let onBaz = jest.fn();
 		let context = {};
 
 		emitter.on('foo', onFoo);
@@ -61,7 +60,7 @@ describe('EventEmitter', () => {
 
 		emitter.emit('foo');
 
-		expect(onFoo.notCalled).toBeTruthy();
+		expect(onFoo.mock.calls.length).toBe(0);
 
 		emitter.on('bar', onBar);
 		emitter.on('bar', onBar);
@@ -75,8 +74,8 @@ describe('EventEmitter', () => {
 		emitter.emit('bar');
 		emitter.emit('baz');
 
-		expect(onBar.notCalled).toBeTruthy();
-		expect(onBaz.notCalled).toBeTruthy();
+		expect(onBar.mock.calls.length).toBe(0);
+		expect(onBaz.mock.calls.length).toBe(0);
 	});
 
 	test('#off() (2)', () => {
@@ -84,9 +83,9 @@ describe('EventEmitter', () => {
 		let EVENT_BAR = Symbol('bar');
 		let EVENT_BAZ = Symbol('baz');
 		let emitter = new EventEmitter();
-		let onFoo = sinon.spy();
-		let onBar = sinon.spy();
-		let onBaz = sinon.spy();
+		let onFoo = jest.fn();
+		let onBar = jest.fn();
+		let onBaz = jest.fn();
 		let context = {};
 
 		emitter.on(EVENT_FOO, onFoo);
@@ -94,7 +93,7 @@ describe('EventEmitter', () => {
 
 		emitter.emit(EVENT_FOO);
 
-		expect(onFoo.notCalled).toBeTruthy();
+		expect(onFoo.mock.calls.length).toBe(0);
 
 		emitter.on(EVENT_BAR, onBar);
 		emitter.on(EVENT_BAR, onBar);
@@ -108,38 +107,38 @@ describe('EventEmitter', () => {
 		emitter.emit(EVENT_BAR);
 		emitter.emit(EVENT_BAZ);
 
-		expect(onBar.notCalled).toBeTruthy();
-		expect(onBaz.notCalled).toBeTruthy();
+		expect(onBar.mock.calls.length).toBe(0);
+		expect(onBaz.mock.calls.length).toBe(0);
 	});
 
 	test('#once()', () => {
 		let emitter = new EventEmitter();
-		let onFoo = sinon.spy();
+		let onFoo = jest.fn();
 
 		emitter.once('foo', onFoo);
 
 		emitter.emit('foo');
 		emitter.emit('foo');
 
-		expect(onFoo.calledOnce).toBeTruthy();
+		expect(onFoo.mock.calls.length).toBe(1);
 	});
 
 	test('#emit()', () => {
 		let emitter = new EventEmitter();
-		let onFoo = sinon.spy();
+		let onFoo = jest.fn();
 
 		emitter.on('foo', onFoo);
 		emitter.on('foo', onFoo);
 
 		emitter.emit('foo');
 
-		expect(onFoo.calledTwice).toBeTruthy();
+		expect(onFoo.mock.calls.length).toBe(2);
 
 		emitter.off('foo', onFoo);
 
 		emitter.emit({ type: 'foo' });
 
-		expect(onFoo.calledThrice).toBeTruthy();
+		expect(onFoo.mock.calls.length).toBe(3);
 	});
 
 	test('#get$Listeners()', () => {
@@ -166,7 +165,7 @@ describe('EventEmitter', () => {
 
 	test('.transact()', () => {
 		let emitter = new EventEmitter();
-		let onFoo = sinon.spy();
+		let onFoo = jest.fn();
 
 		emitter.on('foo', onFoo);
 
@@ -175,7 +174,7 @@ describe('EventEmitter', () => {
 			emitter.emit('foo');
 		});
 
-		expect(onFoo.calledOnce).toBeTruthy();
+		expect(onFoo.mock.calls.length).toBe(1);
 
 		EventEmitter.transact(() => {
 			emitter.emit('foo');
@@ -186,12 +185,12 @@ describe('EventEmitter', () => {
 			});
 		});
 
-		expect(onFoo.calledTwice).toBeTruthy();
+		expect(onFoo.mock.calls.length).toBe(2);
 	});
 
 	test('.silently()', () => {
 		let emitter = new EventEmitter();
-		let onFoo = sinon.spy();
+		let onFoo = jest.fn();
 
 		emitter.on('foo', onFoo);
 
@@ -199,6 +198,6 @@ describe('EventEmitter', () => {
 			emitter.emit('foo');
 		});
 
-		expect(onFoo.notCalled).toBeTruthy();
+		expect(onFoo.mock.calls.length).toBe(0);
 	});
 });

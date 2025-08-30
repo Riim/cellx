@@ -55,8 +55,6 @@ bench
 	});
 
 (async () => {
-	// make results more reliable, ref: https://github.com/tinylibs/tinybench/pull/50
-	await bench.warmup();
 	await bench.run();
 
 	// ┌─────────┬────────────────────────────┬───────────┬────────────────────┬──────────┬─────────┐
