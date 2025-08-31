@@ -8,25 +8,32 @@ export interface IEvent<D = any, T extends EventEmitter = EventEmitter> {
     propagationStopped?: boolean;
     data: D;
 }
+export type TListener = (evt: IEvent) => any;
 export interface I$Listener {
-    listener: Function;
+    listener: TListener;
     context: any;
 }
+export declare const EventEmitter_CommonState: {
+    currentlySubscribing: boolean;
+    transactionLevel: number;
+    transactionEvents: Array<IEvent>;
+    silently: boolean;
+};
 export declare class EventEmitter {
     static get currentlySubscribing(): boolean;
-    static transact(cb: Function): void;
-    static silently(cb: Function): void;
+    static transact(fn: Function): void;
+    static silently(fn: Function): void;
     [KEY_VALUE_CELLS]?: Map<string, Cell>;
-    _$listeners: Map<string | symbol, I$Listener[]>;
+    protected _$listeners: Map<string | symbol, I$Listener[]>;
     get$Listeners(): ReadonlyMap<string | symbol, ReadonlyArray<I$Listener>>;
     get$Listeners(type: string | symbol): ReadonlyArray<I$Listener>;
-    on(type: string | symbol, listener: Function, context?: any): this;
-    on(listeners: Record<string | symbol, Function>, context?: any): this;
-    off(type: string | symbol, listener: Function, context?: any): this;
-    off(listeners?: Record<string | symbol, Function>, context?: any): this;
-    _on(type: string | symbol, listener: Function, context: any): void;
-    _off(type: string | symbol, listener: Function, context: any): void;
-    once(type: string | symbol, listener: Function, context?: any): (this: any, evt: IEvent) => any;
+    on(type: string | symbol, listener: TListener, context?: any): this;
+    on(listeners: Record<string | symbol, TListener>, context?: any): this;
+    off(type: string | symbol, listener: TListener, context?: any): this;
+    off(listeners?: Record<string | symbol, TListener>, context?: any): this;
+    protected _on(type: string | symbol, listener: TListener, context: any): void;
+    protected _off(type: string | symbol, listener: TListener, context: any): void;
+    once(type: string | symbol, listener: TListener, context?: any): (this: any, evt: IEvent) => any;
     emit(evt: {
         target?: EventEmitter;
         type: string | symbol;
@@ -36,5 +43,5 @@ export declare class EventEmitter {
         data?: any;
     } | string | symbol, data?: any): IEvent;
     handleEvent(evt: IEvent): void;
-    _tryEventListener($listener: I$Listener, evt: IEvent): any;
+    protected _tryEventListener($listener: I$Listener, evt: IEvent): any;
 }

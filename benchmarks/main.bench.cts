@@ -21,21 +21,16 @@ bench.add('1', () => {
 				prop4: new Cell(() => prev.prop3.get())
 			};
 
-			next.prop1.onChange(() => {});
-			next.prop2.onChange(() => {});
-			next.prop3.onChange(() => {});
-			next.prop4.onChange(() => {});
-
-			next.prop1.get();
-			next.prop2.get();
-			next.prop3.get();
-			next.prop4.get();
-
 			return next;
 		})(layer);
 	}
 
 	let end = layer;
+
+	end.prop1.onChange(() => {});
+	end.prop2.onChange(() => {});
+	end.prop3.onChange(() => {});
+	end.prop4.onChange(() => {});
 
 	let beforeChange = [end.prop1.get(), end.prop2.get(), end.prop3.get(), end.prop4.get()];
 

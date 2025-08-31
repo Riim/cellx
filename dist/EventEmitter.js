@@ -1,42 +1,44 @@
 import { config } from './config';
 import { KEY_VALUE_CELLS } from './keys';
-let currentlySubscribing = false;
-let transactionLevel = 0;
-let transactionEvents = [];
-let silently = false;
+export const EventEmitter_CommonState = {
+    currentlySubscribing: false,
+    transactionLevel: 0,
+    transactionEvents: [],
+    silently: false
+};
 export class EventEmitter {
     constructor() {
         this._$listeners = new Map();
     }
     static get currentlySubscribing() {
-        return currentlySubscribing;
+        return EventEmitter_CommonState.currentlySubscribing;
     }
-    static transact(cb) {
-        transactionLevel++;
+    static transact(fn) {
+        EventEmitter_CommonState.transactionLevel++;
         try {
-            cb();
+            fn();
         }
         finally {
-            if (--transactionLevel == 0) {
-                let events = transactionEvents;
-                transactionEvents = [];
+            if (--EventEmitter_CommonState.transactionLevel == 0) {
+                let events = EventEmitter_CommonState.transactionEvents;
+                EventEmitter_CommonState.transactionEvents = [];
                 for (let i = 0; i < events.length; i++) {
                     events[i].target.handleEvent(events[i]);
                 }
             }
         }
     }
-    static silently(cb) {
-        if (silently) {
-            cb();
+    static silently(fn) {
+        if (EventEmitter_CommonState.silently) {
+            fn();
             return;
         }
-        silently = true;
+        EventEmitter_CommonState.silently = true;
         try {
-            cb();
+            fn();
         }
         finally {
-            silently = false;
+            EventEmitter_CommonState.silently = false;
         }
     }
     get$Listeners(type) {
@@ -87,9 +89,9 @@ export class EventEmitter {
         let index;
         if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
             let propName = type.slice(index + 1);
-            currentlySubscribing = true;
+            EventEmitter_CommonState.currentlySubscribing = true;
             ((this[KEY_VALUE_CELLS] ?? (this[KEY_VALUE_CELLS] = new Map())).get(propName) ?? (this[propName], this[KEY_VALUE_CELLS]).get(propName)).on(type.slice(0, index), listener, context);
-            currentlySubscribing = false;
+            EventEmitter_CommonState.currentlySubscribing = false;
         }
         else {
             let type$Listeners = this._$listeners.get(type);
@@ -164,9 +166,9 @@ export class EventEmitter {
         if (data) {
             evt.data = data;
         }
-        if (!silently) {
-            if (transactionLevel != 0) {
-                for (let i = transactionEvents.length;;) {
+        if (!EventEmitter_CommonState.silently) {
+            if (EventEmitter_CommonState.transactionLevel != 0) {
+                for (let i = EventEmitter_CommonState.transactionEvents.length;;) {
                     if (i == 0) {
                         if (evt.data) {
                             evt.data['prevEvent'] = null;
@@ -174,10 +176,10 @@ export class EventEmitter {
                         else {
                             evt.data = { prevEvent: null };
                         }
-                        transactionEvents.push(evt);
+                        EventEmitter_CommonState.transactionEvents.push(evt);
                         break;
                     }
-                    let event = transactionEvents[--i];
+                    let event = EventEmitter_CommonState.transactionEvents[--i];
                     if (event.target == this && event.type === evt.type) {
                         if (evt.data) {
                             evt.data['prevEvent'] = event;
@@ -185,7 +187,7 @@ export class EventEmitter {
                         else {
                             evt.data = { prevEvent: event };
                         }
-                        transactionEvents[i] = evt;
+                        EventEmitter_CommonState.transactionEvents[i] = evt;
                         break;
                     }
                 }

@@ -1,5 +1,5 @@
 export const config = {
-    logError: (...args) => {
+    logError: /* istanbul ignore next */ (...args) => {
         console.error(...args);
     },
     compareValues: Object.is
