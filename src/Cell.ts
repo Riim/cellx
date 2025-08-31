@@ -1,10 +1,11 @@
-import { EventEmitter, IEvent } from './EventEmitter';
+import { EventEmitter, IEvent, TListener } from './EventEmitter';
 import { WaitError } from './WaitError';
 import { afterRelease } from './afterRelease';
 import { autorun } from './autorun';
 import { config } from './config';
 import { KEY_LISTENER_WRAPPERS } from './keys';
 import { release } from './release';
+import { DependencyFilter } from './track';
 import { transact } from './transact';
 import { fastIndexOf } from './utils/fastIndexOf';
 import { nextTick } from './utils/nextTick';
@@ -26,15 +27,13 @@ export interface ICellOptions<TValue = any, TContext = any, TMeta = any> {
 	debugKey?: string;
 	context?: TContext;
 	meta?: TMeta;
-	slippery?: boolean;
-	sticky?: boolean;
-	pull?: TCellPull<TValue, TContext, TMeta>;
+	dependencyFilter?: (dep: Cell) => any;
 	validate?: (next: TValue, value: TValue | undefined) => void;
 	put?: TCellPut<TValue, TContext, TMeta>;
 	compareValues?: (next: TValue, value: TValue | undefined) => boolean;
 	reap?: (this: TContext) => void;
-	onChange?: Function;
-	onError?: Function;
+	onChange?: TListener;
+	onError?: TListener;
 }
 
 export enum CellState {
@@ -66,15 +65,18 @@ export const Cell_CommonState = {
 
 	currentCell: null as Cell | null,
 
-	$error: { error: null as Error | null },
+	untrackedCounter: 0,
+	trackedCounter: 0,
 
-	lastUpdationId: 0,
+	lastUpdateId: 0,
 
 	transaction: null as {
 		primaryCells: Map<Cell, any>;
 		secondaryCells: Set<Cell>;
 	} | null
 };
+
+const $error = { error: Error() };
 
 export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitter {
 	static EVENT_CHANGE = 'change';
@@ -98,10 +100,8 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 
 	meta: TMeta | null;
 
-	protected _slippery: boolean;
-	protected _sticky: boolean;
-
 	protected _pull: TCellPull<TValue, TContext, TMeta> | null;
+	protected _dependencyFilter: (dep: Cell) => any;
 
 	protected _validate: ((next: TValue, value: TValue | undefined) => void) | null;
 	protected _put: TCellPut<TValue, TContext, TMeta> | null;
@@ -148,7 +148,7 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 		return this._currentlyPulling;
 	}
 
-	protected _updationId = -1;
+	protected _updateId = -1;
 
 	protected _bound = false;
 
@@ -169,10 +169,8 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 
 		this.meta = options?.meta ?? null;
 
-		this._slippery = options?.slippery ?? false;
-		this._sticky = options?.sticky ?? false;
-
-		this._pull = options?.pull ?? (typeof value == 'function' ? (value as any) : null);
+		this._pull = typeof value == 'function' ? (value as TCellPull) : null;
+		this._dependencyFilter = options?.dependencyFilter ?? DependencyFilter.allExceptUntracked;
 
 		this._validate = options?.validate ?? null;
 		this._put = options?.put ?? null;
@@ -212,14 +210,14 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 
 	override on(
 		type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR,
-		listener: Function,
+		listener: TListener,
 		context?: any
 	): this;
 	override on(
-		listeners: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, Function>,
+		listeners: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>,
 		context?: any
 	): this;
-	override on(type: string | Record<string, Function>, listener?: any, context?: any) {
+	override on(type: string | Record<string, TListener>, listener?: any, context?: any) {
 		if (this._dependencies !== null) {
 			this.actualize();
 		}
@@ -237,14 +235,14 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 
 	override off(
 		type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR,
-		listener: Function,
+		listener: TListener,
 		context?: any
 	): this;
 	override off(
-		listeners?: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, Function>,
+		listeners?: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>,
 		context?: any
 	): this;
-	override off(type?: string | Record<string, Function>, listener?: any, context?: any) {
+	override off(type?: string | Record<string, TListener>, listener?: any, context?: any) {
 		if (this._dependencies !== null) {
 			this.actualize();
 		}
@@ -277,11 +275,11 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 		return this;
 	}
 
-	onChange(listener: Function, context?: any) {
+	onChange(listener: TListener, context?: any) {
 		return this.on(Cell.EVENT_CHANGE, listener, context !== undefined ? context : this.context);
 	}
 
-	offChange(listener: Function, context?: any) {
+	offChange(listener: TListener, context?: any) {
 		return this.off(
 			Cell.EVENT_CHANGE,
 			listener,
@@ -289,16 +287,16 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 		);
 	}
 
-	onError(listener: Function, context?: any) {
+	onError(listener: TListener, context?: any) {
 		return this.on(Cell.EVENT_ERROR, listener, context !== undefined ? context : this.context);
 	}
 
-	offError(listener: Function, context?: any) {
+	offError(listener: TListener, context?: any) {
 		return this.off(Cell.EVENT_ERROR, listener, context !== undefined ? context : this.context);
 	}
 
 	subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any) {
-		let wrappers: Map<Cell, Function> =
+		let wrappers: Map<Cell, TListener> =
 			listener[KEY_LISTENER_WRAPPERS] ?? (listener[KEY_LISTENER_WRAPPERS] = new Map());
 
 		if (wrappers.has(this)) {
@@ -318,7 +316,7 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 	}
 
 	unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this {
-		let wrappers: Map<Cell, Function> | undefined = listener[KEY_LISTENER_WRAPPERS];
+		let wrappers: Map<Cell, TListener> | undefined = listener[KEY_LISTENER_WRAPPERS];
 		let wrapper = wrappers?.get(this);
 
 		if (!wrapper) {
@@ -400,7 +398,7 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 	}
 
 	protected _onValueChange(evt: IEvent) {
-		this._updationId = ++Cell_CommonState.lastUpdationId;
+		this._updateId = ++Cell_CommonState.lastUpdateId;
 
 		let reactions = this._reactions;
 
@@ -467,30 +465,24 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 		this.set(value);
 	}
 
-	get(sticky?: boolean): TValue {
-		if (
-			this._state != CellState.ACTUAL &&
-			this._updationId != Cell_CommonState.lastUpdationId
-		) {
+	get(): TValue {
+		if (this._state != CellState.ACTUAL && this._updateId != Cell_CommonState.lastUpdateId) {
 			this.actualize();
 		}
 
-		if (
-			Cell_CommonState.currentCell &&
-			(!Cell_CommonState.currentCell._slippery ||
-				sticky ||
-				(this._sticky && sticky !== false))
-		) {
-			if (Cell_CommonState.currentCell._dependencies) {
-				if (fastIndexOf(Cell_CommonState.currentCell._dependencies, this) == -1) {
-					Cell_CommonState.currentCell._dependencies.push(this);
+		let { currentCell } = Cell_CommonState;
+
+		if (currentCell?._dependencyFilter(this)) {
+			if (currentCell._dependencies) {
+				if (fastIndexOf(currentCell._dependencies, this) == -1) {
+					currentCell._dependencies.push(this);
 				}
 			} else {
-				Cell_CommonState.currentCell._dependencies = [this];
+				currentCell._dependencies = [this];
 			}
 		}
 
-		if (this._error && (Cell_CommonState.currentCell || !(this._error instanceof WaitError))) {
+		if (this._error && (currentCell || !(this._error instanceof WaitError))) {
 			throw this._error;
 		}
 
@@ -536,12 +528,12 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 					(err) => this.fail(err)
 				);
 
-				Cell_CommonState.$error.error = new WaitError();
-				value = Cell_CommonState.$error;
+				$error.error = new WaitError();
+				value = $error;
 			}
 		} catch (err) {
-			Cell_CommonState.$error.error = err;
-			value = Cell_CommonState.$error;
+			$error.error = err;
+			value = $error;
 		}
 
 		Cell_CommonState.currentCell = prevCell;
@@ -595,9 +587,7 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 			this._state = this._dependencies ? CellState.DIRTY : CellState.ACTUAL;
 		}
 
-		return value === Cell_CommonState.$error
-			? this.fail(Cell_CommonState.$error.error)
-			: this.push(value);
+		return value === $error ? this.fail($error.error, true) : this.push(value, true);
 	}
 
 	set(value: TValue) {
@@ -623,19 +613,19 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 				(this._put as Function).call(this.context, this, value);
 			}
 		} else {
-			this.push(value as any);
+			this.push(value);
 		}
 
 		return this;
 	}
 
-	push(value: TValue) {
+	push(value: TValue, _afterPull?: boolean) {
 		this._inited = true;
 
 		let err = this._error;
 
 		if (err) {
-			this._setError(null);
+			this._setError(null, true);
 		}
 
 		let prevValue = this._value;
@@ -663,7 +653,9 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 			this._state = CellState.ACTUAL;
 		}
 
-		this._updationId = ++Cell_CommonState.lastUpdationId;
+		this._updateId = _afterPull
+			? Cell_CommonState.lastUpdateId
+			: ++Cell_CommonState.lastUpdateId;
 
 		if (changed || err instanceof WaitError) {
 			let reactions = this._reactions;
@@ -683,28 +675,31 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 		return changed;
 	}
 
-	fail(err: any) {
+	fail(err: any, _afterPull?: boolean) {
 		this._inited = true;
 
 		let isWaitError = err instanceof WaitError;
 
 		if (!isWaitError) {
-			if (this.debugKey != undefined) {
+			if (this.debugKey !== undefined) {
 				config.logError('[' + this.debugKey + ']', err);
 			} else {
 				config.logError(err);
 			}
 
 			if (!(err instanceof Error)) {
-				err = Error(String(err));
+				err = Error(err);
 			}
 		}
 
-		this._setError({
-			target: this,
-			type: Cell.EVENT_ERROR,
-			data: { error: err }
-		});
+		this._setError(
+			{
+				target: this,
+				type: Cell.EVENT_ERROR,
+				data: { error: err as Error }
+			},
+			!!_afterPull
+		);
 
 		if (this._active) {
 			this._state = CellState.ACTUAL;
@@ -713,7 +708,7 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 		return isWaitError;
 	}
 
-	protected _setError(errorEvent: IEvent<{ error: Error }> | null) {
+	protected _setError(errorEvent: IEvent<{ error: Error }> | null, afterPull: boolean) {
 		if (this._lastErrorEvent === errorEvent) {
 			return;
 		}
@@ -724,7 +719,9 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 		this._error = err;
 		this._lastErrorEvent = errorEvent;
 
-		this._updationId = ++Cell_CommonState.lastUpdationId;
+		this._updateId = afterPull
+			? Cell_CommonState.lastUpdateId
+			: ++Cell_CommonState.lastUpdateId;
 
 		if (errorEvent) {
 			this.handleEvent(errorEvent);
@@ -733,7 +730,7 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 		let reactions = this._reactions;
 
 		for (let i = 0; i < reactions.length; i++) {
-			reactions[i]._setError(errorEvent);
+			reactions[i]._setError(errorEvent, afterPull);
 		}
 	}
 

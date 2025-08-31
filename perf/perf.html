@@ -175,21 +175,16 @@ function testCellx(layerCount, done) {
 				prop4: new Cell(() => prev.prop3.get())
 			};
 
-			next.prop1.onChange(() => {});
-			next.prop2.onChange(() => {});
-			next.prop3.onChange(() => {});
-			next.prop4.onChange(() => {});
-
-			next.prop1.get();
-			next.prop2.get();
-			next.prop3.get();
-			next.prop4.get();
-
 			return next;
 		})(layer);
 	}
 
 	let end = layer;
+
+	end.prop1.onChange(() => {});
+	end.prop2.onChange(() => {});
+	end.prop3.onChange(() => {});
+	end.prop4.onChange(() => {});
 
 	let beforeChange = [
 		end.prop1.get(),
@@ -287,21 +282,16 @@ function testKnockout(layerCount, done) {
 				prop4: ko.computed(() => prev.prop3())
 			};
 
-			next.prop1.subscribe(() => {});
-			next.prop2.subscribe(() => {});
-			next.prop3.subscribe(() => {});
-			next.prop4.subscribe(() => {});
-
-			next.prop1();
-			next.prop2();
-			next.prop3();
-			next.prop4();
-
 			return next;
 		})(layer);
 	}
 
 	let end = layer;
+
+	end.prop1.subscribe(() => {});
+	end.prop2.subscribe(() => {});
+	end.prop3.subscribe(() => {});
+	end.prop4.subscribe(() => {});
 
 	let beforeChange = [
 		end.prop1(),
@@ -420,11 +410,6 @@ function testMolAtom(layerCount, done) {
 				prop4: new $mol_atom(() => prev.prop3.get())
 			};
 
-			next.prop1.get();
-			next.prop2.get();
-			next.prop3.get();
-			next.prop4.get();
-
 			return next;
 		})(layer);
 	}
@@ -475,11 +460,6 @@ function testReactor(layerCount, done) {
 				prop3: Signal(() => prev.prop2() + prev.prop4()),
 				prop4: Signal(() => prev.prop3())
 			};
-
-			next.prop1();
-			next.prop2();
-			next.prop3();
-			next.prop4();
 
 			return next;
 		})(layer);
@@ -537,11 +517,6 @@ function testReactive(layerCount, done) {
 			next.prop3.bindTo(prev.prop2, prev.prop4);
 			next.prop4.bindTo(prev.prop3);
 
-			next.prop1();
-			next.prop2();
-			next.prop3();
-			next.prop4();
-
 			return next;
 		})(layer);
 	}
@@ -598,16 +573,16 @@ function testKefir(layerCount, done) {
 				prop4: prev.prop3.map((a) => a)
 			};
 
-			next.prop1.onValue(() => {});
-			next.prop2.onValue(() => {});
-			next.prop3.onValue(() => {});
-			next.prop4.onValue(() => {});
-
 			return next;
 		})(layer);
 	}
 
 	let end = layer;
+
+	end.prop1.onValue(() => {});
+	end.prop2.onValue(() => {});
+	end.prop3.onValue(() => {});
+	end.prop4.onValue(() => {});
 
 	let beforeChange;
 	let startTime;
@@ -657,21 +632,16 @@ function testMobX(layerCount, done) {
 				prop4: mobx.computed(() => prev.prop3.get())
 			};
 
-			next.prop1.observe(() => {});
-			next.prop2.observe(() => {});
-			next.prop3.observe(() => {});
-			next.prop4.observe(() => {});
-
-			next.prop1.get();
-			next.prop2.get();
-			next.prop3.get();
-			next.prop4.get();
-
 			return next;
 		})(layer);
 	}
 
 	let end = layer;
+
+	mobx.autorun(() => end.prop1.get());
+	mobx.autorun(() => end.prop2.get());
+	mobx.autorun(() => end.prop3.get());
+	mobx.autorun(() => end.prop4.get());
 
 	let beforeChange = [
 		end.prop1.get(),
@@ -718,21 +688,16 @@ function testEffector(layerCount, done) {
 				prop4: prev.prop3.map((prop3) => prop3)
 			};
 
-			next.prop1.watch(() => {});
-			next.prop2.watch(() => {});
-			next.prop3.watch(() => {});
-			next.prop4.watch(() => {});
-
-			next.prop1.getState();
-			next.prop2.getState();
-			next.prop3.getState();
-			next.prop4.getState();
-
 			return next;
 		})(layer);
 	}
 
 	let end = layer;
+
+	end.prop1.watch(() => {});
+	end.prop2.watch(() => {});
+	end.prop3.watch(() => {});
+	end.prop4.watch(() => {});
 
 	let beforeChange = [
 		end.prop1.getState(),

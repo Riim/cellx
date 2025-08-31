@@ -4,9 +4,11 @@ export { KEY_VALUE_CELLS } from './keys';
 export { configure } from './config';
 export { type IEvent, type I$Listener, EventEmitter } from './EventEmitter';
 export { autorun } from './autorun';
+export { effect } from './effect';
 export { release } from './release';
 export { afterRelease } from './afterRelease';
 export { transact } from './transact';
+export { DependencyFilter, untracked, tracked } from './track';
 export {
 	type TCellPull,
 	type ICellOptions,

@@ -441,40 +441,28 @@ describe('Cell', () => {
 			expect(c2$OnError.mock.calls.length).toBe(1);
 			expect(d$OnError.mock.calls.length).toBe(1);
 		});
-	});
 
-	describe('other', () => {
-		test('.afterRelease()', () => {
+		test('нет лишнего вычисления при отсутствии обработчиков', () => {
 			let a$ = cellx(1);
-			let b$ = cellx(() => a$.value + 1, { onChange() {} });
+			let calcB$ = jest.fn(() => a$.value);
+			let b$ = cellx(calcB$);
+			let c1$ = cellx(() => b$.value);
+			let c2$ = cellx(() => b$.value);
+			let d$ = cellx(() => c1$.value + c2$.value);
+
+			d$.value;
+
+			calcB$.mockClear();
 
 			a$.value = 2;
 
-			let afterReleaseCallback = jest.fn();
+			d$.value;
 
-			Cell.afterRelease(afterReleaseCallback);
-
-			Cell.release();
-
-			expect(afterReleaseCallback.mock.calls.length).toBe(1);
-			expect(b$.value).toBe(3);
+			expect(calcB$.mock.calls.length).toBe(1);
 		});
+	});
 
-		test('.transact()', () => {
-			let a$ = cellx(1);
-
-			try {
-				Cell.transact(() => {
-					a$.value = 2;
-					a$.value = 3;
-
-					throw 1;
-				});
-			} catch {}
-
-			expect(a$.value).toBe(1);
-		});
-
+	describe('other', () => {
 		test('[options.validate]', () => {
 			let a$ = cellx<number | string>(1, {
 				validate(value) {

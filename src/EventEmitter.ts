@@ -11,8 +11,10 @@ export interface IEvent<D = any, T extends EventEmitter = EventEmitter> {
 	data: D;
 }
 
+export type TListener = (evt: IEvent) => any;
+
 export interface I$Listener {
-	listener: Function;
+	listener: TListener;
 	context: any;
 }
 
@@ -30,11 +32,11 @@ export class EventEmitter {
 		return EventEmitter_CommonState.currentlySubscribing;
 	}
 
-	static transact(cb: Function) {
+	static transact(fn: Function) {
 		EventEmitter_CommonState.transactionLevel++;
 
 		try {
-			cb();
+			fn();
 		} finally {
 			if (--EventEmitter_CommonState.transactionLevel == 0) {
 				let events = EventEmitter_CommonState.transactionEvents;
@@ -48,9 +50,9 @@ export class EventEmitter {
 		}
 	}
 
-	static silently(cb: Function) {
+	static silently(fn: Function) {
 		if (EventEmitter_CommonState.silently) {
-			cb();
+			fn();
 
 			return;
 		}
@@ -58,7 +60,7 @@ export class EventEmitter {
 		EventEmitter_CommonState.silently = true;
 
 		try {
-			cb();
+			fn();
 		} finally {
 			EventEmitter_CommonState.silently = false;
 		}
@@ -76,9 +78,9 @@ export class EventEmitter {
 		return type ? (this._$listeners.get(type) ?? []) : this._$listeners;
 	}
 
-	on(type: string | symbol, listener: Function, context?: any): this;
-	on(listeners: Record<string | symbol, Function>, context?: any): this;
-	on(type: string | symbol | Record<string | symbol, Function>, listener?: any, context?: any) {
+	on(type: string | symbol, listener: TListener, context?: any): this;
+	on(listeners: Record<string | symbol, TListener>, context?: any): this;
+	on(type: string | symbol | Record<string | symbol, TListener>, listener?: any, context?: any) {
 		if (typeof type == 'object') {
 			context = listener !== undefined ? listener : this;
 
@@ -100,9 +102,13 @@ export class EventEmitter {
 		return this;
 	}
 
-	off(type: string | symbol, listener: Function, context?: any): this;
-	off(listeners?: Record<string | symbol, Function>, context?: any): this;
-	off(type?: string | symbol | Record<string | symbol, Function>, listener?: any, context?: any) {
+	off(type: string | symbol, listener: TListener, context?: any): this;
+	off(listeners?: Record<string | symbol, TListener>, context?: any): this;
+	off(
+		type?: string | symbol | Record<string | symbol, TListener>,
+		listener?: any,
+		context?: any
+	) {
 		if (type) {
 			if (typeof type == 'object') {
 				context = listener !== undefined ? listener : this;
@@ -128,7 +134,7 @@ export class EventEmitter {
 		return this;
 	}
 
-	protected _on(type: string | symbol, listener: Function, context: any) {
+	protected _on(type: string | symbol, listener: TListener, context: any) {
 		let index: number;
 
 		if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
@@ -158,7 +164,7 @@ export class EventEmitter {
 		}
 	}
 
-	protected _off(type: string | symbol, listener: Function, context: any) {
+	protected _off(type: string | symbol, listener: TListener, context: any) {
 		let index: number;
 
 		if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
@@ -200,7 +206,7 @@ export class EventEmitter {
 		}
 	}
 
-	once(type: string | symbol, listener: Function, context?: any) {
+	once(type: string | symbol, listener: TListener, context?: any) {
 		if (context === undefined) {
 			context = this;
 		}

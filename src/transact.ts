@@ -1,9 +1,9 @@
-import { Cell_CommonState, CellState } from './Cell';
+import { CellState, Cell_CommonState } from './Cell';
 import { release } from './release';
 
-export function transact(cb: Function) {
+export function transact(fn: Function) {
 	if (Cell_CommonState.transaction) {
-		cb();
+		fn();
 
 		return;
 	}
@@ -18,7 +18,7 @@ export function transact(cb: Function) {
 	};
 
 	try {
-		cb();
+		fn();
 	} catch (err) {
 		for (let [cell, value] of Cell_CommonState.transaction.primaryCells) {
 			// @ts-expect-error

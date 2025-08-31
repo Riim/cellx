@@ -1,5 +1,5 @@
 export const config = {
-	logError: (...args: Array<any>) => {
+	logError: /* istanbul ignore next */ (...args: Array<any>) => {
 		console.error(...args);
 	},
 
