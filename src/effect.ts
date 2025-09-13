@@ -1,21 +1,26 @@
-import { Cell } from './Cell';
-import { IEvent } from './EventEmitter';
+import { Cell, ICellChangeEvent, ICellOptions, TCellPull } from './Cell';
 
-export function effect<TValue, TContext>(
-	cell: Cell<TValue, TContext>,
-	fn: (evt: IEvent, disposer: () => void) => any,
-	context?: TContext
+export function effect<Value, Context = null, Meta = null>(
+	source: Cell | Array<Cell> | TCellPull<Value, Context, Meta>,
+	fn: (this: Context, value: Value, prevValue: Value, disposer: () => void) => any,
+	cellOptions?: ICellOptions<Value, Context, Meta>
 ) {
-	let disposer: () => void;
-	let listener = function (this: TContext, evt: IEvent) {
-		return fn.call(this, evt, disposer);
+	let cell = new Cell({
+		...cellOptions,
+		pullFn:
+			source instanceof Cell
+				? () => source.value
+				: Array.isArray(source)
+					? () => source.map((cell) => cell.value)
+					: source
+	});
+	let disposer = () => {
+		cell.dispose();
 	};
 
-	disposer = () => {
-		cell.offChange(listener, context);
-	};
-
-	cell.onChange(listener, context);
+	cell.onChange(function (this: Context, { data }: ICellChangeEvent) {
+		return fn.call(this, data.value, data.prevValue, disposer);
+	});
 
 	return disposer;
 }

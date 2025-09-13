@@ -1,11 +1,10 @@
 import { describe, expect, test } from '@jest/globals';
-import { CellState } from '../src/Cell';
-import { Cell, EventEmitter, cellx, configure, define } from '../src/cellx';
+import { Cell, CellState, EventEmitter, cellx, configure, release } from '../src/cellx';
 
 configure({ logError: () => {} });
 
 afterEach(() => {
-	Cell.release();
+	release();
 });
 
 describe('Cell', () => {
@@ -62,7 +61,7 @@ describe('Cell', () => {
 
 			a$.pull();
 
-			Cell.release();
+			release();
 
 			expect(onChange.mock.calls.length).toBe(1);
 			expect(b$.value).toBe(3);
@@ -74,6 +73,7 @@ describe('Cell', () => {
 			let a$ = cellx(1, {
 				onChange() {
 					expect(a$.value).toBe(2);
+
 					done();
 				}
 			});
@@ -86,6 +86,7 @@ describe('Cell', () => {
 			let b$ = cellx(() => a$.value + 1, {
 				onChange() {
 					expect(b$.value).toBe(3);
+
 					done();
 				}
 			});
@@ -98,8 +99,7 @@ describe('Cell', () => {
 			let a$ = cellx(1, { onChange });
 
 			a$.value = 1;
-
-			Cell.release();
+			release();
 
 			expect(onChange.mock.calls.length).toBe(0);
 		});
@@ -113,8 +113,7 @@ describe('Cell', () => {
 			let onChange = jest.fn();
 
 			b$.onChange(onChange);
-
-			Cell.release();
+			release();
 
 			expect(onChange.mock.calls.length).toBe(0);
 		});
@@ -129,13 +128,10 @@ describe('Cell', () => {
 			b$.offChange(onChange);
 
 			a$.value = 2;
-
 			b$.onChange(onChange);
-
-			Cell.release();
+			release();
 
 			expect(b$.value).toBe(2);
-
 			expect(onChange.mock.calls.length).toBe(0);
 		});
 
@@ -146,8 +142,7 @@ describe('Cell', () => {
 			cellx(emitter, { onChange });
 
 			emitter.emit('change');
-
-			Cell.release();
+			release();
 
 			expect(onChange.mock.calls.length).toBe(1);
 		});
@@ -160,21 +155,7 @@ describe('Cell', () => {
 			cellx(() => a$.value, { onChange });
 
 			emitter.emit('change');
-
-			Cell.release();
-
-			expect(onChange.mock.calls.length).toBe(1);
-		});
-
-		test('подписка через EventEmitter', () => {
-			let emitter = new EventEmitter();
-			let onChange = jest.fn();
-
-			define(emitter, { foo: 1 });
-
-			emitter.on('change:foo', onChange);
-
-			emitter['foo'] = 2;
+			release();
 
 			expect(onChange.mock.calls.length).toBe(1);
 		});
@@ -192,8 +173,7 @@ describe('Cell', () => {
 
 			a$.value = 2;
 			b$.value = 3;
-
-			Cell.release();
+			release();
 
 			expect(calcC$.mock.calls.length).toBe(1);
 		});
@@ -210,8 +190,7 @@ describe('Cell', () => {
 
 			a$.value = 2;
 			b$.value = 3;
-
-			Cell.release();
+			release();
 
 			expect(calcD$.mock.calls.length).toBe(1);
 		});
@@ -229,8 +208,7 @@ describe('Cell', () => {
 
 			a$.value = 2;
 			b$.value = 3;
-
-			Cell.release();
+			release();
 
 			expect(calcC$.mock.calls.length).toBe(1);
 		});
@@ -313,15 +291,14 @@ describe('Cell', () => {
 		});
 
 		test('подключаемая, неактивная ячейка получает state == actual', () => {
-			let a$ = cellx(() => (b$.value ? 1 : c$.value));
-			let b$ = cellx(true);
-			let c$ = cellx(() => d$.value);
-			let d$ = cellx(() => 1);
+			let a$ = cellx(true);
+			let b$ = cellx(() => 1);
+			let c$ = cellx(() => b$.value);
+			let d$ = cellx(() => (a$.value ? 1 : c$.value));
 
-			a$.onChange(() => {});
-			b$.value = false;
-
-			Cell.release();
+			d$.onChange(() => {});
+			a$.value = false;
+			release();
 
 			expect(c$.state).toBe(CellState.ACTUAL);
 		});
@@ -344,13 +321,11 @@ describe('Cell', () => {
 			a$.value = 2;
 
 			try {
-				Cell.release();
+				release();
 			} catch {}
 
 			expect(t).toBe(2);
-
 			expect(b$.state).toBe(CellState.ACTUAL);
-
 			expect(() => b$.value).toThrow();
 		});
 
@@ -433,8 +408,7 @@ describe('Cell', () => {
 			cellx(() => c1$.value + c2$.value, { onError: d$OnError });
 
 			a$.value = 2;
-
-			Cell.release();
+			release();
 
 			expect(b$OnError.mock.calls.length).toBe(1);
 			expect(c1$OnError.mock.calls.length).toBe(1);

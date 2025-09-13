@@ -1,24 +1,27 @@
 import { Bench } from 'tinybench';
-import { Cell } from '../dist/cellx.umd';
+import { cellx } from '../dist/cellx.umd';
 
-const bench = new Bench({ time: 10000 });
+const bench = new Bench({
+	time: 5000,
+	warmupTime: 1000
+});
 
 bench.add('1', () => {
 	let start = {
-		prop1: new Cell(1),
-		prop2: new Cell(2),
-		prop3: new Cell(3),
-		prop4: new Cell(4)
+		prop1: cellx(1),
+		prop2: cellx(2),
+		prop3: cellx(3),
+		prop4: cellx(4)
 	};
 	let layer = start;
 
-	for (let i = 100; i--; ) {
+	for (let i = 10; i--; ) {
 		layer = ((prev) => {
 			let next = {
-				prop1: new Cell(() => prev.prop2.get()),
-				prop2: new Cell(() => prev.prop1.get() - prev.prop3.get()),
-				prop3: new Cell(() => prev.prop2.get() + prev.prop4.get()),
-				prop4: new Cell(() => prev.prop3.get())
+				prop1: cellx(() => prev.prop2.get()),
+				prop2: cellx(() => prev.prop1.get() - prev.prop3.get()),
+				prop3: cellx(() => prev.prop2.get() + prev.prop4.get()),
+				prop4: cellx(() => prev.prop3.get())
 			};
 
 			return next;

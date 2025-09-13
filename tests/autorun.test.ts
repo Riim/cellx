@@ -10,7 +10,6 @@ describe.only('autorun()', () => {
 		expect(a$AutorunFn.mock.calls.length).toBe(1);
 
 		a$.value = 2;
-
 		release();
 
 		expect(a$AutorunFn.mock.calls.length).toBe(2);
@@ -26,7 +25,6 @@ describe.only('autorun()', () => {
 		let disposeA$Autorun = autorun(a$AutorunFn, { context: a$Context });
 
 		a$.value = 2;
-
 		release();
 
 		expect(a$AutorunFn.mock.contexts[0]).toBe(a$Context);

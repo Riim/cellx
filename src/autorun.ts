@@ -1,13 +1,15 @@
-import { Cell, type ICellOptions } from './Cell';
+import { Cell, ICellOptions } from './Cell';
 
-export function autorun<TValue = any, TContext = any, TMeta = any>(
-	fn: (this: TContext, value: TValue | undefined, disposer: () => void) => TValue,
-	cellOptions?: ICellOptions<TValue, TContext, TMeta>
+export function autorun<Value, Context = null>(
+	fn: (this: Context, value: Value | undefined, disposer: () => void) => Value,
+	cellOptions?: ICellOptions<Value, Context>
 ) {
 	let disposer: (() => void) | undefined;
 
-	new Cell(
-		function (cell, value) {
+	new Cell({
+		onChange: () => {},
+		...cellOptions,
+		pullFn: function (cell, value) {
 			return fn.call(
 				this,
 				value,
@@ -15,14 +17,8 @@ export function autorun<TValue = any, TContext = any, TMeta = any>(
 					cell.dispose();
 				})
 			);
-		},
-		cellOptions?.onChange
-			? cellOptions
-			: {
-					...cellOptions,
-					onChange: () => {}
-				}
-	);
+		}
+	});
 
 	return disposer!;
 }

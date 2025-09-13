@@ -3,6 +3,7 @@ import { WaitError } from './WaitError';
 import { afterRelease } from './afterRelease';
 import { autorun } from './autorun';
 import { config } from './config';
+import { effect } from './effect';
 import { KEY_LISTENER_WRAPPERS } from './keys';
 import { release } from './release';
 import { DependencyFilter } from './track';
@@ -10,30 +11,72 @@ import { transact } from './transact';
 import { fastIndexOf } from './utils/fastIndexOf';
 import { nextTick } from './utils/nextTick';
 
-export type TCellPull<TValue = any, TContext = any, TMeta = any> = (
-	this: TContext,
-	cell: Cell<TValue, TContext, TMeta>,
-	value: TValue | undefined
-) => TValue;
+export type CellValue<T> = T extends Cell<infer U> ? U : T;
 
-export type TCellPut<TValue = any, TContext = any, TMeta = any> = (
-	this: TContext,
-	cell: Cell<TValue, TContext, TMeta>,
-	next: TValue,
-	value: TValue | undefined
+export interface ICellChangeEvent<Target extends Cell = Cell>
+	extends IEvent<
+		{
+			value: CellValue<Target>;
+			prevValue: CellValue<Target>;
+		},
+		Target
+	> {
+	type: typeof Cell.EVENT_CHANGE;
+}
+
+export interface ICellErrorEvent<Target extends Cell = Cell>
+	extends IEvent<{ error: Error }, Target> {
+	type: typeof Cell.EVENT_ERROR;
+}
+
+export type TCellEvent<Target extends Cell = Cell> =
+	| ICellChangeEvent<Target>
+	| ICellErrorEvent<Target>;
+
+export type TCellChangeEventListener<Target extends Cell = Cell, Context = any> = TListener<
+	ICellChangeEvent<Target>,
+	Context
+>;
+
+export type TCellErrorEventListener<Target extends Cell = Cell, Context = any> = TListener<
+	ICellErrorEvent<Target>,
+	Context
+>;
+
+export type TCellEventListener<Target extends Cell = Cell, Context = any> =
+	| TCellChangeEventListener<Target, Context>
+	| TCellErrorEventListener<Target, Context>;
+
+export interface ICellListeners<Target extends Cell = Cell, Context = any> {
+	[Cell.EVENT_CHANGE]?: TCellChangeEventListener<Target, Context>;
+	[Cell.EVENT_ERROR]?: TCellErrorEventListener<Target, Context>;
+}
+
+export type TCellPull<Value = any, Context = any, Meta = any> = (
+	this: Context,
+	cell: Cell<Value, Context, Meta>,
+	value: Value | undefined
+) => Value;
+
+export type TCellPut<Value = any, Context = any, Meta = any> = (
+	this: Context,
+	cell: Cell<Value, Context, Meta>,
+	next: Value,
+	value: Value | undefined
 ) => void;
 
-export interface ICellOptions<TValue = any, TContext = any, TMeta = any> {
-	debugKey?: string;
-	context?: TContext;
-	meta?: TMeta;
+export interface ICellOptions<Value = any, Context = any, Meta = any> {
+	context?: Context;
+	meta?: Meta;
+	pullFn?: TCellPull<Value, Context, Meta>;
 	dependencyFilter?: (dep: Cell) => any;
-	validate?: (next: TValue, value: TValue | undefined) => void;
-	put?: TCellPut<TValue, TContext, TMeta>;
-	compareValues?: (next: TValue, value: TValue | undefined) => boolean;
-	reap?: (this: TContext) => void;
-	onChange?: TListener;
-	onError?: TListener;
+	validate?: (next: Value, value: Value | undefined) => void;
+	put?: TCellPut<Value, Context, Meta>;
+	compareValues?: (next: Value, value: Value | undefined) => boolean;
+	reap?: (this: Context) => void;
+	value?: Value;
+	onChange?: TCellChangeEventListener<Cell<Value, any, Meta>>;
+	onError?: TCellErrorEventListener<Cell<Value, any, Meta>>;
 }
 
 export enum CellState {
@@ -41,21 +84,6 @@ export enum CellState {
 	DIRTY = 'dirty',
 	CHECK = 'check'
 }
-
-export interface ICellChangeEvent<T extends Cell = Cell> extends IEvent<any, T> {
-	type: typeof Cell.EVENT_CHANGE;
-	data: {
-		prevValue: any;
-		value: any;
-	};
-}
-
-export interface ICellErrorEvent<T extends Cell = Cell> extends IEvent<any, T> {
-	type: typeof Cell.EVENT_ERROR;
-	data: { error: any };
-}
-
-export type TCellEvent<T extends Cell = Cell> = ICellChangeEvent<T> | ICellErrorEvent<T>;
 
 export const Cell_CommonState = {
 	pendingCells: [] as Array<Cell>,
@@ -65,8 +93,8 @@ export const Cell_CommonState = {
 
 	currentCell: null as Cell | null,
 
-	untrackedCounter: 0,
-	trackedCounter: 0,
+	inUntrackedCounter: 0,
+	inTrackedCounter: 0,
 
 	lastUpdateId: 0,
 
@@ -78,48 +106,47 @@ export const Cell_CommonState = {
 
 const $error = { error: Error() };
 
-export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitter {
-	static EVENT_CHANGE = 'change';
-	static EVENT_ERROR = 'error';
+export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
+	static readonly EVENT_CHANGE = 'change';
+	static readonly EVENT_ERROR = 'error';
 
 	static get currentlyPulling() {
 		return Cell_CommonState.currentCell != null;
 	}
 
-	static autorun = autorun;
+	static readonly autorun = autorun;
+	static readonly effect = effect;
 
-	static release = release;
+	static readonly release = release;
 
-	static afterRelease = afterRelease;
+	static readonly afterRelease = afterRelease;
 
-	static override transact = transact;
+	static override readonly transact = transact;
 
-	debugKey: string | undefined;
+	readonly context: Context;
 
-	context: TContext;
+	readonly meta: Meta;
 
-	meta: TMeta | null;
-
-	protected _pull: TCellPull<TValue, TContext, TMeta> | null;
+	protected _pullFn: TCellPull<Value, Context, Meta> | null;
 	protected _dependencyFilter: (dep: Cell) => any;
 
-	protected _validate: ((next: TValue, value: TValue | undefined) => void) | null;
-	protected _put: TCellPut<TValue, TContext, TMeta> | null;
-	protected _compareValues: (next: TValue, value: TValue | undefined) => boolean;
+	protected _validateValue: ((next: Value, value: Value | undefined) => void) | null;
+	protected _putFn: TCellPut<Value, Context, Meta> | null;
+	protected _compareValues: (next: Value, value: Value | undefined) => boolean;
 
 	protected _reap: (() => void) | null;
 
 	protected _dependencies: Array<Cell> | null | undefined;
 	protected _reactions: Array<Cell> = [];
 
-	protected _value: TValue | undefined;
-	protected _errorCell: Cell<Error | null> | null = null;
+	protected _value: Value | undefined;
+	protected _error$: Cell<Error | null> | null = null;
 	protected _error: Error | null = null;
 	protected _lastErrorEvent: IEvent | null = null;
 
 	get error() {
 		return Cell_CommonState.currentCell
-			? (this._errorCell ?? (this._errorCell = new Cell(this._error))).get()
+			? (this._error$ ?? (this._error$ = new Cell({ value: this._error }))).get()
 			: this._error;
 	}
 
@@ -152,44 +179,34 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 
 	protected _bound = false;
 
-	constructor(
-		value: TCellPull<TValue, TContext, TMeta>,
-		options?: ICellOptions<TValue, TContext, TMeta>
-	);
-	constructor(value: TValue, options?: ICellOptions<TValue, TContext, TMeta>);
-	constructor(
-		value: TValue | TCellPull<TValue, TContext, TMeta>,
-		options?: ICellOptions<TValue, TContext, TMeta>
-	) {
+	constructor(options: ICellOptions<Value, Context, Meta>) {
 		super();
 
-		this.debugKey = options?.debugKey;
+		this.context = (options.context ?? null) as Context;
 
-		this.context = (options?.context ?? null) as TContext;
+		this.meta = (options.meta ?? null) as Meta;
 
-		this.meta = options?.meta ?? null;
+		this._pullFn = options.pullFn ?? null;
+		this._dependencyFilter = options.dependencyFilter ?? DependencyFilter.allExceptUntracked;
 
-		this._pull = typeof value == 'function' ? (value as TCellPull) : null;
-		this._dependencyFilter = options?.dependencyFilter ?? DependencyFilter.allExceptUntracked;
+		this._validateValue = options.validate ?? null;
+		this._putFn = options.put ?? null;
+		this._compareValues = options.compareValues ?? config.compareValues;
 
-		this._validate = options?.validate ?? null;
-		this._put = options?.put ?? null;
-		this._compareValues = options?.compareValues ?? config.compareValues;
+		this._reap = options.reap ?? null;
 
-		this._reap = options?.reap ?? null;
-
-		if (this._pull) {
+		if (this._pullFn) {
 			this._dependencies = undefined;
 			this._value = undefined;
 			this._state = CellState.DIRTY;
 			this._inited = false;
 		} else {
+			let value = options.value;
+
+			this._validateValue?.(value!, undefined);
+
 			this._dependencies = null;
-
-			this._validate?.(value as TValue, undefined);
-
-			this._value = value as TValue;
-
+			this._value = value;
 			this._state = CellState.ACTUAL;
 			this._inited = true;
 
@@ -198,32 +215,38 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 			}
 		}
 
-		if (options) {
-			if (options.onChange) {
-				this.on('change', options.onChange);
-			}
-			if (options.onError) {
-				this.on(Cell.EVENT_ERROR, options.onError);
-			}
+		if (options.onChange) {
+			this.on('change', options.onChange);
+		}
+		if (options.onError) {
+			this.on('error', options.onError);
 		}
 	}
 
-	override on(
-		type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR,
-		listener: TListener,
-		context?: any
+	override on<C>(
+		type: typeof Cell.EVENT_CHANGE,
+		listener: TCellChangeEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>,
+		context?: C
 	): this;
-	override on(
-		listeners: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>,
-		context?: any
+	override on<C>(
+		type: typeof Cell.EVENT_ERROR,
+		listener: TCellErrorEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>,
+		context?: C
 	): this;
-	override on(type: string | Record<string, TListener>, listener?: any, context?: any) {
+	override on<C>(
+		listeners: ICellListeners<Cell<Value, C extends undefined ? Context : C, Meta>>,
+		context?: C
+	): this;
+	override on(type: string | ICellListeners, listener?: any, context?: any) {
 		if (this._dependencies !== null) {
 			this.actualize();
 		}
 
 		if (typeof type == 'object') {
-			super.on(type, listener !== undefined ? listener : this.context);
+			super.on(
+				type as Record<any, TListener>,
+				listener !== undefined ? listener : this.context
+			);
 		} else {
 			super.on(type, listener, context !== undefined ? context : this.context);
 		}
@@ -233,16 +256,21 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 		return this;
 	}
 
-	override off(
-		type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR,
-		listener: TListener,
-		context?: any
+	override off<C>(
+		type: typeof Cell.EVENT_CHANGE,
+		listener: TCellChangeEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>,
+		context?: C
 	): this;
-	override off(
-		listeners?: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>,
-		context?: any
+	override off<C>(
+		type: typeof Cell.EVENT_ERROR,
+		listener: TCellErrorEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>,
+		context?: C
 	): this;
-	override off(type?: string | Record<string, TListener>, listener?: any, context?: any) {
+	override off<C>(
+		listeners?: ICellListeners<Cell<Value, C extends undefined ? Context : C, Meta>>,
+		context?: C
+	): this;
+	override off(type?: string | ICellListeners, listener?: any, context?: any) {
 		if (this._dependencies !== null) {
 			this.actualize();
 		}
@@ -252,7 +280,10 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 
 		if (type) {
 			if (typeof type == 'object') {
-				super.off(type, listener !== undefined ? listener : this.context);
+				super.off(
+					type as Record<any, TListener>,
+					listener !== undefined ? listener : this.context
+				);
 			} else {
 				super.off(type, listener, context !== undefined ? context : this.context);
 			}
@@ -275,27 +306,42 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 		return this;
 	}
 
-	onChange(listener: TListener, context?: any) {
-		return this.on(Cell.EVENT_CHANGE, listener, context !== undefined ? context : this.context);
+	onChange<C>(
+		listener: TCellChangeEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>,
+		context?: C
+	) {
+		return this.on(Cell.EVENT_CHANGE, listener, context);
 	}
 
-	offChange(listener: TListener, context?: any) {
-		return this.off(
-			Cell.EVENT_CHANGE,
-			listener,
-			context !== undefined ? context : this.context
-		);
+	offChange<C>(
+		listener: TCellChangeEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>,
+		context?: C
+	) {
+		return this.off(Cell.EVENT_CHANGE, listener, context);
 	}
 
-	onError(listener: TListener, context?: any) {
-		return this.on(Cell.EVENT_ERROR, listener, context !== undefined ? context : this.context);
+	onError<C>(
+		listener: TCellErrorEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>,
+		context?: C
+	) {
+		return this.on(Cell.EVENT_ERROR, listener, context);
 	}
 
-	offError(listener: TListener, context?: any) {
-		return this.off(Cell.EVENT_ERROR, listener, context !== undefined ? context : this.context);
+	offError<C>(
+		listener: TCellErrorEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>,
+		context?: C
+	) {
+		return this.off(Cell.EVENT_ERROR, listener, context);
 	}
 
-	subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any) {
+	subscribe<C>(
+		listener: (
+			this: C extends undefined ? (typeof this)['context'] : C,
+			err: Error | null,
+			evt: TCellEvent<this>
+		) => any,
+		context?: C
+	) {
 		let wrappers: Map<Cell, TListener> =
 			listener[KEY_LISTENER_WRAPPERS] ?? (listener[KEY_LISTENER_WRAPPERS] = new Map());
 
@@ -303,19 +349,27 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 			return this;
 		}
 
-		function wrapper(this: any, evt: IEvent): any {
+		function wrapper(this: any, evt: any) {
 			return listener.call(this, evt.data['error'] ?? null, evt);
 		}
 		wrappers.set(this, wrapper);
 
+		// eslint-disable-next-line
 		if (context === undefined) {
-			context = this.context;
+			context = this.context as any;
 		}
 
 		return this.on(Cell.EVENT_CHANGE, wrapper, context).on(Cell.EVENT_ERROR, wrapper, context);
 	}
 
-	unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this {
+	unsubscribe<C>(
+		listener: (
+			this: C extends undefined ? (typeof this)['context'] : C,
+			err: Error | null,
+			evt: TCellEvent<this>
+		) => any,
+		context?: C
+	) {
 		let wrappers: Map<Cell, TListener> | undefined = listener[KEY_LISTENER_WRAPPERS];
 		let wrapper = wrappers?.get(this);
 
@@ -325,8 +379,9 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 
 		wrappers!.delete(this);
 
+		// eslint-disable-next-line
 		if (context === undefined) {
-			context = this.context;
+			context = this.context as any;
 		}
 
 		return this.off(Cell.EVENT_CHANGE, wrapper, context).off(
@@ -461,11 +516,11 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 	get value() {
 		return this.get();
 	}
-	set value(value: TValue) {
+	set value(value: Value) {
 		this.set(value);
 	}
 
-	get(): TValue {
+	get(): Value {
 		if (this._state != CellState.ACTUAL && this._updateId != Cell_CommonState.lastUpdateId) {
 			this.actualize();
 		}
@@ -486,11 +541,11 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 			throw this._error;
 		}
 
-		return this._value as TValue;
+		return this._value as Value;
 	}
 
 	pull() {
-		if (!this._pull) {
+		if (!this._pullFn) {
 			return false;
 		}
 
@@ -509,8 +564,8 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 		let value: any;
 
 		try {
-			if (this._pull.length == 0) {
-				value = (this._pull as Function).call(this.context);
+			if (this._pullFn.length == 0) {
+				value = (this._pullFn as Function).call(this.context);
 			} else {
 				if (!this._bound) {
 					this.push = this.push.bind(this);
@@ -519,7 +574,7 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 					this._bound = true;
 				}
 
-				value = this._pull.call(this.context, this, this._value);
+				value = this._pullFn.call(this.context, this, this._value);
 			}
 
 			if (value instanceof Promise) {
@@ -590,16 +645,16 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 		return value === $error ? this.fail($error.error, true) : this.push(value, true);
 	}
 
-	set(value: TValue) {
+	set(value: Value) {
 		if (!this._inited) {
 			// Не инициализированная ячейка не может иметь State.CHECK, поэтому сразу pull вместо
 			// actualize.
 			this.pull();
 		}
 
-		this._validate?.(value, this._value);
+		this._validateValue?.(value, this._value);
 
-		if (this._put) {
+		if (this._putFn) {
 			if (!this._bound) {
 				this.push = this.push.bind(this);
 				this.fail = this.fail.bind(this);
@@ -607,10 +662,10 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 				this._bound = true;
 			}
 
-			if (this._put.length >= 3) {
-				this._put.call(this.context, this, value, this._value);
+			if (this._putFn.length >= 3) {
+				this._putFn.call(this.context, this, value, this._value);
 			} else {
-				(this._put as Function).call(this.context, this, value);
+				(this._putFn as Function).call(this.context, this, value);
 			}
 		} else {
 			this.push(value);
@@ -619,13 +674,13 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 		return this;
 	}
 
-	push(value: TValue, _afterPull?: boolean) {
+	push(value: Value, _afterPull?: boolean) {
 		this._inited = true;
 
 		let err = this._error;
 
 		if (err) {
-			this._setError(null, true);
+			this._setError(null, !!_afterPull);
 		}
 
 		let prevValue = this._value;
@@ -681,8 +736,8 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 		let isWaitError = err instanceof WaitError;
 
 		if (!isWaitError) {
-			if (this.debugKey !== undefined) {
-				config.logError('[' + this.debugKey + ']', err);
+			if (this.meta?.['id'] !== undefined) {
+				config.logError('[' + this.meta?.['id'] + ']', err);
 			} else {
 				config.logError(err);
 			}
@@ -715,7 +770,7 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 
 		let err = errorEvent && errorEvent.data.error;
 
-		this._errorCell?.set(err);
+		this._error$?.set(err);
 		this._error = err;
 		this._lastErrorEvent = errorEvent;
 
@@ -741,7 +796,7 @@ export class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitte
 	reap() {
 		this.off();
 
-		this._errorCell?.reap();
+		this._error$?.reap();
 
 		let reactions = this._reactions;
 

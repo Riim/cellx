@@ -156,23 +156,23 @@ function runBenchmark(lib, layerCount) {
 }
 
 function testCellx(layerCount, done) {
-	let Cell = cellx.Cell;
+	let { Cell } = cellx;
 
 	let start = {
-		prop1: new Cell(1),
-		prop2: new Cell(2),
-		prop3: new Cell(3),
-		prop4: new Cell(4)
+		prop1: new Cell({ value: 1 }),
+		prop2: new Cell({ value: 2 }),
+		prop3: new Cell({ value: 3 }),
+		prop4: new Cell({ value: 4 })
 	};
 	let layer = start;
 
 	for (let i = layerCount; i--; ) {
 		layer = ((prev) => {
 			let next = {
-				prop1: new Cell(() => prev.prop2.get()),
-				prop2: new Cell(() => prev.prop1.get() - prev.prop3.get()),
-				prop3: new Cell(() => prev.prop2.get() + prev.prop4.get()),
-				prop4: new Cell(() => prev.prop3.get())
+				prop1: new Cell({ pullFn: () => prev.prop2.get() }),
+				prop2: new Cell({ pullFn: () => prev.prop1.get() - prev.prop3.get() }),
+				prop3: new Cell({ pullFn: () => prev.prop2.get() + prev.prop4.get() }),
+				prop4: new Cell({ pullFn: () => prev.prop3.get() })
 			};
 
 			return next;

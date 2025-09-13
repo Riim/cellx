@@ -2,6 +2,7 @@
 	"compilerOptions": {
 		"alwaysStrict": true,
 		"declaration": true,
+		"emitDeclarationOnly": true,
 		"esModuleInterop": true,
 		"importHelpers": true,
 		"moduleResolution": "Node",

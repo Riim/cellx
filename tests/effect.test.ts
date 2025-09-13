@@ -10,7 +10,6 @@ describe.only('effect()', () => {
 		expect(a$EffectFn.mock.calls.length).toBe(0);
 
 		a$.value = 2;
-
 		release();
 
 		expect(a$EffectFn.mock.calls.length).toBe(1);
@@ -19,29 +18,13 @@ describe.only('effect()', () => {
 		disposeA$Effect();
 	});
 
-	test('uses context from cell', () => {
-		let a$Context = {};
-		let a$ = cellx(1, { context: a$Context });
-		let a$EffectFn = jest.fn(() => a$.value);
-		let disposeA$Effect = effect(a$, a$EffectFn);
-
-		a$.value = 2;
-
-		release();
-
-		expect(a$EffectFn.mock.contexts[0]).toBe(a$Context);
-
-		disposeA$Effect();
-	});
-
 	test('uses specified context', () => {
 		let a$ = cellx(1);
 		let a$EffectContext = {};
 		let a$EffectFn = jest.fn(() => a$.value);
-		let disposeA$Effect = effect(a$, a$EffectFn, a$EffectContext);
+		let disposeA$Effect = effect(a$, a$EffectFn, { context: a$EffectContext });
 
 		a$.value = 2;
-
 		release();
 
 		expect(a$EffectFn.mock.contexts[0]).toBe(a$EffectContext);

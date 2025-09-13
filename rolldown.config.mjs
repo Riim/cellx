@@ -1,11 +1,19 @@
 import { defineConfig } from 'rolldown';
 
-export default defineConfig({
-	input: 'src/cellx.ts',
+const libName = 'cellx';
 
-	output: {
-		file: 'dist/cellx.umd.js',
-		format: 'umd',
-		name: 'cellx'
-	}
+export default defineConfig(() => {
+	return [
+		['esm', 'js'],
+		['umd', 'umd.js'],
+		['commonjs', 'cjs']
+	].map(([format, fileExt]) => ({
+		input: 'src/cellx.ts',
+
+		output: {
+			file: `dist/${libName}.${fileExt}`,
+			format,
+			name: libName
+		}
+	}));
 });

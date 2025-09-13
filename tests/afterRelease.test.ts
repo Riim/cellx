@@ -11,7 +11,6 @@ describe('afterRelease()', () => {
 		let afterReleaseCallback = jest.fn();
 
 		afterRelease(afterReleaseCallback);
-
 		release();
 
 		expect(afterReleaseCallback.mock.calls.length).toBe(1);

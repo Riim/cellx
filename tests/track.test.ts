@@ -1,6 +1,5 @@
 import { describe, expect, test } from '@jest/globals';
-import { cellx, release } from '../src/cellx';
-import { DependencyFilter, tracked, untracked } from '../src/track';
+import { DependencyFilter, cellx, release, tracked, untracked } from '../src/cellx';
 
 describe('track', () => {
 	test('untracked()', () => {

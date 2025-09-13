@@ -1,17 +1,18 @@
-import { Cell } from './Cell';
 import { config } from './config';
-import { KEY_VALUE_CELLS } from './keys';
 
-export interface IEvent<D = any, T extends EventEmitter = EventEmitter> {
-	target: T;
+export interface IEvent<Data = any, Target extends EventEmitter = EventEmitter> {
+	target: Target;
 	type: string | symbol;
 	bubbles?: boolean;
 	defaultPrevented?: boolean;
 	propagationStopped?: boolean;
-	data: D;
+	data: Data;
 }
 
-export type TListener = (evt: IEvent) => any;
+export type TListener<Event extends IEvent = IEvent, Context = any> = (
+	this: Context,
+	evt: Event
+) => any;
 
 export interface I$Listener {
 	listener: TListener;
@@ -19,26 +20,20 @@ export interface I$Listener {
 }
 
 export const EventEmitter_CommonState = {
-	currentlySubscribing: false,
-
-	transactionLevel: 0,
+	inTransactCounter: 0,
 	transactionEvents: [] as Array<IEvent>,
 
-	silently: false
+	inSilentlyCounter: 0
 };
 
 export class EventEmitter {
-	static get currentlySubscribing() {
-		return EventEmitter_CommonState.currentlySubscribing;
-	}
-
 	static transact(fn: Function) {
-		EventEmitter_CommonState.transactionLevel++;
+		EventEmitter_CommonState.inTransactCounter++;
 
 		try {
 			fn();
 		} finally {
-			if (--EventEmitter_CommonState.transactionLevel == 0) {
+			if (--EventEmitter_CommonState.inTransactCounter == 0) {
 				let events = EventEmitter_CommonState.transactionEvents;
 
 				EventEmitter_CommonState.transactionEvents = [];
@@ -51,22 +46,14 @@ export class EventEmitter {
 	}
 
 	static silently(fn: Function) {
-		if (EventEmitter_CommonState.silently) {
-			fn();
-
-			return;
-		}
-
-		EventEmitter_CommonState.silently = true;
+		EventEmitter_CommonState.inSilentlyCounter++;
 
 		try {
 			fn();
 		} finally {
-			EventEmitter_CommonState.silently = false;
+			EventEmitter_CommonState.inSilentlyCounter--;
 		}
 	}
-
-	[KEY_VALUE_CELLS]?: Map<string, Cell>;
 
 	protected _$listeners = new Map<string | symbol, Array<I$Listener>>();
 
@@ -135,72 +122,43 @@ export class EventEmitter {
 	}
 
 	protected _on(type: string | symbol, listener: TListener, context: any) {
-		let index: number;
+		let type$Listeners = this._$listeners.get(type);
+		let $listener = {
+			listener,
+			context
+		};
 
-		if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
-			let propName = type.slice(index + 1);
-
-			EventEmitter_CommonState.currentlySubscribing = true;
-
-			(
-				(this[KEY_VALUE_CELLS] ?? (this[KEY_VALUE_CELLS] = new Map<string, Cell>())).get(
-					propName
-				) ?? (this[propName], this[KEY_VALUE_CELLS]).get(propName)!
-			).on(type.slice(0, index), listener, context);
-
-			EventEmitter_CommonState.currentlySubscribing = false;
+		if (type$Listeners) {
+			type$Listeners.push($listener);
 		} else {
-			let type$Listeners = this._$listeners.get(type);
-			let $listener = {
-				listener,
-				context
-			};
-
-			if (type$Listeners) {
-				type$Listeners.push($listener);
-			} else {
-				this._$listeners.set(type, [$listener]);
-			}
+			this._$listeners.set(type, [$listener]);
 		}
 	}
 
 	protected _off(type: string | symbol, listener: TListener, context: any) {
-		let index: number;
+		let type$Listeners = this._$listeners.get(type);
 
-		if (typeof type == 'string' && (index = type.indexOf(':')) != -1) {
-			this[KEY_VALUE_CELLS]?.get(type.slice(index + 1))?.off(
-				type.slice(0, index),
-				listener,
-				context
-			);
-		} else {
-			let type$Listeners = this._$listeners.get(type);
+		if (!type$Listeners) {
+			return;
+		}
 
-			if (!type$Listeners) {
-				return;
+		if (type$Listeners.length == 1) {
+			if (type$Listeners[0].listener == listener && type$Listeners[0].context === context) {
+				this._$listeners.delete(type);
 			}
-
-			if (type$Listeners.length == 1) {
+		} else {
+			for (let i = 0; ; i++) {
 				if (
-					type$Listeners[0].listener == listener &&
-					type$Listeners[0].context === context
+					type$Listeners[i].listener == listener &&
+					type$Listeners[i].context === context
 				) {
-					this._$listeners.delete(type);
+					type$Listeners.splice(i, 1);
+
+					break;
 				}
-			} else {
-				for (let i = 0; ; i++) {
-					if (
-						type$Listeners[i].listener == listener &&
-						type$Listeners[i].context === context
-					) {
-						type$Listeners.splice(i, 1);
 
-						break;
-					}
-
-					if (i + 1 == type$Listeners.length) {
-						break;
-					}
+				if (i + 1 == type$Listeners.length) {
+					break;
 				}
 			}
 		}
@@ -253,8 +211,8 @@ export class EventEmitter {
 			evt.data = data;
 		}
 
-		if (!EventEmitter_CommonState.silently) {
-			if (EventEmitter_CommonState.transactionLevel != 0) {
+		if (EventEmitter_CommonState.inSilentlyCounter == 0) {
+			if (EventEmitter_CommonState.inTransactCounter != 0) {
 				for (let i = EventEmitter_CommonState.transactionEvents.length; ; ) {
 					if (i == 0) {
 						if (evt.data) {
