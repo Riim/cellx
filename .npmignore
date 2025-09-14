@@ -13,6 +13,8 @@ node_modules
 /.npmrc
 /.prettierrc
 /.travis.yml
+/eslint.config.mjs
 /jest.config.js
-/rollup.config.js
+/README.ru.md
+/rolldown.config.mjs
 /tsconfig.json
