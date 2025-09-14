@@ -1,75 +1,83 @@
 import { EventEmitter, IEvent, TListener } from './EventEmitter';
 import { afterRelease } from './afterRelease';
 import { autorun } from './autorun';
+import { effect } from './effect';
 import { release } from './release';
 import { transact } from './transact';
-export type TCellPull<TValue = any, TContext = any, TMeta = any> = (this: TContext, cell: Cell<TValue, TContext, TMeta>, value: TValue | undefined) => TValue;
-export type TCellPut<TValue = any, TContext = any, TMeta = any> = (this: TContext, cell: Cell<TValue, TContext, TMeta>, next: TValue, value: TValue | undefined) => void;
-export interface ICellOptions<TValue = any, TContext = any, TMeta = any> {
-    debugKey?: string;
-    context?: TContext;
-    meta?: TMeta;
+export type CellValue<T> = T extends Cell<infer U> ? U : T;
+export interface ICellChangeEvent<Target extends Cell = Cell> extends IEvent<{
+    value: CellValue<Target>;
+    prevValue: CellValue<Target>;
+}, Target> {
+    type: typeof Cell.EVENT_CHANGE;
+}
+export interface ICellErrorEvent<Target extends Cell = Cell> extends IEvent<{
+    error: Error;
+}, Target> {
+    type: typeof Cell.EVENT_ERROR;
+}
+export type TCellEvent<Target extends Cell = Cell> = ICellChangeEvent<Target> | ICellErrorEvent<Target>;
+export type TCellChangeEventListener<Target extends Cell = Cell, Context = any> = TListener<ICellChangeEvent<Target>, Context>;
+export type TCellErrorEventListener<Target extends Cell = Cell, Context = any> = TListener<ICellErrorEvent<Target>, Context>;
+export type TCellEventListener<Target extends Cell = Cell, Context = any> = TCellChangeEventListener<Target, Context> | TCellErrorEventListener<Target, Context>;
+export interface ICellListeners<Target extends Cell = Cell, Context = any> {
+    [Cell.EVENT_CHANGE]?: TCellChangeEventListener<Target, Context>;
+    [Cell.EVENT_ERROR]?: TCellErrorEventListener<Target, Context>;
+}
+export type TCellPull<Value = any, Context = any, Meta = any> = (this: Context, cell: Cell<Value, Context, Meta>, value: Value | undefined) => Value;
+export type TCellPut<Value = any, Context = any, Meta = any> = (this: Context, cell: Cell<Value, Context, Meta>, next: Value, value: Value | undefined) => void;
+export interface ICellOptions<Value = any, Context = any, Meta = any> {
+    context?: Context;
+    meta?: Meta;
+    pullFn?: TCellPull<Value, Context, Meta>;
     dependencyFilter?: (dep: Cell) => any;
-    validate?: (next: TValue, value: TValue | undefined) => void;
-    put?: TCellPut<TValue, TContext, TMeta>;
-    compareValues?: (next: TValue, value: TValue | undefined) => boolean;
-    reap?: (this: TContext) => void;
-    onChange?: TListener;
-    onError?: TListener;
+    validate?: (next: Value, value: Value | undefined) => void;
+    put?: TCellPut<Value, Context, Meta>;
+    compareValues?: (next: Value, value: Value | undefined) => boolean;
+    reap?: (this: Context) => void;
+    value?: Value;
+    onChange?: TCellChangeEventListener<Cell<Value, any, Meta>>;
+    onError?: TCellErrorEventListener<Cell<Value, any, Meta>>;
 }
 export declare enum CellState {
     ACTUAL = "actual",
     DIRTY = "dirty",
     CHECK = "check"
 }
-export interface ICellChangeEvent<T extends Cell = Cell> extends IEvent<any, T> {
-    type: typeof Cell.EVENT_CHANGE;
-    data: {
-        prevValue: any;
-        value: any;
-    };
-}
-export interface ICellErrorEvent<T extends Cell = Cell> extends IEvent<any, T> {
-    type: typeof Cell.EVENT_ERROR;
-    data: {
-        error: any;
-    };
-}
-export type TCellEvent<T extends Cell = Cell> = ICellChangeEvent<T> | ICellErrorEvent<T>;
 export declare const Cell_CommonState: {
     pendingCells: Array<Cell>;
     pendingCellsIndex: number;
     afterRelease: Array<Function> | null;
     currentCell: Cell | null;
-    untrackedCounter: number;
-    trackedCounter: number;
+    inUntrackedCounter: number;
+    inTrackedCounter: number;
     lastUpdateId: number;
     transaction: {
         primaryCells: Map<Cell, any>;
         secondaryCells: Set<Cell>;
     } | null;
 };
-export declare class Cell<TValue = any, TContext = any, TMeta = any> extends EventEmitter {
-    static EVENT_CHANGE: string;
-    static EVENT_ERROR: string;
+export declare class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
+    static readonly EVENT_CHANGE = "change";
+    static readonly EVENT_ERROR = "error";
     static get currentlyPulling(): boolean;
-    static autorun: typeof autorun;
-    static release: typeof release;
-    static afterRelease: typeof afterRelease;
-    static transact: typeof transact;
-    debugKey: string | undefined;
-    context: TContext;
-    meta: TMeta | null;
-    protected _pull: TCellPull<TValue, TContext, TMeta> | null;
+    static readonly autorun: typeof autorun;
+    static readonly effect: typeof effect;
+    static readonly release: typeof release;
+    static readonly afterRelease: typeof afterRelease;
+    static readonly transact: typeof transact;
+    readonly context: Context;
+    readonly meta: Meta;
+    protected _pullFn: TCellPull<Value, Context, Meta> | null;
     protected _dependencyFilter: (dep: Cell) => any;
-    protected _validate: ((next: TValue, value: TValue | undefined) => void) | null;
-    protected _put: TCellPut<TValue, TContext, TMeta> | null;
-    protected _compareValues: (next: TValue, value: TValue | undefined) => boolean;
+    protected _validateValue: ((next: Value, value: Value | undefined) => void) | null;
+    protected _putFn: TCellPut<Value, Context, Meta> | null;
+    protected _compareValues: (next: Value, value: Value | undefined) => boolean;
     protected _reap: (() => void) | null;
     protected _dependencies: Array<Cell> | null | undefined;
     protected _reactions: Array<Cell>;
-    protected _value: TValue | undefined;
-    protected _errorCell: Cell<Error | null> | null;
+    protected _value: Value | undefined;
+    protected _error$: Cell<Error | null> | null;
     protected _error: Error | null;
     protected _lastErrorEvent: IEvent | null;
     get error(): Error | null;
@@ -83,18 +91,19 @@ export declare class Cell<TValue = any, TContext = any, TMeta = any> extends Eve
     get currentlyPulling(): boolean;
     protected _updateId: number;
     protected _bound: boolean;
-    constructor(value: TCellPull<TValue, TContext, TMeta>, options?: ICellOptions<TValue, TContext, TMeta>);
-    constructor(value: TValue, options?: ICellOptions<TValue, TContext, TMeta>);
-    on(type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, listener: TListener, context?: any): this;
-    on(listeners: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>, context?: any): this;
-    off(type: typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, listener: TListener, context?: any): this;
-    off(listeners?: Record<typeof Cell.EVENT_CHANGE | typeof Cell.EVENT_ERROR, TListener>, context?: any): this;
-    onChange(listener: TListener, context?: any): this;
-    offChange(listener: TListener, context?: any): this;
-    onError(listener: TListener, context?: any): this;
-    offError(listener: TListener, context?: any): this;
-    subscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this;
-    unsubscribe(listener: (err: Error | null, evt: IEvent) => any, context?: any): this;
+    constructor(options: ICellOptions<Value, Context, Meta>);
+    on<C>(type: typeof Cell.EVENT_CHANGE, listener: TCellChangeEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
+    on<C>(type: typeof Cell.EVENT_ERROR, listener: TCellErrorEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
+    on<C>(listeners: ICellListeners<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
+    off<C>(type: typeof Cell.EVENT_CHANGE, listener: TCellChangeEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
+    off<C>(type: typeof Cell.EVENT_ERROR, listener: TCellErrorEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
+    off<C>(listeners?: ICellListeners<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
+    onChange<C>(listener: TCellChangeEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
+    offChange<C>(listener: TCellChangeEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
+    onError<C>(listener: TCellErrorEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
+    offError<C>(listener: TCellErrorEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
+    subscribe<C>(listener: (this: C extends undefined ? (typeof this)['context'] : C, err: Error | null, evt: TCellEvent<this>) => any, context?: C): this;
+    unsubscribe<C>(listener: (this: C extends undefined ? (typeof this)['context'] : C, err: Error | null, evt: TCellEvent<this>) => any, context?: C): this;
     protected _addReaction(reaction: Cell): void;
     protected _deleteReaction(reaction: Cell): void;
     protected _activate(): void;
@@ -102,12 +111,12 @@ export declare class Cell<TValue = any, TContext = any, TMeta = any> extends Eve
     protected _onValueChange(evt: IEvent): void;
     protected _addToRelease(dirty: boolean): void;
     actualize(): void;
-    get value(): TValue;
-    set value(value: TValue);
-    get(): TValue;
+    get value(): Value;
+    set value(value: Value);
+    get(): Value;
     pull(): boolean;
-    set(value: TValue): this;
-    push(value: TValue, _afterPull?: boolean): boolean;
+    set(value: Value): this;
+    push(value: Value, _afterPull?: boolean): boolean;
     fail(err: any, _afterPull?: boolean): boolean;
     protected _setError(errorEvent: IEvent<{
         error: Error;

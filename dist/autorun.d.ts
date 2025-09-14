@@ -1,2 +1,2 @@
-import { type ICellOptions } from './Cell';
-export declare function autorun<TValue = any, TContext = any, TMeta = any>(fn: (this: TContext, value: TValue | undefined, disposer: () => void) => TValue, cellOptions?: ICellOptions<TValue, TContext, TMeta>): () => void;
+import { ICellOptions } from './Cell';
+export declare function autorun<Value, Context = null>(fn: (this: Context, value: Value | undefined, disposer: () => void) => Value, cellOptions?: ICellOptions<Value, Context>): () => void;

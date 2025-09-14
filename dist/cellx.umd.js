@@ -16,28 +16,19 @@ function configure(options) {
 }
 
 //#endregion
-//#region src/keys.ts
-const KEY_LISTENER_WRAPPERS = Symbol("listenerWrappers");
-const KEY_VALUE_CELLS = Symbol("valueCells");
-
-//#endregion
 //#region src/EventEmitter.ts
 const EventEmitter_CommonState = {
-	currentlySubscribing: false,
-	transactionLevel: 0,
+	inTransactCounter: 0,
 	transactionEvents: [],
-	silently: false
+	inSilentlyCounter: 0
 };
 var EventEmitter = class {
-	static get currentlySubscribing() {
-		return EventEmitter_CommonState.currentlySubscribing;
-	}
 	static transact(fn) {
-		EventEmitter_CommonState.transactionLevel++;
+		EventEmitter_CommonState.inTransactCounter++;
 		try {
 			fn();
 		} finally {
-			if (--EventEmitter_CommonState.transactionLevel == 0) {
+			if (--EventEmitter_CommonState.inTransactCounter == 0) {
 				let events = EventEmitter_CommonState.transactionEvents;
 				EventEmitter_CommonState.transactionEvents = [];
 				for (let i = 0; i < events.length; i++) events[i].target.handleEvent(events[i]);
@@ -45,18 +36,13 @@ var EventEmitter = class {
 		}
 	}
 	static silently(fn) {
-		if (EventEmitter_CommonState.silently) {
-			fn();
-			return;
-		}
-		EventEmitter_CommonState.silently = true;
+		EventEmitter_CommonState.inSilentlyCounter++;
 		try {
 			fn();
 		} finally {
-			EventEmitter_CommonState.silently = false;
+			EventEmitter_CommonState.inSilentlyCounter--;
 		}
 	}
-	[KEY_VALUE_CELLS];
 	_$listeners = /* @__PURE__ */ new Map();
 	get$Listeners(type) {
 		return type ? this._$listeners.get(type) ?? [] : this._$listeners;
@@ -81,37 +67,25 @@ var EventEmitter = class {
 		return this;
 	}
 	_on(type, listener, context) {
-		let index;
-		if (typeof type == "string" && (index = type.indexOf(":")) != -1) {
-			let propName = type.slice(index + 1);
-			EventEmitter_CommonState.currentlySubscribing = true;
-			((this[KEY_VALUE_CELLS] ?? (this[KEY_VALUE_CELLS] = /* @__PURE__ */ new Map())).get(propName) ?? (this[propName], this[KEY_VALUE_CELLS]).get(propName)).on(type.slice(0, index), listener, context);
-			EventEmitter_CommonState.currentlySubscribing = false;
-		} else {
-			let type$Listeners = this._$listeners.get(type);
-			let $listener = {
-				listener,
-				context
-			};
-			if (type$Listeners) type$Listeners.push($listener);
-			else this._$listeners.set(type, [$listener]);
-		}
+		let type$Listeners = this._$listeners.get(type);
+		let $listener = {
+			listener,
+			context
+		};
+		if (type$Listeners) type$Listeners.push($listener);
+		else this._$listeners.set(type, [$listener]);
 	}
 	_off(type, listener, context) {
-		let index;
-		if (typeof type == "string" && (index = type.indexOf(":")) != -1) this[KEY_VALUE_CELLS]?.get(type.slice(index + 1))?.off(type.slice(0, index), listener, context);
-		else {
-			let type$Listeners = this._$listeners.get(type);
-			if (!type$Listeners) return;
-			if (type$Listeners.length == 1) {
-				if (type$Listeners[0].listener == listener && type$Listeners[0].context === context) this._$listeners.delete(type);
-			} else for (let i = 0;; i++) {
-				if (type$Listeners[i].listener == listener && type$Listeners[i].context === context) {
-					type$Listeners.splice(i, 1);
-					break;
-				}
-				if (i + 1 == type$Listeners.length) break;
+		let type$Listeners = this._$listeners.get(type);
+		if (!type$Listeners) return;
+		if (type$Listeners.length == 1) {
+			if (type$Listeners[0].listener == listener && type$Listeners[0].context === context) this._$listeners.delete(type);
+		} else for (let i = 0;; i++) {
+			if (type$Listeners[i].listener == listener && type$Listeners[i].context === context) {
+				type$Listeners.splice(i, 1);
+				break;
 			}
+			if (i + 1 == type$Listeners.length) break;
 		}
 	}
 	once(type, listener, context) {
@@ -132,7 +106,7 @@ var EventEmitter = class {
 			type: evt
 		};
 		if (data) evt.data = data;
-		if (!EventEmitter_CommonState.silently) if (EventEmitter_CommonState.transactionLevel != 0) for (let i = EventEmitter_CommonState.transactionEvents.length;;) {
+		if (EventEmitter_CommonState.inSilentlyCounter == 0) if (EventEmitter_CommonState.inTransactCounter != 0) for (let i = EventEmitter_CommonState.transactionEvents.length;;) {
 			if (i == 0) {
 				if (evt.data) evt.data["prevEvent"] = null;
 				else evt.data = { prevEvent: null };
@@ -183,16 +157,37 @@ function afterRelease(cb) {
 //#region src/autorun.ts
 function autorun(fn, cellOptions) {
 	let disposer;
-	new Cell(function(cell, value) {
-		return fn.call(this, value, disposer ??= () => {
-			cell.dispose();
-		});
-	}, cellOptions?.onChange ? cellOptions : {
+	new Cell({
+		onChange: () => {},
 		...cellOptions,
-		onChange: () => {}
+		pullFn: function(cell, value) {
+			return fn.call(this, value, disposer ??= () => {
+				cell.dispose();
+			});
+		}
 	});
 	return disposer;
 }
+
+//#endregion
+//#region src/effect.ts
+function effect(source, fn, cellOptions) {
+	let cell = new Cell({
+		...cellOptions,
+		pullFn: source instanceof Cell ? () => source.value : Array.isArray(source) ? () => source.map((cell$1) => cell$1.value) : source
+	});
+	let disposer = () => {
+		cell.dispose();
+	};
+	cell.onChange(function({ data }) {
+		return fn.call(this, data.value, data.prevValue, disposer);
+	});
+	return disposer;
+}
+
+//#endregion
+//#region src/keys.ts
+const KEY_LISTENER_WRAPPERS = Symbol("listenerWrappers");
 
 //#endregion
 //#region src/release.ts
@@ -213,23 +208,23 @@ function release() {
 //#endregion
 //#region src/track.ts
 const DependencyFilter = {
-	allExceptUntracked: (dep) => Cell_CommonState.untrackedCounter == 0,
-	onlyTracked: (dep) => Cell_CommonState.trackedCounter != 0
+	allExceptUntracked: (dep) => Cell_CommonState.inUntrackedCounter == 0,
+	onlyTracked: (dep) => Cell_CommonState.inTrackedCounter != 0
 };
 function untracked(fn) {
-	Cell_CommonState.untrackedCounter++;
+	Cell_CommonState.inUntrackedCounter++;
 	try {
 		return fn();
 	} finally {
-		Cell_CommonState.untrackedCounter--;
+		Cell_CommonState.inUntrackedCounter--;
 	}
 }
 function tracked(fn) {
-	Cell_CommonState.trackedCounter++;
+	Cell_CommonState.inTrackedCounter++;
 	try {
 		return fn();
 	} finally {
-		Cell_CommonState.trackedCounter--;
+		Cell_CommonState.inTrackedCounter--;
 	}
 }
 
@@ -293,8 +288,8 @@ const Cell_CommonState = {
 	pendingCellsIndex: 0,
 	afterRelease: null,
 	currentCell: null,
-	untrackedCounter: 0,
-	trackedCounter: 0,
+	inUntrackedCounter: 0,
+	inTrackedCounter: 0,
 	lastUpdateId: 0,
 	transaction: null
 };
@@ -306,26 +301,26 @@ var Cell = class Cell extends EventEmitter {
 		return Cell_CommonState.currentCell != null;
 	}
 	static autorun = autorun;
+	static effect = effect;
 	static release = release;
 	static afterRelease = afterRelease;
 	static transact = transact;
-	debugKey;
 	context;
 	meta;
-	_pull;
+	_pullFn;
 	_dependencyFilter;
-	_validate;
-	_put;
+	_validateValue;
+	_putFn;
 	_compareValues;
 	_reap;
 	_dependencies;
 	_reactions = [];
 	_value;
-	_errorCell = null;
+	_error$ = null;
 	_error = null;
 	_lastErrorEvent = null;
 	get error() {
-		return Cell_CommonState.currentCell ? (this._errorCell ?? (this._errorCell = new Cell(this._error))).get() : this._error;
+		return Cell_CommonState.currentCell ? (this._error$ ?? (this._error$ = new Cell({ value: this._error }))).get() : this._error;
 	}
 	_state;
 	get state() {
@@ -345,34 +340,32 @@ var Cell = class Cell extends EventEmitter {
 	}
 	_updateId = -1;
 	_bound = false;
-	constructor(value, options) {
+	constructor(options) {
 		super();
-		this.debugKey = options?.debugKey;
-		this.context = options?.context ?? null;
-		this.meta = options?.meta ?? null;
-		this._pull = typeof value == "function" ? value : null;
-		this._dependencyFilter = options?.dependencyFilter ?? DependencyFilter.allExceptUntracked;
-		this._validate = options?.validate ?? null;
-		this._put = options?.put ?? null;
-		this._compareValues = options?.compareValues ?? config.compareValues;
-		this._reap = options?.reap ?? null;
-		if (this._pull) {
+		this.context = options.context ?? null;
+		this.meta = options.meta ?? null;
+		this._pullFn = options.pullFn ?? null;
+		this._dependencyFilter = options.dependencyFilter ?? DependencyFilter.allExceptUntracked;
+		this._validateValue = options.validate ?? null;
+		this._putFn = options.put ?? null;
+		this._compareValues = options.compareValues ?? config.compareValues;
+		this._reap = options.reap ?? null;
+		if (this._pullFn) {
 			this._dependencies = void 0;
 			this._value = void 0;
 			this._state = CellState.DIRTY;
 			this._inited = false;
 		} else {
+			let value = options.value;
+			this._validateValue?.(value, void 0);
 			this._dependencies = null;
-			this._validate?.(value, void 0);
 			this._value = value;
 			this._state = CellState.ACTUAL;
 			this._inited = true;
 			if (value instanceof EventEmitter) value.on("change", this._onValueChange, this);
 		}
-		if (options) {
-			if (options.onChange) this.on("change", options.onChange);
-			if (options.onError) this.on(Cell.EVENT_ERROR, options.onError);
-		}
+		if (options.onChange) this.on("change", options.onChange);
+		if (options.onError) this.on("error", options.onError);
 	}
 	on(type, listener, context) {
 		if (this._dependencies !== null) this.actualize();
@@ -394,16 +387,16 @@ var Cell = class Cell extends EventEmitter {
 		return this;
 	}
 	onChange(listener, context) {
-		return this.on(Cell.EVENT_CHANGE, listener, context !== void 0 ? context : this.context);
+		return this.on(Cell.EVENT_CHANGE, listener, context);
 	}
 	offChange(listener, context) {
-		return this.off(Cell.EVENT_CHANGE, listener, context !== void 0 ? context : this.context);
+		return this.off(Cell.EVENT_CHANGE, listener, context);
 	}
 	onError(listener, context) {
-		return this.on(Cell.EVENT_ERROR, listener, context !== void 0 ? context : this.context);
+		return this.on(Cell.EVENT_ERROR, listener, context);
 	}
 	offError(listener, context) {
-		return this.off(Cell.EVENT_ERROR, listener, context !== void 0 ? context : this.context);
+		return this.off(Cell.EVENT_ERROR, listener, context);
 	}
 	subscribe(listener, context) {
 		let wrappers = listener[KEY_LISTENER_WRAPPERS] ?? (listener[KEY_LISTENER_WRAPPERS] = /* @__PURE__ */ new Map());
@@ -506,7 +499,7 @@ var Cell = class Cell extends EventEmitter {
 		return this._value;
 	}
 	pull() {
-		if (!this._pull) return false;
+		if (!this._pullFn) return false;
 		if (this._currentlyPulling) throw TypeError("Circular pulling");
 		this._currentlyPulling = true;
 		let prevDeps = this._dependencies;
@@ -515,14 +508,14 @@ var Cell = class Cell extends EventEmitter {
 		Cell_CommonState.currentCell = this;
 		let value;
 		try {
-			if (this._pull.length == 0) value = this._pull.call(this.context);
+			if (this._pullFn.length == 0) value = this._pullFn.call(this.context);
 			else {
 				if (!this._bound) {
 					this.push = this.push.bind(this);
 					this.fail = this.fail.bind(this);
 					this._bound = true;
 				}
-				value = this._pull.call(this.context, this, this._value);
+				value = this._pullFn.call(this.context, this, this._value);
 			}
 			if (value instanceof Promise) {
 				value.then((value$1) => this.push(value$1), (err) => this.fail(err));
@@ -561,22 +554,22 @@ var Cell = class Cell extends EventEmitter {
 	}
 	set(value) {
 		if (!this._inited) this.pull();
-		this._validate?.(value, this._value);
-		if (this._put) {
+		this._validateValue?.(value, this._value);
+		if (this._putFn) {
 			if (!this._bound) {
 				this.push = this.push.bind(this);
 				this.fail = this.fail.bind(this);
 				this._bound = true;
 			}
-			if (this._put.length >= 3) this._put.call(this.context, this, value, this._value);
-			else this._put.call(this.context, this, value);
+			if (this._putFn.length >= 3) this._putFn.call(this.context, this, value, this._value);
+			else this._putFn.call(this.context, this, value);
 		} else this.push(value);
 		return this;
 	}
 	push(value, _afterPull) {
 		this._inited = true;
 		let err = this._error;
-		if (err) this._setError(null, true);
+		if (err) this._setError(null, !!_afterPull);
 		let prevValue = this._value;
 		let changed = !this._compareValues(value, prevValue);
 		if (changed) {
@@ -601,7 +594,7 @@ var Cell = class Cell extends EventEmitter {
 		this._inited = true;
 		let isWaitError = err instanceof WaitError;
 		if (!isWaitError) {
-			if (this.debugKey !== void 0) config.logError("[" + this.debugKey + "]", err);
+			if (this.meta?.["id"] !== void 0) config.logError("[" + this.meta?.["id"] + "]", err);
 			else config.logError(err);
 			if (!(err instanceof Error)) err = Error(err);
 		}
@@ -616,7 +609,7 @@ var Cell = class Cell extends EventEmitter {
 	_setError(errorEvent, afterPull) {
 		if (this._lastErrorEvent === errorEvent) return;
 		let err = errorEvent && errorEvent.data.error;
-		this._errorCell?.set(err);
+		this._error$?.set(err);
 		this._error = err;
 		this._lastErrorEvent = errorEvent;
 		this._updateId = afterPull ? Cell_CommonState.lastUpdateId : ++Cell_CommonState.lastUpdateId;
@@ -629,7 +622,7 @@ var Cell = class Cell extends EventEmitter {
 	}
 	reap() {
 		this.off();
-		this._errorCell?.reap();
+		this._error$?.reap();
 		let reactions = this._reactions;
 		for (let i = 0; i < reactions.length; i++) reactions[i].reap();
 		return this;
@@ -640,31 +633,20 @@ var Cell = class Cell extends EventEmitter {
 };
 
 //#endregion
-//#region src/effect.ts
-function effect(cell, fn, context) {
-	let disposer;
-	let listener = function(evt) {
-		return fn.call(this, evt, disposer);
-	};
-	disposer = () => {
-		cell.offChange(listener, context);
-	};
-	cell.onChange(listener, context);
-	return disposer;
-}
-
-//#endregion
 //#region src/define.ts
 function defineObservableProperty(obj, key, value) {
-	(obj[KEY_VALUE_CELLS] || (obj[KEY_VALUE_CELLS] = /* @__PURE__ */ new Map())).set(key, value instanceof Cell ? value : new Cell(value, { context: obj }));
+	let cell = new Cell({
+		value,
+		context: obj
+	});
 	Object.defineProperty(obj, key, {
 		configurable: true,
 		enumerable: true,
 		get() {
-			return this[KEY_VALUE_CELLS].get(key).get();
+			return cell.get();
 		},
 		set(value$1) {
-			this[KEY_VALUE_CELLS].get(key).set(value$1);
+			cell.set(value$1);
 		}
 	});
 	return obj;
@@ -681,24 +663,39 @@ function define(obj, keyOrProps, value) {
 
 //#endregion
 //#region src/cellx.ts
-function cellx(value, options) {
-	return new Cell(value, options);
+function observable(value, options) {
+	return new Cell({
+		...options,
+		pullFn: void 0,
+		value
+	});
+}
+function computed(pullFn, options) {
+	return new Cell({
+		...options,
+		pullFn
+	});
+}
+function cellx(valueOrPullFn, options) {
+	return typeof valueOrPullFn == "function" ? computed(valueOrPullFn, options) : observable(valueOrPullFn, options);
 }
 
 //#endregion
 exports.Cell = Cell;
+exports.CellState = CellState;
 exports.DependencyFilter = DependencyFilter;
 exports.EventEmitter = EventEmitter;
-exports.KEY_VALUE_CELLS = KEY_VALUE_CELLS;
 exports.WaitError = WaitError;
 exports.afterRelease = afterRelease;
 exports.autorun = autorun;
 exports.cellx = cellx;
+exports.computed = computed;
 exports.configure = configure;
 exports.define = define;
 exports.defineObservableProperties = defineObservableProperties;
 exports.defineObservableProperty = defineObservableProperty;
 exports.effect = effect;
+exports.observable = observable;
 exports.release = release;
 exports.tracked = tracked;
 exports.transact = transact;

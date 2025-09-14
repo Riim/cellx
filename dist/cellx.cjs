@@ -1,3 +1,4 @@
+
 //#region src/config.ts
 const config = {
 	logError: (...args) => {
@@ -675,4 +676,22 @@ function cellx(valueOrPullFn, options) {
 }
 
 //#endregion
-export { Cell, CellState, DependencyFilter, EventEmitter, WaitError, afterRelease, autorun, cellx, computed, configure, define, defineObservableProperties, defineObservableProperty, effect, observable, release, tracked, transact, untracked };
+exports.Cell = Cell;
+exports.CellState = CellState;
+exports.DependencyFilter = DependencyFilter;
+exports.EventEmitter = EventEmitter;
+exports.WaitError = WaitError;
+exports.afterRelease = afterRelease;
+exports.autorun = autorun;
+exports.cellx = cellx;
+exports.computed = computed;
+exports.configure = configure;
+exports.define = define;
+exports.defineObservableProperties = defineObservableProperties;
+exports.defineObservableProperty = defineObservableProperty;
+exports.effect = effect;
+exports.observable = observable;
+exports.release = release;
+exports.tracked = tracked;
+exports.transact = transact;
+exports.untracked = untracked;

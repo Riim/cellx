@@ -1,29 +1,24 @@
-import { Cell } from './Cell';
-import { KEY_VALUE_CELLS } from './keys';
-export interface IEvent<D = any, T extends EventEmitter = EventEmitter> {
-    target: T;
+export interface IEvent<Data = any, Target extends EventEmitter = EventEmitter> {
+    target: Target;
     type: string | symbol;
     bubbles?: boolean;
     defaultPrevented?: boolean;
     propagationStopped?: boolean;
-    data: D;
+    data: Data;
 }
-export type TListener = (evt: IEvent) => any;
+export type TListener<Event extends IEvent = IEvent, Context = any> = (this: Context, evt: Event) => any;
 export interface I$Listener {
     listener: TListener;
     context: any;
 }
 export declare const EventEmitter_CommonState: {
-    currentlySubscribing: boolean;
-    transactionLevel: number;
+    inTransactCounter: number;
     transactionEvents: Array<IEvent>;
-    silently: boolean;
+    inSilentlyCounter: number;
 };
 export declare class EventEmitter {
-    static get currentlySubscribing(): boolean;
     static transact(fn: Function): void;
     static silently(fn: Function): void;
-    [KEY_VALUE_CELLS]?: Map<string, Cell>;
     protected _$listeners: Map<string | symbol, I$Listener[]>;
     get$Listeners(): ReadonlyMap<string | symbol, ReadonlyArray<I$Listener>>;
     get$Listeners(type: string | symbol): ReadonlyArray<I$Listener>;
