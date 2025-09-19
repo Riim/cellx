@@ -1,13 +1,13 @@
 import { Cell, ICellChangeEvent, ICellOptions, TCellPull } from './Cell';
 
-export function effect<Value, Context = null, Meta = null>(
+export function reaction<Value, Context = null, Meta = null>(
 	source: Cell | Array<Cell> | TCellPull<Value, Context, Meta>,
 	fn: (this: Context, value: Value, prevValue: Value, disposer: () => void) => any,
 	cellOptions?: ICellOptions<Value, Context, Meta>
 ) {
 	let cell = new Cell({
 		...cellOptions,
-		pullFn:
+		pull:
 			source instanceof Cell
 				? () => source.value
 				: Array.isArray(source)

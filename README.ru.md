@@ -2,261 +2,100 @@
     <img src="https://raw.githubusercontent.com/Riim/cellx/master/docs/images/logo.png" width="237" height="129">
 </p>
 
-Сверхбыстрая реализация реактивности для javascript.
+cellx — это высокопроизводительная библиотека для реализации реактивности в JavaScript и TypeScript, обеспечивающая минимальные накладные расходы и максимальную эффективность вычислений.
 
 ## Установка
 
 ```
-npm i -S cellx
+npm i cellx
 ```
 
 ## Пример использования
 
-```js
-let firstName = cellx('Матроскин');
-let lastName = cellx('Кот');
+```typescript
+const firstName$ = cellx('Матроскин');
+const lastName$ = cellx('Кот');
 
-let fullName = cellx(() => firstName.value + ' ' + lastName.value)
+const fullName$ = cellx(() => firstName$.value + ' ' + lastName$.value);
 
-fullName.subscribe(() => {
-    console.log('fullName:', fullName.value);
+fullName$.onChange(() => {
+    console.log('fullName:', fullName$.value);
 });
 
-console.log(fullName.value);
+console.log(fullName$.value);
 // => 'Матроскин Кот'
 
-firstName.value = 'Шарик';
-lastName.value = 'Пёс';
+firstName$.value = 'Шарик';
+lastName$.value = 'Пёс';
 // => 'fullName: Шарик Пёс'
 ```
 
-Несмотря на то, что изменились две зависимости ячейки `fullName`, обработчик её изменения сработал только один раз.
-Важной особенностью cellx-а является то, что он старается максимально избавиться как от лишних вызовов обработчиков
-изменений, так и от лишних вызовов расчётных формул зависимых ячеек. В сочетании с ещё некоторыми оптимизациями это
-приводит к идеальной скорости расчёта сложнейших сеток зависимостей.
-Больше об этом можно узнать в статье [Big State Managers Benchmark](https://habr.com/ru/articles/707600/).
+Несмотря на то, что изменились две зависимости ячейки `fullName$`, обработчик её изменения сработал только один раз. Важной особенностью cellx-а является то, что он старается максимально избавиться как от лишних вызовов обработчиков изменений, так и от лишних вызовов расчётных формул вычисляемых ячеек. В сочетании с ещё некоторыми оптимизациями это обеспечивает высокую скорость расчёта сложнейших сеток зависимостей.  
+Больше об этом можно узнать в статье [Big State Managers Benchmark](https://habr.com/ru/articles/707600/).  
 Также вам может быть интересна статья [Разбираемся в сортах реактивности](https://habr.com/ru/companies/timeweb/articles/586450/).
 
-## Тест производительности
+## Динамическая актуализация зависимостей
 
-В одном из тестов, который используется для замера производительности, генерируется сетка из множества "слоёв",
-каждый из которых состоит из 4-x ячеек. Ячейки вычисляются из ячеек предыдущего слоя (кроме самого первого, он содержит
-исходные значения) по формуле A2=B1, B2=A1-C1, C2=B1+D1, D2=C1. Далее запоминается начальное время, меняются значения
-всех ячеек первого слоя и замеряется время, через которое все ячейки последнего слоя обновятся.
-Результаты теста (в милисекундах) с разным числом слоёв:
+Формула вычисляемой ячейки может быть написана так, что набор зависимостей может со временем меняться. Например:
 
-| Library ↓ \ Number of computed layers →                 | 10      | 20                                | 30                                  | 50      | 100     | 1000    | 5000                                         |
-|---------------------------------------------------------|---------|-----------------------------------|-------------------------------------|---------|---------|---------|----------------------------------------------|
-| cellx                                                   |     <~1 |                               <~1 |                                 <~1 |     <~1 |     <~1 |       4 |                                           20 |
-| VanillaJS (naive)                                       |     <~1 |                                15 |                                1750 | >300000 | >300000 | >300000 |                                      >300000 |
-| [Knockout](http://knockoutjs.com/)                      |      10 | 750, increases in subsequent runs | 67250, increases in subsequent runs | >300000 | >300000 | >300000 |                                      >300000 |
-| [$jin.atom](https://github.com/nin-jin/pms-jin/)        |       2 |                                 3 |                                   3 |       4 |       6 |      40 |                                          230 |
-| [$mol_atom](https://github.com/nin-jin/mol)             |     <~1 |                               <~1 |                                 <~1 |       1 |       2 |      20 | RangeError: Maximum call stack size exceeded |
-| [Kefir.js](https://rpominov.github.io/kefir/)           |      25 |                              2500 |                             >300000 | >300000 | >300000 | >300000 |                                      >300000 |
-| [MobX](https://mobxjs.github.io/mobx/)                  |     <~1 |                               <~1 |                                 <~1 |       2 |       3 |      40 | RangeError: Maximum call stack size exceeded |
+```typescript
+const user = {
+    firstName$: cellx(),
+    lastName$: cellx(),
 
-Исходники теста можно найти в папке [perf](https://github.com/Riim/cellx/tree/master/perf).
-Плотность связей в реальных приложениях обычно ниже чем в данном тесте, то есть если в тесте определённая задержка
-появляется на 100 вычисляемых ячейках (25 слоёв), то в реальном приложении подобная задержка будет либо
-на большем числе ячеек, либо в формулах ячеек будут какие-то сложные расчёты (например, вычисление одного массива
-из другого).
+    displayName$: cellx(() => user.firstName$.value ?? user.lastName$.value)
+};
+```
+
+Здесь пока значение `firstName$` неопределено, ячейка `displayName$` подписана и на `firstName$` и на `lastName$`, так как изменение любого из них приведёт к изменению её значения. Если же задать ячейке `firstName$` какое-то not-nullable значение, то, при перевычислении значения `displayName$`, чтение `lastName$` в формуле уже не произойдёт, то есть значение ячейки `displayName$` с этого момента уже никак не зависит от `lastName$`. В таких случаях ячейки автоматически отписываются от незначимых для них зависимостей и не перевычисляются при их изменении. В дальнейшем, если `firstName$` снова получит nullable значение, ячейка `displayName$` вновь подпишется на `lastName$`.
 
 ## Использование
 
-Функциональный стиль:
+### Метод Cell#onChange()
 
-```js
-let num = cellx(1);
-let plusOne = cellx(() => num.value + 1);
+Добавляет обработчик изменения.
 
-console.log(plusOne.value);
-// => 2
-```
+```typescript
+const num$ = cellx(5);
 
-ООП стиль:
-
-```js
-import { cellx, define } from 'cellx';
-
-class User {
-	name: string;
-	nameInitial: string;
-
-	constructor(name: string) {
-		define(this, {
-			name,
-			nameInitial: cellx(() => this.name.charAt(0).toUpperCase())
-		});
-	}
-}
-
-let user = new User('Матроскин');
-
-console.log(user.nameInitial);
-// => 'M'
-```
-
-ООП стиль с декораторами:
-
-```js
-import { Computed, Observable } from 'cellx-decorators';
-
-class User {
-	@Observable name: string;
-
-	@Computed get nameInitial() {
-		return this.name.charAt(0).toUpperCase();
-	}
-
-	constructor(name: string) {
-		this.name = name;
-	}
-}
-
-let user = new User('Матроскин');
-
-console.log(user.nameInitial);
-// => 'M'
-```
-
-### Опции
-
-#### put
-
-Может использоваться для обработки значения при записи и перенаправления записи:
-
-```js
-function User() {
-    this.firstName = cellx('');
-    this.lastName = cellx('');
-
-    this.fullName = cellx(
-		() => (this.firstName.value + ' ' + this.lastName.value).trim(),
-		{
-			put: (name) => {
-				name = name.split(' ');
-
-				this.firstName.value = name[0];
-				this.lastName.value = name[1];
-			}
-		}
-	);
-}
-
-let user = new User();
-
-user.fullName.value = 'Матроскин Кот';
-
-console.log(user.firstName.value);
-// => 'Матроскин'
-console.log(user.lastName.value);
-// => 'Кот'
-```
-
-#### validate
-
-Валидирует значение при записи и вычислении.
-
-Валидация при записи в ячейку:
-
-```js
-let num = cellx(5, {
-    validate: (value) => {
-        if (typeof value != 'number') {
-            throw TypeError('Oops!');
-        }
-    }
+num$.onChange((evt) => {
+    console.log(evt.data);
 });
 
-try {
-    num('Йа строчка');
-} catch (err) {
-    console.log(err.message);
-    // => 'Oops!'
-}
-
-console.log(num.value);
-// => 5
+num$.value = 10;
+// => { value: 10, prevValue: 5 }
 ```
 
-Валидация при вычислении ячейки:
-
-```js
-let someValue = cellx(5);
-
-let num = cellx(() => someValue.value, {
-    validate: (value) => {
-        if (typeof value != 'number') {
-            throw TypeError('Oops!');
-        }
-    }
-});
-
-num.subscribe((err) => {
-    console.log(err.message);
-});
-
-someValue.value = 'Я строчка';
-// => 'Oops!'
-
-console.log(someValue.value);
-// => 'Я строчка'
-```
-
-### Методы
-
-#### onChange
-
-Добавляет обработчик изменения:
-
-```js
-let num = cellx(5);
-
-num.onChange((evt) => {
-    console.log(evt);
-});
-
-num.value = 10;
-// => { prevValue: 5, value: 10 }
-```
-
-#### offChange
+### Метод Cell#offChange()
 
 Снимает ранее добавленный обработчик изменения.
 
-#### onError
+### Метод Cell#onError()
 
-Добавляет обработчик ошибки:
+Добавляет обработчик ошибок.
 
-```js
-let someValue = cellx(1);
+```typescript
+const name$ = cellx('Матроскин');
+const upperName$ = cellx(() => name$.value.toUpperCase());
 
-let num = cellx(() => someValue.value, {
-    validate: (v) => {
-        if (v > 1) {
-            throw RangeError('Oops!');
-        }
-    }
+upperName$.onError((evt) => {
+    console.log(evt.data.error.message);
 });
 
-num.onError(evt => {
-    console.log(evt.error.message);
-});
-
-someValue.value = 2;
-// => 'Oops!'
+name$.value = 5;
+// => 'name$.value.toUpperCase is not a function'
 ```
 
-#### offError
+### Метод Cell#offError()
 
-Снимает ранее добавленный обработчик ошибки.
+Снимает ранее добавленный обработчик ошибок.
 
-#### subscribe
+### Метод Cell#subscribe()
 
 Подписывает на события `change` и `error`. В обработчик первым аргументом приходит объект ошибки, вторым — событие.
 
-```js
-fullName.subscribe((err, evt) => {
+```typescript
+fullName$.subscribe((err, evt) => {
     if (err) {
         //
     } else {
@@ -265,108 +104,320 @@ fullName.subscribe((err, evt) => {
 });
 ```
 
-#### unsubscribe
+### Метод Cell#unsubscribe()
 
 Отписывает от событий `change` и `error`.
 
-## Динамическая актуализация зависимостей
+### define()
 
-Формула вычисляемой ячейки может быть написана так, что набор зависимостей может со временем меняться. Например:
+Делает свойства объекта реактивными.  
+Подписаться на такие свойства можно используя `effect()` и `autorun()` (см. далее).
 
-```js
-let user = {
-    firstName: cellx(''),
-    lastName: cellx(''),
+```typescript
+import { cellx, define } from 'cellx';
 
-    name: cellx(() => user.firstName.value || user.lastName.value)
-};
+class User {
+    name: string;
+    upperName: string;
+
+    constructor(name: string) {
+        define(this, {
+            name,
+            upperName: cellx(() => this.name.toUpperCase())
+        });
+    }
+}
+
+const user = new User('Матроскин');
+
+console.log(user.upperName);
+// => 'MАТРОСКИН'
 ```
 
-Здесь пока `firstName` является пустой строкой, ячейка `name` подписана и на `firstName` и на `lastName`,
-так как изменение любого из них приведёт к изменению её значения. Если же задать `firstName`-у какую-то не пустую
-строку, то, при перевычислении значения `name`, до чтения `lastName` в формуле просто не дойдёт,
-то есть значение ячейки `name` с этого момента уже никак не зависит от `lastName`.
-В таких случаях ячейки автоматически отписываются от незначимых для них зависимостей и не перевычисляются
-при их изменении. В дальнейшем, если `firstName` снова станет пустой строкой, ячейка `name` вновь подпишется
-на `lastName`.
+### Опция Cell[context]
 
-## Синхронизация значения с синхронным хранилищем
+Задаёт контекст выполнения для формулы ячейки и обработчиков.
 
-```js
-let foo = cellx(() => localStorage.foo || 'foo', {
-	put: ({ push }, value) => {
-		localStorage.foo = value;
+```typescript
+const context = 5;
+const name$ = cellx('Матроскин');
+const upperName$ = cellx(function () {
+    console.log(this);
+	// => 5
 
-		push(value);
-	}
+    return name$.value.toUpperCase();
+}, { context });
+
+upperName$.onChange(function () {
+    console.log(this);
+	// => 5
 });
 
-let foobar = cellx(() => foo.value + 'bar');
-
-console.log(foobar.value); // => 'foobar'
-console.log(localStorage.foo); // => undefined
-foo('FOO');
-console.log(foobar.value); // => 'FOObar'
-console.log(localStorage.foo); // => 'FOO'
+name$.value = 'Шарик';
 ```
 
-## Синхронизация значения с асинхронным хранилищем
+### effect()
 
-```js
-let request = (() => {
-	let value = 1;
+Регистрирует функцию для обработки изменения ячейки.
 
-	return {
-		get: url => new Promise((resolve, reject) => {
-            setTimeout(() => {
-                resolve({
-                    ok: true,
-                    value
-                });
-            }, 1000);
-        }),
+```typescript
+const name$ = cellx('Матроскин');
 
-		put: (url, params) => new Promise((resolve, reject) => {
-            setTimeout(() => {
-                value = params.value;
+const dispose = effect(name$, (name) => {
+    console.log(name);
+});
 
-                resolve({ ok: true });
-            }, 1000);
-        })
-	};
-})();
+// или
 
-let foo = cellx(({ push, fail }, next = 0) => {
-	request.get('http://...').then((res) => {
-		if (res.ok) {
-			push(res.value);
-		} else {
-			fail(res.error);
-		}
-	});
+const dispose = effect(() => name$.value, (name) => {
+    console.log(name);
+});
+```
 
-	return next;
+### autorun()
+
+Регистрирует функцию, которая будет запускаться каждый раз, когда изменяется что-либо, за чем она наблюдает. Она также запускается один раз, когда создаётся сам автозапуск.
+
+```typescript
+const name$ = cellx('Матроскин');
+
+const dispose = autorun(() => {
+    console.log(name$.value);
+});
+```
+
+### Опция Cell[dependencyFilter]
+
+Устанавливает функцию для фильтрации найденных зависимостей.  
+По умолчанию используется `DependencyFilter.allExpectUntracked`.
+
+```typescript
+const TRACKED = Symbol('tracked');
+const firstName$ = cellx('Матроскин');
+const lastName$ = cellx('Кот');
+
+firstName$[TRACKED] = true;
+
+const fullName$ = cellx(() => firstName$.value + ' ' + lastName$.value, {
+    dependencyFilter: (cell) => cell[TRACKED]
+});
+
+fullName$.onChange(() => {
+    console.log(fullName$.value);
+});
+
+lastName$.value = 'Пёс';
+// Ничего не выводится!
+
+console.log(fullName$.value);
+// => 'Матроскин Кот'
+// Перевычисление fullName$ не произошло, тк. lastName$ не определилися как его записимость.
+
+firstName$.value = 'Шарик';
+// => 'Шарик Пёс'
+```
+
+### untracked()
+
+Запускает фрагмент кода в котором прочитанные ячейки не определяются как зависимости.
+
+```typescript
+const firstName$ = cellx('Матроскин');
+const lastName$ = cellx('Кот');
+const fullName$ = cellx(() => firstName$.value + ' ' + untracked(() => lastName$.value));
+
+fullName$.onChange(() => {
+    console.log(fullName$.value);
+});
+
+lastName$.value = 'Пёс';
+// Ничего не выводится!
+
+console.log(fullName$.value);
+// => 'Матроскин Кот'
+// Перевычисление fullName$ не произошло, тк. lastName$ не определилися как его записимость.
+
+firstName$.value = 'Шарик';
+// => 'Шарик Пёс'
+```
+
+### tracked()
+
+Запускает фрагмент кода в котором прочитанные ячейки определяются как зависимости.  
+Используется в сочетании с опцией `Cell[dependencyFilter]`.
+
+```typescript
+const firstName$ = cellx('Матроскин');
+const lastName$ = cellx('Кот');
+const fullName$ = cellx(() => tracked(() => firstName$.value) + ' ' + lastName$.value, {
+    dependencyFilter: DependencyFilter.onlyTracked
+});
+
+fullName$.onChange(() => {
+    console.log(fullName$.value);
+});
+
+lastName$.value = 'Пёс';
+// Ничего не выводится!
+
+console.log(fullName$.value);
+// => 'Матроскин Кот'
+// Перевычисление fullName$ не произошло, тк. lastName$ не определилися как его записимость.
+
+firstName$.value = 'Шарик';
+// => 'Шарик Пёс'
+```
+
+### Опция Cell[meta]
+
+Любая дополнительная информация для ячейки.
+
+```typescript
+const name$ = cellx('Матроскин', {
+    meta: { id: 'name' }
+});
+
+console.log(name$.meta.id);
+// => 'name'
+```
+
+### Опция Cell[validate]
+
+Проверяет значение при записи и вычислении.
+
+Валидация при записи в ячейку:
+
+```typescript
+const num$ = cellx(5, {
+    validate: (value) => {
+        if (typeof value != 'number') {
+            throw TypeError('Must be a number');
+        }
+    }
+});
+
+try {
+    num$.value = 'строка';
+} catch (err) {
+    console.log(err.message);
+    // => 'Must be a number'
+}
+
+console.log(num$.value);
+// => 5
+```
+
+Валидация при вычислении ячейки:
+
+```typescript
+const someValue$ = cellx(5);
+
+const num$ = cellx(() => someValue$.value, {
+    validate: (value) => {
+        if (typeof value != 'number') {
+            throw TypeError('Must be a number');
+        }
+    }
+});
+
+num$.onError((err) => {
+    console.log(err.message);
+});
+
+someValue$.value = 'строка';
+// => 'Must be a number'
+
+console.log(someValue$.value);
+// => 'строка'
+console.log(num$.value);
+// => 5
+```
+
+### Опция Cell[put]
+
+Может использоваться для обработки значения при записи и перенаправления записи.
+
+```typescript
+class User {
+    firstName$ = cellx('');
+    lastName$ = cellx('');
+
+    fullName$ = cellx(
+        () => (this.firstName$.value + ' ' + this.lastName$.value).trim(),
+        {
+            put: (nextValue) => {
+				[this.firstName$.value, this.lastName$.value] = nextValue.split(' ');
+            }
+        }
+    );
+}
+
+const user = new User();
+
+user.fullName$.value = 'Матроскин Кот';
+
+console.log(user.firstName$.value);
+// => 'Матроскин'
+console.log(user.lastName$.value);
+// => 'Кот'
+```
+
+Например, можно синхронизировать значение ячейки с localStorage:
+
+```typescript
+const foo$ = cellx(() => localStorage.getItem('foo') ?? 'default', {
+    put: ({ push }, nextValue) => {
+        localStorage.setItem('foo', nextValue);
+
+        push(nextValue);
+    }
+});
+
+const foobar$ = cellx(() => foo$.value + '_bar');
+
+console.log(localStorage.getItem('foo')); // => null
+console.log(foobar$.value); // => 'default_bar'
+
+foo$.value = 'foo';
+
+console.log(localStorage.getItem('foo')); // => 'foo'
+console.log(foobar$.value); // => 'foo_bar'
+```
+
+Или с хранящимся на сервере значением:
+
+```typescript
+const foo$ = cellx(({ push, fail }) => {
+    request.get('http://...').then((res) => {
+        if (res.ok) {
+            push(res.data.value);
+        } else {
+            fail(res.error);
+        }
+    });
+
+    return 0;
 }, {
-	put: (value, cell, next) => {
-		request.put('http://...', { value: value }).then((res) => {
-			if (res.ok) {
-				cell.push(value);
-			} else {
-				cell.fail(res.error);
-			}
-		});
-	}
+    put: ({ push, fail }, nextValue) => {
+        request.post('http://...', { value: nextValue }).then((res) => {
+            if (res.ok) {
+                push(nextValue);
+            } else {
+                fail(res.error);
+            }
+        });
+    }
 });
 
-foo.subscribe(() => {
-	console.log('New foo value: ' + foo.value);
+foo$.onChange(() => {
+    console.log('foo$.value:', foo$.value);
 
-	foo.value = 5;
+    foo$.value = 5;
 });
 
-console.log(foo.value);
+console.log(foo$.value);
 // => 0
 
-// => 'New foo value: 1'
-// => 'New foo value: 5'
+// => 'foo$.value: 1'
+// => 'foo$.value: 5'
 ```

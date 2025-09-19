@@ -5,8 +5,8 @@ const libName = 'cellx';
 export default defineConfig(() => {
 	return [
 		['esm', 'js'],
-		['umd', 'umd.js'],
-		['commonjs', 'cjs']
+		['umd', 'umd.js']
+		// ['commonjs', 'cjs']
 	].map(([format, fileExt]) => ({
 		input: 'src/cellx.ts',
 

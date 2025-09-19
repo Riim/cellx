@@ -60,7 +60,6 @@ describe('Cell', () => {
 			let b$ = cellx(() => a$.value + 1, { onChange });
 
 			a$.pull();
-
 			release();
 
 			expect(onChange.mock.calls.length).toBe(1);
@@ -271,15 +270,15 @@ describe('Cell', () => {
 					onChange(evt) {
 						if (evt.data['value'] == 2) {
 							expect(evt.data).toEqual({
-								prevValue: 5,
-								value: 2
+								value: 2,
+								prevValue: 5
 							});
 
 							done();
 						} else {
 							expect(evt.data).toEqual({
-								prevValue: 1,
-								value: 5
+								value: 5,
+								prevValue: 1
 							});
 						}
 					}
@@ -303,7 +302,7 @@ describe('Cell', () => {
 			expect(c$.state).toBe(CellState.ACTUAL);
 		});
 
-		test('вычисляемая ячейка лишаясь зависимостей получает state == actual', () => {
+		test('вычисляемая ячейка лишаясь всех зависимостей получает state == actual', () => {
 			let a$ = cellx(1);
 
 			let t = 0;
@@ -390,11 +389,9 @@ describe('Cell', () => {
 			let d$OnError = jest.fn();
 
 			let a$ = cellx(1);
-
-			let t = 0;
 			let b$ = cellx(
 				() => {
-					if (t++) {
+					if (a$.value == 2) {
 						throw 1;
 					}
 
@@ -402,9 +399,9 @@ describe('Cell', () => {
 				},
 				{ onError: b$OnError }
 			);
-
 			let c1$ = cellx(() => b$.value + 1, { onError: c1$OnError });
 			let c2$ = cellx(() => b$.value + 1, { onError: c2$OnError });
+
 			cellx(() => c1$.value + c2$.value, { onError: d$OnError });
 
 			a$.value = 2;
@@ -412,7 +409,7 @@ describe('Cell', () => {
 
 			expect(b$OnError.mock.calls.length).toBe(1);
 			expect(c1$OnError.mock.calls.length).toBe(1);
-			expect(c2$OnError.mock.calls.length).toBe(1);
+			expect(c2$OnError.mock.calls.length).toBe(0);
 			expect(d$OnError.mock.calls.length).toBe(1);
 		});
 

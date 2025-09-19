@@ -3,7 +3,7 @@ import { Cell, type ICellOptions, type TCellPull } from './Cell';
 export { configure } from './config';
 export { type IEvent, type I$Listener, EventEmitter } from './EventEmitter';
 export { autorun } from './autorun';
-export { effect } from './effect';
+export { reaction } from './reaction';
 export { release } from './release';
 export { afterRelease } from './afterRelease';
 export { transact } from './transact';
@@ -28,11 +28,11 @@ export { defineObservableProperty, defineObservableProperties, define } from './
 
 export function observable<Value = any, Context = null, Meta = null>(
 	value: Value,
-	options?: Omit<ICellOptions<Value, Context, Meta>, 'pullFn' | 'value'>
+	options?: Omit<ICellOptions<Value, Context, Meta>, 'pull' | 'value'>
 ): Cell<Value, Context, Meta> {
 	return new Cell({
 		...options,
-		pullFn: undefined,
+		pull: undefined,
 		value
 	});
 }
@@ -43,7 +43,7 @@ export function computed<Value = any, Context = null, Meta = null>(
 ): Cell<Value, Context, Meta> {
 	return new Cell({
 		...options,
-		pullFn
+		pull: pullFn
 	});
 }
 

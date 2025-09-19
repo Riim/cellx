@@ -3,12 +3,14 @@ import { WaitError } from './WaitError';
 import { afterRelease } from './afterRelease';
 import { autorun } from './autorun';
 import { config } from './config';
-import { effect } from './effect';
 import { KEY_LISTENER_WRAPPERS } from './keys';
+import { reaction } from './reaction';
 import { release } from './release';
 import { DependencyFilter } from './track';
 import { transact } from './transact';
 import { fastIndexOf } from './utils/fastIndexOf';
+import { isEventEmitterLike } from './utils/isEventEmitterLike';
+import { isPromiseLike } from './utils/isPromiseLike';
 import { nextTick } from './utils/nextTick';
 
 export type CellValue<T> = T extends Cell<infer U> ? U : T;
@@ -61,18 +63,18 @@ export type TCellPull<Value = any, Context = any, Meta = any> = (
 export type TCellPut<Value = any, Context = any, Meta = any> = (
 	this: Context,
 	cell: Cell<Value, Context, Meta>,
-	next: Value,
+	nextValue: Value,
 	value: Value | undefined
 ) => void;
 
 export interface ICellOptions<Value = any, Context = any, Meta = any> {
 	context?: Context;
 	meta?: Meta;
-	pullFn?: TCellPull<Value, Context, Meta>;
+	pull?: TCellPull<Value, Context, Meta>;
 	dependencyFilter?: (dep: Cell) => any;
-	validate?: (next: Value, value: Value | undefined) => void;
+	validate?: (nextValue: Value, value: Value | undefined) => void;
 	put?: TCellPut<Value, Context, Meta>;
-	compareValues?: (next: Value, value: Value | undefined) => boolean;
+	compareValues?: (nextValue: Value, value: Value | undefined) => boolean;
 	reap?: (this: Context) => void;
 	value?: Value;
 	onChange?: TCellChangeEventListener<Cell<Value, any, Meta>>;
@@ -104,7 +106,7 @@ export const Cell_CommonState = {
 	} | null
 };
 
-const $error = { error: Error() };
+let $error: { error: any } | null = null;
 
 export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 	static readonly EVENT_CHANGE = 'change';
@@ -115,34 +117,32 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 	}
 
 	static readonly autorun = autorun;
-	static readonly effect = effect;
+	static readonly reaction = reaction;
 
 	static readonly release = release;
-
 	static readonly afterRelease = afterRelease;
 
-	static override readonly transact = transact;
+	static readonly transact = transact;
 
 	readonly context: Context;
 
 	readonly meta: Meta;
 
-	protected _pullFn: TCellPull<Value, Context, Meta> | null;
-	protected _dependencyFilter: (dep: Cell) => any;
+	protected _pull: TCellPull<Value, Context, Meta> | null;
+	protected _dependencyFilter: (dependency: Cell) => any;
 
-	protected _validateValue: ((next: Value, value: Value | undefined) => void) | null;
-	protected _putFn: TCellPut<Value, Context, Meta> | null;
-	protected _compareValues: (next: Value, value: Value | undefined) => boolean;
+	protected _validateValue: ((nextValue: Value, value: Value | undefined) => void) | null;
+	protected _put: TCellPut<Value, Context, Meta> | null;
+	protected _compareValues: (nextValue: Value, value: Value | undefined) => boolean;
 
 	protected _reap: (() => void) | null;
 
 	protected _dependencies: Array<Cell> | null | undefined;
-	protected _reactions: Array<Cell> = [];
+	protected _dependents: Array<Cell> = [];
 
 	protected _value: Value | undefined;
 	protected _error$: Cell<Error | null> | null = null;
 	protected _error: Error | null = null;
-	protected _lastErrorEvent: IEvent | null = null;
 
 	get error() {
 		return Cell_CommonState.currentCell
@@ -162,7 +162,7 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 		return this._inited;
 	}
 
-	// active = deps && (reactions || listeners)
+	// active = dependencies && (dependents || listeners)
 	protected _active = false;
 
 	get active() {
@@ -186,16 +186,16 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 
 		this.meta = (options.meta ?? null) as Meta;
 
-		this._pullFn = options.pullFn ?? null;
+		this._pull = options.pull ?? null;
 		this._dependencyFilter = options.dependencyFilter ?? DependencyFilter.allExceptUntracked;
 
 		this._validateValue = options.validate ?? null;
-		this._putFn = options.put ?? null;
+		this._put = options.put ?? null;
 		this._compareValues = options.compareValues ?? config.compareValues;
 
 		this._reap = options.reap ?? null;
 
-		if (this._pullFn) {
+		if (this._pull) {
 			this._dependencies = undefined;
 			this._value = undefined;
 			this._state = CellState.DIRTY;
@@ -210,7 +210,7 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 			this._state = CellState.ACTUAL;
 			this._inited = true;
 
-			if (value instanceof EventEmitter) {
+			if (isEventEmitterLike(value)) {
 				value.on('change', this._onValueChange, this);
 			}
 		}
@@ -293,7 +293,7 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 
 		if (
 			hasListeners &&
-			this._reactions.length == 0 &&
+			this._dependents.length == 0 &&
 			(this._$listeners.size == 0 ||
 				(!this._$listeners.has(Cell.EVENT_CHANGE) &&
 					!this._$listeners.has(Cell.EVENT_ERROR)))
@@ -391,17 +391,17 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 		);
 	}
 
-	protected _addReaction(reaction: Cell) {
-		this._reactions.push(reaction);
+	protected _addDependent(dependent: Cell) {
+		this._dependents.push(dependent);
 
 		this._activate();
 	}
 
-	protected _deleteReaction(reaction: Cell) {
-		this._reactions.splice(fastIndexOf(this._reactions, reaction), 1);
+	protected _deleteDependent(dependent: Cell) {
+		this._dependents.splice(fastIndexOf(this._dependents, dependent), 1);
 
 		if (
-			this._reactions.length == 0 &&
+			this._dependents.length == 0 &&
 			(this._$listeners.size == 0 ||
 				(!this._$listeners.has(Cell.EVENT_CHANGE) &&
 					!this._$listeners.has(Cell.EVENT_ERROR)))
@@ -417,13 +417,13 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 			return;
 		}
 
-		let deps = this._dependencies;
+		let dependencies = this._dependencies;
 
-		if (deps) {
+		if (dependencies) {
 			for (let i = 0; ; i++) {
-				deps[i]._addReaction(this);
+				dependencies[i]._addDependent(this);
 
-				if (i + 1 == deps.length) {
+				if (i + 1 == dependencies.length) {
 					break;
 				}
 			}
@@ -435,13 +435,13 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 	}
 
 	protected _deactivate() {
-		let deps = this._dependencies;
+		let dependencies = this._dependencies;
 
-		if (deps) {
+		if (dependencies) {
 			for (let i = 0; ; i++) {
-				deps[i]._deleteReaction(this);
+				dependencies[i]._deleteDependent(this);
 
-				if (i + 1 == deps.length) {
+				if (i + 1 == dependencies.length) {
 					break;
 				}
 			}
@@ -455,13 +455,13 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 	protected _onValueChange(evt: IEvent) {
 		this._updateId = ++Cell_CommonState.lastUpdateId;
 
-		let reactions = this._reactions;
+		let dependents = this._dependents;
 
-		for (let i = 0; i < reactions.length; i++) {
-			reactions[i]._addToRelease(true);
+		for (let i = 0; i < dependents.length; i++) {
+			dependents[i]._addToRelease(true);
 		}
 
-		this.handleEvent(evt);
+		this.emit('change', { sourceEvent: evt });
 	}
 
 	protected _addToRelease(dirty: boolean) {
@@ -469,15 +469,15 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 
 		Cell_CommonState.transaction?.secondaryCells.add(this);
 
-		let reactions = this._reactions;
+		let dependents = this._dependents;
 
-		if (reactions.length != 0) {
+		if (dependents.length != 0) {
 			for (let i = 0; ; i++) {
-				if (reactions[i]._state == CellState.ACTUAL) {
-					reactions[i]._addToRelease(false);
+				if (dependents[i]._state == CellState.ACTUAL) {
+					dependents[i]._addToRelease(false);
 				}
 
-				if (i + 1 == reactions.length) {
+				if (i + 1 == dependents.length) {
 					break;
 				}
 			}
@@ -492,10 +492,14 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 		if (this._state == CellState.DIRTY) {
 			this.pull();
 		} else if (this._state == CellState.CHECK) {
-			let deps = this._dependencies!;
+			let dependencies = this._dependencies!;
 
 			for (let i = 0; ; i++) {
-				deps[i].actualize();
+				if (dependencies[i].actualize()._error) {
+					this._fail(dependencies[i]._error);
+
+					break;
+				}
 
 				// @ts-expect-error
 				if (this._state == CellState.DIRTY) {
@@ -504,13 +508,15 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 					break;
 				}
 
-				if (i + 1 == deps.length) {
+				if (i + 1 == dependencies.length) {
 					this._state = CellState.ACTUAL;
 
 					break;
 				}
 			}
 		}
+
+		return this;
 	}
 
 	get value() {
@@ -541,11 +547,11 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 			throw this._error;
 		}
 
-		return this._value as Value;
+		return this._value!;
 	}
 
 	pull() {
-		if (!this._pullFn) {
+		if (!this._pull) {
 			return false;
 		}
 
@@ -555,7 +561,7 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 
 		this._currentlyPulling = true;
 
-		let prevDeps = this._dependencies;
+		let prevDependencies = this._dependencies;
 		this._dependencies = null;
 
 		let prevCell = Cell_CommonState.currentCell;
@@ -564,8 +570,8 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 		let value: any;
 
 		try {
-			if (this._pullFn.length == 0) {
-				value = (this._pullFn as Function).call(this.context);
+			if (this._pull.length == 0) {
+				value = (this._pull as Function).call(this.context);
 			} else {
 				if (!this._bound) {
 					this.push = this.push.bind(this);
@@ -574,21 +580,20 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 					this._bound = true;
 				}
 
-				value = this._pullFn.call(this.context, this, this._value);
+				value = this._pull.call(this.context, this, this._value);
 			}
 
-			if (value instanceof Promise) {
+			if (isPromiseLike(value)) {
 				value.then(
-					(value) => this.push(value),
-					(err) => this.fail(err)
+					(value) => this._push(value),
+					(err) => this._fail(err)
 				);
 
-				$error.error = new WaitError();
+				$error = { error: new WaitError() };
 				value = $error;
 			}
 		} catch (err) {
-			$error.error = err;
-			value = $error;
+			$error = { error: err };
 		}
 
 		Cell_CommonState.currentCell = prevCell;
@@ -596,42 +601,46 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 		this._currentlyPulling = false;
 
 		if (
-			this._reactions.length != 0 ||
+			this._dependents.length != 0 ||
 			this._$listeners.has(Cell.EVENT_CHANGE) ||
 			this._$listeners.has(Cell.EVENT_ERROR)
 		) {
-			let deps = this._dependencies as Array<Cell> | null;
-			let newDepCount = 0;
+			let dependencies = this._dependencies as Array<Cell> | null;
+			let newDependencyCount = 0;
 
-			if (deps) {
+			if (dependencies) {
 				for (let i = 0; ; i++) {
-					let dep = deps[i];
+					let dependency = dependencies[i];
 
-					if (!prevDeps || fastIndexOf(prevDeps, dep) == -1) {
-						dep._addReaction(this);
-						newDepCount++;
+					if (!prevDependencies || fastIndexOf(prevDependencies, dependency) == -1) {
+						dependency._addDependent(this);
+						newDependencyCount++;
 					}
 
-					if (i + 1 == deps.length) {
+					if (i + 1 == dependencies.length) {
 						break;
 					}
 				}
 			}
 
-			if (prevDeps && (!deps || deps.length - newDepCount < prevDeps.length)) {
+			if (
+				prevDependencies &&
+				(!dependencies ||
+					dependencies.length - newDependencyCount < prevDependencies.length)
+			) {
 				for (let i = 0; ; i++) {
-					if (!deps || fastIndexOf(deps, prevDeps[i]) == -1) {
-						prevDeps[i]._deleteReaction(this);
+					if (!dependencies || fastIndexOf(dependencies, prevDependencies[i]) == -1) {
+						prevDependencies[i]._deleteDependent(this);
 					}
 
-					if (i + 1 == prevDeps.length) {
+					if (i + 1 == prevDependencies.length) {
 						break;
 					}
 				}
 			}
 
-			if (deps) {
-				if (!prevDeps) {
+			if (dependencies) {
+				if (!prevDependencies) {
 					this._active = true;
 				}
 			} else {
@@ -642,7 +651,7 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 			this._state = this._dependencies ? CellState.DIRTY : CellState.ACTUAL;
 		}
 
-		return value === $error ? this.fail($error.error, true) : this.push(value, true);
+		return $error ? this._fail($error.error, true) : this._push(value, true);
 	}
 
 	set(value: Value) {
@@ -654,7 +663,7 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 
 		this._validateValue?.(value, this._value);
 
-		if (this._putFn) {
+		if (this._put) {
 			if (!this._bound) {
 				this.push = this.push.bind(this);
 				this.fail = this.fail.bind(this);
@@ -662,25 +671,30 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 				this._bound = true;
 			}
 
-			if (this._putFn.length >= 3) {
-				this._putFn.call(this.context, this, value, this._value);
+			if (this._put.length >= 3) {
+				this._put.call(this.context, this, value, this._value);
 			} else {
-				(this._putFn as Function).call(this.context, this, value);
+				(this._put as Function).call(this.context, this, value);
 			}
 		} else {
-			this.push(value);
+			this._push(value);
 		}
 
 		return this;
 	}
 
-	push(value: Value, _afterPull?: boolean) {
+	push(value: Value) {
+		return this._push(value);
+	}
+
+	_push(value: Value, fromPull?: boolean) {
 		this._inited = true;
 
 		let err = this._error;
 
 		if (err) {
-			this._setError(null, !!_afterPull);
+			this._error$?.set(err);
+			this._error = err;
 		}
 
 		let prevValue = this._value;
@@ -696,10 +710,10 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 				Cell_CommonState.transaction.primaryCells.set(this, prevValue);
 			}
 
-			if (prevValue instanceof EventEmitter) {
+			if (isEventEmitterLike(prevValue)) {
 				prevValue.off('change', this._onValueChange, this);
 			}
-			if (value instanceof EventEmitter) {
+			if (isEventEmitterLike(value)) {
 				value.on('change', this._onValueChange, this);
 			}
 		}
@@ -708,15 +722,13 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 			this._state = CellState.ACTUAL;
 		}
 
-		this._updateId = _afterPull
-			? Cell_CommonState.lastUpdateId
-			: ++Cell_CommonState.lastUpdateId;
+		this._updateId = fromPull ? Cell_CommonState.lastUpdateId : ++Cell_CommonState.lastUpdateId;
 
 		if (changed || err instanceof WaitError) {
-			let reactions = this._reactions;
+			let dependents = this._dependents;
 
-			for (let i = 0; i < reactions.length; i++) {
-				reactions[i]._addToRelease(true);
+			for (let i = 0; i < dependents.length; i++) {
+				dependents[i]._addToRelease(true);
 			}
 
 			if (changed) {
@@ -730,63 +742,47 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 		return changed;
 	}
 
-	fail(err: any, _afterPull?: boolean) {
+	fail(err: any) {
+		return this._fail(err);
+	}
+
+	_fail(err: any, fromPull?: boolean) {
 		this._inited = true;
 
 		let isWaitError = err instanceof WaitError;
 
-		if (!isWaitError) {
-			if (this.meta?.['id'] !== undefined) {
-				config.logError('[' + this.meta?.['id'] + ']', err);
-			} else {
-				config.logError(err);
-			}
-
-			if (!(err instanceof Error)) {
-				err = Error(err);
-			}
+		if (!isWaitError && !(err instanceof Error)) {
+			err = Error(err);
 		}
 
-		this._setError(
-			{
-				target: this,
-				type: Cell.EVENT_ERROR,
-				data: { error: err as Error }
-			},
-			!!_afterPull
-		);
+		this._error$?.set(err);
+		this._error = err;
 
 		if (this._active) {
 			this._state = CellState.ACTUAL;
 		}
 
+		this._updateId = fromPull ? Cell_CommonState.lastUpdateId : ++Cell_CommonState.lastUpdateId;
+
+		if (!isWaitError && $error) {
+			$error = null;
+
+			// try {
+			if (this.meta?.['id'] !== undefined) {
+				config.logError(`[${this.meta?.['id']}]`, err);
+			} else {
+				config.logError(err);
+			}
+			// } catch (err) {
+			// 	nextTick(() => {
+			// 		throw err;
+			// 	});
+			// }
+		}
+
+		this.emit(Cell.EVENT_ERROR, { error: err });
+
 		return isWaitError;
-	}
-
-	protected _setError(errorEvent: IEvent<{ error: Error }> | null, afterPull: boolean) {
-		if (this._lastErrorEvent === errorEvent) {
-			return;
-		}
-
-		let err = errorEvent && errorEvent.data.error;
-
-		this._error$?.set(err);
-		this._error = err;
-		this._lastErrorEvent = errorEvent;
-
-		this._updateId = afterPull
-			? Cell_CommonState.lastUpdateId
-			: ++Cell_CommonState.lastUpdateId;
-
-		if (errorEvent) {
-			this.handleEvent(errorEvent);
-		}
-
-		let reactions = this._reactions;
-
-		for (let i = 0; i < reactions.length; i++) {
-			reactions[i]._setError(errorEvent, afterPull);
-		}
 	}
 
 	wait(): never {
@@ -798,10 +794,10 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 
 		this._error$?.reap();
 
-		let reactions = this._reactions;
+		let dependents = this._dependents;
 
-		for (let i = 0; i < reactions.length; i++) {
-			reactions[i].reap();
+		for (let i = 0; i < dependents.length; i++) {
+			dependents[i].reap();
 		}
 
 		return this;

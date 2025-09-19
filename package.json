@@ -6,9 +6,10 @@
   "main": "dist/cellx.umd.js",
   "typings": "dist/cellx.d.ts",
   "scripts": {
-    "build": "rm -rf dist && npx tsc && rolldown -c",
+    "build": "rm -rf dist && npx tsc && rolldown -c && babel dist --out-dir dist",
     "test": "rm -rf coverage && jest --coverage",
-    "bench": "node --max-old-space-size=8192 benchmarks/main.bench.js"
+    "bench": "npx tsx benchmarks/main.bench.ts",
+    "bench:mem": "npx tsx --expose-gc benchmarks/main.bench.ts"
   },
   "repository": {
     "type": "git",
@@ -21,6 +22,9 @@
   },
   "homepage": "https://github.com/Riim/cellx#readme",
   "devDependencies": {
+    "@babel/cli": "7.28.3",
+    "@babel/core": "7.28.4",
+    "@babel/plugin-transform-block-scoping": "7.28.4",
     "@eslint/js": "9.35.0",
     "@jest/globals": "30.1.2",
     "@trivago/prettier-plugin-sort-imports": "5.2.2",

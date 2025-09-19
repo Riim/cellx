@@ -163,23 +163,23 @@ describe('EventEmitter', () => {
 		expect(emitter.get$Listeners('foo').length).toBe(3);
 	});
 
-	test('.transact()', () => {
+	test('.batch()', () => {
 		let emitter = new EventEmitter();
 		let onFoo = jest.fn();
 
 		emitter.on('foo', onFoo);
 
-		EventEmitter.transact(() => {
+		EventEmitter.batch(() => {
 			emitter.emit('foo');
 			emitter.emit('foo');
 		});
 
 		expect(onFoo.mock.calls.length).toBe(1);
 
-		EventEmitter.transact(() => {
+		EventEmitter.batch(() => {
 			emitter.emit('foo');
 
-			EventEmitter.transact(() => {
+			EventEmitter.batch(() => {
 				emitter.emit('foo');
 				emitter.emit('foo');
 			});

@@ -20,23 +20,23 @@ export interface I$Listener {
 }
 
 export const EventEmitter_CommonState = {
-	inTransactCounter: 0,
-	transactionEvents: [] as Array<IEvent>,
+	inBatchCounter: 0,
+	batchedEvents: [] as Array<IEvent>,
 
 	inSilentlyCounter: 0
 };
 
 export class EventEmitter {
-	static transact(fn: Function) {
-		EventEmitter_CommonState.inTransactCounter++;
+	static batch(fn: Function) {
+		EventEmitter_CommonState.inBatchCounter++;
 
 		try {
 			fn();
 		} finally {
-			if (--EventEmitter_CommonState.inTransactCounter == 0) {
-				let events = EventEmitter_CommonState.transactionEvents;
+			if (--EventEmitter_CommonState.inBatchCounter == 0) {
+				let events = EventEmitter_CommonState.batchedEvents;
 
-				EventEmitter_CommonState.transactionEvents = [];
+				EventEmitter_CommonState.batchedEvents = [];
 
 				for (let i = 0; i < events.length; i++) {
 					events[i].target.handleEvent(events[i]);
@@ -212,8 +212,8 @@ export class EventEmitter {
 		}
 
 		if (EventEmitter_CommonState.inSilentlyCounter == 0) {
-			if (EventEmitter_CommonState.inTransactCounter != 0) {
-				for (let i = EventEmitter_CommonState.transactionEvents.length; ; ) {
+			if (EventEmitter_CommonState.inBatchCounter != 0) {
+				for (let i = EventEmitter_CommonState.batchedEvents.length; ; ) {
 					if (i == 0) {
 						if (evt.data) {
 							evt.data['prevEvent'] = null;
@@ -221,12 +221,12 @@ export class EventEmitter {
 							evt.data = { prevEvent: null };
 						}
 
-						EventEmitter_CommonState.transactionEvents.push(evt as IEvent);
+						EventEmitter_CommonState.batchedEvents.push(evt as IEvent);
 
 						break;
 					}
 
-					let event = EventEmitter_CommonState.transactionEvents[--i];
+					let event = EventEmitter_CommonState.batchedEvents[--i];
 
 					if (event.target == this && event.type === evt.type) {
 						if (evt.data) {
@@ -235,7 +235,7 @@ export class EventEmitter {
 							evt.data = { prevEvent: event };
 						}
 
-						EventEmitter_CommonState.transactionEvents[i] = evt as IEvent;
+						EventEmitter_CommonState.batchedEvents[i] = evt as IEvent;
 
 						break;
 					}

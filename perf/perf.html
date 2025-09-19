@@ -169,10 +169,10 @@ function testCellx(layerCount, done) {
 	for (let i = layerCount; i--; ) {
 		layer = ((prev) => {
 			let next = {
-				prop1: new Cell({ pullFn: () => prev.prop2.get() }),
-				prop2: new Cell({ pullFn: () => prev.prop1.get() - prev.prop3.get() }),
-				prop3: new Cell({ pullFn: () => prev.prop2.get() + prev.prop4.get() }),
-				prop4: new Cell({ pullFn: () => prev.prop3.get() })
+				prop1: new Cell({ pull: () => prev.prop2.get() }),
+				prop2: new Cell({ pull: () => prev.prop1.get() - prev.prop3.get() }),
+				prop3: new Cell({ pull: () => prev.prop2.get() + prev.prop4.get() }),
+				prop4: new Cell({ pull: () => prev.prop3.get() })
 			};
 
 			return next;

@@ -9,7 +9,7 @@ export function autorun<Value, Context = null>(
 	new Cell({
 		onChange: () => {},
 		...cellOptions,
-		pullFn: function (cell, value) {
+		pull: function (cell, value) {
 			return fn.call(
 				this,
 				value,
