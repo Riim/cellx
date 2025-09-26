@@ -89,7 +89,8 @@ export interface ICellList {
 export enum CellState {
 	ACTUAL = 'actual',
 	DIRTY = 'dirty',
-	CHECK = 'check'
+	CHECK = 'check',
+	PULLING = 'pulling'
 }
 
 export const Cell_CommonState = {
@@ -172,12 +173,6 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 
 	get active() {
 		return this._active;
-	}
-
-	protected _currentlyPulling = false;
-
-	get currentlyPulling() {
-		return this._currentlyPulling;
 	}
 
 	protected _updateId = -1;
@@ -610,11 +605,11 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 			return false;
 		}
 
-		if (this._currentlyPulling) {
+		if (this._state == CellState.PULLING) {
 			throw TypeError('Circular pulling');
 		}
 
-		this._currentlyPulling = true;
+		this._state = CellState.PULLING;
 
 		let dependency = this._dependencies;
 
@@ -652,8 +647,6 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 
 		Cell_CommonState.currentCell = prevCell;
 
-		this._currentlyPulling = false;
-
 		if (
 			this._dependents ||
 			this._$listeners.has(Cell.EVENT_CHANGE) ||
@@ -683,6 +676,7 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 			}
 
 			if (this._dependencies) {
+				// state = ACTUAL проставится в push() или fail()
 				this._active = true;
 			} else {
 				this._state = CellState.ACTUAL;
