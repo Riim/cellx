@@ -8,7 +8,6 @@ import { reaction } from './reaction';
 import { release } from './release';
 import { DependencyFilter } from './track';
 import { transact } from './transact';
-import { fastIndexOf } from './utils/fastIndexOf';
 import { isEventEmitterLike } from './utils/isEventEmitterLike';
 import { isPromiseLike } from './utils/isPromiseLike';
 import { nextTick } from './utils/nextTick';
@@ -81,6 +80,12 @@ export interface ICellOptions<Value = any, Context = any, Meta = any> {
 	onError?: TCellErrorEventListener<Cell<Value, any, Meta>>;
 }
 
+export interface ICellList {
+	cell: Cell;
+	state?: number;
+	next: ICellList | null;
+}
+
 export enum CellState {
 	ACTUAL = 'actual',
 	DIRTY = 'dirty',
@@ -137,8 +142,8 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 
 	protected _reap: (() => void) | null;
 
-	protected _dependencies: Array<Cell> | null | undefined;
-	protected _dependents: Array<Cell> = [];
+	protected _dependencies: ICellList | null | undefined;
+	protected _dependents: ICellList | null = null;
 
 	protected _value: Value | undefined;
 	protected _error$: Cell<Error | null> | null = null;
@@ -293,7 +298,7 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 
 		if (
 			hasListeners &&
-			this._dependents.length == 0 &&
+			!this._dependents &&
 			(this._$listeners.size == 0 ||
 				(!this._$listeners.has(Cell.EVENT_CHANGE) &&
 					!this._$listeners.has(Cell.EVENT_ERROR)))
@@ -392,16 +397,53 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 	}
 
 	protected _addDependent(dependent: Cell) {
-		this._dependents.push(dependent);
+		let currentDependent = this._dependents;
+
+		if (currentDependent) {
+			for (; ; currentDependent = currentDependent.next) {
+				if (!currentDependent.next) {
+					currentDependent.next = {
+						cell: dependent,
+						next: null
+					};
+
+					break;
+				}
+			}
+		} else {
+			this._dependents = {
+				cell: dependent,
+				next: null
+			};
+		}
 
 		this._activate();
 	}
 
 	protected _deleteDependent(dependent: Cell) {
-		this._dependents.splice(fastIndexOf(this._dependents, dependent), 1);
+		let currentDependent = this._dependents;
+
+		if (currentDependent!.cell == dependent) {
+			this._dependents = currentDependent!.next;
+		} else {
+			for (let prevDependent: ICellList; ; ) {
+				prevDependent = currentDependent!;
+				currentDependent = currentDependent!.next;
+
+				if (!currentDependent) {
+					break;
+				}
+
+				if (currentDependent.cell == dependent) {
+					prevDependent.next = currentDependent.next;
+
+					break;
+				}
+			}
+		}
 
 		if (
-			this._dependents.length == 0 &&
+			!this._dependents &&
 			(this._$listeners.size == 0 ||
 				(!this._$listeners.has(Cell.EVENT_CHANGE) &&
 					!this._$listeners.has(Cell.EVENT_ERROR)))
@@ -417,16 +459,12 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 			return;
 		}
 
-		let dependencies = this._dependencies;
+		let dependency = this._dependencies;
 
-		if (dependencies) {
-			for (let i = 0; ; i++) {
-				dependencies[i]._addDependent(this);
-
-				if (i + 1 == dependencies.length) {
-					break;
-				}
-			}
+		if (dependency) {
+			do {
+				dependency.cell._addDependent(this);
+			} while ((dependency = dependency.next));
 
 			this._state = CellState.ACTUAL;
 
@@ -435,16 +473,12 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 	}
 
 	protected _deactivate() {
-		let dependencies = this._dependencies;
+		let dependency = this._dependencies;
 
-		if (dependencies) {
-			for (let i = 0; ; i++) {
-				dependencies[i]._deleteDependent(this);
-
-				if (i + 1 == dependencies.length) {
-					break;
-				}
-			}
+		if (dependency) {
+			do {
+				dependency.cell._deleteDependent(this);
+			} while ((dependency = dependency.next));
 
 			this._state = CellState.DIRTY;
 
@@ -455,10 +489,8 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 	protected _onValueChange(evt: IEvent) {
 		this._updateId = ++Cell_CommonState.lastUpdateId;
 
-		let dependents = this._dependents;
-
-		for (let i = 0; i < dependents.length; i++) {
-			dependents[i]._addToRelease(true);
+		for (let dependent = this._dependents; dependent; dependent = dependent.next) {
+			dependent.cell._addToRelease(true);
 		}
 
 		this.emit('change', { sourceEvent: evt });
@@ -469,18 +501,14 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 
 		Cell_CommonState.transaction?.secondaryCells.add(this);
 
-		let dependents = this._dependents;
+		let dependent = this._dependents;
 
-		if (dependents.length != 0) {
-			for (let i = 0; ; i++) {
-				if (dependents[i]._state == CellState.ACTUAL) {
-					dependents[i]._addToRelease(false);
+		if (dependent) {
+			do {
+				if (dependent.cell._state == CellState.ACTUAL) {
+					dependent.cell._addToRelease(false);
 				}
-
-				if (i + 1 == dependents.length) {
-					break;
-				}
-			}
+			} while ((dependent = dependent.next));
 		} else {
 			if (Cell_CommonState.pendingCells.push(this) == 1) {
 				nextTick(release);
@@ -492,11 +520,9 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 		if (this._state == CellState.DIRTY) {
 			this.pull();
 		} else if (this._state == CellState.CHECK) {
-			let dependencies = this._dependencies!;
-
-			for (let i = 0; ; i++) {
-				if (dependencies[i].actualize()._error) {
-					this._fail(dependencies[i]._error);
+			for (let dependency = this._dependencies; ; ) {
+				if (dependency!.cell.actualize()._error) {
+					this._fail(dependency!.cell._error);
 
 					break;
 				}
@@ -508,7 +534,7 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 					break;
 				}
 
-				if (i + 1 == dependencies.length) {
+				if (!(dependency = dependency!.next)) {
 					this._state = CellState.ACTUAL;
 
 					break;
@@ -534,12 +560,34 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 		let { currentCell } = Cell_CommonState;
 
 		if (currentCell?._dependencyFilter(this)) {
-			if (currentCell._dependencies) {
-				if (fastIndexOf(currentCell._dependencies, this) == -1) {
-					currentCell._dependencies.push(this);
+			let dependency = currentCell._dependencies;
+
+			if (dependency) {
+				for (;;) {
+					if (dependency.cell == this) {
+						dependency.state = 1;
+
+						break;
+					}
+
+					if (dependency.next) {
+						dependency = dependency.next;
+					} else {
+						dependency.next = {
+							cell: this,
+							state: 2,
+							next: null
+						};
+
+						break;
+					}
 				}
 			} else {
-				currentCell._dependencies = [this];
+				currentCell._dependencies = {
+					cell: this,
+					state: 2,
+					next: null
+				};
 			}
 		}
 
@@ -561,8 +609,16 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 
 		this._currentlyPulling = true;
 
-		let prevDependencies = this._dependencies;
-		this._dependencies = null;
+		let dependency = this._dependencies;
+
+		if (dependency) {
+			do {
+				dependency.state = 0;
+			} while ((dependency = dependency.next));
+		} else {
+			/* if (dependency === undefined)*/
+			this._dependencies = null;
+		}
 
 		let prevCell = Cell_CommonState.currentCell;
 		Cell_CommonState.currentCell = this;
@@ -601,48 +657,35 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 		this._currentlyPulling = false;
 
 		if (
-			this._dependents.length != 0 ||
+			this._dependents ||
 			this._$listeners.has(Cell.EVENT_CHANGE) ||
 			this._$listeners.has(Cell.EVENT_ERROR)
 		) {
-			let dependencies = this._dependencies as Array<Cell> | null;
-			let newDependencyCount = 0;
+			for (
+				let holder: Cell | ICellList = this, dependency = this._dependencies;
+				dependency;
 
-			if (dependencies) {
-				for (let i = 0; ; i++) {
-					let dependency = dependencies[i];
-
-					if (!prevDependencies || fastIndexOf(prevDependencies, dependency) == -1) {
-						dependency._addDependent(this);
-						newDependencyCount++;
-					}
-
-					if (i + 1 == dependencies.length) {
-						break;
-					}
-				}
-			}
-
-			if (
-				prevDependencies &&
-				(!dependencies ||
-					dependencies.length - newDependencyCount < prevDependencies.length)
 			) {
-				for (let i = 0; ; i++) {
-					if (!dependencies || fastIndexOf(dependencies, prevDependencies[i]) == -1) {
-						prevDependencies[i]._deleteDependent(this);
+				if (dependency.state == 0) {
+					dependency.cell._deleteDependent(this);
+
+					dependency =
+						holder == this
+							? (this._dependencies = dependency.next)
+							: ((holder as ICellList).next = dependency.next);
+				} else {
+					if (dependency.state == 2) {
+						// dependency.state = 1;
+						dependency.cell._addDependent(this);
 					}
 
-					if (i + 1 == prevDependencies.length) {
-						break;
-					}
+					holder = dependency;
+					dependency = dependency.next;
 				}
 			}
 
-			if (dependencies) {
-				if (!prevDependencies) {
-					this._active = true;
-				}
+			if (this._dependencies) {
+				this._active = true;
 			} else {
 				this._state = CellState.ACTUAL;
 				this._active = false;
@@ -725,10 +768,8 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 		this._updateId = fromPull ? Cell_CommonState.lastUpdateId : ++Cell_CommonState.lastUpdateId;
 
 		if (changed || err instanceof WaitError) {
-			let dependents = this._dependents;
-
-			for (let i = 0; i < dependents.length; i++) {
-				dependents[i]._addToRelease(true);
+			for (let dependent = this._dependents; dependent; dependent = dependent.next) {
+				dependent.cell._addToRelease(true);
 			}
 
 			if (changed) {
@@ -794,10 +835,8 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 
 		this._error$?.reap();
 
-		let dependents = this._dependents;
-
-		for (let i = 0; i < dependents.length; i++) {
-			dependents[i].reap();
+		for (let dependent = this._dependents; dependent; dependent = dependent.next) {
+			dependent.cell.reap();
 		}
 
 		return this;

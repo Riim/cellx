@@ -1,5 +1,20 @@
 import { describe, expect, test } from '@jest/globals';
+import { ICellList } from '../src/Cell';
 import { DependencyFilter, cellx, release, tracked, untracked } from '../src/cellx';
+
+function getCellListLength(list: ICellList | null) {
+	if (!list) {
+		return 0;
+	}
+
+	let length = 1;
+
+	for (let $cell = list.next; $cell; $cell = $cell.next) {
+		length++;
+	}
+
+	return length;
+}
 
 describe('track', () => {
 	test('untracked()', () => {
@@ -9,7 +24,7 @@ describe('track', () => {
 		let c$ = cellx(calcC$, { onChange: () => {} });
 
 		// @ts-expect-error
-		expect(c$._dependencies.length).toBe(1);
+		expect(getCellListLength(c$._dependencies)).toBe(1);
 
 		calcC$.mockClear();
 
@@ -23,7 +38,7 @@ describe('track', () => {
 
 		expect(calcC$.mock.calls.length).toBe(1);
 		// @ts-expect-error
-		expect(c$._dependencies.length).toBe(1);
+		expect(getCellListLength(c$._dependencies)).toBe(1);
 	});
 
 	test('tracked()', () => {
@@ -36,7 +51,7 @@ describe('track', () => {
 		});
 
 		// @ts-expect-error
-		expect(c$._dependencies.length).toBe(1);
+		expect(getCellListLength(c$._dependencies)).toBe(1);
 
 		calcC$.mockClear();
 
@@ -50,6 +65,6 @@ describe('track', () => {
 
 		expect(calcC$.mock.calls.length).toBe(1);
 		// @ts-expect-error
-		expect(c$._dependencies.length).toBe(1);
+		expect(getCellListLength(c$._dependencies)).toBe(1);
 	});
 });
