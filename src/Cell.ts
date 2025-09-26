@@ -201,6 +201,13 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 		this._reap = options.reap ?? null;
 
 		if (this._pull) {
+			if (this._pull.length != 0) {
+				this.push = this.push.bind(this);
+				this.fail = this.fail.bind(this);
+
+				this._bound = true;
+			}
+
 			this._dependencies = undefined;
 			this._value = undefined;
 			this._state = CellState.DIRTY;
@@ -626,18 +633,9 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 		let value: any;
 
 		try {
-			if (this._pull.length == 0) {
-				value = (this._pull as Function).call(this.context);
-			} else {
-				if (!this._bound) {
-					this.push = this.push.bind(this);
-					this.fail = this.fail.bind(this);
-
-					this._bound = true;
-				}
-
-				value = this._pull.call(this.context, this, this._value);
-			}
+			value = this._bound
+				? this._pull.call(this.context, this, this._value)
+				: (this._pull as Function).call(this.context);
 
 			if (isPromiseLike(value)) {
 				value.then(
