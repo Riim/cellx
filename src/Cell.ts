@@ -156,11 +156,7 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 			: this._error;
 	}
 
-	protected _state: CellState;
-
-	get state() {
-		return this._state;
-	}
+	protected _bound = false;
 
 	protected _inited: boolean;
 
@@ -175,9 +171,13 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 		return this._active;
 	}
 
-	protected _updateId = -1;
+	protected _state: CellState;
 
-	protected _bound = false;
+	get state() {
+		return this._state;
+	}
+
+	protected _updateId = -1;
 
 	constructor(options: ICellOptions<Value, Context, Meta>) {
 		super();
@@ -205,8 +205,8 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 
 			this._dependencies = undefined;
 			this._value = undefined;
-			this._state = CellState.DIRTY;
 			this._inited = false;
+			this._state = CellState.DIRTY;
 		} else {
 			let value = options.value;
 
@@ -214,8 +214,8 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 
 			this._dependencies = null;
 			this._value = value;
-			this._state = CellState.ACTUAL;
 			this._inited = true;
+			this._state = CellState.ACTUAL;
 
 			if (isEventEmitterLike(value)) {
 				value.on('change', this._onValueChange, this);
@@ -468,9 +468,8 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 				dependency.cell._addDependent(this);
 			} while ((dependency = dependency.next));
 
-			this._state = CellState.ACTUAL;
-
 			this._active = true;
+			this._state = CellState.ACTUAL;
 		}
 	}
 
@@ -482,9 +481,8 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 				dependency.cell._deleteDependent(this);
 			} while ((dependency = dependency.next));
 
-			this._state = CellState.DIRTY;
-
 			this._active = false;
+			this._state = CellState.DIRTY;
 		}
 	}
 
@@ -679,8 +677,8 @@ export class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
 				// state = ACTUAL проставится в push() или fail()
 				this._active = true;
 			} else {
-				this._state = CellState.ACTUAL;
 				this._active = false;
+				this._state = CellState.ACTUAL;
 			}
 		} else {
 			this._state = this._dependencies ? CellState.DIRTY : CellState.ACTUAL;
