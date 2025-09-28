@@ -111,7 +111,7 @@ fullName$.subscribe((err, evt) => {
 ### define()
 
 Делает свойства объекта реактивными.  
-Подписаться на такие свойства можно используя `effect()` и `autorun()` (см. далее).
+Подписаться на такие свойства можно используя `reaction()` и `autorun()` (см. далее).
 
 ```typescript
 import { cellx, define } from 'cellx';
@@ -156,20 +156,20 @@ upperName$.onChange(function () {
 name$.value = 'Шарик';
 ```
 
-### effect()
+### reaction()
 
 Регистрирует функцию для обработки изменения ячейки.
 
 ```typescript
 const name$ = cellx('Матроскин');
 
-const dispose = effect(name$, (name) => {
+const dispose = reaction(name$, (name) => {
     console.log(name);
 });
 
 // или
 
-const dispose = effect(() => name$.value, (name) => {
+const dispose = reaction(() => name$.value, (name) => {
     console.log(name);
 });
 ```
