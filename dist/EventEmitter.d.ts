@@ -12,12 +12,12 @@ export interface I$Listener {
     context: any;
 }
 export declare const EventEmitter_CommonState: {
-    inTransactCounter: number;
-    transactionEvents: Array<IEvent>;
+    inBatchCounter: number;
+    batchedEvents: Array<IEvent>;
     inSilentlyCounter: number;
 };
 export declare class EventEmitter {
-    static transact(fn: Function): void;
+    static batch(fn: Function): void;
     static silently(fn: Function): void;
     protected _$listeners: Map<string | symbol, I$Listener[]>;
     get$Listeners(): ReadonlyMap<string | symbol, ReadonlyArray<I$Listener>>;
