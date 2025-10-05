@@ -5,7 +5,6 @@ export { autorun } from './autorun';
 export { reaction } from './reaction';
 export { release } from './release';
 export { afterRelease } from './afterRelease';
-export { transact } from './transact';
 export { DependencyFilter, untracked, tracked } from './track';
 export { type CellValue, type ICellChangeEvent, type ICellErrorEvent, type TCellEvent, type TCellChangeEventListener, type TCellErrorEventListener, type TCellEventListener, type ICellListeners, type TCellPull, type TCellPut, type ICellOptions, CellState, Cell } from './Cell';
 export { WaitError } from './WaitError';

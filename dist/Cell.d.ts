@@ -3,7 +3,6 @@ import { afterRelease } from './afterRelease';
 import { autorun } from './autorun';
 import { reaction } from './reaction';
 import { release } from './release';
-import { transact } from './transact';
 export type CellValue<T> = T extends Cell<infer U> ? U : T;
 export interface ICellChangeEvent<Target extends Cell = Cell> extends IEvent<{
     value: CellValue<Target>;
@@ -39,29 +38,29 @@ export interface ICellOptions<Value = any, Context = any, Meta = any> {
     onChange?: TCellChangeEventListener<Cell<Value, any, Meta>>;
     onError?: TCellErrorEventListener<Cell<Value, any, Meta>>;
 }
-export interface ICellList {
+export interface IDependencyList {
     cell: Cell;
-    state?: number;
-    next: ICellList | null;
+    _nextDependency: IDependencyList | null;
+    state: number;
+}
+export interface IDependentList {
+    cell: Cell;
+    _nextDependent: IDependentList | null;
+    prevDependents: IDependentList | null;
 }
 export declare enum CellState {
     ACTUAL = "actual",
     DIRTY = "dirty",
-    CHECK = "check",
-    PULLING = "pulling"
+    CHECK = "check"
 }
 export declare const Cell_CommonState: {
     pendingCells: Array<Cell>;
     pendingCellsIndex: number;
-    afterRelease: Array<Function> | null;
     currentCell: Cell | null;
+    afterRelease: Array<Function> | null;
     inUntrackedCounter: number;
     inTrackedCounter: number;
     lastUpdateId: number;
-    transaction: {
-        primaryCells: Map<Cell, any>;
-        secondaryCells: Set<Cell>;
-    } | null;
 };
 export declare class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
     static readonly EVENT_CHANGE = "change";
@@ -71,7 +70,6 @@ export declare class Cell<Value = any, Context = any, Meta = any> extends EventE
     static readonly reaction: typeof reaction;
     static readonly release: typeof release;
     static readonly afterRelease: typeof afterRelease;
-    static readonly transact: typeof transact;
     readonly context: Context;
     readonly meta: Meta;
     protected _pull: TCellPull<Value, Context, Meta> | null;
@@ -80,8 +78,12 @@ export declare class Cell<Value = any, Context = any, Meta = any> extends EventE
     protected _put: TCellPut<Value, Context, Meta> | null;
     protected _compareValues: (nextValue: Value, value: Value | undefined) => boolean;
     protected _reap: (() => void) | null;
-    protected _dependencies: ICellList | null | undefined;
-    protected _dependents: ICellList | null;
+    protected _nextDependency: IDependencyList | null | undefined;
+    protected _currentDependency: IDependencyList | null;
+    protected _nextDependent: IDependentList | null;
+    protected _lastDependent: IDependentList | null;
+    getDependencies(): Cell<any, any, any>[];
+    getDependents(): Cell<any, any, any>[];
     protected _value: Value | undefined;
     protected _error$: Cell<Error | null> | null;
     protected _error: Error | null;
@@ -93,6 +95,7 @@ export declare class Cell<Value = any, Context = any, Meta = any> extends EventE
     get active(): boolean;
     protected _state: CellState;
     get state(): CellState;
+    protected _currentlyPulling: boolean;
     protected _updateId: number;
     constructor(options: ICellOptions<Value, Context, Meta>);
     on<C>(type: typeof Cell.EVENT_CHANGE, listener: TCellChangeEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
@@ -112,7 +115,7 @@ export declare class Cell<Value = any, Context = any, Meta = any> extends EventE
     protected _activate(): void;
     protected _deactivate(): void;
     protected _onValueChange(evt: IEvent): void;
-    protected _addToRelease(dirty: boolean): void;
+    protected _addToRelease(): void;
     actualize(): this;
     get value(): Value;
     set value(value: Value);
