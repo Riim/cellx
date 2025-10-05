@@ -6,7 +6,6 @@ export { autorun } from './autorun';
 export { reaction } from './reaction';
 export { release } from './release';
 export { afterRelease } from './afterRelease';
-export { transact } from './transact';
 export { DependencyFilter, untracked, tracked } from './track';
 export {
 	type CellValue,

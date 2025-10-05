@@ -164,52 +164,53 @@ describe('Cell', () => {
 		test('одно вычисление при изменении нескольких зависимостей', () => {
 			let a$ = cellx(1);
 			let b$ = cellx(2);
-			let calcC$ = jest.fn(() => a$.value + b$.value);
+			let pullC$ = jest.fn(() => a$.value + b$.value);
 
-			cellx(calcC$, { onChange() {} });
+			cellx(pullC$, { onChange() {} });
 
-			calcC$.mockClear();
+			pullC$.mockClear();
 
 			a$.value = 2;
 			b$.value = 3;
 			release();
 
-			expect(calcC$.mock.calls.length).toBe(1);
+			expect(pullC$.mock.calls.length).toBe(1);
 		});
 
 		test('одно вычисление при изменении нескольких зависимостей (2)', () => {
 			let a$ = cellx(1);
 			let b$ = cellx(2);
 			let c$ = cellx(() => b$.value + 1);
-			let calcD$ = jest.fn(() => a$.value + c$.value);
+			let pullD$ = jest.fn(() => a$.value + c$.value);
 
-			cellx(calcD$, { onChange() {} });
+			cellx(pullD$, { onChange() {} });
 
-			calcD$.mockClear();
+			pullD$.mockClear();
 
 			a$.value = 2;
 			b$.value = 3;
 			release();
 
-			expect(calcD$.mock.calls.length).toBe(1);
+			expect(pullD$.mock.calls.length).toBe(1);
 		});
 
 		test('одно вычисление при изменении нескольких зависимостей (3)', () => {
-			let a$ = cellx(1);
-			let b$ = cellx(2);
-			let a2$ = cellx(() => a$.value + 1);
-			let b2$ = cellx(() => b$.value + 1);
-			let calcC$ = jest.fn(() => a2$.value + b2$.value);
+			let a$ = cellx(1, { meta: { name: 'a' } });
+			let b$ = cellx(2, { meta: { name: 'b' } });
+			let a2$ = cellx(() => a$.value + 1, { meta: { name: 'a2' } });
+			let b2$ = cellx(() => b$.value + 1, { meta: { name: 'b2' } });
+			let pullC$ = jest.fn(() => a2$.value + b2$.value);
+			let c$ = cellx(pullC$, { meta: { name: 'c' }, onChange() {} });
 
-			cellx(calcC$, { onChange() {} });
+			c$;
 
-			calcC$.mockClear();
+			pullC$.mockClear();
 
 			a$.value = 2;
 			b$.value = 3;
 			release();
 
-			expect(calcC$.mock.calls.length).toBe(1);
+			expect(pullC$.mock.calls.length).toBe(1);
 		});
 
 		test('запись в неинициализированную ячейку отменяет pull', () => {
@@ -325,7 +326,7 @@ describe('Cell', () => {
 
 			expect(t).toBe(2);
 			expect(b$.state).toBe(CellState.ACTUAL);
-			expect(() => b$.value).toThrow();
+			expect(b$.value).toBe(2);
 		});
 
 		test('запись в родительскую ячейку в pull', () => {
@@ -382,54 +383,133 @@ describe('Cell', () => {
 			expect(c$.value).toBe(12);
 		});
 
-		test('событие error без дублирования', () => {
-			let b$OnError = jest.fn();
-			let c1$OnError = jest.fn();
-			let c2$OnError = jest.fn();
+		test('событие error', () => {
 			let d$OnError = jest.fn();
+			let a$ = cellx(0);
+			let b$ = cellx(() => {
+				if (a$.value == 1) {
+					throw 1;
+				}
 
-			let a$ = cellx(1);
-			let b$ = cellx(
-				() => {
-					if (a$.value == 2) {
-						throw 1;
-					}
+				return a$.value + 1;
+			});
+			let c$ = cellx(() => b$.value + 1);
+			let d$ = cellx(() => c$.value + 1);
 
-					return a$.value + 1;
-				},
-				{ onError: b$OnError }
-			);
-			let c1$ = cellx(() => b$.value + 1, { onError: c1$OnError });
-			let c2$ = cellx(() => b$.value + 1, { onError: c2$OnError });
+			d$.onError(d$OnError);
 
-			cellx(() => c1$.value + c2$.value, { onError: d$OnError });
-
-			a$.value = 2;
+			a$.value = 1;
 			release();
 
-			expect(b$OnError.mock.calls.length).toBe(1);
-			expect(c1$OnError.mock.calls.length).toBe(1);
-			expect(c2$OnError.mock.calls.length).toBe(0);
 			expect(d$OnError.mock.calls.length).toBe(1);
+		});
+
+		test('событие error (2)', () => {
+			let d$OnError = jest.fn();
+			let c2$OnError = jest.fn();
+			let a$ = cellx(0);
+			let b$ = cellx(() => {
+				if (a$.value == 1) {
+					throw 1;
+				}
+
+				return a$.value + 1;
+			});
+			let c1$ = cellx(() => b$.value + 1);
+			let c2$ = cellx(() => b$.value + 1);
+			let d$ = cellx(() => c1$.value + c2$.value);
+
+			d$.onError(d$OnError);
+			c2$.onError(c2$OnError);
+
+			a$.value = 1;
+			release();
+
+			expect(d$OnError.mock.calls.length).toBe(1);
+			expect(c2$OnError.mock.calls.length).toBe(1);
 		});
 
 		test('нет лишнего вычисления при отсутствии обработчиков', () => {
 			let a$ = cellx(1);
-			let calcB$ = jest.fn(() => a$.value);
-			let b$ = cellx(calcB$);
+			let pullB$ = jest.fn(() => a$.value);
+			let b$ = cellx(pullB$);
 			let c1$ = cellx(() => b$.value);
 			let c2$ = cellx(() => b$.value);
 			let d$ = cellx(() => c1$.value + c2$.value);
 
 			d$.value;
 
-			calcB$.mockClear();
+			pullB$.mockClear();
 
 			a$.value = 2;
 
 			d$.value;
 
-			expect(calcB$.mock.calls.length).toBe(1);
+			expect(pullB$.mock.calls.length).toBe(1);
+		});
+
+		test('меняется порядок зависимостей на обратный', () => {
+			let a$ = cellx(0, { meta: { name: 'a' } });
+			let b$ = cellx(0, { meta: { name: 'b' } });
+			let c$ = cellx(0, { meta: { name: 'c' } });
+			let d$ = cellx(
+				() => (a$.value % 2 == 0 ? [b$.value, c$.value] : [c$.value, b$.value]),
+				{
+					meta: { name: 'd' },
+					onChange: () => {}
+				}
+			);
+
+			expect(d$.getDependencies().map((cell) => cell.meta.name)).toEqual(
+				[a$, b$, c$].map((cell) => cell.meta.name)
+			);
+
+			a$.value = 1;
+			release();
+
+			expect(d$.getDependencies().map((cell) => cell.meta.name)).toEqual(
+				[a$, c$, b$].map((cell) => cell.meta.name)
+			);
+		});
+
+		test('рандомно меняется список зависимостей', () => {
+			let a$ = cellx(0, { meta: { name: 'a' } });
+			let b$ = cellx(0, { meta: { name: 'b' } });
+			let c$ = cellx(0, { meta: { name: 'c' } });
+			let d$ = cellx(0, { meta: { name: 'd' } });
+			let e$ = cellx(0, { meta: { name: 'e' } });
+			let f$ = cellx(0, { meta: { name: 'f' } });
+			let dependencies = [b$, c$, d$, e$, f$];
+			let randomizedDependencies!: Array<Cell>;
+			let x$ = cellx(
+				() => {
+					randomizedDependencies = [
+						a$,
+						...dependencies.filter(() => Math.random() >= 0.25)
+					].sort(() => Math.random() - 0.5);
+
+					for (let dependency of randomizedDependencies) {
+						dependency.value;
+					}
+				},
+				{
+					meta: { name: 'x' },
+					onChange: () => {}
+				}
+			);
+
+			for (let i = 0; ; ) {
+				expect(x$.getDependencies().map((cell) => cell.meta.name)).toEqual(
+					randomizedDependencies.map((cell) => cell.meta.name)
+				);
+
+				if (++i == 300) {
+					break;
+				}
+
+				a$.value++;
+				release();
+			}
 		});
 	});
 

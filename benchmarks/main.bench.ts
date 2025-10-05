@@ -13,7 +13,7 @@ type Setup = (hooks: {
 }) => Promise<UpdateEntries>;
 
 const testComputers = setupComputersTest({
-	'@artalar/act': async ({ buildStart, buildEnd, listener }) => {
+	act: async ({ buildStart, buildEnd, listener }) => {
 		const { act } = await import('@artalar/act');
 
 		buildStart();
@@ -43,7 +43,7 @@ const testComputers = setupComputersTest({
 		};
 	},
 
-	'@frp-ts/core': async ({ buildStart, buildEnd, listener }) => {
+	'frp-ts': async ({ buildStart, buildEnd, listener }) => {
 		const { action, combine, newAtom } = await import('@frp-ts/core');
 
 		buildStart();
@@ -73,7 +73,7 @@ const testComputers = setupComputersTest({
 		};
 	},
 
-	'@preact/signals-core': async ({ buildStart, buildEnd, listener }) => {
+	'preact-signals': async ({ buildStart, buildEnd, listener }) => {
 		const { batch, computed, effect, signal } = await import('@preact/signals-core');
 
 		buildStart();
@@ -103,7 +103,7 @@ const testComputers = setupComputersTest({
 		};
 	},
 
-	'@reatom/core': async ({ buildStart, buildEnd, listener }) => {
+	reatom: async ({ buildStart, buildEnd, listener }) => {
 		const { atom, batch, createCtx } = await import('@reatom/core');
 
 		buildStart();
@@ -135,7 +135,7 @@ const testComputers = setupComputersTest({
 		};
 	},
 
-	'@webreflection/signal': async ({ buildStart, buildEnd, listener }) => {
+	'webreflection-signal': async ({ buildStart, buildEnd, listener }) => {
 		const { batch, computed, effect, signal } = await import('@webreflection/signal');
 
 		buildStart();
@@ -372,7 +372,7 @@ const testComputers = setupComputersTest({
 			const g = S(() => d() - (d() % 2 == 0 ? c() : 0));
 			const h = S(() => (e() % 2 == 0 ? f() : 0) + g());
 
-			S(() => listener(h()));
+			S.on(h, () => listener(h()));
 
 			return [entry1, entry2, entry3];
 		});
