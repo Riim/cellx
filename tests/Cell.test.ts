@@ -214,30 +214,26 @@ describe('Cell', () => {
 		});
 
 		test('запись в неинициализированную ячейку отменяет pull', () => {
-			let a$ = cellx(() => 1);
-			let b$ = cellx(1);
+			let a$ = cellx(() => 1, { writable: true });
 
 			a$.value = 5;
-			b$.value = 5;
 
-			expect(b$.value).toBe(5);
+			expect(a$.value).toBe(5);
 		});
 
 		test('запись в неинициализированную ячейку отменяет pull (2)', () => {
-			let a$ = cellx(() => 1);
-			let b$ = cellx(1);
+			let a$ = cellx(() => 1, { writable: true });
 
 			a$.value = 5;
-			b$.value = 5;
 
 			a$.on(Cell.EVENT_CHANGE, () => {});
 
-			expect(b$.value).toBe(5);
+			expect(a$.value).toBe(5);
 		});
 
 		test('последняя запись более приоритетная', () => {
 			let a$ = cellx(1);
-			let b$ = cellx(() => a$.value + 1);
+			let b$ = cellx(() => a$.value + 1, { writable: true });
 			let c$ = cellx(() => b$.value + 1, { onChange() {} });
 
 			a$.value = 2;
@@ -248,7 +244,7 @@ describe('Cell', () => {
 
 		test('последняя запись более приоритетная (2)', () => {
 			let a$ = cellx(1);
-			let b$ = cellx(() => a$.value + 1);
+			let b$ = cellx(() => a$.value + 1, { writable: true });
 			let c$ = cellx(() => b$.value + 1, { onChange() {} });
 
 			b$.value = 4;
@@ -260,7 +256,7 @@ describe('Cell', () => {
 		test('запись в активную ячейку и последующее изменение её зависимости', (done) => {
 			let a$ = cellx(1);
 			let b$ = cellx(
-				(_cell, value) => {
+				(cell, value) => {
 					if (a$.value == 2) {
 						expect(value).toBe(5);
 					}
@@ -268,8 +264,9 @@ describe('Cell', () => {
 					return a$.value;
 				},
 				{
+					writable: true,
 					onChange(evt) {
-						if (evt.data['value'] == 2) {
+						if (evt.data.value == 2) {
 							expect(evt.data).toEqual({
 								value: 2,
 								prevValue: 5
@@ -383,6 +380,39 @@ describe('Cell', () => {
 			expect(c$.value).toBe(12);
 		});
 
+		test('pull при чтении error', () => {
+			let a$ = cellx(0);
+			let b$ = cellx(() => {
+				if (a$.value == 1) {
+					throw 1;
+				}
+
+				return a$.value + 1;
+			});
+			let c$ = cellx(() => b$.value + 1, { onChange: () => {} });
+
+			a$.value = 1;
+			release();
+
+			expect(c$.error).toMatchObject({ message: '1' });
+		});
+
+		test('pull при чтении error (пассивный режим)', () => {
+			let a$ = cellx(0);
+			let b$ = cellx(() => {
+				if (a$.value == 1) {
+					throw 1;
+				}
+
+				return a$.value + 1;
+			});
+			let c$ = cellx(() => b$.value + 1);
+
+			a$.value = 1;
+
+			expect(c$.error).toMatchObject({ message: '1' });
+		});
+
 		test('событие error', () => {
 			let d$OnError = jest.fn();
 			let a$ = cellx(0);
@@ -398,15 +428,25 @@ describe('Cell', () => {
 
 			d$.onError(d$OnError);
 
+			expect(d$.value).toBe(3);
+			expect(d$.error).toBeNull();
+
 			a$.value = 1;
 			release();
 
+			expect(d$.value).toBe(3);
+			expect(d$.error).toMatchObject({ message: '1' });
+
 			expect(d$OnError.mock.calls.length).toBe(1);
+
+			a$.value = 0;
+			release();
+
+			expect(d$.value).toBe(3);
+			expect(d$.error).toBeNull();
 		});
 
 		test('событие error (2)', () => {
-			let d$OnError = jest.fn();
-			let c2$OnError = jest.fn();
 			let a$ = cellx(0);
 			let b$ = cellx(() => {
 				if (a$.value == 1) {
@@ -418,6 +458,8 @@ describe('Cell', () => {
 			let c1$ = cellx(() => b$.value + 1);
 			let c2$ = cellx(() => b$.value + 1);
 			let d$ = cellx(() => c1$.value + c2$.value);
+			let d$OnError = jest.fn();
+			let c2$OnError = jest.fn();
 
 			d$.onError(d$OnError);
 			c2$.onError(c2$OnError);
@@ -510,6 +552,38 @@ describe('Cell', () => {
 				a$.value++;
 				release();
 			}
+		});
+	});
+
+	describe('async computed', () => {
+		test('wait', (done) => {
+			let a$ = cellx(
+				({ push, wait }) => {
+					setTimeout(() => {
+						push(1);
+					}, 1);
+
+					wait();
+
+					return 10;
+				},
+				{ value: 0 }
+			);
+			let b$ = cellx(() => a$.value + 1, {
+				onChange: () => {
+					expect(b$.value).toBe(2);
+				}
+			});
+			let c$ = cellx(() => b$.value + 1, {
+				onChange: () => {
+					expect(c$.value).toBe(3);
+					done();
+				}
+			});
+
+			expect(a$.value).toBe(0);
+			expect(b$.value).toBeUndefined();
+			expect(c$.value).toBeUndefined();
 		});
 	});
 

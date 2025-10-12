@@ -39,7 +39,7 @@ export class EventEmitter {
 				EventEmitter_CommonState.batchedEvents = [];
 
 				for (let i = 0; i < events.length; i++) {
-					events[i].target.handleEvent(events[i]);
+					events[i].target.triggerEvent(events[i]);
 				}
 			}
 		}
@@ -55,14 +55,14 @@ export class EventEmitter {
 		}
 	}
 
-	protected _$listeners = new Map<string | symbol, Array<I$Listener>>();
+	protected _listeners = new Map<string | symbol, Array<I$Listener>>();
 
-	get$Listeners(): ReadonlyMap<string | symbol, ReadonlyArray<I$Listener>>;
-	get$Listeners(type: string | symbol): ReadonlyArray<I$Listener>;
-	get$Listeners(
+	getListeners(): ReadonlyMap<string | symbol, ReadonlyArray<I$Listener>>;
+	getListeners(type: string | symbol): ReadonlyArray<I$Listener>;
+	getListeners(
 		type?: string | symbol
 	): ReadonlyMap<string | symbol, ReadonlyArray<I$Listener>> | ReadonlyArray<I$Listener> {
-		return type ? (this._$listeners.get(type) ?? []) : this._$listeners;
+		return type ? (this._listeners.get(type) ?? []) : this._listeners;
 	}
 
 	on(type: string | symbol, listener: TListener, context?: any): this;
@@ -115,49 +115,46 @@ export class EventEmitter {
 				this._off(type, listener, context !== undefined ? context : this);
 			}
 		} else {
-			this._$listeners.clear();
+			this._listeners.clear();
 		}
 
 		return this;
 	}
 
 	protected _on(type: string | symbol, listener: TListener, context: any) {
-		let type$Listeners = this._$listeners.get(type);
+		let typeListeners = this._listeners.get(type);
 		let $listener = {
 			listener,
 			context
 		};
 
-		if (type$Listeners) {
-			type$Listeners.push($listener);
+		if (typeListeners) {
+			typeListeners.push($listener);
 		} else {
-			this._$listeners.set(type, [$listener]);
+			this._listeners.set(type, [$listener]);
 		}
 	}
 
 	protected _off(type: string | symbol, listener: TListener, context: any) {
-		let type$Listeners = this._$listeners.get(type);
+		let typeListeners = this._listeners.get(type);
 
-		if (!type$Listeners) {
+		if (!typeListeners) {
 			return;
 		}
 
-		if (type$Listeners.length == 1) {
-			if (type$Listeners[0].listener == listener && type$Listeners[0].context === context) {
-				this._$listeners.delete(type);
+		if (typeListeners.length == 1) {
+			if (typeListeners[0].listener == listener && typeListeners[0].context === context) {
+				this._listeners.delete(type);
 			}
 		} else {
 			for (let i = 0; ; i++) {
-				if (
-					type$Listeners[i].listener == listener &&
-					type$Listeners[i].context === context
-				) {
-					type$Listeners.splice(i, 1);
+				if (typeListeners[i].listener == listener && typeListeners[i].context === context) {
+					typeListeners.splice(i, 1);
 
 					break;
 				}
 
-				if (i + 1 == type$Listeners.length) {
+				if (i + 1 == typeListeners.length) {
 					break;
 				}
 			}
@@ -241,29 +238,29 @@ export class EventEmitter {
 					}
 				}
 			} else {
-				this.handleEvent(evt as IEvent);
+				this.triggerEvent(evt as IEvent);
 			}
 		}
 
 		return evt as IEvent;
 	}
 
-	handleEvent(evt: IEvent) {
-		let type$Listeners = this._$listeners.get(evt.type);
+	triggerEvent(evt: IEvent) {
+		let typeListeners = this._listeners.get(evt.type);
 
-		if (!type$Listeners) {
+		if (!typeListeners) {
 			return;
 		}
 
-		if (type$Listeners.length == 1) {
-			if (this._tryEventListener(type$Listeners[0], evt) === false) {
+		if (typeListeners.length == 1) {
+			if (this._tryEventListener(typeListeners[0], evt) === false) {
 				evt.propagationStopped = true;
 			}
 		} else {
-			type$Listeners = type$Listeners.slice();
+			typeListeners = typeListeners.slice();
 
-			for (let i = 0; i < type$Listeners.length; i++) {
-				if (this._tryEventListener(type$Listeners[i], evt) === false) {
+			for (let i = 0; i < typeListeners.length; i++) {
+				if (this._tryEventListener(typeListeners[i], evt) === false) {
 					evt.propagationStopped = true;
 				}
 			}

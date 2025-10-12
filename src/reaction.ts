@@ -1,6 +1,6 @@
 import { Cell, ICellChangeEvent, ICellOptions, TCellPull } from './Cell';
 
-export function reaction<Value, Context = null, Meta = null>(
+export function reaction<Value, Context = any, Meta = any>(
 	source: Cell | Array<Cell> | TCellPull<Value, Context, Meta>,
 	fn: (this: Context, value: Value, prevValue: Value, disposer: () => void) => any,
 	cellOptions?: ICellOptions<Value, Context, Meta>

@@ -5,7 +5,9 @@ export { type IEvent, type I$Listener, EventEmitter } from './EventEmitter';
 export { autorun } from './autorun';
 export { reaction } from './reaction';
 export { release } from './release';
+export { batch } from './batch';
 export { afterRelease } from './afterRelease';
+export { transaction } from './transaction';
 export { DependencyFilter, untracked, tracked } from './track';
 export {
 	type CellValue,
@@ -25,7 +27,7 @@ export {
 export { WaitError } from './WaitError';
 export { defineObservableProperty, defineObservableProperties, define } from './define';
 
-export function observable<Value = any, Context = null, Meta = null>(
+export function observable<Value = any, Context = any, Meta = any>(
 	value: Value,
 	options?: Omit<ICellOptions<Value, Context, Meta>, 'pull' | 'value'>
 ): Cell<Value, Context, Meta> {
@@ -36,7 +38,7 @@ export function observable<Value = any, Context = null, Meta = null>(
 	});
 }
 
-export function computed<Value = any, Context = null, Meta = null>(
+export function computed<Value = any, Context = any, Meta = any>(
 	pullFn: TCellPull<Value, Context, Meta>,
 	options?: ICellOptions<Value, Context, Meta>
 ): Cell<Value, Context, Meta> {
@@ -46,15 +48,15 @@ export function computed<Value = any, Context = null, Meta = null>(
 	});
 }
 
-export function cellx<Value = any, Context = null, Meta = null>(
+export function cellx<Value = any, Context = any, Meta = any>(
 	pullFn: TCellPull<Value, Context, Meta>,
 	options?: ICellOptions<Value, Context, Meta>
 ): Cell<Value, Context, Meta>;
-export function cellx<Value = any, Context = null, Meta = null>(
+export function cellx<Value = any, Context = any, Meta = any>(
 	value: Value,
 	options?: ICellOptions<Value, Context, Meta>
 ): Cell<Value, Context, Meta>;
-export function cellx<Value = any, Context = null, Meta = null>(
+export function cellx<Value = any, Context = any, Meta = any>(
 	valueOrPullFn: Value | TCellPull<Value, Context, Meta>,
 	options?: ICellOptions<Value, Context, Meta>
 ) {

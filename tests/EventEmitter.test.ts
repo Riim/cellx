@@ -141,26 +141,26 @@ describe('EventEmitter', () => {
 		expect(onFoo.mock.calls.length).toBe(3);
 	});
 
-	test('#get$Listeners()', () => {
+	test('#getListeners()', () => {
 		let emitter = new EventEmitter();
 
-		expect(emitter.get$Listeners('foo').length).toBe(0);
+		expect(emitter.getListeners('foo').length).toBe(0);
 
 		let onFoo = () => {};
 
 		emitter.on('foo', onFoo);
 
-		expect([...emitter.get$Listeners().keys()]).toEqual(['foo']);
-		expect(emitter.get$Listeners('foo').length).toBe(1);
+		expect([...emitter.getListeners().keys()]).toEqual(['foo']);
+		expect(emitter.getListeners('foo').length).toBe(1);
 
 		emitter.on('foo', onFoo);
 
-		expect(emitter.get$Listeners('foo').length).toBe(2);
+		expect(emitter.getListeners('foo').length).toBe(2);
 
 		emitter.on('foo', () => {});
 
-		expect([...emitter.get$Listeners().keys()]).toEqual(['foo']);
-		expect(emitter.get$Listeners('foo').length).toBe(3);
+		expect([...emitter.getListeners().keys()]).toEqual(['foo']);
+		expect(emitter.getListeners('foo').length).toBe(3);
 	});
 
 	test('.batch()', () => {
