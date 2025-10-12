@@ -28,6 +28,7 @@ export type TCellPut<Value = any, Context = any, Meta = any> = (this: Context, c
 export interface ICellOptions<Value = any, Context = any, Meta = any> {
     context?: Context;
     meta?: Meta;
+    writable?: boolean;
     pull?: TCellPull<Value, Context, Meta>;
     dependencyFilter?: (dep: Cell) => any;
     validate?: (nextValue: Value, value: Value | undefined) => void;
@@ -57,10 +58,16 @@ export declare const Cell_CommonState: {
     pendingCells: Array<Cell>;
     pendingCellsIndex: number;
     currentCell: Cell | null;
+    lastUpdateId: number;
     afterRelease: Array<Function> | null;
+    transactionStates: Map<Cell, {
+        value: any;
+        error: Error | null;
+        state: CellState;
+        updateId: number;
+    }> | null;
     inUntrackedCounter: number;
     inTrackedCounter: number;
-    lastUpdateId: number;
 };
 export declare class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
     static readonly EVENT_CHANGE = "change";
@@ -72,6 +79,8 @@ export declare class Cell<Value = any, Context = any, Meta = any> extends EventE
     static readonly afterRelease: typeof afterRelease;
     readonly context: Context;
     readonly meta: Meta;
+    protected _writable: boolean;
+    get writable(): boolean;
     protected _pull: TCellPull<Value, Context, Meta> | null;
     protected _dependencyFilter: (dependency: Cell) => any;
     protected _validateValue: ((nextValue: Value, value: Value | undefined) => void) | null;
@@ -87,10 +96,9 @@ export declare class Cell<Value = any, Context = any, Meta = any> extends EventE
     protected _value: Value | undefined;
     protected _error$: Cell<Error | null> | null;
     protected _error: Error | null;
-    get error(): Error | null;
     protected _bound: boolean;
-    protected _inited: boolean;
-    get inited(): boolean;
+    protected _initialized: boolean;
+    get initialized(): boolean;
     protected _active: boolean;
     get active(): boolean;
     protected _state: CellState;
@@ -117,8 +125,10 @@ export declare class Cell<Value = any, Context = any, Meta = any> extends EventE
     protected _onValueChange(evt: IEvent): void;
     protected _addToRelease(): void;
     actualize(): this;
+    _actualize(): this;
     get value(): Value;
     set value(value: Value);
+    get error(): Error | null;
     get(): Value;
     pull(): boolean;
     set(value: Value): this;

@@ -19,9 +19,9 @@ export declare const EventEmitter_CommonState: {
 export declare class EventEmitter {
     static batch(fn: Function): void;
     static silently(fn: Function): void;
-    protected _$listeners: Map<string | symbol, I$Listener[]>;
-    get$Listeners(): ReadonlyMap<string | symbol, ReadonlyArray<I$Listener>>;
-    get$Listeners(type: string | symbol): ReadonlyArray<I$Listener>;
+    protected _listeners: Map<string | symbol, I$Listener[]>;
+    getListeners(): ReadonlyMap<string | symbol, ReadonlyArray<I$Listener>>;
+    getListeners(type: string | symbol): ReadonlyArray<I$Listener>;
     on(type: string | symbol, listener: TListener, context?: any): this;
     on(listeners: Record<string | symbol, TListener>, context?: any): this;
     off(type: string | symbol, listener: TListener, context?: any): this;
@@ -37,6 +37,6 @@ export declare class EventEmitter {
         propagationStopped?: boolean;
         data?: any;
     } | string | symbol, data?: any): IEvent;
-    handleEvent(evt: IEvent): void;
+    triggerEvent(evt: IEvent): void;
     protected _tryEventListener($listener: I$Listener, evt: IEvent): any;
 }

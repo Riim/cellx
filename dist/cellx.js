@@ -25,7 +25,7 @@ var EventEmitter = class {
       if (--EventEmitter_CommonState.inBatchCounter == 0) {
         var events = EventEmitter_CommonState.batchedEvents;
         EventEmitter_CommonState.batchedEvents = [];
-        for (var i = 0; i < events.length; i++) events[i].target.handleEvent(events[i]);
+        for (var i = 0; i < events.length; i++) events[i].target.triggerEvent(events[i]);
       }
     }
   }
@@ -37,9 +37,9 @@ var EventEmitter = class {
       EventEmitter_CommonState.inSilentlyCounter--;
     }
   }
-  _$listeners = /* @__PURE__ */new Map();
-  get$Listeners(type) {
-    return type ? this._$listeners.get(type) ?? [] : this._$listeners;
+  _listeners = /* @__PURE__ */new Map();
+  getListeners(type) {
+    return type ? this._listeners.get(type) ?? [] : this._listeners;
   }
   on(type, listener, context) {
     if (typeof type == "object") {
@@ -58,28 +58,28 @@ var EventEmitter = class {
         for (type in listeners) if (Object.prototype.hasOwnProperty.call(listeners, type)) this._off(type, listeners[type], context);
         for (var type$1 of Object.getOwnPropertySymbols(listeners)) this._off(type$1, listeners[type$1], context);
       } else this._off(type, listener, context !== void 0 ? context : this);
-    } else this._$listeners.clear();
+    } else this._listeners.clear();
     return this;
   }
   _on(type, listener, context) {
-    var type$Listeners = this._$listeners.get(type);
+    var typeListeners = this._listeners.get(type);
     var $listener = {
       listener,
       context
     };
-    if (type$Listeners) type$Listeners.push($listener);else this._$listeners.set(type, [$listener]);
+    if (typeListeners) typeListeners.push($listener);else this._listeners.set(type, [$listener]);
   }
   _off(type, listener, context) {
-    var type$Listeners = this._$listeners.get(type);
-    if (!type$Listeners) return;
-    if (type$Listeners.length == 1) {
-      if (type$Listeners[0].listener == listener && type$Listeners[0].context === context) this._$listeners.delete(type);
+    var typeListeners = this._listeners.get(type);
+    if (!typeListeners) return;
+    if (typeListeners.length == 1) {
+      if (typeListeners[0].listener == listener && typeListeners[0].context === context) this._listeners.delete(type);
     } else for (var i = 0;; i++) {
-      if (type$Listeners[i].listener == listener && type$Listeners[i].context === context) {
-        type$Listeners.splice(i, 1);
+      if (typeListeners[i].listener == listener && typeListeners[i].context === context) {
+        typeListeners.splice(i, 1);
         break;
       }
-      if (i + 1 == type$Listeners.length) break;
+      if (i + 1 == typeListeners.length) break;
     }
   }
   once(type, listener, context) {
@@ -115,17 +115,17 @@ var EventEmitter = class {
         EventEmitter_CommonState.batchedEvents[i] = evt;
         break;
       }
-    } else this.handleEvent(evt);
+    } else this.triggerEvent(evt);
     return evt;
   }
-  handleEvent(evt) {
-    var type$Listeners = this._$listeners.get(evt.type);
-    if (!type$Listeners) return;
-    if (type$Listeners.length == 1) {
-      if (this._tryEventListener(type$Listeners[0], evt) === false) evt.propagationStopped = true;
+  triggerEvent(evt) {
+    var typeListeners = this._listeners.get(evt.type);
+    if (!typeListeners) return;
+    if (typeListeners.length == 1) {
+      if (this._tryEventListener(typeListeners[0], evt) === false) evt.propagationStopped = true;
     } else {
-      type$Listeners = type$Listeners.slice();
-      for (var i = 0; i < type$Listeners.length; i++) if (this._tryEventListener(type$Listeners[i], evt) === false) evt.propagationStopped = true;
+      typeListeners = typeListeners.slice();
+      for (var i = 0; i < typeListeners.length; i++) if (this._tryEventListener(typeListeners[i], evt) === false) evt.propagationStopped = true;
     }
   }
   _tryEventListener($listener, evt) {
@@ -261,10 +261,11 @@ var Cell_CommonState = {
   pendingCells: [],
   pendingCellsIndex: 0,
   currentCell: null,
+  lastUpdateId: 0,
   afterRelease: null,
+  transactionStates: null,
   inUntrackedCounter: 0,
-  inTrackedCounter: 0,
-  lastUpdateId: 0
+  inTrackedCounter: 0
 };
 var $error = null;
 var Cell = class Cell extends EventEmitter {
@@ -279,6 +280,10 @@ var Cell = class Cell extends EventEmitter {
   static afterRelease = afterRelease;
   context;
   meta;
+  _writable;
+  get writable() {
+    return this._writable;
+  }
   _pull;
   _dependencyFilter;
   _validateValue;
@@ -302,15 +307,10 @@ var Cell = class Cell extends EventEmitter {
   _value;
   _error$ = null;
   _error = null;
-  get error() {
-    return Cell_CommonState.currentCell ? (this._error$ ?? (this._error$ = new Cell({
-      value: this._error
-    }))).get() : this._error;
-  }
   _bound = false;
-  _inited;
-  get inited() {
-    return this._inited;
+  _initialized;
+  get initialized() {
+    return this._initialized;
   }
   _active = false;
   get active() {
@@ -332,41 +332,48 @@ var Cell = class Cell extends EventEmitter {
     this._put = options.put ?? null;
     this._compareValues = options.compareValues ?? config.compareValues;
     this._reap = options.reap ?? null;
+    var {
+      value
+    } = options;
     if (this._pull) {
+      if (value !== void 0) {
+        this._validateValue?.(value, void 0);
+        if (isEventEmitterLike(value)) value.on("change", this._onValueChange, this);
+      }
+      this._writable = options.writable ?? !!this._put;
+      this._nextDependency = void 0;
+      this._initialized = false;
+      this._state = CellState.DIRTY;
       if (this._pull.length != 0) {
         this.push = this.push.bind(this);
         this.fail = this.fail.bind(this);
         this._bound = true;
       }
-      this._nextDependency = void 0;
-      this._value = void 0;
-      this._inited = false;
-      this._state = CellState.DIRTY;
     } else {
-      var value = options.value;
       this._validateValue?.(value, void 0);
-      this._nextDependency = null;
-      this._value = value;
-      this._inited = true;
-      this._state = CellState.ACTUAL;
       if (isEventEmitterLike(value)) value.on("change", this._onValueChange, this);
+      this._writable = options.writable ?? true;
+      this._nextDependency = null;
+      this._initialized = true;
+      this._state = CellState.ACTUAL;
     }
+    this._value = value;
     if (options.onChange) this.on(Cell.EVENT_CHANGE, options.onChange);
     if (options.onError) this.on(Cell.EVENT_ERROR, options.onError);
   }
   on(type, listener, context) {
-    if (this._nextDependency !== null) this.actualize();
+    if (this._nextDependency !== null) this._actualize();
     if (typeof type == "object") super.on(type, listener !== void 0 ? listener : this.context);else super.on(type, listener, context !== void 0 ? context : this.context);
     this._activate();
     return this;
   }
   off(type, listener, context) {
-    if (this._nextDependency !== null) this.actualize();
-    var hasListeners = this._$listeners.has(Cell.EVENT_CHANGE) || this._$listeners.has(Cell.EVENT_ERROR);
+    if (this._nextDependency !== null) this._actualize();
+    var hasListeners = this._listeners.has(Cell.EVENT_CHANGE) || this._listeners.has(Cell.EVENT_ERROR);
     if (type) {
       if (typeof type == "object") super.off(type, listener !== void 0 ? listener : this.context);else super.off(type, listener, context !== void 0 ? context : this.context);
     } else super.off();
-    if (hasListeners && !this._nextDependent && (this._$listeners.size == 0 || !this._$listeners.has(Cell.EVENT_CHANGE) && !this._$listeners.has(Cell.EVENT_ERROR))) {
+    if (hasListeners && !this._nextDependent && (this._listeners.size == 0 || !this._listeners.has(Cell.EVENT_CHANGE) && !this._listeners.has(Cell.EVENT_ERROR))) {
       this._deactivate();
       this._reap?.call(this.context);
     }
@@ -423,7 +430,7 @@ var Cell = class Cell extends EventEmitter {
         break;
       }
     }
-    if (!this._nextDependent && (this._$listeners.size == 0 || !this._$listeners.has(Cell.EVENT_CHANGE) && !this._$listeners.has(Cell.EVENT_ERROR))) {
+    if (!this._nextDependent && (this._listeners.size == 0 || !this._listeners.has(Cell.EVENT_CHANGE) && !this._listeners.has(Cell.EVENT_ERROR))) {
       this._deactivate();
       this._reap?.call(this.context);
     }
@@ -469,7 +476,7 @@ var Cell = class Cell extends EventEmitter {
           if (cell._nextDependent) {
             cell._nextDependent.prevDependents = stack;
             stack = cell._nextDependent;
-            if ((cell._$listeners.has(Cell.EVENT_CHANGE) || cell._$listeners.has(Cell.EVENT_ERROR)) && Cell_CommonState.pendingCells.push(cell) == 1) nextTick(release);
+            if ((cell._listeners.has(Cell.EVENT_CHANGE) || cell._listeners.has(Cell.EVENT_ERROR)) && Cell_CommonState.pendingCells.push(cell) == 1) nextTick(release);
           } else if (Cell_CommonState.pendingCells.push(cell) == 1) nextTick(release);
         } else if (dirty) cell._state = CellState.DIRTY;
       }
@@ -477,8 +484,12 @@ var Cell = class Cell extends EventEmitter {
     }
   }
   actualize() {
+    if (Cell_CommonState.transactionStates) throw Error("Cannot actualize in a transaction");
+    return this._actualize();
+  }
+  _actualize() {
     if (this._state == CellState.CHECK) for (var dependency = this._nextDependency;;) {
-      if (dependency.cell.actualize()._error) {
+      if (dependency.cell._actualize()._error) {
         this._fail(dependency.cell._error);
         break;
       }
@@ -487,6 +498,8 @@ var Cell = class Cell extends EventEmitter {
         break;
       }
       if (!(dependency = dependency._nextDependency)) {
+        this._error$?.set(null);
+        this._error = null;
         this._state = CellState.ACTUAL;
         break;
       }
@@ -499,8 +512,22 @@ var Cell = class Cell extends EventEmitter {
   set value(value) {
     this.set(value);
   }
+  get error() {
+    if (Cell_CommonState.transactionStates) {
+      if (!this._initialized) throw Error("Cannot read an uninitialized cell in a transaction");
+      return this._error;
+    }
+    if (this._state != CellState.ACTUAL && this._updateId != Cell_CommonState.lastUpdateId) this._actualize();
+    return Cell_CommonState.currentCell ? (this._error$ ?? (this._error$ = new Cell({
+      value: this._error
+    }))).get() : this._error;
+  }
   get() {
-    if (this._state != CellState.ACTUAL && this._updateId != Cell_CommonState.lastUpdateId) this.actualize();
+    if (Cell_CommonState.transactionStates) {
+      if (!this._initialized) throw Error("Cannot read an uninitialized cell in a transaction");
+      return this._value;
+    }
+    if (this._state != CellState.ACTUAL && this._updateId != Cell_CommonState.lastUpdateId) this._actualize();
     var {
       currentCell
     } = Cell_CommonState;
@@ -585,13 +612,15 @@ var Cell = class Cell extends EventEmitter {
   }
   pull() {
     if (!this._pull) return false;
-    if (this._currentlyPulling) throw TypeError("Circular pulling");
+    if (Cell_CommonState.transactionStates) throw Error("Cannot call a pull in a transaction");
+    if (this._currentlyPulling) throw Error("Circular pulling");
     var dependency = this._nextDependency;
     if (dependency) do dependency.state = -1; while (dependency = dependency._nextDependency);else if (dependency === void 0) this._nextDependency = null;
     this._currentlyPulling = true;
     var prevCell = Cell_CommonState.currentCell;
     Cell_CommonState.currentCell = this;
     var value;
+    $error = null;
     try {
       value = this._bound ? this._pull.call(this.context, this, this._value) : this._pull.call(this.context);
       if (isPromiseLike(value)) {
@@ -599,7 +628,6 @@ var Cell = class Cell extends EventEmitter {
         $error = {
           error: new WaitError()
         };
-        value = $error;
       }
     } catch (err) {
       $error = {
@@ -609,7 +637,7 @@ var Cell = class Cell extends EventEmitter {
     Cell_CommonState.currentCell = prevCell;
     this._currentlyPulling = false;
     this._currentDependency = null;
-    if (this._nextDependent || this._$listeners.has(Cell.EVENT_CHANGE) || this._$listeners.has(Cell.EVENT_ERROR)) {
+    if (this._nextDependent || this._listeners.has(Cell.EVENT_CHANGE) || this._listeners.has(Cell.EVENT_ERROR)) {
       for (var holder = this, dependency$1 = this._nextDependency; dependency$1;) if (dependency$1.state == -1) {
         dependency$1.cell._deleteDependent(this);
         dependency$1 = holder._nextDependency = dependency$1._nextDependency;
@@ -626,7 +654,8 @@ var Cell = class Cell extends EventEmitter {
     return $error ? this._fail($error.error, true) : this._push(value, true);
   }
   set(value) {
-    if (!this._inited) this.pull();
+    if (!this._writable) throw Error("Cannot write to a non-writable cell");
+    if (!this._initialized) this.pull();
     this._validateValue?.(value, this._value);
     if (this._put) {
       if (!this._bound) {
@@ -639,49 +668,57 @@ var Cell = class Cell extends EventEmitter {
     return this;
   }
   push(value) {
+    if (Cell_CommonState.transactionStates) throw Error("Cannot call a push in a transaction");
     return this._push(value);
   }
   _push(value, fromPull) {
-    this._inited = true;
-    var err = this._error;
-    if (err) {
-      this._error$?.set(null);
-      this._error = null;
-    }
+    this._initialized = true;
     var prevValue = this._value;
+    var err = this._error;
+    if (Cell_CommonState.transactionStates && !Cell_CommonState.transactionStates.has(this)) Cell_CommonState.transactionStates.set(this, {
+      value: prevValue,
+      error: err,
+      state: this._state,
+      updateId: this._updateId
+    });
     var changed = !this._compareValues(value, prevValue);
     if (changed) {
       this._value = value;
       if (isEventEmitterLike(prevValue)) prevValue.off("change", this._onValueChange, this);
       if (isEventEmitterLike(value)) value.on("change", this._onValueChange, this);
     }
+    if (err) {
+      this._error$?.set(null);
+      this._error = null;
+    }
     if (this._active) this._state = CellState.ACTUAL;
     this._updateId = fromPull ? Cell_CommonState.lastUpdateId : ++Cell_CommonState.lastUpdateId;
-    if (changed || err instanceof WaitError) {
+    if (changed) {
       this._addToRelease();
-      if (changed) this.emit(Cell.EVENT_CHANGE, {
-        prevValue,
-        value
+      if (!Cell_CommonState.transactionStates) this.emit(Cell.EVENT_CHANGE, {
+        value,
+        prevValue
       });
     }
     return changed;
   }
   fail(err) {
+    if (Cell_CommonState.transactionStates) throw Error("Cannot call a fail in a transaction");
     return this._fail(err);
   }
   _fail(err, fromPull) {
-    this._inited = true;
-    var isWaitError = err instanceof WaitError;
-    if (!isWaitError && !(err instanceof Error)) err = Error(err);
+    this._initialized = true;
+    if (!(err instanceof Error)) err = Error(err);
     this._error$?.set(err);
     this._error = err;
     if (this._active) this._state = CellState.ACTUAL;
     this._updateId = fromPull ? Cell_CommonState.lastUpdateId : ++Cell_CommonState.lastUpdateId;
+    var isWaitError = err instanceof WaitError;
     if (!isWaitError && $error) {
       $error = null;
       if (this.meta?.["id"] !== void 0) config.logError(`[${this.meta?.["id"]}]`, err);else config.logError(err);
     }
-    this.handleEvent(err[KEY_ERROR_EVENT] ?? (err[KEY_ERROR_EVENT] = {
+    this.triggerEvent(err[KEY_ERROR_EVENT] ?? (err[KEY_ERROR_EVENT] = {
       target: this,
       type: Cell.EVENT_ERROR,
       data: {
@@ -703,6 +740,52 @@ var Cell = class Cell extends EventEmitter {
     return this.reap();
   }
 };
+
+//#endregion
+//#region src/batch.ts
+function batch(fn) {
+  var result = fn();
+  release();
+  return result;
+}
+
+//#endregion
+//#region src/transaction.ts
+function transaction(fn, onFailure) {
+  if (Cell_CommonState.transactionStates) return fn();
+  if (Cell_CommonState.pendingCells.length != 0) release();
+  Cell_CommonState.transactionStates = /* @__PURE__ */new Map();
+  var result;
+  try {
+    result = fn();
+  } catch (err) {
+    for (var [cell, {
+      value,
+      error,
+      state,
+      updateId
+    }] of Cell_CommonState.transactionStates) {
+      cell._value = value;
+      cell._error$?.set(error);
+      cell._error = error;
+      cell._state = state;
+      cell._updateId = updateId;
+    }
+    Cell_CommonState.pendingCells.length = 0;
+    Cell_CommonState.transactionStates = null;
+    if (onFailure) return onFailure(err);
+    throw err;
+  }
+  for (var [_cell, {
+    value: _value
+  }] of Cell_CommonState.transactionStates) if (!_cell._compareValues(_cell._value, _value)) _cell.emit(Cell.EVENT_CHANGE, {
+    value: _cell._value,
+    prevValue: _value
+  });
+  Cell_CommonState.transactionStates = null;
+  if (Cell_CommonState.pendingCells.length != 0) release();
+  return result;
+}
 
 //#endregion
 //#region src/define.ts
@@ -752,4 +835,4 @@ function cellx(valueOrPullFn, options) {
 }
 
 //#endregion
-export { Cell, CellState, DependencyFilter, EventEmitter, WaitError, afterRelease, autorun, cellx, computed, configure, define, defineObservableProperties, defineObservableProperty, observable, reaction, release, tracked, untracked };
+export { Cell, CellState, DependencyFilter, EventEmitter, WaitError, afterRelease, autorun, batch, cellx, computed, configure, define, defineObservableProperties, defineObservableProperty, observable, reaction, release, tracked, transaction, untracked };
