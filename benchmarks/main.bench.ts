@@ -291,38 +291,38 @@ const testComputers = setupComputersTest({
 		};
 	},
 
-	// mol_wire_lib: async ({ buildStart, buildEnd, listener }) => {
-	// 	const {
-	// 		default: { $mol_wire_atom: Atom }
-	// 	} = await import('mol_wire_lib');
+	mol_wire_lib: async ({ buildStart, buildEnd, listener }) => {
+		const {
+			default: { $mol_wire_atom: Atom }
+		} = await import('mol_wire_lib');
 
-	// 	buildStart();
+		buildStart();
 
-	// 	const entry1 = new Atom('entry1', (next: number = 0) => next);
-	// 	const entry2 = new Atom('entry2', (next: number = 0) => next);
-	// 	const entry3 = new Atom('entry3', (next: number = 0) => next);
-	// 	const a = new Atom('a', () => entry1.sync() + 1);
-	// 	const b = new Atom('b', () => entry1.sync() - entry2.sync() + hard());
-	// 	const c = new Atom('c', () => entry2.sync() + entry3.sync() - hard());
-	// 	const d = new Atom('d', () => entry3.sync() - 1);
-	// 	const e = new Atom('e', () => a.sync() + (a.sync() % 2 == 0 ? b.sync() : 0));
-	// 	const f = new Atom('f', () => ((entry2.sync() + hard()) % 2 == 0 ? a.sync() : d.sync()));
-	// 	const g = new Atom('g', () => d.sync() - (d.sync() % 2 == 0 ? c.sync() : 0));
-	// 	const h = new Atom('h', () => (e.sync() % 2 == 0 ? f.sync() : 0) + g.sync());
+		const entry1 = new Atom('entry1', (next: number = 0) => next);
+		const entry2 = new Atom('entry2', (next: number = 0) => next);
+		const entry3 = new Atom('entry3', (next: number = 0) => next);
+		const a = new Atom('a', () => entry1.sync() + 1);
+		const b = new Atom('b', () => entry1.sync() - entry2.sync() + hard());
+		const c = new Atom('c', () => entry2.sync() + entry3.sync() - hard());
+		const d = new Atom('d', () => entry3.sync() - 1);
+		const e = new Atom('e', () => a.sync() + (a.sync() % 2 == 0 ? b.sync() : 0));
+		const f = new Atom('f', () => ((entry2.sync() + hard()) % 2 == 0 ? a.sync() : d.sync()));
+		const g = new Atom('g', () => d.sync() - (d.sync() % 2 == 0 ? c.sync() : 0));
+		const h = new Atom('h', () => (e.sync() % 2 == 0 ? f.sync() : 0) + g.sync());
 
-	// 	listener(h.sync());
+		listener(h.sync());
 
-	// 	buildEnd();
+		buildEnd();
 
-	// 	return (value1, value2, value3) => {
-	// 		entry1.put(value1);
-	// 		entry2.put(value2);
-	// 		entry3.put(value3);
+		return (value1, value2, value3) => {
+			entry1.put(value1);
+			entry2.put(value2);
+			entry3.put(value3);
 
-	// 		// the batch doing the same https://github.com/hyoo-ru/mam_mol/blob/c9cf0faf966c8bb3d0e76339527ef03e03d273e8/wire/fiber/fiber.ts#L31
-	// 		listener(h.sync());
-	// 	};
-	// },
+			// the batch doing the same https://github.com/hyoo-ru/mam_mol/blob/c9cf0faf966c8bb3d0e76339527ef03e03d273e8/wire/fiber/fiber.ts#L31
+			listener(h.sync());
+		};
+	},
 
 	nanostores: async ({ buildStart, buildEnd, listener }) => {
 		const { atom, batched, computed } = await import('nanostores');
