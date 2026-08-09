@@ -2,7 +2,7 @@ import { Cell } from './Cell';
 
 export function defineObservableProperty<T extends object = object>(
 	obj: T,
-	key: string,
+	key: keyof T,
 	value: any
 ) {
 	let cell = new Cell({
@@ -28,18 +28,22 @@ export function defineObservableProperty<T extends object = object>(
 
 export function defineObservableProperties<T extends object = object>(
 	obj: T,
-	props: Record<string, any>
+	props: Record<keyof T, any>
 ) {
 	for (let key of Object.keys(props)) {
-		defineObservableProperty(obj, key, props[key]);
+		defineObservableProperty(obj, key as keyof T, props[key]);
 	}
 
 	return obj;
 }
 
-export function define<T extends object = object>(obj: T, key: string, value: any): T;
-export function define<T extends object = object>(obj: T, props: Record<string, any>): T;
-export function define(obj: object, keyOrProps: string | Record<string, any>, value?: any) {
+export function define<T extends object = object>(obj: T, key: keyof T, value: any): T;
+export function define<T extends object = object>(obj: T, props: Record<keyof T, any>): T;
+export function define<T extends object>(
+	obj: T,
+	keyOrProps: keyof T | Record<keyof T, any>,
+	value?: any
+) {
 	if (typeof keyOrProps == 'object') {
 		defineObservableProperties(obj, keyOrProps);
 	} else {

@@ -10,6 +10,8 @@ export default defineConfig(() => {
 	].map(([format, fileExt]) => ({
 		input: 'src/cellx.ts',
 
+		external: ['@riim/event'],
+
 		output: {
 			file: `dist/${libName}.${fileExt}`,
 			format,

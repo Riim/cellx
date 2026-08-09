@@ -1,10 +1,3 @@
 module.exports = {
-	plugins: [
-		[
-			'@babel/plugin-transform-block-scoping',
-			{
-				throwIfClosureRequired: true
-			}
-		]
-	]
+	plugins: [['@babel/plugin-transform-block-scoping', { throwIfClosureRequired: true }]]
 };

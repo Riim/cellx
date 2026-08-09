@@ -1,5 +1,6 @@
 import { describe, expect, test } from '@jest/globals';
-import { Cell, CellState, EventEmitter, cellx, configure, release } from '../src/cellx';
+import { Cell, CellState, cellx, configure, release } from '../src/cellx';
+import { EventEmitter } from './EventEmitter';
 
 configure({ logError: () => {} });
 
@@ -8,16 +9,14 @@ afterEach(() => {
 });
 
 describe('Cell', () => {
-	describe('get/set', () => {
+	describe('read/write', () => {
 		test('чтение ячейки (Cell#get())', () => {
 			let a$ = cellx(1);
-
 			expect(a$.get()).toBe(1);
 		});
 
 		test('чтение ячейки (Cell#value)', () => {
 			let a$ = cellx(1);
-
 			expect(a$.value).toBe(1);
 		});
 
@@ -30,17 +29,13 @@ describe('Cell', () => {
 
 		test('запись в ячейку (Cell#set())', () => {
 			let a$ = cellx(1);
-
 			a$.value = 2;
-
 			expect(a$.value).toBe(2);
 		});
 
 		test('запись в ячейку (Cell#value)', () => {
 			let a$ = cellx(1);
-
 			a$.value = 2;
-
 			expect(a$.value).toBe(2);
 		});
 
@@ -72,7 +67,6 @@ describe('Cell', () => {
 			let a$ = cellx(1, {
 				onChange() {
 					expect(a$.value).toBe(2);
-
 					done();
 				}
 			});
@@ -85,7 +79,6 @@ describe('Cell', () => {
 			let b$ = cellx(() => a$.value + 1, {
 				onChange() {
 					expect(b$.value).toBe(3);
-
 					done();
 				}
 			});
@@ -215,9 +208,7 @@ describe('Cell', () => {
 
 		test('запись в неинициализированную ячейку отменяет pull', () => {
 			let a$ = cellx(() => 1, { writable: true });
-
 			a$.value = 5;
-
 			expect(a$.value).toBe(5);
 		});
 
@@ -225,7 +216,6 @@ describe('Cell', () => {
 			let a$ = cellx(() => 1, { writable: true });
 
 			a$.value = 5;
-
 			a$.on(Cell.EVENT_CHANGE, () => {});
 
 			expect(a$.value).toBe(5);
@@ -480,11 +470,8 @@ describe('Cell', () => {
 			let d$ = cellx(() => c1$.value + c2$.value);
 
 			d$.value;
-
 			pullB$.mockClear();
-
 			a$.value = 2;
-
 			d$.value;
 
 			expect(pullB$.mock.calls.length).toBe(1);
@@ -494,13 +481,10 @@ describe('Cell', () => {
 			let a$ = cellx(0, { meta: { name: 'a' } });
 			let b$ = cellx(0, { meta: { name: 'b' } });
 			let c$ = cellx(0, { meta: { name: 'c' } });
-			let d$ = cellx(
-				() => (a$.value % 2 == 0 ? [b$.value, c$.value] : [c$.value, b$.value]),
-				{
-					meta: { name: 'd' },
-					onChange: () => {}
-				}
-			);
+			let d$ = cellx(() => (a$.value % 2 == 0 ? [b$.value, c$.value] : [c$.value, b$.value]), {
+				meta: { name: 'd' },
+				onChange: () => {}
+			});
 
 			expect(d$.getDependencies().map((cell) => cell.meta.name)).toEqual(
 				[a$, b$, c$].map((cell) => cell.meta.name)
@@ -525,10 +509,9 @@ describe('Cell', () => {
 			let randomizedDependencies!: Array<Cell>;
 			let x$ = cellx(
 				() => {
-					randomizedDependencies = [
-						a$,
-						...dependencies.filter(() => Math.random() >= 0.25)
-					].sort(() => Math.random() - 0.5);
+					randomizedDependencies = [a$, ...dependencies.filter(() => Math.random() >= 0.25)].sort(
+						() => Math.random() - 0.5
+					);
 
 					for (let dependency of randomizedDependencies) {
 						dependency.value;
@@ -540,7 +523,7 @@ describe('Cell', () => {
 				}
 			);
 
-			for (let i = 0; ; ) {
+			for (let i = 0; ;) {
 				expect(x$.getDependencies().map((cell) => cell.meta.name)).toEqual(
 					randomizedDependencies.map((cell) => cell.meta.name)
 				);

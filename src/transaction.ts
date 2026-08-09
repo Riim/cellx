@@ -1,4 +1,5 @@
-import { Cell, Cell_CommonState } from './Cell';
+import { fireEvent } from '@riim/event';
+import { Cell_CommonState } from './Cell';
 import { release } from './release';
 
 export function transaction<T>(fn: () => T, onFailure?: (err: any) => T | void) {
@@ -6,7 +7,7 @@ export function transaction<T>(fn: () => T, onFailure?: (err: any) => T | void) 
 		return fn();
 	}
 
-	if (Cell_CommonState.pendingCells.length != 0) {
+	if (Cell_CommonState.pendingCells.length > 0) {
 		release();
 	}
 
@@ -43,17 +44,21 @@ export function transaction<T>(fn: () => T, onFailure?: (err: any) => T | void) 
 	for (let [cell, { value }] of Cell_CommonState.transactionStates) {
 		// @ts-expect-error
 		if (!cell._compareValues(cell._value, value)) {
-			cell.emit(Cell.EVENT_CHANGE, {
+			// @ts-expect-error
+			if (cell._onChange) {
 				// @ts-expect-error
-				value: cell._value,
-				prevValue: value
-			});
+				fireEvent(cell._onChange, {
+					// @ts-expect-error
+					value: cell._value,
+					prevValue: value
+				});
+			}
 		}
 	}
 
 	Cell_CommonState.transactionStates = null;
 
-	if (Cell_CommonState.pendingCells.length != 0) {
+	if (Cell_CommonState.pendingCells.length > 0) {
 		release();
 	}
 

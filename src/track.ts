@@ -2,7 +2,7 @@ import { Cell, Cell_CommonState } from './Cell';
 
 export const DependencyFilter = {
 	allExceptUntracked: (dependency: Cell) => Cell_CommonState.inUntrackedCounter == 0,
-	onlyTracked: (dependency: Cell) => Cell_CommonState.inTrackedCounter != 0
+	onlyTracked: (dependency: Cell) => Cell_CommonState.inTrackedCounter > 0
 };
 
 export function untracked<T>(fn: () => T): T {

@@ -1,7 +1,6 @@
 import { Cell, type ICellOptions, type TCellPull } from './Cell';
 
 export { configure } from './config';
-export { type IEvent, type I$Listener, EventEmitter } from './EventEmitter';
 export { autorun } from './autorun';
 export { reaction } from './reaction';
 export { release } from './release';

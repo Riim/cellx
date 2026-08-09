@@ -13,6 +13,7 @@ node_modules
 /.npmrc
 /.prettierrc
 /.travis.yml
+/babel.config.js
 /eslint.config.mjs
 /jest.config.js
 /README.ru.md

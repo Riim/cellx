@@ -12,7 +12,7 @@ const languageOptionsGlobals = {
 };
 const jsRules = {
 	// не использовать Array#forEach()
-	'github/array-foreach': 'error',
+	// 'github/array-foreach': 'error',
 	// не смешивать пробелы и табы
 	'no-mixed-spaces-and-tabs': [
 		'error',
