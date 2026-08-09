@@ -1,8 +1,14 @@
-import { EventEmitter, IEvent, TListener } from './EventEmitter';
+import { TEvent } from '@riim/event';
 import { afterRelease } from './afterRelease';
 import { autorun } from './autorun';
 import { reaction } from './reaction';
 import { release } from './release';
+export interface IEvent<Data = any, Target = any> {
+    target: Target;
+    type: string | symbol;
+    data: Data;
+}
+export type TListener<Event extends IEvent = IEvent, Context = any> = (this: Context, evt: Event) => any;
 export type CellValue<T> = T extends Cell<infer U> ? U : T;
 export interface ICellChangeEvent<Target extends Cell = Cell> extends IEvent<{
     value: CellValue<Target>;
@@ -69,7 +75,7 @@ export declare const Cell_CommonState: {
     inUntrackedCounter: number;
     inTrackedCounter: number;
 };
-export declare class Cell<Value = any, Context = any, Meta = any> extends EventEmitter {
+export declare class Cell<Value = any, Context = any, Meta = any> {
     static readonly EVENT_CHANGE = "change";
     static readonly EVENT_ERROR = "error";
     static get currentlyPulling(): boolean;
@@ -105,19 +111,19 @@ export declare class Cell<Value = any, Context = any, Meta = any> extends EventE
     get state(): CellState;
     protected _currentlyPulling: boolean;
     protected _updateId: number;
+    protected _onChange: TEvent<ICellChangeEvent, Context> | null;
+    protected _onError: TEvent<ICellErrorEvent, Context> | null;
     constructor(options: ICellOptions<Value, Context, Meta>);
-    on<C>(type: typeof Cell.EVENT_CHANGE, listener: TCellChangeEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
-    on<C>(type: typeof Cell.EVENT_ERROR, listener: TCellErrorEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
-    on<C>(listeners: ICellListeners<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
-    off<C>(type: typeof Cell.EVENT_CHANGE, listener: TCellChangeEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
-    off<C>(type: typeof Cell.EVENT_ERROR, listener: TCellErrorEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
-    off<C>(listeners?: ICellListeners<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
-    onChange<C>(listener: TCellChangeEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
-    offChange<C>(listener: TCellChangeEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
-    onError<C>(listener: TCellErrorEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
-    offError<C>(listener: TCellErrorEventListener<Cell<Value, C extends undefined ? Context : C, Meta>>, context?: C): this;
-    subscribe<C>(listener: (this: C extends undefined ? (typeof this)['context'] : C, err: Error | null, evt: TCellEvent<this>) => any, context?: C): this;
-    unsubscribe<C>(listener: (this: C extends undefined ? (typeof this)['context'] : C, err: Error | null, evt: TCellEvent<this>) => any, context?: C): this;
+    on(type: typeof Cell.EVENT_CHANGE, listener: TCellChangeEventListener<Cell<Value, Context, Meta>>): this;
+    on(type: typeof Cell.EVENT_ERROR, listener: TCellErrorEventListener<Cell<Value, Context, Meta>>): this;
+    off(type: typeof Cell.EVENT_CHANGE, listener: TCellChangeEventListener<Cell<Value, Context, Meta>>): this;
+    off(type: typeof Cell.EVENT_ERROR, listener: TCellErrorEventListener<Cell<Value, Context, Meta>>): this;
+    onChange(listener: TCellChangeEventListener<Cell<Value, Context, Meta>>): this;
+    offChange(listener: TCellChangeEventListener<Cell<Value, Context, Meta>>): this;
+    onError(listener: TCellErrorEventListener<Cell<Value, Context, Meta>>): this;
+    offError(listener: TCellErrorEventListener<Cell<Value, Context, Meta>>): this;
+    subscribe(listener: (this: (typeof this)['context'], err: Error | null, evt: TCellEvent<this>) => any): this;
+    unsubscribe(listener: (this: (typeof this)['context'], err: Error | null, evt: TCellEvent<this>) => any): this;
     protected _addDependent(dependent: Cell): void;
     protected _deleteDependent(dependent: Cell): void;
     protected _activate(): void;

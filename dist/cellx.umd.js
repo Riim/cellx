@@ -1,146 +1,10 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) : typeof define === 'function' && define.amd ? define(['exports'], factory) : (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.cellx = {}));
-})(this, function (exports) {
-  //#region src/config.ts
-  var config = {
-    logError: (...args) => {
-      console.error(...args);
-    },
-    compareValues: Object.is
-  };
-  function configure(options) {
-    return Object.assign(config, options);
-  }
+  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@riim/event')) : typeof define === 'function' && define.amd ? define(['exports', '@riim/event'], factory) : (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.cellx = {}, global._riim_event));
+})(this, function (exports, _riim_event) {
+  Object.defineProperty(exports, Symbol.toStringTag, {
+    value: 'Module'
+  });
 
-  //#endregion
-  //#region src/EventEmitter.ts
-  var EventEmitter_CommonState = {
-    inBatchCounter: 0,
-    batchedEvents: [],
-    inSilentlyCounter: 0
-  };
-  var EventEmitter = class {
-    static batch(fn) {
-      EventEmitter_CommonState.inBatchCounter++;
-      try {
-        fn();
-      } finally {
-        if (--EventEmitter_CommonState.inBatchCounter == 0) {
-          var events = EventEmitter_CommonState.batchedEvents;
-          EventEmitter_CommonState.batchedEvents = [];
-          for (var i = 0; i < events.length; i++) events[i].target.triggerEvent(events[i]);
-        }
-      }
-    }
-    static silently(fn) {
-      EventEmitter_CommonState.inSilentlyCounter++;
-      try {
-        fn();
-      } finally {
-        EventEmitter_CommonState.inSilentlyCounter--;
-      }
-    }
-    _listeners = /* @__PURE__ */new Map();
-    getListeners(type) {
-      return type ? this._listeners.get(type) ?? [] : this._listeners;
-    }
-    on(type, listener, context) {
-      if (typeof type == "object") {
-        context = listener !== void 0 ? listener : this;
-        var listeners = type;
-        for (type in listeners) if (Object.prototype.hasOwnProperty.call(listeners, type)) this._on(type, listeners[type], context);
-        for (var type$1 of Object.getOwnPropertySymbols(listeners)) this._on(type$1, listeners[type$1], context);
-      } else this._on(type, listener, context !== void 0 ? context : this);
-      return this;
-    }
-    off(type, listener, context) {
-      if (type) {
-        if (typeof type == "object") {
-          context = listener !== void 0 ? listener : this;
-          var listeners = type;
-          for (type in listeners) if (Object.prototype.hasOwnProperty.call(listeners, type)) this._off(type, listeners[type], context);
-          for (var type$1 of Object.getOwnPropertySymbols(listeners)) this._off(type$1, listeners[type$1], context);
-        } else this._off(type, listener, context !== void 0 ? context : this);
-      } else this._listeners.clear();
-      return this;
-    }
-    _on(type, listener, context) {
-      var typeListeners = this._listeners.get(type);
-      var $listener = {
-        listener,
-        context
-      };
-      if (typeListeners) typeListeners.push($listener);else this._listeners.set(type, [$listener]);
-    }
-    _off(type, listener, context) {
-      var typeListeners = this._listeners.get(type);
-      if (!typeListeners) return;
-      if (typeListeners.length == 1) {
-        if (typeListeners[0].listener == listener && typeListeners[0].context === context) this._listeners.delete(type);
-      } else for (var i = 0;; i++) {
-        if (typeListeners[i].listener == listener && typeListeners[i].context === context) {
-          typeListeners.splice(i, 1);
-          break;
-        }
-        if (i + 1 == typeListeners.length) break;
-      }
-    }
-    once(type, listener, context) {
-      if (context === void 0) context = this;
-      function wrapper(evt) {
-        this._off(type, wrapper, context);
-        return listener.call(this, evt);
-      }
-      this._on(type, wrapper, context);
-      return wrapper;
-    }
-    emit(evt, data) {
-      if (typeof evt == "object") {
-        if (!evt.target) evt.target = this;else if (evt.target != this) throw TypeError("Event cannot be emitted on this target");
-      } else evt = {
-        target: this,
-        type: evt
-      };
-      if (data) evt.data = data;
-      if (EventEmitter_CommonState.inSilentlyCounter == 0) if (EventEmitter_CommonState.inBatchCounter != 0) for (var i = EventEmitter_CommonState.batchedEvents.length;;) {
-        if (i == 0) {
-          if (evt.data) evt.data["prevEvent"] = null;else evt.data = {
-            prevEvent: null
-          };
-          EventEmitter_CommonState.batchedEvents.push(evt);
-          break;
-        }
-        var event = EventEmitter_CommonState.batchedEvents[--i];
-        if (event.target == this && event.type === evt.type) {
-          if (evt.data) evt.data["prevEvent"] = event;else evt.data = {
-            prevEvent: event
-          };
-          EventEmitter_CommonState.batchedEvents[i] = evt;
-          break;
-        }
-      } else this.triggerEvent(evt);
-      return evt;
-    }
-    triggerEvent(evt) {
-      var typeListeners = this._listeners.get(evt.type);
-      if (!typeListeners) return;
-      if (typeListeners.length == 1) {
-        if (this._tryEventListener(typeListeners[0], evt) === false) evt.propagationStopped = true;
-      } else {
-        typeListeners = typeListeners.slice();
-        for (var i = 0; i < typeListeners.length; i++) if (this._tryEventListener(typeListeners[i], evt) === false) evt.propagationStopped = true;
-      }
-    }
-    _tryEventListener($listener, evt) {
-      try {
-        return $listener.listener.call($listener.context, evt);
-      } catch (err) {
-        config.logError(err);
-      }
-    }
-  };
-
-  //#endregion
   //#region src/WaitError.ts
   var WaitError = class extends Error {};
 
@@ -167,6 +31,18 @@
   }
 
   //#endregion
+  //#region src/config.ts
+  var config = {
+    logError: (...args) => {
+      console.error(...args);
+    },
+    compareValues: Object.is
+  };
+  function configure(options) {
+    return Object.assign(config, options);
+  }
+
+  //#endregion
   //#region src/keys.ts
   var KEY_ERROR_EVENT = Symbol("errorEvent");
   var KEY_LISTENER_WRAPPERS = Symbol("listenerWrappers");
@@ -176,7 +52,7 @@
   function reaction(source, fn, cellOptions) {
     var cell = new Cell({
       ...cellOptions,
-      pull: source instanceof Cell ? () => source.value : Array.isArray(source) ? () => source.map(cell$1 => cell$1.value) : source
+      pull: source instanceof Cell ? () => source.value : Array.isArray(source) ? () => source.map(cell => cell.value) : source
     });
     var disposer = () => {
       cell.dispose();
@@ -200,10 +76,10 @@
     Cell_CommonState.pendingCellsIndex = 0;
     if (Cell_CommonState.afterRelease) {
       var {
-        afterRelease: afterRelease$1
+        afterRelease: _afterRelease
       } = Cell_CommonState;
       Cell_CommonState.afterRelease = null;
-      for (var i = 0; i < afterRelease$1.length; i++) afterRelease$1[i]();
+      for (var i = 0; i < _afterRelease.length; i++) _afterRelease[i]();
     }
   }
 
@@ -211,7 +87,7 @@
   //#region src/track.ts
   var DependencyFilter = {
     allExceptUntracked: dependency => Cell_CommonState.inUntrackedCounter == 0,
-    onlyTracked: dependency => Cell_CommonState.inTrackedCounter != 0
+    onlyTracked: dependency => Cell_CommonState.inTrackedCounter > 0
   };
   function untracked(fn) {
     Cell_CommonState.inUntrackedCounter++;
@@ -254,11 +130,11 @@
 
   //#endregion
   //#region src/Cell.ts
-  var CellState = /* @__PURE__ */function (CellState$1) {
-    CellState$1["ACTUAL"] = "actual";
-    CellState$1["DIRTY"] = "dirty";
-    CellState$1["CHECK"] = "check";
-    return CellState$1;
+  var CellState = /* @__PURE__ */function (CellState) {
+    CellState["ACTUAL"] = "actual";
+    CellState["DIRTY"] = "dirty";
+    CellState["CHECK"] = "check";
+    return CellState;
   }({});
   var Cell_CommonState = {
     pendingCells: [],
@@ -271,32 +147,31 @@
     inTrackedCounter: 0
   };
   var $error = null;
-  var Cell = class Cell extends EventEmitter {
-    static EVENT_CHANGE = "change";
-    static EVENT_ERROR = "error";
+  var Cell = class Cell {
+    static {
+      this.EVENT_CHANGE = "change";
+    }
+    static {
+      this.EVENT_ERROR = "error";
+    }
     static get currentlyPulling() {
       return Cell_CommonState.currentCell != null;
     }
-    static autorun = autorun;
-    static reaction = reaction;
-    static release = release;
-    static afterRelease = afterRelease;
-    context;
-    meta;
-    _writable;
+    static {
+      this.autorun = autorun;
+    }
+    static {
+      this.reaction = reaction;
+    }
+    static {
+      this.release = release;
+    }
+    static {
+      this.afterRelease = afterRelease;
+    }
     get writable() {
       return this._writable;
     }
-    _pull;
-    _dependencyFilter;
-    _validateValue;
-    _put;
-    _compareValues;
-    _reap;
-    _nextDependency;
-    _currentDependency = null;
-    _nextDependent = null;
-    _lastDependent = null;
     getDependencies() {
       var dependencies = [];
       for (var dependency = this._nextDependency; dependency; dependency = dependency._nextDependency) dependencies.push(dependency.cell);
@@ -307,26 +182,27 @@
       for (var dependent = this._nextDependent; dependent; dependent = dependent._nextDependent) dependents.push(dependent.cell);
       return dependents;
     }
-    _value;
-    _error$ = null;
-    _error = null;
-    _bound = false;
-    _initialized;
     get initialized() {
       return this._initialized;
     }
-    _active = false;
     get active() {
       return this._active;
     }
-    _state;
     get state() {
       return this._state;
     }
-    _currentlyPulling = false;
-    _updateId = -1;
     constructor(options) {
-      super();
+      this._currentDependency = null;
+      this._nextDependent = null;
+      this._lastDependent = null;
+      this._error$ = null;
+      this._error = null;
+      this._bound = false;
+      this._active = false;
+      this._currentlyPulling = false;
+      this._updateId = -1;
+      this._onChange = null;
+      this._onError = null;
       this.context = options.context ?? null;
       this.meta = options.meta ?? null;
       this._pull = options.pull ?? null;
@@ -347,7 +223,7 @@
         this._nextDependency = void 0;
         this._initialized = false;
         this._state = CellState.DIRTY;
-        if (this._pull.length != 0) {
+        if (this._pull.length > 0) {
           this.push = this.push.bind(this);
           this.fail = this.fail.bind(this);
           this._bound = true;
@@ -364,53 +240,56 @@
       if (options.onChange) this.on(Cell.EVENT_CHANGE, options.onChange);
       if (options.onError) this.on(Cell.EVENT_ERROR, options.onError);
     }
-    on(type, listener, context) {
+    on(type, listener) {
       if (this._nextDependency !== null) this._actualize();
-      if (typeof type == "object") super.on(type, listener !== void 0 ? listener : this.context);else super.on(type, listener, context !== void 0 ? context : this.context);
+      if (type == Cell.EVENT_CHANGE) (this._onChange ??= (0, _riim_event.event)(this.context))(listener);else (this._onError ??= (0, _riim_event.event)(this.context))(listener);
       this._activate();
       return this;
     }
-    off(type, listener, context) {
+    off(type, listener) {
       if (this._nextDependency !== null) this._actualize();
-      var hasListeners = this._listeners.has(Cell.EVENT_CHANGE) || this._listeners.has(Cell.EVENT_ERROR);
-      if (type) {
-        if (typeof type == "object") super.off(type, listener !== void 0 ? listener : this.context);else super.off(type, listener, context !== void 0 ? context : this.context);
-      } else super.off();
-      if (hasListeners && !this._nextDependent && (this._listeners.size == 0 || !this._listeners.has(Cell.EVENT_CHANGE) && !this._listeners.has(Cell.EVENT_ERROR))) {
-        this._deactivate();
-        this._reap?.call(this.context);
+      var onChangeListeners = this._onChange?.[_riim_event.LISTENERS];
+      var onErrorListeners = this._onError?.[_riim_event.LISTENERS];
+      var hasListeners = onChangeListeners && onChangeListeners.size > 0 || onErrorListeners && onErrorListeners.size > 0;
+      var onEvent = type == Cell.EVENT_CHANGE ? this._onChange : this._onError;
+      if (onEvent) (0, _riim_event.unsubscribe)(onEvent, listener);
+      if (hasListeners && !this._nextDependent) {
+        onChangeListeners = this._onChange?.[_riim_event.LISTENERS];
+        onErrorListeners = this._onError?.[_riim_event.LISTENERS];
+        if ((!onChangeListeners || onChangeListeners.size == 0) && (!onErrorListeners || onErrorListeners.size == 0)) {
+          this._deactivate();
+          this._reap?.call(this.context);
+        }
       }
       return this;
     }
-    onChange(listener, context) {
-      return this.on(Cell.EVENT_CHANGE, listener, context);
+    onChange(listener) {
+      return this.on(Cell.EVENT_CHANGE, listener);
     }
-    offChange(listener, context) {
-      return this.off(Cell.EVENT_CHANGE, listener, context);
+    offChange(listener) {
+      return this.off(Cell.EVENT_CHANGE, listener);
     }
-    onError(listener, context) {
-      return this.on(Cell.EVENT_ERROR, listener, context);
+    onError(listener) {
+      return this.on(Cell.EVENT_ERROR, listener);
     }
-    offError(listener, context) {
-      return this.off(Cell.EVENT_ERROR, listener, context);
+    offError(listener) {
+      return this.off(Cell.EVENT_ERROR, listener);
     }
-    subscribe(listener, context) {
-      var wrappers = listener[KEY_LISTENER_WRAPPERS] ?? (listener[KEY_LISTENER_WRAPPERS] = /* @__PURE__ */new Map());
+    subscribe(listener) {
+      var wrappers = listener[KEY_LISTENER_WRAPPERS] ??= /* @__PURE__ */new Map();
       if (wrappers.has(this)) return this;
       function wrapper(evt) {
         return listener.call(this, evt.data["error"] ?? null, evt);
       }
       wrappers.set(this, wrapper);
-      if (context === void 0) context = this.context;
-      return this.on(Cell.EVENT_CHANGE, wrapper, context).on(Cell.EVENT_ERROR, wrapper, context);
+      return this.on(Cell.EVENT_CHANGE, wrapper).on(Cell.EVENT_ERROR, wrapper);
     }
-    unsubscribe(listener, context) {
+    unsubscribe(listener) {
       var wrappers = listener[KEY_LISTENER_WRAPPERS];
       var wrapper = wrappers?.get(this);
       if (!wrapper) return this;
       wrappers.delete(this);
-      if (context === void 0) context = this.context;
-      return this.off(Cell.EVENT_CHANGE, wrapper, context).off(Cell.EVENT_ERROR, wrapper, context);
+      return this.off(Cell.EVENT_CHANGE, wrapper).off(Cell.EVENT_ERROR, wrapper);
     }
     _addDependent(dependent) {
       (this._lastDependent ?? this)._nextDependent = this._lastDependent = {
@@ -433,7 +312,7 @@
           break;
         }
       }
-      if (!this._nextDependent && (this._listeners.size == 0 || !this._listeners.has(Cell.EVENT_CHANGE) && !this._listeners.has(Cell.EVENT_ERROR))) {
+      if (!this._nextDependent && (!this._onChange?.[_riim_event.LISTENERS] || this._onChange[_riim_event.LISTENERS].size == 0) && (!this._onError?.[_riim_event.LISTENERS] || this._onError[_riim_event.LISTENERS].size == 0)) {
         this._deactivate();
         this._reap?.call(this.context);
       }
@@ -458,8 +337,12 @@
     _onValueChange(evt) {
       this._updateId = ++Cell_CommonState.lastUpdateId;
       this._addToRelease();
-      this.emit(Cell.EVENT_CHANGE, {
-        sourceEvent: evt
+      if (this._onChange) (0, _riim_event.fireEvent)(this._onChange, {
+        target: this,
+        type: Cell.EVENT_CHANGE,
+        data: {
+          sourceEvent: evt
+        }
       });
     }
     _addToRelease() {
@@ -479,7 +362,7 @@
             if (cell._nextDependent) {
               cell._nextDependent.prevDependents = stack;
               stack = cell._nextDependent;
-              if ((cell._listeners.has(Cell.EVENT_CHANGE) || cell._listeners.has(Cell.EVENT_ERROR)) && Cell_CommonState.pendingCells.push(cell) == 1) nextTick(release);
+              if ((cell._onChange?.[_riim_event.LISTENERS] && cell._onChange[_riim_event.LISTENERS].size > 0 || cell._onError?.[_riim_event.LISTENERS] && cell._onError[_riim_event.LISTENERS].size > 0) && Cell_CommonState.pendingCells.push(cell) == 1) nextTick(release);
             } else if (Cell_CommonState.pendingCells.push(cell) == 1) nextTick(release);
           } else if (dirty) cell._state = CellState.DIRTY;
         }
@@ -627,7 +510,7 @@
       try {
         value = this._bound ? this._pull.call(this.context, this, this._value) : this._pull.call(this.context);
         if (isPromiseLike(value)) {
-          value.then(value$1 => this._push(value$1), err => this._fail(err));
+          value.then(value => this._push(value), err => this._fail(err));
           $error = {
             error: new WaitError()
           };
@@ -640,14 +523,14 @@
       Cell_CommonState.currentCell = prevCell;
       this._currentlyPulling = false;
       this._currentDependency = null;
-      if (this._nextDependent || this._listeners.has(Cell.EVENT_CHANGE) || this._listeners.has(Cell.EVENT_ERROR)) {
-        for (var holder = this, dependency$1 = this._nextDependency; dependency$1;) if (dependency$1.state == -1) {
-          dependency$1.cell._deleteDependent(this);
-          dependency$1 = holder._nextDependency = dependency$1._nextDependency;
+      if (this._nextDependent || this._onChange?.[_riim_event.LISTENERS] && this._onChange[_riim_event.LISTENERS].size > 0 || this._onError?.[_riim_event.LISTENERS] && this._onError[_riim_event.LISTENERS].size > 0) {
+        for (var holder = this, _dependency2 = this._nextDependency; _dependency2;) if (_dependency2.state == -1) {
+          _dependency2.cell._deleteDependent(this);
+          _dependency2 = holder._nextDependency = _dependency2._nextDependency;
         } else {
-          if (dependency$1.state == 1) dependency$1.cell._addDependent(this);
-          holder = dependency$1;
-          dependency$1 = dependency$1._nextDependency;
+          if (_dependency2.state == 1) _dependency2.cell._addDependent(this);
+          holder = _dependency2;
+          _dependency2 = _dependency2._nextDependency;
         }
         if (this._nextDependency) this._active = true;else {
           this._active = false;
@@ -698,9 +581,13 @@
       this._updateId = fromPull ? Cell_CommonState.lastUpdateId : ++Cell_CommonState.lastUpdateId;
       if (changed) {
         this._addToRelease();
-        if (!Cell_CommonState.transactionStates) this.emit(Cell.EVENT_CHANGE, {
-          value,
-          prevValue
+        if (!Cell_CommonState.transactionStates && this._onChange) (0, _riim_event.fireEvent)(this._onChange, {
+          target: this,
+          type: Cell.EVENT_CHANGE,
+          data: {
+            value,
+            prevValue
+          }
         });
       }
       return changed;
@@ -721,22 +608,26 @@
         $error = null;
         if (this.meta?.["id"] !== void 0) config.logError(`[${this.meta?.["id"]}]`, err);else config.logError(err);
       }
-      this.triggerEvent(err[KEY_ERROR_EVENT] ?? (err[KEY_ERROR_EVENT] = {
+      err[KEY_ERROR_EVENT] ??= {
         target: this,
         type: Cell.EVENT_ERROR,
         data: {
           error: err
         }
-      }));
+      };
+      if (this._onError) (0, _riim_event.fireEvent)(this._onError, err[KEY_ERROR_EVENT]);
       return isWaitError;
     }
     wait() {
       throw new WaitError();
     }
     reap() {
-      this.off();
-      this._error$?.reap();
       for (var dependent = this._nextDependent; dependent; dependent = dependent._nextDependent) dependent.cell.reap();
+      this._error$?.reap();
+      this._onChange?.[_riim_event.LISTENERS]?.clear();
+      this._onError?.[_riim_event.LISTENERS]?.clear();
+      this._deactivate();
+      this._reap?.call(this.context);
       return this;
     }
     dispose() {
@@ -756,7 +647,7 @@
   //#region src/transaction.ts
   function transaction(fn, onFailure) {
     if (Cell_CommonState.transactionStates) return fn();
-    if (Cell_CommonState.pendingCells.length != 0) release();
+    if (Cell_CommonState.pendingCells.length > 0) release();
     Cell_CommonState.transactionStates = /* @__PURE__ */new Map();
     var result;
     try {
@@ -781,12 +672,14 @@
     }
     for (var [_cell, {
       value: _value
-    }] of Cell_CommonState.transactionStates) if (!_cell._compareValues(_cell._value, _value)) _cell.emit(Cell.EVENT_CHANGE, {
-      value: _cell._value,
-      prevValue: _value
-    });
+    }] of Cell_CommonState.transactionStates) if (!_cell._compareValues(_cell._value, _value)) {
+      if (_cell._onChange) (0, _riim_event.fireEvent)(_cell._onChange, {
+        value: _cell._value,
+        prevValue: _value
+      });
+    }
     Cell_CommonState.transactionStates = null;
-    if (Cell_CommonState.pendingCells.length != 0) release();
+    if (Cell_CommonState.pendingCells.length > 0) release();
     return result;
   }
 
@@ -803,8 +696,8 @@
       get() {
         return cell.get();
       },
-      set(value$1) {
-        cell.set(value$1);
+      set(value) {
+        cell.set(value);
       }
     });
     return obj;
@@ -841,7 +734,6 @@
   exports.Cell = Cell;
   exports.CellState = CellState;
   exports.DependencyFilter = DependencyFilter;
-  exports.EventEmitter = EventEmitter;
   exports.WaitError = WaitError;
   exports.afterRelease = afterRelease;
   exports.autorun = autorun;

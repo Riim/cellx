@@ -1,6 +1,6 @@
 {
   "name": "cellx",
-  "version": "2.3.1",
+  "version": "2.4.0",
   "description": "",
   "type": "commonjs",
   "main": "dist/cellx.umd.js",
@@ -8,8 +8,7 @@
   "scripts": {
     "build": "rm -rf dist && npx tsc && rolldown -c && babel dist --out-dir dist",
     "test": "rm -rf coverage && jest --coverage",
-    "bench": "npx tsx --expose-gc benchmarks/main.bench.ts",
-    "bench:mem": "npx tsx --expose-gc benchmarks/main.bench.ts"
+    "bench": "npx tsx --expose-gc benchmarks/main.bench.ts"
   },
   "repository": {
     "type": "git",
