@@ -30,11 +30,11 @@ lastName$.value = 'Dog';
 // => 'fullName: Sharik Dog'
 ```
 
-Even though two dependencies of the `fullName$` cell changed, its change handler fired only once. An important feature of cellx is that it strives to eliminate both unnecessary change handler calls and unnecessary calls to the calculation formulas of computed cells. Combined with some other optimizations, this ensures high speed in calculating complex dependency graphs.  
+Even though two dependencies of the `fullName$` cell changed, its change handler fired only once. A key feature of cellx is that it minimizes both unnecessary change handler calls and unnecessary evaluations of computed cells. Together with other optimizations, this makes updates efficient even in complex dependency graphs.  
 You can learn more about this in the article [Big State Managers Benchmark](https://habr.com/ru/articles/707600/).  
 You might also be interested in the article [Разбираемся в сортах реактивности](https://habr.com/ru/companies/timeweb/articles/586450/).
 
-## Dynamic dependency actualization
+## Dynamic dependency tracking
 
 The formula of a computed cell can be written in such a way that the set of dependencies may change over time. For example:
 
@@ -47,7 +47,7 @@ const user = {
 };
 ```
 
-Here, while the value of `firstName$` is undefined, the `displayName$` cell is subscribed to both `firstName$` and `lastName$`, since changing either will cause its value to change. However, if we set the `firstName$` cell to some not-nullable value, then, when recalculating the value of `displayName$`, reading `lastName$` in the formula will no longer occur, meaning the value of the `displayName$` cell from this moment no longer depends on `lastName$`. In such cases, cells automatically unsubscribe from dependencies that are no longer significant to them and do not recalculate when those dependencies change. Later, if `firstName$` gets a nullable value again, the `displayName$` cell will resubscribe to `lastName$`.
+When the value of `firstName$` is `null` or `undefined`, evaluating `displayName$` reads both `firstName$` and `lastName$`. If `firstName$` is set to a non-nullish value (anything other than `null` or `undefined`), the next evaluation no longer reads `lastName$`, so `displayName$` no longer depends on it. cellx automatically stops tracking dependencies that are no longer read, so changes to those cells no longer trigger recomputation. If `firstName$` later becomes `null` or `undefined` again, `lastName$` becomes a dependency again.
 
 ## Usage
 
@@ -58,17 +58,15 @@ Adds a change handler.
 ```typescript
 const num$ = cellx(5);
 
-num$.onChange((evt) => {
-    console.log(evt.data);
+const dispose = num$.onChange((value) => {
+    console.log(value);
 });
 
 num$.value = 10;
-// => { value: 10, prevValue: 5 }
+// => 10
+
+dispose(); // Remove the change handler.
 ```
-
-### Method Cell#offChange()
-
-Removes a previously added change handler.
 
 ### Method Cell#onError()
 
@@ -78,61 +76,19 @@ Adds an error handler.
 const name$ = cellx('Matroskin');
 const upperName$ = cellx(() => name$.value.toUpperCase());
 
-upperName$.onError((evt) => {
-    console.log(evt.data.error.message);
+const dispose = upperName$.onError((err) => {
+    console.log(err.message);
 });
 
 name$.value = 5;
 // => 'name$.value.toUpperCase is not a function'
 ```
 
-### Method Cell#offError()
+### Method Cell#disconnect()
 
-Removes a previously added error handler.
-
-### Method Cell#subscribe()
-
-Subscribes to `change` and `error` events. The handler receives the error object as the first argument and the event as the second.
-
-```typescript
-fullName$.subscribe((err, evt) => {
-    if (err) {
-        //
-    } else {
-        //
-    }
-});
-```
-
-### Method Cell#unsubscribe()
-
-Unsubscribes from `change` and `error` events.
-
-### define()
-
-Makes object properties reactive.  
-You can subscribe to such properties using `reaction()` and `autorun()` (see below).
-
-```typescript
-import { cellx, define } from 'cellx';
-
-class User {
-    name: string;
-    upperName: string;
-
-    constructor(name: string) {
-        define(this, {
-            name,
-            upperName: cellx(() => this.name.toUpperCase())
-        });
-    }
-}
-
-const user = new User('Matroskin');
-
-console.log(user.upperName);
-// => 'MATROSKIN'
-```
+Removes the cell's own `change` and `error` listeners and recursively disconnects
+its dependents. It retains `observed` and `unobserved` handlers. This is not permanent disposal: the cell remains
+reusable.
 
 ### Option Cell[context]
 
@@ -143,17 +99,37 @@ const context = 5;
 const name$ = cellx('Matroskin');
 const upperName$ = cellx(function () {
     console.log(this);
-	// => 5
+    // => 5
 
     return name$.value.toUpperCase();
 }, { context });
 
 upperName$.onChange(function () {
     console.log(this);
-	// => 5
+    // => 5
 });
 
 name$.value = 'Sharik';
+```
+
+### effect()
+
+Runs a function immediately, tracks the cells it reads, and reruns it when those dependencies change.
+
+```typescript
+const firstName$ = cellx('Matroskin');
+const lastName$ = cellx('Cat');
+
+const dispose = effect(() => {
+    console.log(firstName$.value + ' ' + lastName$.value);
+});
+// => 'Matroskin Cat'
+
+lastName$.value = 'Dog';
+release();
+// => 'Matroskin Dog'
+
+dispose();
 ```
 
 ### reaction()
@@ -174,22 +150,9 @@ const dispose = reaction(() => name$.value, (name) => {
 });
 ```
 
-### autorun()
-
-Registers a function that will run every time anything it is watching changes. It also runs once when the autorun itself is created.
-
-```typescript
-const name$ = cellx('Matroskin');
-
-const dispose = autorun(() => {
-    console.log(name$.value);
-});
-```
-
 ### Option Cell[dependencyFilter]
 
-Sets a function to filter found dependencies.  
-By default, `DependencyFilter.allExpectUntracked` is used.
+Sets a function to filter discovered dependencies. By default, all reads outside `untracked()` are tracked.
 
 ```typescript
 const TRACKED = Symbol('tracked');
@@ -211,7 +174,7 @@ lastName$.value = 'Dog';
 
 console.log(fullName$.value);
 // => 'Matroskin Cat'
-// Recalculation of fullName$ did not occur because lastName$ was not identified as its dependency.
+// fullName$ was not recomputed because lastName$ was not tracked as a dependency.
 
 firstName$.value = 'Sharik';
 // => 'Sharik Dog'
@@ -219,7 +182,7 @@ firstName$.value = 'Sharik';
 
 ### untracked()
 
-Runs a code block where read cells are not identified as dependencies.
+Runs a function without tracking its cell reads as dependencies of the current computation.
 
 ```typescript
 const firstName$ = cellx('Matroskin');
@@ -235,7 +198,7 @@ lastName$.value = 'Dog';
 
 console.log(fullName$.value);
 // => 'Matroskin Cat'
-// Recalculation of fullName$ did not occur because lastName$ was not identified as its dependency.
+// fullName$ was not recomputed because lastName$ was not tracked as a dependency.
 
 firstName$.value = 'Sharik';
 // => 'Sharik Dog'
@@ -243,8 +206,7 @@ firstName$.value = 'Sharik';
 
 ### tracked()
 
-Runs a code block where read cells are identified as dependencies.  
-Used in combination with the `Cell[dependencyFilter]` option.
+Runs a function that marks its cell reads for dependency tracking in the current computation. Use with `DependencyFilter.onlyTracked` in the `Cell[dependencyFilter]` option.
 
 ```typescript
 const firstName$ = cellx('Matroskin');
@@ -262,42 +224,34 @@ lastName$.value = 'Dog';
 
 console.log(fullName$.value);
 // => 'Matroskin Cat'
-// Recalculation of fullName$ did not occur because lastName$ was not identified as its dependency.
+// fullName$ was not recomputed because lastName$ was not tracked as a dependency.
 
 firstName$.value = 'Sharik';
 // => 'Sharik Dog'
 ```
 
-### Option Cell[meta]
+### Option Cell[assertValue]
 
-Any additional information for the cell.
+Validates user input at two boundaries: the initial value passed to the constructor
+and a value passed to `set()` (including assignment through `.value`).
 
-```typescript
-const name$ = cellx('Matroskin', {
-    meta: { id: 'name' }
-});
+For a computed cell, an explicit initial value (`options.value`) is validated. If
+no initial value is provided, construction skips validation. For an ordinary cell,
+the initial value is validated even when it is `undefined`.
 
-console.log(name$.meta.id);
-// => 'name'
-```
-
-### Option Cell[validate]
-
-Validates the value on write and calculation.
-
-Validation on writing to a cell:
+Validating values written to a cell:
 
 ```typescript
 const num$ = cellx(5, {
-    validate: (value) => {
-        if (typeof value != 'number') {
+    assertValue: (value) => {
+        if (typeof value !== 'number') {
             throw TypeError('Must be a number');
         }
     }
 });
 
 try {
-    num$.value = 'строка';
+    num$.value = 'a string';
 } catch (err) {
     console.log(err.message);
     // => 'Must be a number'
@@ -307,35 +261,9 @@ console.log(num$.value);
 // => 5
 ```
 
-Validation on cell calculation:
-
-```typescript
-const someValue$ = cellx(5);
-
-const num$ = cellx(() => someValue$.value, {
-    validate: (value) => {
-        if (typeof value != 'number') {
-            throw TypeError('Must be a number');
-        }
-    }
-});
-
-num$.onError((err) => {
-    console.log(err.message);
-});
-
-someValue$.value = 'строка';
-// => 'Must be a number'
-
-console.log(someValue$.value);
-// => 'строка'
-console.log(num$.value);
-// => 5
-```
-
 ### Option Cell[put]
 
-Can be used to process the value on write and redirect the write operation.
+Handles writes to the cell, allowing you to transform the value or forward the write elsewhere.
 
 ```typescript
 class User {
@@ -345,8 +273,8 @@ class User {
     fullName$ = cellx(
         () => (this.firstName$.value + ' ' + this.lastName$.value).trim(),
         {
-            put: (nextValue) => {
-				[this.firstName$.value, this.lastName$.value] = nextValue.split(' ');
+            put: (_cell, nextValue) => {
+                [this.firstName$.value, this.lastName$.value] = nextValue.split(' ');
             }
         }
     );
@@ -420,4 +348,22 @@ console.log(foo$.value);
 
 // => 'foo$.value: 1'
 // => 'foo$.value: 5'
+```
+
+### Option Cell[async]
+
+By default, a Promise returned by a cell formula is treated as a regular value. Set `async: true` to make the cell wait for the Promise and publish its fulfilled value. While waiting, the cell contains a `WaitError`.
+
+```typescript
+const promise$ = cellx(() => Promise.resolve(42));
+console.log(promise$.value instanceof Promise);
+// => true
+
+const value$ = cellx(() => Promise.resolve(42), { async: true });
+console.log(value$.value);
+// => undefined
+
+await Promise.resolve();
+console.log(value$.value);
+// => 42
 ```

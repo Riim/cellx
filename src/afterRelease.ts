@@ -1,5 +1,7 @@
-import { Cell_CommonState } from './Cell';
+import { Cell_runtimeState } from './Cell';
+import { scheduleRelease } from './release';
 
-export function afterRelease(cb: Function) {
-	(Cell_CommonState.afterRelease ?? (Cell_CommonState.afterRelease = [])).push(cb);
+export function afterRelease(cb: () => void): void {
+	(Cell_runtimeState.afterRelease ??= []).push(cb);
+	scheduleRelease();
 }

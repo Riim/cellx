@@ -1,8 +1,9 @@
 import { describe, expect, test } from '@jest/globals';
-import { IDependencyList } from '../src/Cell';
-import { DependencyFilter, cellx, release, tracked, untracked } from '../src/cellx';
+import { type ILink } from '../src/Cell';
+import { cellx, release } from '../src/cellx';
+import { DependencyFilter, tracked, untracked } from '../src/track';
 
-function getDependencyListLength(list: IDependencyList | null) {
+function getDependencyListLength(list: ILink | null) {
 	if (!list) {
 		return 0;
 	}
@@ -23,7 +24,6 @@ describe('track', () => {
 		let pullC$ = jest.fn(() => a$.value + untracked(() => b$.value));
 		let c$ = cellx(pullC$, { onChange: () => {} });
 
-		// @ts-expect-error
 		expect(getDependencyListLength(c$._nextDependency)).toBe(1);
 
 		pullC$.mockClear();
@@ -37,8 +37,8 @@ describe('track', () => {
 		release();
 
 		expect(pullC$.mock.calls.length).toBe(1);
-		// @ts-expect-error
 		expect(getDependencyListLength(c$._nextDependency)).toBe(1);
+		c$.disconnect();
 	});
 
 	test('tracked()', () => {
@@ -50,7 +50,6 @@ describe('track', () => {
 			onChange: () => {}
 		});
 
-		// @ts-expect-error
 		expect(getDependencyListLength(c$._nextDependency)).toBe(1);
 
 		pullC$.mockClear();
@@ -64,7 +63,7 @@ describe('track', () => {
 		release();
 
 		expect(pullC$.mock.calls.length).toBe(1);
-		// @ts-expect-error
 		expect(getDependencyListLength(c$._nextDependency)).toBe(1);
+		c$.disconnect();
 	});
 });

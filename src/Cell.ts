@@ -1,1009 +1,806 @@
-import { LISTENERS, TEvent, event, fireEvent, unsubscribe } from '@riim/event';
+import { LISTENERS, type TEvent, event, fireEvent } from '@riim/event';
 import { WaitError } from './WaitError';
-import { afterRelease } from './afterRelease';
-import { autorun } from './autorun';
 import { config } from './config';
-import { KEY_ERROR_EVENT, KEY_LISTENER_WRAPPERS } from './keys';
-import { reaction } from './reaction';
-import { release } from './release';
-import { DependencyFilter } from './track';
-import { isEventEmitterLike } from './utils/isEventEmitterLike';
+import { effect } from './effect';
+import { scheduleRelease } from './release';
+import { untracked } from './track';
 import { isPromiseLike } from './utils/isPromiseLike';
-import { nextTick } from './utils/nextTick';
 
-export interface IEvent<Data = any, Target = any> {
-	target: Target;
-	type: string | symbol;
-	data: Data;
-}
+export type TCellValue<T> = T extends Cell<infer U, any> ? U : T;
 
-export type TListener<Event extends IEvent = IEvent, Context = any> = (
+export type TCellCompute<Value = any, Context = any> = (
 	this: Context,
-	evt: Event
-) => any;
-
-export type CellValue<T> = T extends Cell<infer U> ? U : T;
-
-export interface ICellChangeEvent<Target extends Cell = Cell> extends IEvent<
-	{
-		value: CellValue<Target>;
-		prevValue: CellValue<Target>;
-	},
-	Target
-> {
-	type: typeof Cell.EVENT_CHANGE;
-}
-
-export interface ICellErrorEvent<Target extends Cell = Cell> extends IEvent<
-	{ error: Error },
-	Target
-> {
-	type: typeof Cell.EVENT_ERROR;
-}
-
-export type TCellEvent<Target extends Cell = Cell> =
-	ICellChangeEvent<Target> | ICellErrorEvent<Target>;
-
-export type TCellChangeEventListener<Target extends Cell = Cell, Context = any> = TListener<
-	ICellChangeEvent<Target>,
-	Context
->;
-
-export type TCellErrorEventListener<Target extends Cell = Cell, Context = any> = TListener<
-	ICellErrorEvent<Target>,
-	Context
->;
-
-export type TCellEventListener<Target extends Cell = Cell, Context = any> =
-	TCellChangeEventListener<Target, Context> | TCellErrorEventListener<Target, Context>;
-
-export interface ICellListeners<Target extends Cell = Cell, Context = any> {
-	[Cell.EVENT_CHANGE]?: TCellChangeEventListener<Target, Context>;
-	[Cell.EVENT_ERROR]?: TCellErrorEventListener<Target, Context>;
-}
-
-export type TCellPull<Value = any, Context = any, Meta = any> = (
-	this: Context,
-	cell: Cell<Value, Context, Meta>,
-	value: Value | undefined
+	value: NoInfer<Value> | undefined
 ) => Value;
 
-export type TCellPut<Value = any, Context = any, Meta = any> = (
+export type TAsyncCellCompute<Value = any, Context = any> = (
 	this: Context,
-	cell: Cell<Value, Context, Meta>,
+	value: NoInfer<Value> | undefined
+) => Value | PromiseLike<Value>;
+
+export type TCellPut<Value = any, Context = any> = (
+	this: Context,
 	nextValue: Value,
 	value: Value | undefined
 ) => void;
 
-export interface ICellOptions<Value = any, Context = any, Meta = any> {
+export interface ICellOptionsBase<Value = any, Context = any> {
 	context?: Context;
-	meta?: Meta;
-	writable?: boolean;
-	pull?: TCellPull<Value, Context, Meta>;
-	dependencyFilter?: (dep: Cell) => any;
-	validate?: (nextValue: Value, value: Value | undefined) => void;
-	put?: TCellPut<Value, Context, Meta>;
-	compareValues?: (nextValue: Value, value: Value | undefined) => boolean;
-	reap?: (this: Context) => void;
-	value?: Value;
-	onChange?: TCellChangeEventListener<Cell<Value, any, Meta>>;
-	onError?: TCellErrorEventListener<Cell<Value, any, Meta>>;
+	dependencyFilter?: (dependency: Cell) => any;
+	// compute
+	// async
+	assertValue?: (nextValue: NoInfer<Value>, value: NoInfer<Value> | undefined) => void;
+	put?: TCellPut<NoInfer<Value>, Context>;
+	onChange?: Parameters<Cell<NoInfer<Value>, Context>['onChange']>[0];
+	onError?: Parameters<Cell<Value, Context>['onError']>[0];
+	onObserved?: Parameters<Cell<Value, Context>['onObserved']>[0];
+	onUnobserved?: Parameters<Cell<Value, Context>['onUnobserved']>[0];
 }
 
-export interface IDependencyList {
-	cell: Cell;
-	_nextDependency: IDependencyList | null;
-	state: number;
+export interface ICellOptions<Value = any, Context = any> extends ICellOptionsBase<Value, Context> {
+	async?: false;
 }
 
-export interface IDependentList {
-	cell: Cell;
-	_nextDependent: IDependentList | null;
-	prevDependents: IDependentList | null;
+export interface IAsyncCellOptions<Value = any, Context = any> extends ICellOptionsBase<
+	Value,
+	Context
+> {
+	async: true;
 }
 
-export enum CellState {
-	ACTUAL = 'actual',
-	DIRTY = 'dirty',
-	CHECK = 'check'
+export type TAnyCellOptions<Value = any, Context = any> =
+	ICellOptions<Value, Context> | IAsyncCellOptions<Value, Context>;
+
+interface ICellRareState<Context> {
+	errorCell: ErrorCell | null;
+	onObserved: TEvent<void, Context> | null;
+	onUnobserved: TEvent<void, Context> | null;
+	pendingEvents: number;
 }
 
-export const Cell_CommonState = {
-	pendingCells: [] as Array<Cell>,
+export const enum Flags {
+	PENDING = 1,
+	DIRTY = 2,
+	CHECKING = 4,
+	PULLING = 8,
+	ACTIVE = 16,
+	QUEUED = 32,
+	EFFECT = 64
+}
+
+export interface IReactiveNode {
+	_dependencyFilter: ((dependency: Cell) => any) | null;
+	_pullVersion: number;
+	_nextDependency: ILink | null;
+	_currentDependency: ILink | null;
+	_nextDependent: ILink | null;
+	_flags: number;
+	_actualize(waiting?: ILink): boolean;
+	disconnect(): IReactiveNode;
+}
+
+export interface ILink {
+	readonly dependency: Cell;
+	_prevDependency: ILink | null;
+	_nextDependency: ILink | null;
+
+	readonly dependent: IReactiveNode;
+	_prevDependent: ILink | null;
+	_nextDependent: ILink | null;
+
+	dependencyVersion: number;
+	dependentPullVersion: number;
+
+	prevDependents: ILink | null;
+}
+
+function createLink(
+	dependency: Cell,
+	prevDependency: ILink | null,
+	nextDependency: ILink | null,
+	dependent: IReactiveNode
+): ILink {
+	return {
+		dependency,
+		_prevDependency: prevDependency,
+		_nextDependency: nextDependency,
+
+		dependent,
+		_prevDependent: null,
+		_nextDependent: null,
+
+		dependencyVersion: dependency._version,
+		dependentPullVersion: dependent._pullVersion,
+
+		prevDependents: null
+	};
+}
+
+export const Cell_runtimeState = {
+	pendingCells: [] as Array<IReactiveNode | undefined>,
 	pendingCellsIndex: 0,
+	pendingCellsCount: 0,
 
-	currentCell: null as Cell | null,
+	pulling: 0,
+	currentCell: null as IReactiveNode | null,
+	untrackedCell: null as IReactiveNode | null,
 
-	lastUpdateId: 0,
+	globalVersion: 0,
 
-	afterRelease: null as Array<Function> | null,
-
-	transactionStates: null as Map<
-		Cell,
-		{
-			value: any;
-			error: Error | null;
-			state: CellState;
-			updateId: number;
-		}
-	> | null,
-
-	inUntrackedCounter: 0,
-	inTrackedCounter: 0
+	afterRelease: null as Array<() => void> | null
 };
 
-let $error: { error: any } | null = null;
+export function checkDependencies(node: IReactiveNode): boolean {
+	let globalVersion: number;
 
-export class Cell<Value = any, Context = any, Meta = any> {
-	static readonly EVENT_CHANGE = 'change';
-	static readonly EVENT_ERROR = 'error';
+	do {
+		globalVersion = Cell_runtimeState.globalVersion;
 
-	static get currentlyPulling() {
-		return Cell_CommonState.currentCell != null;
+		for (let link = node._nextDependency; link; link = link._nextDependency) {
+			if (link.dependency._actualize(link) || link.dependency._version !== link.dependencyVersion) {
+				return true;
+			}
+		}
+	} while (globalVersion !== Cell_runtimeState.globalVersion);
+
+	return false;
+}
+
+export function enqueueEffect(node: IReactiveNode): void {
+	if ((node._flags & (Flags.ACTIVE | Flags.QUEUED)) === Flags.ACTIVE) {
+		node._flags |= Flags.QUEUED;
+		Cell_runtimeState.pendingCells[Cell_runtimeState.pendingCellsCount++] = node;
+		scheduleRelease();
+	}
+}
+
+export function trimDependencies(node: IReactiveNode): void {
+	let current = node._currentDependency;
+	let link = (current ?? node)._nextDependency;
+
+	if (link) {
+		(current ?? node)._nextDependency = null;
+
+		do {
+			let next: ILink | null = link._nextDependency;
+
+			link.dependency._deleteDependent(link);
+			link._prevDependency = link._nextDependency = null;
+			link = next;
+		} while (link);
 	}
 
-	static readonly autorun = autorun;
-	static readonly reaction = reaction;
+	node._currentDependency = null;
+}
 
-	static readonly release = release;
-	static readonly afterRelease = afterRelease;
+export class Cell<Value = any, Context = any> implements IReactiveNode {
+	static get pulling() {
+		return Cell_runtimeState.currentCell !== null;
+	}
 
 	readonly context: Context;
+	declare _dependencyFilter: ((dependency: Cell) => any) | null;
+	protected _compute: TAsyncCellCompute<Value, Context> | null;
+	declare protected _async: boolean;
+	protected _assertValue: ICellOptionsBase<Value, Context>['assertValue'] | null;
+	declare protected _put: TCellPut<Value, Context> | null;
 
-	readonly meta: Meta;
+	protected _value: Value | undefined;
+	_error: Error | null = null;
 
-	protected _writable: boolean;
+	protected _globalVersion = -1;
+	_version = 0;
+	_pullVersion = 0;
 
-	get writable() {
-		return this._writable;
+	_nextDependency: ILink | null = null;
+	declare _currentDependency: ILink | null;
+	_nextDependent: ILink | null = null;
+	protected _lastDependent: ILink | null = null;
+
+	_flags: number;
+
+	declare protected _pullId: number;
+	declare protected _appliedPullId: number;
+
+	protected _rareState: ICellRareState<Context> | null = null;
+
+	constructor(
+		compute: TAsyncCellCompute<Value, Context>,
+		options: IAsyncCellOptions<Value, Context>
+	);
+	constructor(
+		valueOrCompute: Value | TCellCompute<Value, Context>,
+		options?: ICellOptions<Value, Context>
+	);
+	constructor(
+		valueOrCompute: Value | TAsyncCellCompute<Value, Context>,
+		options?: TAnyCellOptions<Value, Context>
+	) {
+		this.context = (options?.context ?? null) as Context;
+		this._assertValue = options?.assertValue ?? null;
+
+		if (typeof valueOrCompute === 'function') {
+			this._dependencyFilter = options?.dependencyFilter ?? null;
+			this._compute = valueOrCompute as TAsyncCellCompute<Value, Context>;
+			this._async = options?.async === true;
+			this._put = options?.put ?? null;
+
+			this._value = undefined;
+
+			this._currentDependency = null;
+
+			if (this._async) {
+				this._pullId = this._appliedPullId = 0;
+			}
+
+			this._flags = Flags.DIRTY;
+		} else {
+			this._compute = null;
+			this._assertValue?.(valueOrCompute, undefined);
+			this._value = valueOrCompute;
+			this._flags = 0;
+		}
+
+		if (options?.onObserved) {
+			this.onObserved(options.onObserved);
+		}
+		if (options?.onUnobserved) {
+			this.onUnobserved(options.onUnobserved);
+		}
+		if (options?.onError) {
+			this.onError(options.onError);
+		}
+		if (options?.onChange) {
+			this.onChange(options.onChange);
+		}
 	}
 
-	protected _pull: TCellPull<Value, Context, Meta> | null;
-	protected _dependencyFilter: (dependency: Cell) => any;
+	protected _getRareState(): ICellRareState<Context> {
+		return (this._rareState ??= {
+			errorCell: null,
+			onObserved: null,
+			onUnobserved: null,
+			pendingEvents: 0
+		});
+	}
 
-	protected _validateValue: ((nextValue: Value, value: Value | undefined) => void) | null;
-	protected _put: TCellPut<Value, Context, Meta> | null;
-	protected _compareValues: (nextValue: Value, value: Value | undefined) => boolean;
+	onChange(handler: (this: Context, value: Value) => void): () => void {
+		let initialized = false;
+		let prevValue: Value | undefined;
 
-	protected _reap: (() => void) | null;
+		return effect(() => {
+			this.track();
 
-	protected _nextDependency: IDependencyList | null | undefined;
-	protected _currentDependency: IDependencyList | null = null;
-	protected _nextDependent: IDependentList | null = null;
-	protected _lastDependent: IDependentList | null = null;
+			let value = this._value;
+			let changed = initialized && value !== prevValue && !this._error;
 
-	getDependencies() {
-		let dependencies: Array<Cell> = [];
+			prevValue = value;
+			initialized = true;
+
+			if (changed) {
+				untracked(() => handler.call(this.context, value!));
+			}
+		});
+	}
+
+	onError(handler: (this: Context, err: Error) => void): () => void {
+		let initialized = false;
+		let prevError: Error | null;
+
+		return effect(() => {
+			let err = this.error;
+			let changed = initialized && err !== prevError;
+
+			prevError = err;
+			initialized = true;
+
+			if (changed && err) {
+				untracked(() => handler.call(this.context, err));
+			}
+		});
+	}
+
+	get onObserved(): TEvent<void, Context> {
+		return (this._getRareState().onObserved ??= event(this.context));
+	}
+
+	get onUnobserved(): TEvent<void, Context> {
+		return (this._getRareState().onUnobserved ??= event(this.context));
+	}
+
+	protected _scheduleObservation(observed: boolean): void {
+		let rareState = this._rareState;
+		let key = observed ? 'onObserved' : 'onUnobserved';
+
+		if (!rareState?.[key]?.[LISTENERS]?.size) {
+			return;
+		}
+
+		let flag = observed ? 1 : 2;
+
+		if (rareState.pendingEvents & flag) {
+			return;
+		}
+		rareState.pendingEvents |= flag;
+
+		queueMicrotask(() => {
+			try {
+				if (!!this._nextDependent === observed && rareState[key]?.[LISTENERS]?.size) {
+					fireEvent(rareState[key]);
+				}
+			} catch (err) {
+				config.logError(err);
+			} finally {
+				rareState.pendingEvents &= ~flag;
+			}
+		});
+	}
+
+	_addDependent(link: ILink): void {
+		// У уже подключённой связи либо есть предыдущий элемент, либо она является
+		// головой списка.
+		if (link._prevDependent || this._nextDependent === link) {
+			return;
+		}
+
+		if (!(this._flags & Flags.ACTIVE)) {
+			this._actualize();
+
+			if (!(link.dependent._flags & Flags.ACTIVE)) {
+				return;
+			}
+		}
+
+		((link._prevDependent = this._lastDependent) ?? this)._nextDependent = this._lastDependent =
+			link;
+
+		this._activate();
+	}
+
+	_deleteDependent(link: ILink): void {
+		let prev = link._prevDependent;
+		let next = link._nextDependent;
+
+		if (prev) {
+			prev._nextDependent = next;
+		} else if (this._nextDependent === link) {
+			this._nextDependent = next;
+		} else {
+			return;
+		}
+
+		if (next) {
+			next._prevDependent = prev;
+		} else {
+			this._lastDependent = prev;
+		}
+
+		link._prevDependent = link._nextDependent = null;
+
+		if (!this._nextDependent) {
+			this._deactivate();
+		}
+	}
+
+	protected _activate(): void {
+		if (this._flags & Flags.ACTIVE) {
+			return;
+		}
+		this._flags |= Flags.ACTIVE;
+
+		this._scheduleObservation(true);
 
 		for (
 			let dependency = this._nextDependency;
 			dependency;
 			dependency = dependency._nextDependency
 		) {
-			dependencies.push(dependency.cell);
-		}
+			dependency.dependency._addDependent(dependency);
 
-		return dependencies;
-	}
-
-	getDependents() {
-		let dependents: Array<Cell> = [];
-
-		for (let dependent = this._nextDependent; dependent; dependent = dependent._nextDependent) {
-			dependents.push(dependent.cell);
-		}
-
-		return dependents;
-	}
-
-	protected _value: Value | undefined;
-	protected _error$: Cell<Error | null> | null = null;
-	protected _error: Error | null = null;
-
-	protected _bound = false;
-
-	protected _initialized: boolean;
-
-	get initialized() {
-		return this._initialized;
-	}
-
-	// active = dependencies && (dependents || listeners)
-	protected _active = false;
-
-	get active() {
-		return this._active;
-	}
-
-	protected _state: CellState;
-
-	get state() {
-		return this._state;
-	}
-
-	protected _currentlyPulling = false;
-
-	protected _updateId = -1;
-
-	protected _onChange: TEvent<ICellChangeEvent, Context> | null = null;
-	protected _onError: TEvent<ICellErrorEvent, Context> | null = null;
-
-	constructor(options: ICellOptions<Value, Context, Meta>) {
-		this.context = (options.context ?? null) as Context;
-
-		this.meta = (options.meta ?? null) as Meta;
-
-		this._pull = options.pull ?? null;
-		this._dependencyFilter = options.dependencyFilter ?? DependencyFilter.allExceptUntracked;
-
-		this._validateValue = options.validate ?? null;
-		this._put = options.put ?? null;
-		this._compareValues = options.compareValues ?? config.compareValues;
-
-		this._reap = options.reap ?? null;
-
-		let { value } = options;
-
-		if (this._pull) {
-			if (value !== undefined) {
-				this._validateValue?.(value, undefined);
-
-				if (isEventEmitterLike(value)) {
-					value.on('change', this._onValueChange, this);
-				}
-			}
-
-			this._writable = options.writable ?? !!this._put;
-			this._nextDependency = undefined;
-			this._initialized = false;
-			this._state = CellState.DIRTY;
-
-			if (this._pull.length > 0) {
-				this.push = this.push.bind(this);
-				this.fail = this.fail.bind(this);
-
-				this._bound = true;
-			}
-		} else {
-			this._validateValue?.(value!, undefined);
-
-			if (isEventEmitterLike(value)) {
-				value.on('change', this._onValueChange, this);
-			}
-
-			this._writable = options.writable ?? true;
-			this._nextDependency = null;
-			this._initialized = true;
-			this._state = CellState.ACTUAL;
-		}
-
-		this._value = value;
-
-		if (options.onChange) {
-			this.on(Cell.EVENT_CHANGE, options.onChange);
-		}
-		if (options.onError) {
-			this.on(Cell.EVENT_ERROR, options.onError);
-		}
-	}
-
-	on(
-		type: typeof Cell.EVENT_CHANGE,
-		listener: TCellChangeEventListener<Cell<Value, Context, Meta>>
-	): this;
-	on(
-		type: typeof Cell.EVENT_ERROR,
-		listener: TCellErrorEventListener<Cell<Value, Context, Meta>>
-	): this;
-	on(type: string, listener: any) {
-		if (this._nextDependency !== null) {
-			this._actualize();
-		}
-
-		if (type == Cell.EVENT_CHANGE) {
-			(this._onChange ??= event(this.context))(listener);
-		} else {
-			(this._onError ??= event(this.context))(listener);
-		}
-
-		this._activate();
-
-		return this;
-	}
-
-	off(
-		type: typeof Cell.EVENT_CHANGE,
-		listener: TCellChangeEventListener<Cell<Value, Context, Meta>>
-	): this;
-	off(
-		type: typeof Cell.EVENT_ERROR,
-		listener: TCellErrorEventListener<Cell<Value, Context, Meta>>
-	): this;
-	off(type: string, listener: any) {
-		if (this._nextDependency !== null) {
-			this._actualize();
-		}
-
-		let onChangeListeners = this._onChange?.[LISTENERS];
-		let onErrorListeners = this._onError?.[LISTENERS];
-		let hasListeners =
-			// eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-			(onChangeListeners && onChangeListeners.size > 0) ||
-			(onErrorListeners && onErrorListeners.size > 0);
-
-		let onEvent = type == Cell.EVENT_CHANGE ? this._onChange : this._onError;
-
-		if (onEvent) {
-			unsubscribe(onEvent as any, listener);
-		}
-
-		if (hasListeners && !this._nextDependent) {
-			onChangeListeners = this._onChange?.[LISTENERS];
-			onErrorListeners = this._onError?.[LISTENERS];
-
-			if (
-				(!onChangeListeners || onChangeListeners.size == 0) &&
-				(!onErrorListeners || onErrorListeners.size == 0)
-			) {
-				this._deactivate();
-				this._reap?.call(this.context);
-			}
-		}
-
-		return this;
-	}
-
-	onChange(listener: TCellChangeEventListener<Cell<Value, Context, Meta>>) {
-		return this.on(Cell.EVENT_CHANGE, listener);
-	}
-
-	offChange(listener: TCellChangeEventListener<Cell<Value, Context, Meta>>) {
-		return this.off(Cell.EVENT_CHANGE, listener);
-	}
-
-	onError(listener: TCellErrorEventListener<Cell<Value, Context, Meta>>) {
-		return this.on(Cell.EVENT_ERROR, listener);
-	}
-
-	offError(listener: TCellErrorEventListener<Cell<Value, Context, Meta>>) {
-		return this.off(Cell.EVENT_ERROR, listener);
-	}
-
-	subscribe(
-		listener: (this: (typeof this)['context'], err: Error | null, evt: TCellEvent<this>) => any
-	) {
-		let wrappers: Map<Cell, TListener> = (listener[KEY_LISTENER_WRAPPERS] ??= new Map());
-
-		if (wrappers.has(this)) {
-			return this;
-		}
-
-		function wrapper(this: any, evt: any) {
-			return listener.call(this, evt.data['error'] ?? null, evt);
-		}
-		wrappers.set(this, wrapper);
-
-		return this.on(Cell.EVENT_CHANGE, wrapper).on(Cell.EVENT_ERROR, wrapper);
-	}
-
-	unsubscribe(
-		listener: (this: (typeof this)['context'], err: Error | null, evt: TCellEvent<this>) => any
-	) {
-		let wrappers: Map<Cell, TListener> | undefined = listener[KEY_LISTENER_WRAPPERS];
-		let wrapper = wrappers?.get(this);
-
-		if (!wrapper) {
-			return this;
-		}
-
-		wrappers!.delete(this);
-
-		return this.off(Cell.EVENT_CHANGE, wrapper).off(Cell.EVENT_ERROR, wrapper);
-	}
-
-	protected _addDependent(dependent: Cell) {
-		(this._lastDependent ?? (this as unknown as IDependentList))._nextDependent =
-			this._lastDependent = {
-				cell: dependent,
-				_nextDependent: null,
-				prevDependents: null
-			};
-
-		this._activate();
-	}
-
-	protected _deleteDependent(dependent: Cell) {
-		let currentDependent = this._nextDependent;
-
-		if (currentDependent!.cell == dependent) {
-			if (!(this._nextDependent = currentDependent!._nextDependent)) {
-				this._lastDependent = null;
-			}
-		} else {
-			for (let prevDependent: IDependentList; ;) {
-				prevDependent = currentDependent!;
-				currentDependent = currentDependent!._nextDependent;
-
-				if (!currentDependent) {
-					break;
-				}
-
-				if (currentDependent.cell == dependent) {
-					if (!(prevDependent._nextDependent = currentDependent._nextDependent)) {
-						this._lastDependent = prevDependent;
-					}
-
-					break;
-				}
-			}
-		}
-
-		if (
-			!this._nextDependent &&
-			(!this._onChange?.[LISTENERS] || this._onChange[LISTENERS].size == 0) &&
-			(!this._onError?.[LISTENERS] || this._onError[LISTENERS].size == 0)
-		) {
-			this._deactivate();
-			this._reap?.call(this.context);
-		}
-	}
-
-	protected _activate() {
-		if (this._active) {
-			return;
-		}
-
-		let dependency = this._nextDependency;
-
-		if (dependency) {
-			do {
-				dependency.cell._addDependent(this);
-			} while ((dependency = dependency._nextDependency));
-
-			this._active = true;
-			this._state = CellState.ACTUAL;
-		}
-	}
-
-	protected _deactivate() {
-		let dependency = this._nextDependency;
-
-		if (dependency) {
-			do {
-				dependency.cell._deleteDependent(this);
-			} while ((dependency = dependency._nextDependency));
-
-			this._active = false;
-			this._state = CellState.DIRTY;
-		}
-	}
-
-	protected _onValueChange(evt: IEvent) {
-		this._updateId = ++Cell_CommonState.lastUpdateId;
-
-		this._addToRelease();
-
-		if (this._onChange) {
-			fireEvent(this._onChange, {
-				target: this,
-				type: Cell.EVENT_CHANGE,
-				data: { sourceEvent: evt } as any
-			});
-		}
-	}
-
-	protected _addToRelease() {
-		let directDependents = this._nextDependent;
-
-		if (!directDependents) {
-			return;
-		}
-
-		for (let stack: IDependentList | null = directDependents; ;) {
-			let dependents = stack;
-
-			stack = stack.prevDependents;
-			dependents.prevDependents = null;
-
-			for (
-				let dependent: IDependentList | null = dependents;
-				dependent;
-				dependent = dependent._nextDependent
-			) {
-				let dirty = dependents == directDependents;
-				let { cell } = dependent;
-
-				if (cell._state == CellState.ACTUAL) {
-					cell._state = dirty ? CellState.DIRTY : CellState.CHECK;
-
-					if (cell._nextDependent) {
-						cell._nextDependent.prevDependents = stack;
-						stack = cell._nextDependent;
-
-						if (
-							((cell._onChange?.[LISTENERS] && cell._onChange[LISTENERS].size > 0) ||
-								(cell._onError?.[LISTENERS] && cell._onError[LISTENERS].size > 0)) &&
-							Cell_CommonState.pendingCells.push(cell) == 1
-						) {
-							nextTick(release);
-						}
-					} else {
-						if (Cell_CommonState.pendingCells.push(cell) == 1) {
-							nextTick(release);
-						}
-					}
-				} else if (dirty) {
-					cell._state = CellState.DIRTY;
-				}
-			}
-
-			if (!stack) {
+			if (!(this._flags & Flags.ACTIVE)) {
 				break;
 			}
 		}
 	}
 
-	actualize() {
-		if (Cell_CommonState.transactionStates) {
-			throw Error('Cannot actualize in a transaction');
+	protected _deactivate(): void {
+		for (
+			let dependency = this._nextDependency;
+			dependency;
+			dependency = dependency._nextDependency
+		) {
+			dependency.dependency._deleteDependent(dependency);
 		}
 
-		return this._actualize();
+		this._flags &= ~Flags.ACTIVE;
+		this._scheduleObservation(false);
 	}
 
-	_actualize() {
-		if (this._state == CellState.CHECK) {
-			// eslint-disable-next-line
-			for (let dependency: IDependencyList | null | undefined = this._nextDependency!; ;) {
-				if (dependency.cell._actualize()._error) {
-					this._fail(dependency.cell._error);
-					break;
-				}
+	protected _invalidateDependents(waiting?: ILink): void {
+		let list = this._nextDependent;
 
-				// @ts-expect-error
-				if (this._state == CellState.DIRTY) {
-					this.pull();
-					break;
-				}
+		if (!list || (list === waiting && !list._nextDependent)) {
+			return;
+		}
 
-				if (!(dependency = dependency._nextDependency)) {
-					this._error$?.set(null);
-					this._error = null;
-					this._state = CellState.ACTUAL;
+		for (let stack: ILink | null = null, state = Flags.DIRTY; ;) {
+			let link: ILink | null = list;
 
-					break;
+			do {
+				let node = link.dependent;
+				let flags = node._flags;
+
+				if (
+					flags & Flags.ACTIVE &&
+					(!(flags & Flags.PULLING) ||
+						// Если сейчас выполняется, то считаются только уже прочитанные связи.
+						link.dependentPullVersion === node._pullVersion)
+				) {
+					node._flags = flags | state;
+
+					if (flags & Flags.EFFECT) {
+						enqueueEffect(node);
+					} else if (!(flags & (Flags.PENDING | Flags.DIRTY)) && node._nextDependent) {
+						node._nextDependent.prevDependents = stack;
+						stack = node._nextDependent;
+					}
 				}
+			} while ((link = link._nextDependent));
+
+			if (!stack) {
+				break;
 			}
-		} else if (this._state == CellState.DIRTY) {
-			this.pull();
-		}
 
-		return this;
+			list = stack;
+			stack = list.prevDependents;
+			list.prevDependents = null;
+			state = Flags.PENDING;
+		}
 	}
 
-	get value() {
+	actualize(): this {
+		let prevCell = Cell_runtimeState.currentCell;
+		Cell_runtimeState.currentCell = null;
+
+		try {
+			this._actualize();
+			return this;
+		} finally {
+			Cell_runtimeState.currentCell = prevCell;
+		}
+	}
+
+	_actualize(waiting?: ILink): boolean {
+		if (!this._compute) {
+			return false;
+		}
+
+		let flags = this._flags;
+
+		if (flags & (Flags.CHECKING | Flags.PULLING)) {
+			throw Error('Circular computation');
+		}
+
+		if (
+			!(flags & (Flags.DIRTY | Flags.PENDING)) &&
+			(flags & Flags.ACTIVE || this._globalVersion === Cell_runtimeState.globalVersion)
+		) {
+			return false;
+		}
+
+		this._flags |= Flags.CHECKING;
+
+		try {
+			if (flags & Flags.DIRTY || checkDependencies(this)) {
+				return this._pull(waiting);
+			}
+
+			this._flags &= ~Flags.PENDING;
+			this._globalVersion = Cell_runtimeState.globalVersion;
+
+			return false;
+		} finally {
+			this._flags &= ~Flags.CHECKING;
+		}
+	}
+
+	get value(): Value {
 		return this.get();
 	}
 	set value(value: Value) {
 		this.set(value);
 	}
 
-	get error() {
-		if (Cell_CommonState.transactionStates) {
-			if (!this._initialized) {
-				throw Error('Cannot read an uninitialized cell in a transaction');
-			}
-
-			return this._error;
+	get error(): Error | null {
+		if (Cell_runtimeState.currentCell) {
+			return (this._getRareState().errorCell ??= new ErrorCell(this)).get();
 		}
 
-		if (this._state != CellState.ACTUAL && this._updateId != Cell_CommonState.lastUpdateId) {
-			this._actualize();
-		}
+		this._actualize();
 
-		return Cell_CommonState.currentCell
-			? (this._error$ ?? (this._error$ = new Cell({ value: this._error }))).get()
-			: this._error;
+		return this._error;
 	}
 
 	get(): Value {
-		if (Cell_CommonState.transactionStates) {
-			if (!this._initialized) {
-				throw Error('Cannot read an uninitialized cell in a transaction');
-			}
+		this.track();
 
-			return this._value!;
-		}
-
-		if (this._state != CellState.ACTUAL && this._updateId != Cell_CommonState.lastUpdateId) {
-			this._actualize();
-		}
-
-		let { currentCell } = Cell_CommonState;
-
-		if (currentCell?._dependencyFilter(this)) {
-			let currentDependency = currentCell._currentDependency;
-
-			if (currentDependency) {
-				let dependency = currentDependency._nextDependency;
-
-				if (dependency) {
-					if (dependency.cell == this) {
-						currentCell._currentDependency = dependency;
-						dependency.state = 0;
-					} else {
-						if (currentDependency.cell != this) {
-							for (let prevDependency: IDependencyList; ;) {
-								prevDependency = dependency;
-
-								if ((dependency = dependency._nextDependency)) {
-									if (dependency.cell == this) {
-										prevDependency._nextDependency = dependency._nextDependency;
-										dependency._nextDependency = currentDependency._nextDependency;
-										currentDependency._nextDependency = currentCell._currentDependency = dependency;
-										dependency.state = 0;
-
-										break;
-									}
-								} else {
-									for (
-										dependency = currentCell._nextDependency!;
-										;
-										dependency = dependency._nextDependency!
-									) {
-										if (dependency == currentDependency) {
-											currentDependency._nextDependency = currentCell._currentDependency = {
-												cell: this,
-												_nextDependency: currentDependency._nextDependency,
-												state: 1
-											};
-
-											break;
-										}
-
-										if (dependency.cell == this) {
-											break;
-										}
-									}
-
-									break;
-								}
-							}
-						}
-					}
-				} else {
-					if (currentDependency.cell != this) {
-						for (
-							dependency = currentCell._nextDependency!;
-							;
-							dependency = dependency._nextDependency!
-						) {
-							if (dependency == currentDependency) {
-								currentDependency._nextDependency = currentCell._currentDependency = {
-									cell: this,
-									_nextDependency: null,
-									state: 1
-								};
-
-								break;
-							}
-
-							if (dependency.cell == this) {
-								break;
-							}
-						}
-					}
-				}
-			} else {
-				let dependency = currentCell._nextDependency as IDependencyList | null;
-
-				if (dependency) {
-					if (dependency.cell == this) {
-						currentCell._currentDependency = dependency;
-						dependency.state = 0;
-					} else {
-						for (let prevDependency = dependency; ;) {
-							dependency = dependency._nextDependency;
-
-							if (!dependency) {
-								currentCell._nextDependency = currentCell._currentDependency = {
-									cell: this,
-									_nextDependency: currentCell._nextDependency!,
-									state: 1
-								};
-
-								break;
-							}
-
-							if (dependency.cell == this) {
-								prevDependency._nextDependency = dependency._nextDependency;
-								dependency._nextDependency = currentCell._nextDependency!;
-								currentCell._nextDependency = currentCell._currentDependency = dependency;
-								dependency.state = 0;
-
-								break;
-							}
-
-							prevDependency = dependency;
-						}
-					}
-				} else {
-					currentCell._nextDependency = currentCell._currentDependency = {
-						cell: this,
-						_nextDependency: null,
-						state: 1
-					};
-				}
-			}
-		}
-
-		if (this._error && currentCell) {
+		if (Cell_runtimeState.currentCell && this._error) {
 			throw this._error;
 		}
 
 		return this._value!;
 	}
 
-	pull() {
-		if (!this._pull) {
-			return false;
+	track(): void {
+		if (this._flags !== Flags.ACTIVE) {
+			this._actualize();
 		}
 
-		if (Cell_CommonState.transactionStates) {
-			throw Error('Cannot call a pull in a transaction');
-		}
-
-		if (this._currentlyPulling) {
-			throw Error('Circular pulling');
-		}
-
-		let dependency = this._nextDependency;
-
-		if (dependency) {
-			do {
-				dependency.state = -1;
-			} while ((dependency = dependency._nextDependency));
-		} else if (dependency === undefined) {
-			this._nextDependency = null;
-		}
-
-		this._currentlyPulling = true;
-
-		let prevCell = Cell_CommonState.currentCell;
-		Cell_CommonState.currentCell = this;
-
-		let value: any;
-
-		$error = null;
-
-		try {
-			value = this._bound
-				? this._pull.call(this.context, this, this._value)
-				: (this._pull as Function).call(this.context);
-
-			if (isPromiseLike(value)) {
-				value.then(
-					(value) => this._push(value),
-					(err) => this._fail(err)
-				);
-
-				$error = { error: new WaitError() };
-			}
-		} catch (err) {
-			$error = { error: err };
-		}
-
-		Cell_CommonState.currentCell = prevCell;
-
-		this._currentlyPulling = false;
-
-		this._currentDependency = null;
+		let node = Cell_runtimeState.currentCell;
 
 		if (
-			this._nextDependent ||
-			(this._onChange?.[LISTENERS] && this._onChange[LISTENERS].size > 0) ||
-			(this._onError?.[LISTENERS] && this._onError[LISTENERS].size > 0)
+			!node ||
+			(node._flags & Flags.EFFECT && !(node._flags & Flags.ACTIVE)) ||
+			(node._dependencyFilter
+				? !node._dependencyFilter(this)
+				: node === Cell_runtimeState.untrackedCell)
 		) {
-			for (
-				let holder = this as unknown as IDependencyList, dependency = this._nextDependency;
-				dependency;
-			) {
-				if (dependency.state == -1) {
-					dependency.cell._deleteDependent(this);
-					dependency = holder._nextDependency = dependency._nextDependency;
-				} else {
-					if (dependency.state == 1) {
-						// dependency.state = 0;
-						dependency.cell._addDependent(this);
-					}
+			return;
+		}
 
-					holder = dependency;
-					dependency = dependency._nextDependency;
+		let current = node._currentDependency;
+		let next = (current ?? node)._nextDependency;
+
+		if (next?.dependency === this) {
+			next.dependencyVersion = this._version;
+			next.dependentPullVersion = node._pullVersion;
+			node._currentDependency = next;
+		} else if (current?.dependency !== this) {
+			let link = this._lastDependent;
+
+			if (link?.dependent !== node) {
+				link =
+					(current ?? node)._nextDependency =
+					node._currentDependency =
+						createLink(this, current, next, node);
+
+				if (next) {
+					next._prevDependency = link;
 				}
-			}
 
-			if (this._nextDependency) {
-				// state = ACTUAL проставится в push() или fail()
-				this._active = true;
-			} else {
-				this._active = false;
-				this._state = CellState.ACTUAL;
+				if (node._flags & Flags.ACTIVE) {
+					this._addDependent(link);
+				}
+			} else if (
+				// Связь ещё не была прочитана в этом выполнении.
+				link.dependentPullVersion !== node._pullVersion
+			) {
+				this._moveDependency(link, node, current, next);
 			}
-		} else {
-			this._state = this._nextDependency ? CellState.DIRTY : CellState.ACTUAL;
 		}
 
-		return $error ? this._fail($error.error, true) : this._push(value, true);
+		if (this._flags & (Flags.PENDING | Flags.DIRTY)) {
+			this._invalidateDependents();
+		}
 	}
 
-	set(value: Value) {
-		if (!this._writable) {
-			throw Error('Cannot write to a non-writable cell');
+	protected _moveDependency(
+		link: ILink,
+		node: IReactiveNode,
+		current: ILink | null,
+		next: ILink | null
+	): void {
+		(link._prevDependency ?? node)._nextDependency = link._nextDependency;
+
+		if (link._nextDependency) {
+			link._nextDependency._prevDependency = link._prevDependency;
 		}
 
-		if (!this._initialized) {
-			// Не инициализированная ячейка не может иметь State.CHECK, поэтому сразу pull вместо
-			// actualize.
-			this.pull();
+		link._prevDependency = current;
+		link._nextDependency = next;
+		link.dependencyVersion = this._version;
+		link.dependentPullVersion = node._pullVersion;
+		(current ?? node)._nextDependency = node._currentDependency = link;
+
+		if (next) {
+			next._prevDependency = link;
 		}
-
-		this._validateValue?.(value, this._value);
-
-		if (this._put) {
-			if (!this._bound) {
-				this.push = this.push.bind(this);
-				this.fail = this.fail.bind(this);
-
-				this._bound = true;
-			}
-
-			if (this._put.length >= 3) {
-				this._put.call(this.context, this, value, this._value);
-			} else {
-				(this._put as Function).call(this.context, this, value);
-			}
-		} else {
-			this._push(value);
-		}
-
-		return this;
 	}
 
-	push(value: Value) {
-		if (Cell_CommonState.transactionStates) {
-			throw Error('Cannot call a push in a transaction');
+	pull(): boolean {
+		if (!this._compute) {
+			return false;
+		}
+		if (this._flags & (Flags.CHECKING | Flags.PULLING)) {
+			throw Error('Circular computation');
 		}
 
-		return this._push(value);
+		let prevCell = Cell_runtimeState.currentCell;
+		Cell_runtimeState.currentCell = null;
+
+		this._flags |= Flags.CHECKING;
+
+		let value = this._value;
+
+		try {
+			if (this._pull()) {
+				this._globalVersion = ++Cell_runtimeState.globalVersion;
+			}
+
+			return this._error ? this._error instanceof WaitError : this._value !== value;
+		} finally {
+			this._flags &= ~Flags.CHECKING;
+			Cell_runtimeState.currentCell = prevCell;
+		}
 	}
 
-	_push(value: Value, fromPull?: boolean) {
-		this._initialized = true;
+	protected _pull(waiting?: ILink): boolean {
+		let { currentCell: prevCell, globalVersion } = Cell_runtimeState;
 
-		let prevValue = this._value;
-		let err = this._error;
+		Cell_runtimeState.pulling++;
+		Cell_runtimeState.currentCell = this;
 
-		if (Cell_CommonState.transactionStates && !Cell_CommonState.transactionStates.has(this)) {
-			Cell_CommonState.transactionStates.set(this, {
-				value: prevValue,
-				error: err,
-				state: this._state,
-				updateId: this._updateId
-			});
-		}
+		this._pullVersion++;
+		this._flags = (this._flags & ~(Flags.PENDING | Flags.DIRTY)) | Flags.PULLING;
 
-		let changed = !this._compareValues(value, prevValue);
+		let value = this._value;
+		let error: Error | null = null;
+		let pullId = this._async ? ++this._pullId : 0;
 
-		if (changed) {
-			this._value = value;
+		try {
+			let result = this._compute!.call(this.context, value);
 
-			if (isEventEmitterLike(prevValue)) {
-				prevValue.off('change', this._onValueChange, this);
-			}
-			if (isEventEmitterLike(value)) {
-				value.on('change', this._onValueChange, this);
-			}
-		}
+			if (this._async && isPromiseLike(result)) {
+				Promise.resolve(result).then(
+					(value) => {
+						if (pullId > this._appliedPullId) {
+							this._appliedPullId = pullId;
+							this._globalVersion = ++Cell_runtimeState.globalVersion;
+							this._flags &= ~(Flags.PENDING | Flags.DIRTY);
+							this._publish(value, null);
+						}
+					},
+					(err) => {
+						if (pullId > this._appliedPullId) {
+							if (!(err instanceof WaitError)) {
+								this._appliedPullId = pullId;
+							}
 
-		if (err) {
-			this._error$?.set(null);
-			this._error = null;
-		}
+							this._globalVersion = ++Cell_runtimeState.globalVersion;
+							this._flags &= ~(Flags.PENDING | Flags.DIRTY);
+							this._publish(value, err);
 
-		if (this._active) {
-			this._state = CellState.ACTUAL;
-		}
-
-		this._updateId = fromPull ? Cell_CommonState.lastUpdateId : ++Cell_CommonState.lastUpdateId;
-
-		if (changed) {
-			this._addToRelease();
-
-			if (!Cell_CommonState.transactionStates && this._onChange) {
-				fireEvent(this._onChange, {
-					target: this,
-					type: Cell.EVENT_CHANGE,
-					data: {
-						value,
-						prevValue
+							if (!(err instanceof WaitError)) {
+								config.logError(err);
+							}
+						}
 					}
-				});
+				);
+				error = WaitError.instance;
+			} else {
+				value = result as Value;
 			}
+		} catch (err) {
+			error = err instanceof Error ? err : Error(err === undefined ? undefined : String(err));
+		} finally {
+			this._flags &= ~Flags.PULLING;
+			Cell_runtimeState.currentCell = prevCell;
+			Cell_runtimeState.pulling--;
+			trimDependencies(this);
+		}
+
+		if (globalVersion !== (this._globalVersion = Cell_runtimeState.globalVersion)) {
+			this._flags |= Flags.PENDING;
+		}
+
+		if (this._async && !(error instanceof WaitError)) {
+			this._appliedPullId = pullId;
+		}
+
+		let changed = this._publish(value, error, waiting);
+
+		if (error && !(error instanceof WaitError) && this._async) {
+			config.logError(error);
 		}
 
 		return changed;
 	}
 
-	fail(err: any) {
-		if (Cell_CommonState.transactionStates) {
-			throw Error('Cannot call a fail in a transaction');
+	protected _publish(value: Value | undefined, error: Error | null, waiting?: ILink): boolean {
+		let errorChanged = error !== this._error;
+
+		if (error ? !errorChanged : !errorChanged && value === this._value) {
+			return false;
 		}
 
-		return this._fail(err);
+		this._value = value;
+		this._error = error;
+		this._version++;
+
+		if (errorChanged) {
+			this._rareState?.errorCell?._push(error);
+		}
+
+		this._invalidateDependents(waiting);
+
+		return true;
 	}
 
-	_fail(err: any, fromPull?: boolean) {
-		this._initialized = true;
-
-		if (!(err instanceof Error)) {
-			err = Error(err);
+	set(value: Value): this {
+		if (this._compute && !this._put) {
+			throw Error('Cannot write to a computed cell');
 		}
 
-		this._error$?.set(err);
-		this._error = err;
+		this._assertValue?.(value, this._value);
 
-		if (this._active) {
-			this._state = CellState.ACTUAL;
+		if (this._compute) {
+			this._put!.call(this.context, value, this._value);
+		} else if (value !== this._value) {
+			Cell_runtimeState.globalVersion++;
+			this._value = value;
+			this._version++;
+			this._invalidateDependents();
 		}
-
-		this._updateId = fromPull ? Cell_CommonState.lastUpdateId : ++Cell_CommonState.lastUpdateId;
-
-		let isWaitError = err instanceof WaitError;
-
-		if (!isWaitError && $error) {
-			$error = null;
-
-			if (this.meta?.['id'] !== undefined) {
-				config.logError(`[${this.meta?.['id']}]`, err);
-			} else {
-				config.logError(err);
-			}
-		}
-
-		err[KEY_ERROR_EVENT] ??= {
-			target: this,
-			type: Cell.EVENT_ERROR,
-			data: { error: err }
-		};
-
-		if (this._onError) {
-			fireEvent(this._onError, err[KEY_ERROR_EVENT]);
-		}
-
-		return isWaitError;
-	}
-
-	wait(): never {
-		throw new WaitError();
-	}
-
-	reap() {
-		for (let dependent = this._nextDependent; dependent; dependent = dependent._nextDependent) {
-			dependent.cell.reap();
-		}
-
-		this._error$?.reap();
-
-		this._onChange?.[LISTENERS]?.clear();
-		this._onError?.[LISTENERS]?.clear();
-
-		this._deactivate();
-		this._reap?.call(this.context);
 
 		return this;
 	}
 
-	dispose() {
-		return this.reap();
+	disconnect(): this {
+		while (this._nextDependent) {
+			this._nextDependent.dependent.disconnect();
+		}
+
+		this._rareState?.errorCell?.disconnect();
+
+		if (this._flags & Flags.ACTIVE) {
+			this._deactivate();
+		}
+
+		this._scheduleObservation(false);
+
+		return this;
+	}
+}
+
+class ErrorCell extends Cell<Error | null> {
+	declare _nextDependency: ILink;
+
+	constructor(owner: Cell) {
+		super(owner._error);
+		this._nextDependency = createLink(owner, null, null, this);
+	}
+
+	override _actualize(): boolean {
+		if (this._flags & Flags.CHECKING) {
+			throw Error('Circular computation');
+		}
+
+		let version = this._version;
+		let owner = this._nextDependency.dependency;
+
+		this._flags |= Flags.CHECKING;
+
+		try {
+			owner._actualize(this._nextDependency);
+			this._nextDependency.dependencyVersion = owner._version;
+			this._globalVersion = Cell_runtimeState.globalVersion;
+			this._flags &= ~(Flags.PENDING | Flags.DIRTY);
+
+			if (owner._flags & (Flags.PENDING | Flags.DIRTY)) {
+				this._flags |= Flags.PENDING;
+			}
+
+			return this._version !== version;
+		} finally {
+			this._flags &= ~Flags.CHECKING;
+		}
+	}
+
+	_push(value: Error | null): void {
+		if (value !== this._value) {
+			this._value = value;
+			this._version++;
+			this._invalidateDependents();
+		}
 	}
 }

@@ -47,7 +47,7 @@ const user = {
 };
 ```
 
-Здесь пока значение `firstName$` неопределено, ячейка `displayName$` подписана и на `firstName$` и на `lastName$`, так как изменение любого из них приведёт к изменению её значения. Если же задать ячейке `firstName$` какое-то not-nullable значение, то, при перевычислении значения `displayName$`, чтение `lastName$` в формуле уже не произойдёт, то есть значение ячейки `displayName$` с этого момента уже никак не зависит от `lastName$`. В таких случаях ячейки автоматически отписываются от незначимых для них зависимостей и не перевычисляются при их изменении. В дальнейшем, если `firstName$` снова получит nullable значение, ячейка `displayName$` вновь подпишется на `lastName$`.
+Когда значение `firstName$` равно `null` или `undefined`, при вычислении `displayName$` читаются обе ячейки: `firstName$` и `lastName$`. Если задать `firstName$` значение, отличное от `null` и `undefined`, при следующем вычислении `lastName$` уже не будет прочитана и перестанет быть зависимостью `displayName$`. cellx автоматически исключает зависимости, которые больше не читаются, поэтому их изменения не вызывают перевычисление. Если `firstName$` снова получит значение `null` или `undefined`, `lastName$` вновь станет зависимостью.
 
 ## Использование
 
@@ -58,17 +58,15 @@ const user = {
 ```typescript
 const num$ = cellx(5);
 
-num$.onChange((evt) => {
-    console.log(evt.data);
+const dispose = num$.onChange((value) => {
+    console.log(value);
 });
 
 num$.value = 10;
-// => { value: 10, prevValue: 5 }
+// => 10
+
+dispose(); // Снять обработчик изменения.
 ```
-
-### Метод Cell#offChange()
-
-Снимает ранее добавленный обработчик изменения.
 
 ### Метод Cell#onError()
 
@@ -78,61 +76,19 @@ num$.value = 10;
 const name$ = cellx('Матроскин');
 const upperName$ = cellx(() => name$.value.toUpperCase());
 
-upperName$.onError((evt) => {
-    console.log(evt.data.error.message);
+const dispose = upperName$.onError((err) => {
+    console.log(err.message);
 });
 
 name$.value = 5;
 // => 'name$.value.toUpperCase is not a function'
 ```
 
-### Метод Cell#offError()
+### Метод Cell#disconnect()
 
-Снимает ранее добавленный обработчик ошибок.
-
-### Метод Cell#subscribe()
-
-Подписывает на события `change` и `error`. В обработчик первым аргументом приходит объект ошибки, вторым — событие.
-
-```typescript
-fullName$.subscribe((err, evt) => {
-    if (err) {
-        //
-    } else {
-        //
-    }
-});
-```
-
-### Метод Cell#unsubscribe()
-
-Отписывает от событий `change` и `error`.
-
-### define()
-
-Делает свойства объекта реактивными.  
-Подписаться на такие свойства можно используя `reaction()` и `autorun()` (см. далее).
-
-```typescript
-import { cellx, define } from 'cellx';
-
-class User {
-    name: string;
-    upperName: string;
-
-    constructor(name: string) {
-        define(this, {
-            name,
-            upperName: cellx(() => this.name.toUpperCase())
-        });
-    }
-}
-
-const user = new User('Матроскин');
-
-console.log(user.upperName);
-// => 'MАТРОСКИН'
-```
+Снимает собственные обработчики `change` и `error` ячейки и рекурсивно отключает
+зависимые ячейки. Обработчики `observed` и `unobserved` сохраняются. Это не
+окончательное уничтожение: ячейку можно использовать снова.
 
 ### Опция Cell[context]
 
@@ -143,17 +99,37 @@ const context = 5;
 const name$ = cellx('Матроскин');
 const upperName$ = cellx(function () {
     console.log(this);
-	// => 5
+    // => 5
 
     return name$.value.toUpperCase();
 }, { context });
 
 upperName$.onChange(function () {
     console.log(this);
-	// => 5
+    // => 5
 });
 
 name$.value = 'Шарик';
+```
+
+### effect()
+
+Сразу запускает функцию, отслеживает прочитанные ею ячейки и повторно запускает её при изменении этих зависимостей.
+
+```typescript
+const firstName$ = cellx('Матроскин');
+const lastName$ = cellx('Кот');
+
+const dispose = effect(() => {
+    console.log(firstName$.value + ' ' + lastName$.value);
+});
+// => 'Матроскин Кот'
+
+lastName$.value = 'Пёс';
+release();
+// => 'Матроскин Пёс'
+
+dispose();
 ```
 
 ### reaction()
@@ -174,22 +150,10 @@ const dispose = reaction(() => name$.value, (name) => {
 });
 ```
 
-### autorun()
-
-Регистрирует функцию, которая будет запускаться каждый раз, когда изменяется что-либо, за чем она наблюдает. Она также запускается один раз, когда создаётся сам автозапуск.
-
-```typescript
-const name$ = cellx('Матроскин');
-
-const dispose = autorun(() => {
-    console.log(name$.value);
-});
-```
-
 ### Опция Cell[dependencyFilter]
 
 Устанавливает функцию для фильтрации найденных зависимостей.  
-По умолчанию используется `DependencyFilter.allExpectUntracked`.
+По умолчанию отслеживаются все чтения вне `untracked()`.
 
 ```typescript
 const TRACKED = Symbol('tracked');
@@ -211,7 +175,7 @@ lastName$.value = 'Пёс';
 
 console.log(fullName$.value);
 // => 'Матроскин Кот'
-// Перевычисление fullName$ не произошло, тк. lastName$ не определилися как его записимость.
+// fullName$ не пересчиталась, так как lastName$ не отслеживается как его зависимость.
 
 firstName$.value = 'Шарик';
 // => 'Шарик Пёс'
@@ -235,7 +199,7 @@ lastName$.value = 'Пёс';
 
 console.log(fullName$.value);
 // => 'Матроскин Кот'
-// Перевычисление fullName$ не произошло, тк. lastName$ не определилися как его записимость.
+// fullName$ не пересчиталась, так как lastName$ не отслеживается как его зависимость.
 
 firstName$.value = 'Шарик';
 // => 'Шарик Пёс'
@@ -243,8 +207,7 @@ firstName$.value = 'Шарик';
 
 ### tracked()
 
-Запускает фрагмент кода в котором прочитанные ячейки определяются как зависимости.  
-Используется в сочетании с опцией `Cell[dependencyFilter]`.
+Запускает фрагмент кода в котором прочитанные ячейки определяются как зависимости.  Используется с `DependencyFilter.onlyTracked` в опции `Cell[dependencyFilter]`.
 
 ```typescript
 const firstName$ = cellx('Матроскин');
@@ -262,35 +225,28 @@ lastName$.value = 'Пёс';
 
 console.log(fullName$.value);
 // => 'Матроскин Кот'
-// Перевычисление fullName$ не произошло, тк. lastName$ не определилися как его записимость.
+// fullName$ не пересчиталась, так как lastName$ не отслеживается как его зависимость.
 
 firstName$.value = 'Шарик';
 // => 'Шарик Пёс'
 ```
 
-### Опция Cell[meta]
+### Опция Cell[assertValue]
 
-Любая дополнительная информация для ячейки.
+Проверяет пользовательский ввод на двух границах: начальное значение, переданное
+конструктору, и значение, переданное в `set()` (в том числе присваиванием через
+`.value`).
 
-```typescript
-const name$ = cellx('Матроскин', {
-    meta: { id: 'name' }
-});
-
-console.log(name$.meta.id);
-// => 'name'
-```
-
-### Опция Cell[validate]
-
-Проверяет значение при записи и вычислении.
+У вычисляемой ячейки проверяется явно заданное начальное значение (`options.value`).
+Если начального значения нет, при создании проверка пропускается. У обычной ячейки
+начальное значение проверяется, даже если оно равно `undefined`.
 
 Валидация при записи в ячейку:
 
 ```typescript
 const num$ = cellx(5, {
-    validate: (value) => {
-        if (typeof value != 'number') {
+    assertValue: (value) => {
+        if (typeof value !== 'number') {
             throw TypeError('Must be a number');
         }
     }
@@ -307,32 +263,6 @@ console.log(num$.value);
 // => 5
 ```
 
-Валидация при вычислении ячейки:
-
-```typescript
-const someValue$ = cellx(5);
-
-const num$ = cellx(() => someValue$.value, {
-    validate: (value) => {
-        if (typeof value != 'number') {
-            throw TypeError('Must be a number');
-        }
-    }
-});
-
-num$.onError((err) => {
-    console.log(err.message);
-});
-
-someValue$.value = 'строка';
-// => 'Must be a number'
-
-console.log(someValue$.value);
-// => 'строка'
-console.log(num$.value);
-// => 5
-```
-
 ### Опция Cell[put]
 
 Может использоваться для обработки значения при записи и перенаправления записи.
@@ -345,8 +275,8 @@ class User {
     fullName$ = cellx(
         () => (this.firstName$.value + ' ' + this.lastName$.value).trim(),
         {
-            put: (nextValue) => {
-				[this.firstName$.value, this.lastName$.value] = nextValue.split(' ');
+            put: (_cell, nextValue) => {
+                [this.firstName$.value, this.lastName$.value] = nextValue.split(' ');
             }
         }
     );
@@ -420,4 +350,22 @@ console.log(foo$.value);
 
 // => 'foo$.value: 1'
 // => 'foo$.value: 5'
+```
+
+### Опция Cell[async]
+
+По умолчанию Promise, возвращённый формулой ячейки, считается обычным значением. Укажите `async: true`, чтобы ячейка ожидала Promise и публиковала результат его выполнения. Во время ожидания ячейка содержит `WaitError`.
+
+```typescript
+const promise$ = cellx(() => Promise.resolve(42));
+console.log(promise$.value instanceof Promise);
+// => true
+
+const value$ = cellx(() => Promise.resolve(42), { async: true });
+console.log(value$.value);
+// => undefined
+
+await Promise.resolve();
+console.log(value$.value);
+// => 42
 ```

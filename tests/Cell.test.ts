@@ -1,8 +1,16 @@
 import { describe, expect, test } from '@jest/globals';
-import { Cell, CellState, cellx, configure, release } from '../src/cellx';
-import { EventEmitter } from './EventEmitter';
+import { Flags } from '../src/Cell';
+import { Cell, WaitError, cellx, effect, release } from '../src/cellx';
 
-configure({ logError: () => {} });
+function expectDependencyOrder(cell: Cell, expected: Array<Cell>) {
+	let dependencies: Cell[] = [];
+
+	for (let link = cell._nextDependency; link; link = link._nextDependency) {
+		dependencies.push(link.dependency);
+	}
+
+	expect(dependencies).toEqual(expected);
+}
 
 afterEach(() => {
 	release();
@@ -63,27 +71,26 @@ describe('Cell', () => {
 	});
 
 	describe('events', () => {
-		test('событие change', (done) => {
-			let a$ = cellx(1, {
-				onChange() {
-					expect(a$.value).toBe(2);
-					done();
-				}
-			});
+		test('событие change', () => {
+			let onChange = jest.fn();
+			let a$ = cellx(1, { onChange });
 
 			a$.value = 2;
+			release();
+
+			expect(onChange.mock.calls).toEqual([[2]]);
 		});
 
-		test('событие change вычисляемой ячейки', (done) => {
+		test('событие change вычисляемой ячейки', () => {
 			let a$ = cellx(1);
-			let b$ = cellx(() => a$.value + 1, {
-				onChange() {
-					expect(b$.value).toBe(3);
-					done();
-				}
-			});
+			let onChange = jest.fn();
+
+			cellx(() => a$.value + 1, { onChange });
 
 			a$.value = 2;
+			release();
+
+			expect(onChange.mock.calls).toEqual([[3]]);
 		});
 
 		test('нет события change при установке значения равного текущему', () => {
@@ -116,8 +123,7 @@ describe('Cell', () => {
 
 			let onChange = jest.fn();
 
-			b$.onChange(onChange);
-			b$.offChange(onChange);
+			b$.onChange(onChange)();
 
 			a$.value = 2;
 			b$.onChange(onChange);
@@ -125,31 +131,6 @@ describe('Cell', () => {
 
 			expect(b$.value).toBe(2);
 			expect(onChange.mock.calls.length).toBe(0);
-		});
-
-		test('EventEmitter в качестве значения', () => {
-			let emitter = new EventEmitter();
-			let onChange = jest.fn();
-
-			cellx(emitter, { onChange });
-
-			emitter.emit('change');
-			release();
-
-			expect(onChange.mock.calls.length).toBe(1);
-		});
-
-		test('EventEmitter в качестве значения (2)', () => {
-			let emitter = new EventEmitter();
-			let onChange = jest.fn();
-			let a$ = cellx(emitter);
-
-			cellx(() => a$.value, { onChange });
-
-			emitter.emit('change');
-			release();
-
-			expect(onChange.mock.calls.length).toBe(1);
 		});
 	});
 
@@ -188,12 +169,12 @@ describe('Cell', () => {
 		});
 
 		test('одно вычисление при изменении нескольких зависимостей (3)', () => {
-			let a$ = cellx(1, { meta: { name: 'a' } });
-			let b$ = cellx(2, { meta: { name: 'b' } });
-			let a2$ = cellx(() => a$.value + 1, { meta: { name: 'a2' } });
-			let b2$ = cellx(() => b$.value + 1, { meta: { name: 'b2' } });
+			let a$ = cellx(1);
+			let b$ = cellx(2);
+			let a2$ = cellx(() => a$.value + 1);
+			let b2$ = cellx(() => b$.value + 1);
 			let pullC$ = jest.fn(() => a2$.value + b2$.value);
-			let c$ = cellx(pullC$, { meta: { name: 'c' }, onChange() {} });
+			let c$ = cellx(pullC$, { onChange() {} });
 
 			c$;
 
@@ -206,78 +187,7 @@ describe('Cell', () => {
 			expect(pullC$.mock.calls.length).toBe(1);
 		});
 
-		test('запись в неинициализированную ячейку отменяет pull', () => {
-			let a$ = cellx(() => 1, { writable: true });
-			a$.value = 5;
-			expect(a$.value).toBe(5);
-		});
-
-		test('запись в неинициализированную ячейку отменяет pull (2)', () => {
-			let a$ = cellx(() => 1, { writable: true });
-
-			a$.value = 5;
-			a$.on(Cell.EVENT_CHANGE, () => {});
-
-			expect(a$.value).toBe(5);
-		});
-
-		test('последняя запись более приоритетная', () => {
-			let a$ = cellx(1);
-			let b$ = cellx(() => a$.value + 1, { writable: true });
-			let c$ = cellx(() => b$.value + 1, { onChange() {} });
-
-			a$.value = 2;
-			b$.value = 4;
-
-			expect(c$.value).toBe(5);
-		});
-
-		test('последняя запись более приоритетная (2)', () => {
-			let a$ = cellx(1);
-			let b$ = cellx(() => a$.value + 1, { writable: true });
-			let c$ = cellx(() => b$.value + 1, { onChange() {} });
-
-			b$.value = 4;
-			a$.value = 2;
-
-			expect(c$.value).toBe(4);
-		});
-
-		test('запись в активную ячейку и последующее изменение её зависимости', (done) => {
-			let a$ = cellx(1);
-			let b$ = cellx(
-				(cell, value) => {
-					if (a$.value == 2) {
-						expect(value).toBe(5);
-					}
-
-					return a$.value;
-				},
-				{
-					writable: true,
-					onChange(evt) {
-						if (evt.data.value == 2) {
-							expect(evt.data).toEqual({
-								value: 2,
-								prevValue: 5
-							});
-
-							done();
-						} else {
-							expect(evt.data).toEqual({
-								value: 5,
-								prevValue: 1
-							});
-						}
-					}
-				}
-			);
-
-			b$.value = 5;
-			a$.value = 2;
-		});
-
-		test('подключаемая, неактивная ячейка получает state == actual', () => {
+		test('подключаемая, неактивная ячейка получает state == clean', () => {
 			let a$ = cellx(true);
 			let b$ = cellx(() => 1);
 			let c$ = cellx(() => b$.value);
@@ -287,10 +197,10 @@ describe('Cell', () => {
 			a$.value = false;
 			release();
 
-			expect(c$.state).toBe(CellState.ACTUAL);
+			expect(c$._flags & (Flags.PENDING | Flags.DIRTY)).toBe(0);
 		});
 
-		test('вычисляемая ячейка лишаясь всех зависимостей получает state == actual', () => {
+		test('вычисляемая ячейка лишаясь всех зависимостей получает state == clean', () => {
 			let a$ = cellx(1);
 
 			let t = 0;
@@ -312,16 +222,16 @@ describe('Cell', () => {
 			} catch {}
 
 			expect(t).toBe(2);
-			expect(b$.state).toBe(CellState.ACTUAL);
+			expect(b$._flags & (Flags.PENDING | Flags.DIRTY)).toBe(0);
 			expect(b$.value).toBe(2);
 		});
 
-		test('запись в родительскую ячейку в pull', () => {
+		test('запись в родительскую ячейку в compute', () => {
 			let a$ = cellx(1);
 			let b$ = cellx(() => a$.value + 1);
 			let c$ = cellx(
 				() => {
-					if (b$.value == 3) {
+					if (b$.value === 3) {
 						a$.value = 10;
 					}
 
@@ -339,7 +249,7 @@ describe('Cell', () => {
 			let a$ = cellx(1);
 			let b$ = cellx(() => a$.value + 1);
 			let c$ = cellx(() => {
-				if (b$.value == 3) {
+				if (b$.value === 3) {
 					a$.value = 10;
 				}
 
@@ -351,29 +261,10 @@ describe('Cell', () => {
 			expect(c$.value).toBe(12);
 		});
 
-		test('запись в родительскую ячейку в pull (2)', () => {
-			let a$ = cellx(1);
-			let b$ = cellx(() => a$.value + 1);
-			let c$ = cellx(
-				() => {
-					if (b$.value == 3) {
-						a$.value = 10;
-					}
-
-					return b$.value + 1;
-				},
-				{ onChange: () => {} }
-			);
-
-			a$.value = 2;
-
-			expect(c$.value).toBe(12);
-		});
-
 		test('pull при чтении error', () => {
 			let a$ = cellx(0);
 			let b$ = cellx(() => {
-				if (a$.value == 1) {
+				if (a$.value === 1) {
 					throw 1;
 				}
 
@@ -390,7 +281,7 @@ describe('Cell', () => {
 		test('pull при чтении error (пассивный режим)', () => {
 			let a$ = cellx(0);
 			let b$ = cellx(() => {
-				if (a$.value == 1) {
+				if (a$.value === 1) {
 					throw 1;
 				}
 
@@ -407,7 +298,7 @@ describe('Cell', () => {
 			let d$OnError = jest.fn();
 			let a$ = cellx(0);
 			let b$ = cellx(() => {
-				if (a$.value == 1) {
+				if (a$.value === 1) {
 					throw 1;
 				}
 
@@ -439,7 +330,7 @@ describe('Cell', () => {
 		test('событие error (2)', () => {
 			let a$ = cellx(0);
 			let b$ = cellx(() => {
-				if (a$.value == 1) {
+				if (a$.value === 1) {
 					throw 1;
 				}
 
@@ -478,33 +369,28 @@ describe('Cell', () => {
 		});
 
 		test('меняется порядок зависимостей на обратный', () => {
-			let a$ = cellx(0, { meta: { name: 'a' } });
-			let b$ = cellx(0, { meta: { name: 'b' } });
-			let c$ = cellx(0, { meta: { name: 'c' } });
-			let d$ = cellx(() => (a$.value % 2 == 0 ? [b$.value, c$.value] : [c$.value, b$.value]), {
-				meta: { name: 'd' },
+			let a$ = cellx(0);
+			let b$ = cellx(0);
+			let c$ = cellx(0);
+			let d$ = cellx(() => (a$.value % 2 === 0 ? [b$.value, c$.value] : [c$.value, b$.value]), {
 				onChange: () => {}
 			});
 
-			expect(d$.getDependencies().map((cell) => cell.meta.name)).toEqual(
-				[a$, b$, c$].map((cell) => cell.meta.name)
-			);
+			expectDependencyOrder(d$, [a$, b$, c$]);
 
 			a$.value = 1;
 			release();
 
-			expect(d$.getDependencies().map((cell) => cell.meta.name)).toEqual(
-				[a$, c$, b$].map((cell) => cell.meta.name)
-			);
+			expectDependencyOrder(d$, [a$, c$, b$]);
 		});
 
 		test('рандомно меняется список зависимостей', () => {
-			let a$ = cellx(0, { meta: { name: 'a' } });
-			let b$ = cellx(0, { meta: { name: 'b' } });
-			let c$ = cellx(0, { meta: { name: 'c' } });
-			let d$ = cellx(0, { meta: { name: 'd' } });
-			let e$ = cellx(0, { meta: { name: 'e' } });
-			let f$ = cellx(0, { meta: { name: 'f' } });
+			let a$ = cellx(0);
+			let b$ = cellx(0);
+			let c$ = cellx(0);
+			let d$ = cellx(0);
+			let e$ = cellx(0);
+			let f$ = cellx(0);
 			let dependencies = [b$, c$, d$, e$, f$];
 			let randomizedDependencies!: Array<Cell>;
 			let x$ = cellx(
@@ -517,18 +403,13 @@ describe('Cell', () => {
 						dependency.value;
 					}
 				},
-				{
-					meta: { name: 'x' },
-					onChange: () => {}
-				}
+				{ onChange: () => {} }
 			);
 
 			for (let i = 0; ;) {
-				expect(x$.getDependencies().map((cell) => cell.meta.name)).toEqual(
-					randomizedDependencies.map((cell) => cell.meta.name)
-				);
+				expectDependencyOrder(x$, randomizedDependencies);
 
-				if (++i == 300) {
+				if (++i === 300) {
 					break;
 				}
 
@@ -536,50 +417,165 @@ describe('Cell', () => {
 				release();
 			}
 		});
+
+		test('не остаётся активной после потери наблюдателей при разрыве цикла', () => {
+			let phase = 0;
+			let x$ = cellx(10);
+			let a$: Cell<number> = cellx(() => (phase === 0 ? 1 : phase === 1 ? b$.get() : x$.get()));
+			let b$ = cellx(() => a$.get() + 1);
+			let onChangeDisposer = b$.onChange(() => {});
+
+			(x$ as any)['NAME'] = 'x';
+			(a$ as any)['NAME'] = 'a';
+			(b$ as any)['NAME'] = 'b';
+
+			// Оставляем a$ и b$ наблюдать друг друга без внешней подписки.
+			phase = 1;
+			a$.pull();
+			// Удаление внешнего listener b$ не разрывает цикл.
+			onChangeDisposer();
+
+			phase = 2;
+			a$.pull();
+			release();
+
+			expect(a$._flags & Flags.ACTIVE).toBe(0);
+			expect(b$._flags & Flags.ACTIVE).toBe(0);
+			expect(a$._nextDependent).toBeNull();
+			expect(b$._nextDependent).toBeNull();
+			expect(x$._nextDependent).toBeNull();
+
+			x$.set(20);
+
+			expect(a$.get()).toBe(20);
+		});
+
+		test('пассивный наблюдатель ошибки замечает её изменение после проверки неизменившейся ошибки', () => {
+			let a$ = cellx(0);
+			let err = Error('failure');
+			let b$ = cellx(() => {
+				if (a$.value === 2) {
+					throw err;
+				}
+
+				return 1;
+			});
+			let c$Pulls = 0;
+			let c$ = cellx(() => {
+				c$Pulls++;
+				return b$.error;
+			});
+
+			expect(c$.value).toBeNull();
+			expect(c$Pulls).toBe(1);
+
+			a$.value = 1;
+			expect(c$.value).toBeNull();
+			expect(c$Pulls).toBe(1);
+
+			a$.value = 2;
+			expect(c$.value).toBe(err);
+			expect(c$.error).toBeNull();
+			expect(c$Pulls).toBe(2);
+		});
+
+		// Демонстрирует, зачем в текущем checkDependencies() нужен повторный проход по зависимостям при изменении globalVersion.
+		test('запись из B повторно проверяет уже проверенную A', () => {
+			let source$ = new Cell(0);
+			let trigger$ = new Cell(0);
+			let a$ = new Cell(() => source$.get());
+
+			let b$ = new Cell(() => {
+				if (trigger$.get() === 1) {
+					source$.set(1);
+				}
+
+				return 0;
+			});
+
+			let c$ = new Cell(() => a$.get() + b$.get(), { onChange: () => {} });
+
+			expect(c$.get()).toBe(0);
+
+			trigger$.set(1);
+
+			expect(source$.get()).toBe(0);
+			expect(a$.get()).toBe(0);
+			expect(c$.get()).toBe(1);
+			expect(source$.get()).toBe(1);
+			expect(a$.get()).toBe(1);
+		});
+
+		test('повторная инвалидация после регистрации зависимости', () => {
+			let source$ = cellx(0);
+			let trigger$ = cellx(0);
+
+			let computed$ = cellx(() => {
+				let value = source$.get();
+
+				if (value === 1) {
+					source$.set(2);
+				}
+
+				return value;
+			});
+
+			let seen: Array<number> = [];
+
+			effect(() => {
+				trigger$.get();
+				seen.push(computed$.get());
+			});
+
+			source$.set(1);
+			trigger$.set(1);
+			release();
+
+			expect(source$.get()).toBe(2);
+			expect(seen).toEqual([0, 1, 2]);
+		});
 	});
 
-	describe('async computed', () => {
-		test('wait', (done) => {
+	describe('async', () => {
+		test('wait', async () => {
+			let resolve!: (value: number) => void;
 			let a$ = cellx(
-				({ push, wait }) => {
-					setTimeout(() => {
-						push(1);
-					}, 1);
-
-					wait();
-
-					return 10;
-				},
-				{ value: 0 }
+				() =>
+					new Promise<number>((done) => {
+						resolve = done;
+					}),
+				{ async: true }
 			);
-			let b$ = cellx(() => a$.value + 1, {
-				onChange: () => {
-					expect(b$.value).toBe(2);
-				}
-			});
-			let c$ = cellx(() => b$.value + 1, {
-				onChange: () => {
-					expect(c$.value).toBe(3);
-					done();
-				}
-			});
+			let onB$Change = jest.fn();
+			let onC$Change = jest.fn();
+			let b$ = cellx(() => a$.value + 1, { onChange: onB$Change });
+			let c$ = cellx(() => b$.value + 1, { onChange: onC$Change });
 
-			expect(a$.value).toBe(0);
+			expect(a$.value).toBeUndefined();
+			expect(a$.error).toBeInstanceOf(WaitError);
 			expect(b$.value).toBeUndefined();
 			expect(c$.value).toBeUndefined();
+
+			resolve(1);
+			await Promise.resolve();
+			release();
+
+			expect(b$.value).toBe(2);
+			expect(c$.value).toBe(3);
+			expect(onB$Change.mock.calls).toEqual([[2]]);
+			expect(onC$Change.mock.calls).toEqual([[3]]);
 		});
 	});
 
 	describe('other', () => {
-		test('[options.validate]', () => {
-			let a$ = cellx<number | string>(1, {
-				validate(value) {
-					if (typeof value != 'number') {
-						throw 1;
-					}
+		test('[options.assertValue]', () => {
+			let assertNumber = jest.fn((value: any) => {
+				if (typeof value !== 'number') {
+					throw 1;
 				}
 			});
-			let error = null;
+			let a$ = cellx<number | string>(1, { assertValue: assertNumber });
+			let error: unknown = null;
 
 			try {
 				a$.value = '1';
@@ -589,27 +585,41 @@ describe('Cell', () => {
 
 			expect(error).not.toBeNull();
 			expect(a$.value).toBe(1);
+			expect(a$.error).toBeNull();
+
+			a$.value = 2;
+
+			expect(assertNumber.mock.calls).toEqual([
+				[1, undefined],
+				['1', 1],
+				[2, 1]
+			]);
 		});
 
-		test('[options.reap]', () => {
-			let reap = jest.fn();
-			let a$ = cellx(() => Math.random(), { reap });
+		test('[options.onUnobserved]', async () => {
+			let onUnobserved = jest.fn();
+			let a$ = cellx(() => Math.random(), { onUnobserved });
 			let b$ = cellx(() => a$.value + 1);
 			let listener = () => {};
 
-			b$.on(Cell.EVENT_CHANGE, listener);
-			b$.off(Cell.EVENT_CHANGE, listener);
+			b$.onChange(listener)();
 
-			expect(reap.mock.calls.length).toBe(1);
+			expect(onUnobserved).not.toHaveBeenCalled();
+			expect(a$._nextDependent).toBeNull();
+			expect(b$._flags & Flags.ACTIVE).toBe(0);
+
+			await Promise.resolve();
+
+			expect(onUnobserved.mock.calls.length).toBe(1);
 		});
 
-		test('#reap()', () => {
+		test('#disconnect()', () => {
 			let a$ = cellx(1);
 			let b$ = cellx(() => a$.value, { onChange() {} });
 
-			b$.reap();
+			b$.disconnect();
 
-			expect(b$.active).toBeFalsy();
+			expect(b$._flags & Flags.ACTIVE).toBe(0);
 		});
 	});
 });

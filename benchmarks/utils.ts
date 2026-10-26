@@ -32,7 +32,7 @@ export function formatLog(values: Array<number>) {
 }
 
 export function min(values: Array<number>) {
-	if (values.length == 0) {
+	if (values.length === 0) {
 		return 0;
 	}
 
@@ -44,7 +44,7 @@ export function min(values: Array<number>) {
 }
 
 export function max(values: Array<number>) {
-	if (values.length == 0) {
+	if (values.length === 0) {
 		return 0;
 	}
 
@@ -56,7 +56,7 @@ export function max(values: Array<number>) {
 }
 
 export function med(values: Array<number>) {
-	if (values.length == 0) {
+	if (values.length === 0) {
 		return 0;
 	}
 
@@ -64,21 +64,17 @@ export function med(values: Array<number>) {
 
 	const half = Math.floor(values.length / 2);
 
-	if (values.length % 2 == 1) {
+	if (values.length % 2 === 1) {
 		return values[half];
 	}
 
 	return (values[half - 1] + values[half]) / 2.0;
 }
 
-export function fib(n: number) {
+export function fib(n: number): number {
 	if (n < 0) {
 		throw TypeError('Input cannot be negative');
 	}
 
 	return n < 2 ? n : fib(n - 1) + fib(n - 2);
-}
-
-export function hard() {
-	return fib(18);
 }

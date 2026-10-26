@@ -4,9 +4,9 @@ const libName = 'cellx';
 
 export default defineConfig(() => {
 	return [
-		['esm', 'js'],
+		['es', 'mjs'],
+		['cjs', 'cjs'],
 		['umd', 'umd.js']
-		// ['commonjs', 'cjs']
 	].map(([format, fileExt]) => ({
 		input: 'src/cellx.ts',
 
@@ -15,6 +15,9 @@ export default defineConfig(() => {
 		output: {
 			file: `dist/${libName}.${fileExt}`,
 			format,
+			globals: {
+				'@riim/event': '_riim_event'
+			},
 			name: libName
 		}
 	}));

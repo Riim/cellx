@@ -1,26 +1,30 @@
-import { Cell, Cell_CommonState } from './Cell';
+import { type Cell, Cell_runtimeState, type IReactiveNode } from './Cell';
+
+let trackedCell: IReactiveNode | null = null;
 
 export const DependencyFilter = {
-	allExceptUntracked: (dependency: Cell) => Cell_CommonState.inUntrackedCounter == 0,
-	onlyTracked: (dependency: Cell) => Cell_CommonState.inTrackedCounter > 0
+	onlyTracked: (dependency: Cell) =>
+		trackedCell !== null && trackedCell === Cell_runtimeState.currentCell
 };
 
 export function untracked<T>(fn: () => T): T {
-	Cell_CommonState.inUntrackedCounter++;
+	let prevUntrackedCell = Cell_runtimeState.untrackedCell;
+	Cell_runtimeState.untrackedCell = Cell_runtimeState.currentCell;
 
 	try {
 		return fn();
 	} finally {
-		Cell_CommonState.inUntrackedCounter--;
+		Cell_runtimeState.untrackedCell = prevUntrackedCell;
 	}
 }
 
 export function tracked<T>(fn: () => T): T {
-	Cell_CommonState.inTrackedCounter++;
+	let prevTrackedCell = trackedCell;
+	trackedCell = Cell_runtimeState.currentCell;
 
 	try {
 		return fn();
 	} finally {
-		Cell_CommonState.inTrackedCounter--;
+		trackedCell = prevTrackedCell;
 	}
 }

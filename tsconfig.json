@@ -5,7 +5,9 @@
 		"emitDeclarationOnly": true,
 		"esModuleInterop": true,
 		"importHelpers": true,
-		"moduleResolution": "Node",
+		"lib": ["ES2024", "ESNext.Decorators"],
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
 		"newLine": "lf",
 		"noEmitHelpers": true,
 		"noFallthroughCasesInSwitch": true,
@@ -16,17 +18,16 @@
 		"noPropertyAccessFromIndexSignature": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": false,
+		"outDir": "dist",
 		"preserveConstEnums": true,
 		"resolveJsonModule": true,
+		"rootDir": "src",
 		"strictBindCallApply": true,
 		"strictFunctionTypes": true,
 		"strictNullChecks": true,
 		"strictPropertyInitialization": false,
 		"target": "ES2020",
-
-		"lib": ["ES2024", "ESNext.Decorators"],
-		"module": "ESNext",
-		"outDir": "dist"
+		"types": ["jest", "node"],
 	},
 	"files": [
 		"src/cellx.ts"

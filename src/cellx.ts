@@ -1,65 +1,49 @@
-import { Cell, type ICellOptions, type TCellPull } from './Cell';
+import {
+	Cell,
+	type IAsyncCellOptions,
+	type ICellOptions,
+	type TAnyCellOptions,
+	type TAsyncCellCompute,
+	type TCellCompute
+} from './Cell';
 
 export { configure } from './config';
-export { autorun } from './autorun';
-export { reaction } from './reaction';
-export { release } from './release';
-export { batch } from './batch';
-export { afterRelease } from './afterRelease';
-export { transaction } from './transaction';
-export { DependencyFilter, untracked, tracked } from './track';
-export {
-	type CellValue,
-	type ICellChangeEvent,
-	type ICellErrorEvent,
-	type TCellEvent,
-	type TCellChangeEventListener,
-	type TCellErrorEventListener,
-	type TCellEventListener,
-	type ICellListeners,
-	type TCellPull,
-	type TCellPut,
-	type ICellOptions,
-	CellState,
-	Cell
-} from './Cell';
 export { WaitError } from './WaitError';
-export { defineObservableProperty, defineObservableProperties, define } from './define';
+export {
+	Cell,
+	type IAsyncCellOptions,
+	type ICellOptions,
+	type ICellOptionsBase,
+	type TAnyCellOptions,
+	type TAsyncCellCompute,
+	type TCellCompute,
+	type TCellPut,
+	type TCellValue
+} from './Cell';
+export { release } from './release';
+export { afterRelease } from './afterRelease';
+export { effect, type IEffectOptions } from './effect';
+export { reaction } from './reaction';
+export { batch } from './batch';
 
-export function observable<Value = any, Context = any, Meta = any>(
+export function cellx<Value, Context = any>(
+	compute: TAsyncCellCompute<Value, Context>,
+	options: IAsyncCellOptions<Value, Context>
+): Cell<Value, Context>;
+export function cellx<Value, Context = any>(
+	compute: TCellCompute<Value, Context>,
+	options?: ICellOptions<Value, Context>
+): Cell<Value, Context>;
+export function cellx<Value, Context = any>(
 	value: Value,
-	options?: Omit<ICellOptions<Value, Context, Meta>, 'pull' | 'value'>
-): Cell<Value, Context, Meta> {
-	return new Cell({
-		...options,
-		pull: undefined,
-		value
-	});
-}
-
-export function computed<Value = any, Context = any, Meta = any>(
-	pullFn: TCellPull<Value, Context, Meta>,
-	options?: ICellOptions<Value, Context, Meta>
-): Cell<Value, Context, Meta> {
-	return new Cell({
-		...options,
-		pull: pullFn
-	});
-}
-
-export function cellx<Value = any, Context = any, Meta = any>(
-	pullFn: TCellPull<Value, Context, Meta>,
-	options?: ICellOptions<Value, Context, Meta>
-): Cell<Value, Context, Meta>;
-export function cellx<Value = any, Context = any, Meta = any>(
-	value: Value,
-	options?: ICellOptions<Value, Context, Meta>
-): Cell<Value, Context, Meta>;
-export function cellx<Value = any, Context = any, Meta = any>(
-	valueOrPullFn: Value | TCellPull<Value, Context, Meta>,
-	options?: ICellOptions<Value, Context, Meta>
-) {
-	return typeof valueOrPullFn == 'function'
-		? computed(valueOrPullFn as any, options)
-		: observable(valueOrPullFn, options);
+	options?: ICellOptions<Value, Context>
+): Cell<Value, Context>;
+export function cellx<Value, Context = any>(
+	valueOrCompute: Value | TAsyncCellCompute<Value, Context>,
+	options?: TAnyCellOptions<Value, Context>
+): Cell<Value, Context> {
+	return new Cell<Value, Context>(
+		valueOrCompute as Value | TCellCompute<Value, Context>,
+		options as ICellOptions<Value, Context> | undefined
+	);
 }

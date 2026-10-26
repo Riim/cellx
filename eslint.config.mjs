@@ -1,4 +1,3 @@
-import githubPlugin from 'eslint-plugin-github';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 import tsPlugin from '@typescript-eslint/eslint-plugin';
@@ -11,8 +10,8 @@ const languageOptionsGlobals = {
 	}
 };
 const jsRules = {
-	// не использовать Array#forEach()
-	// 'github/array-foreach': 'error',
+	// использовать только строгие сравнения
+	eqeqeq: ['error', 'always'],
 	// не смешивать пробелы и табы
 	'no-mixed-spaces-and-tabs': [
 		'error',
@@ -49,9 +48,6 @@ export default tseslint.config(
 		languageOptions: {
 			...languageOptionsGlobals
 		},
-		plugins: {
-			github: githubPlugin
-		},
 		extends: [],
 		rules: {
 			...jsRules
@@ -68,8 +64,7 @@ export default tseslint.config(
 			...languageOptionsGlobals
 		},
 		plugins: {
-			'@typescript-eslint': tsPlugin,
-			github: githubPlugin
+			'@typescript-eslint': tsPlugin
 		},
 		extends: [],
 		rules: {

@@ -16,29 +16,16 @@ describe('reaction()', () => {
 		expect(a$ReactionFn.mock.contexts[0]).toBe(null);
 
 		disposeA$Reaction();
-	});
+		disposeA$Reaction();
 
-	test('работает с массивом ячеек', () => {
-		let a$ = cellx(1);
-		let b$ = cellx(2);
-		let a$B$ReactionFn = jest.fn();
-		let disposeA$B$Reaction = reaction([a$, b$], a$B$ReactionFn);
-
-		a$.value = 10;
-		release();
-		b$.value = 20;
+		a$.value = 3;
 		release();
 
-		expect(a$B$ReactionFn.mock.calls.length).toBe(2);
-		expect(a$B$ReactionFn.mock.calls[0][0]).toEqual([10, 2]);
-		expect(a$B$ReactionFn.mock.calls[0][1]).toEqual([1, 2]);
-		expect(a$B$ReactionFn.mock.calls[1][0]).toEqual([10, 20]);
-		expect(a$B$ReactionFn.mock.calls[1][1]).toEqual([10, 2]);
-
-		disposeA$B$Reaction();
+		expect(a$ReactionFn).toHaveBeenCalledTimes(1);
+		expect(a$._nextDependent).toBeNull();
 	});
 
-	test('работает с pull-функцией', () => {
+	test('работает с compute', () => {
 		let a$ = cellx(1);
 		let a$ReactionFn = jest.fn();
 		let disposeA$Reaction = reaction(() => a$.value + 1, a$ReactionFn);
@@ -48,7 +35,7 @@ describe('reaction()', () => {
 
 		expect(a$ReactionFn.mock.calls.length).toBe(1);
 		expect(a$ReactionFn.mock.calls[0][0]).toBe(6);
-		expect(a$ReactionFn.mock.calls[0][1]).toBe(2);
+		expect(a$ReactionFn.mock.calls[0][1]).toBe(disposeA$Reaction);
 
 		disposeA$Reaction();
 	});
