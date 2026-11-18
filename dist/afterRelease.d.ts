@@ -1,1 +1,1 @@
-export declare function afterRelease(cb: Function): void;
+export declare function afterRelease(cb: () => void): void;

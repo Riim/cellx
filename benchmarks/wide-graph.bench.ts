@@ -137,6 +137,46 @@ const setups: Array<[string, TSetup]> = [
 	],
 
 	[
+		'angular-signals',
+		async (listener) => {
+			let { computed, signal } = await import('@angular/core');
+			let { createWatch } = await import('@angular/core/primitives/signals');
+			let queue = new Set<import('@angular/core/primitives/signals').Watch>();
+
+			return setupGraph(
+				{
+					source: (value) => signal(value),
+					computed: (pull) => computed(pull),
+					read: (node) => node(),
+					write: (node, value) => node.set(value),
+					observe: (node, callback) => {
+						let watch = createWatch(
+							() => callback(node()),
+							(watch) => queue.add(watch),
+							true
+						);
+						watch.run();
+
+						return () => {
+							queue.delete(watch);
+							watch.destroy();
+						};
+					},
+					batch: (update) => {
+						update();
+
+						for (let watch of queue) {
+							queue.delete(watch);
+							watch.run();
+						}
+					}
+				},
+				listener
+			);
+		}
+	],
+
+	[
 		'baconjs (static)',
 		async (listener) => {
 			let { Bus, combineAsArray } = await import('baconjs');
@@ -448,9 +488,57 @@ const setups: Array<[string, TSetup]> = [
 	],
 
 	[
+		'pota',
+		async (listener) => {
+			let { batch, effect, memo, root, signal } = await import('pota');
+
+			return root((dispose) => {
+				let graph = setupGraph(
+					{
+						source: (value) => signal(value),
+						computed: (pull) => ({ read: memo(pull) }),
+						read: (node) => node.read(),
+						write: (node, value) => {
+							node.write(value);
+						},
+						observe: (node, callback) => {
+							effect(() => callback(node.read()));
+						},
+						batch
+					},
+					listener
+				);
+
+				return { ...graph, cleanup: dispose };
+			});
+		}
+	],
+
+	[
 		'preact-signals',
 		async (listener) => {
 			let { batch, computed, effect, signal } = await import('@preact/signals-core');
+
+			return setupGraph(
+				{
+					source: (value) => signal(value),
+					computed: (pull) => computed(pull),
+					read: (node) => node.value,
+					write: (node, value) => {
+						node.value = value;
+					},
+					observe: (node, callback) => effect(() => callback(node.value)),
+					batch
+				},
+				listener
+			);
+		}
+	],
+
+	[
+		'reactive-engine',
+		async (listener) => {
+			let { batch, computed, effect, signal } = await import('@pravosleva/reactive-engine');
 
 			return setupGraph(
 				{
@@ -634,6 +722,90 @@ const setups: Array<[string, TSetup]> = [
 
 				return { ...graph, cleanup: dispose };
 			});
+		}
+	],
+
+	[
+		'solid-signals',
+		async (listener) => {
+			let { createEffect, createMemo, createRoot, createSignal, flush } =
+				await import('@solidjs/signals');
+
+			let graph = createRoot((dispose) => {
+				let graph = setupGraph(
+					{
+						source: (value) => {
+							let [get, set] = createSignal(value);
+							return { get, set };
+						},
+						computed: (pull) => ({ get: createMemo(pull) }),
+						read: (node) => node.get(),
+						write: (node, value) => node.set(value),
+						observe: (node, callback) => {
+							createEffect(() => node.get(), callback);
+						},
+						batch: (update) => {
+							update();
+							flush();
+						}
+					},
+					listener
+				);
+
+				return { ...graph, cleanup: dispose };
+			});
+
+			flush();
+
+			return graph;
+		}
+	],
+
+	[
+		'svelte',
+		async (listener) => {
+			let { derived, effect_root, flush, get, render_effect, set, state } =
+				await import('svelte/internal/client');
+
+			let graph!: TGraph;
+			let dispose = effect_root(() => {
+				graph = setupGraph(
+					{
+						source: (value) => state(value),
+						computed: (pull) => derived(pull),
+						read: (node) => get(node),
+						write: (node, value) => {
+							set(node, value);
+						},
+						observe: (node, callback) => {
+							render_effect(() => callback(get(node)));
+						},
+						batch: flush
+					},
+					listener
+				);
+			});
+
+			return { ...graph, cleanup: dispose };
+		}
+	],
+
+	[
+		'tansu',
+		async (listener) => {
+			let { batch, computed, writable } = await import('@amadeus-it-group/tansu');
+
+			return setupGraph(
+				{
+					source: (value) => writable(value),
+					computed: (pull) => computed(pull),
+					read: (node) => node(),
+					write: (node, value) => node.set(value),
+					observe: (node, callback) => node.subscribe(callback),
+					batch
+				},
+				listener
+			);
 		}
 	],
 

@@ -1,396 +1,395 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports, require('@riim/event')) : typeof define === 'function' && define.amd ? define(['exports', '@riim/event'], factory) : (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory(global.cellx = {}, global._riim_event));
+  typeof exports === "object" && typeof module !== "undefined" ? factory(exports, require("@riim/event")) : typeof define === "function" && define.amd ? define(["exports", "@riim/event"], factory) : (global = typeof globalThis !== "undefined" ? globalThis : global || self, factory(global.cellx = {}, global._riim_event));
 })(this, function (exports, _riim_event) {
   Object.defineProperty(exports, Symbol.toStringTag, {
-    value: 'Module'
+    value: "Module"
   });
-
   //#region src/WaitError.ts
-  var WaitError = class extends Error {};
-
-  //#endregion
-  //#region src/afterRelease.ts
-  function afterRelease(cb) {
-    (Cell_CommonState.afterRelease ?? (Cell_CommonState.afterRelease = [])).push(cb);
-  }
-
-  //#endregion
-  //#region src/autorun.ts
-  function autorun(fn, cellOptions) {
-    var disposer;
-    new Cell({
-      onChange: () => {},
-      ...cellOptions,
-      pull: function (cell, value) {
-        return fn.call(this, value, disposer ??= () => {
-          cell.dispose();
-        });
-      }
-    });
-    return disposer;
-  }
-
+  var WaitError = class WaitError extends Error {
+    static instance = new WaitError();
+  };
   //#endregion
   //#region src/config.ts
   var config = {
-    logError: (...args) => {
+    logError: /* istanbul ignore next */(...args) => {
       console.error(...args);
-    },
-    compareValues: Object.is
+    }
   };
   function configure(options) {
     return Object.assign(config, options);
   }
-
   //#endregion
-  //#region src/keys.ts
-  var KEY_ERROR_EVENT = Symbol("errorEvent");
-  var KEY_LISTENER_WRAPPERS = Symbol("listenerWrappers");
-
-  //#endregion
-  //#region src/reaction.ts
-  function reaction(source, fn, cellOptions) {
-    var cell = new Cell({
-      ...cellOptions,
-      pull: source instanceof Cell ? () => source.value : Array.isArray(source) ? () => source.map(cell => cell.value) : source
-    });
-    var disposer = () => {
-      cell.dispose();
-    };
-    cell.onChange(function ({
-      data
-    }) {
-      return fn.call(this, data.value, data.prevValue, disposer);
-    });
-    return disposer;
+  //#region src/effect.ts
+  var EffectNode = class {
+    context;
+    _dependencyFilter;
+    _fn;
+    _dispose;
+    _pullVersion = 0;
+    _nextDependency = null;
+    _currentDependency = null;
+    _nextDependent = null;
+    _flags = 82;
+    constructor(fn, options) {
+      this.context = options?.context ?? null;
+      this._dependencyFilter = options?.dependencyFilter ?? null;
+      this._fn = fn;
+      this._dispose = () => {
+        this.disconnect();
+      };
+    }
+    _actualize() {
+      if (!(this._flags & 16) || this._flags & 12) return false;
+      this._flags |= 4;
+      try {
+        if (this._flags & 2 || this._flags & 1 && checkDependencies(this)) {
+          if (this._flags & 16) this._run();
+        } else this._flags &= -2;
+      } catch (err) {
+        if (!(err instanceof WaitError)) config.logError(err instanceof Error ? err : Error(err === void 0 ? void 0 : String(err)));
+      } finally {
+        this._flags &= -5;
+      }
+      return false;
+    }
+    _run() {
+      var prevCell = Cell_runtimeState.currentCell;
+      Cell_runtimeState.currentCell = this;
+      this._pullVersion++;
+      this._flags = this._flags & -4 | 8;
+      try {
+        this._fn.call(this.context, this._dispose);
+      } finally {
+        Cell_runtimeState.currentCell = prevCell;
+        this._flags &= -9;
+        if (!(this._flags & 16)) this._currentDependency = null;
+        trimDependencies(this);
+        if (this._flags & 3) enqueueEffect(this);
+      }
+    }
+    disconnect() {
+      if (!(this._flags & 16)) return this;
+      this._fn = null;
+      this._flags &= -20;
+      if (this._flags & 8) for (var link = this._nextDependency; link; link = link._nextDependency) link.dependency._deleteDependent(link);else {
+        this._currentDependency = null;
+        trimDependencies(this);
+      }
+      return this;
+    }
+  };
+  function effect(fn, options) {
+    var node = new EffectNode(fn, options);
+    node._actualize();
+    return node._dispose;
   }
-
   //#endregion
   //#region src/release.ts
+  var releaseDepth = 0;
   function release() {
-    while (Cell_CommonState.pendingCellsIndex < Cell_CommonState.pendingCells.length) {
-      var cell = Cell_CommonState.pendingCells[Cell_CommonState.pendingCellsIndex++];
-      if (cell._active) cell.actualize();
+    if (Cell_runtimeState.pulling > 0) throw Error("Cannot call release() while computing");
+    releaseDepth++;
+    try {
+      while (Cell_runtimeState.pendingCellsIndex < Cell_runtimeState.pendingCellsCount) {
+        var node = Cell_runtimeState.pendingCells[Cell_runtimeState.pendingCellsIndex];
+        Cell_runtimeState.pendingCells[Cell_runtimeState.pendingCellsIndex++] = void 0;
+        node._flags &= -33;
+        node._actualize();
+      }
+    } finally {
+      if (Cell_runtimeState.pendingCellsIndex === Cell_runtimeState.pendingCellsCount) Cell_runtimeState.pendingCellsIndex = Cell_runtimeState.pendingCellsCount = 0;
+      releaseDepth--;
     }
-    Cell_CommonState.pendingCells.length = 0;
-    Cell_CommonState.pendingCellsIndex = 0;
-    if (Cell_CommonState.afterRelease) {
-      var {
-        afterRelease: _afterRelease
-      } = Cell_CommonState;
-      Cell_CommonState.afterRelease = null;
-      for (var i = 0; i < _afterRelease.length; i++) _afterRelease[i]();
+    if (releaseDepth === 0) {
+      releaseDepth++;
+      try {
+        while (Cell_runtimeState.afterRelease && Cell_runtimeState.pendingCellsCount === 0) {
+          var {
+            afterRelease: _afterRelease
+          } = Cell_runtimeState;
+          Cell_runtimeState.afterRelease = null;
+          for (var i = 0, l = _afterRelease.length; i < l; i++) try {
+            _afterRelease[i]();
+          } catch (error) {
+            config.logError(error);
+          }
+        }
+      } finally {
+        releaseDepth--;
+        if (Cell_runtimeState.pendingCellsCount > 0 || Cell_runtimeState.afterRelease) scheduleRelease();
+      }
     }
   }
-
+  var releaseScheduled = false;
+  function scheduledRelease() {
+    releaseScheduled = false;
+    release();
+  }
+  function scheduleRelease() {
+    if (!releaseScheduled && releaseDepth === 0) {
+      releaseScheduled = true;
+      queueMicrotask(scheduledRelease);
+    }
+  }
   //#endregion
   //#region src/track.ts
+  var trackedCell = null;
   var DependencyFilter = {
-    allExceptUntracked: dependency => Cell_CommonState.inUntrackedCounter == 0,
-    onlyTracked: dependency => Cell_CommonState.inTrackedCounter > 0
+    onlyTracked: dependency => trackedCell !== null && trackedCell === Cell_runtimeState.currentCell
   };
   function untracked(fn) {
-    Cell_CommonState.inUntrackedCounter++;
+    var prevUntrackedCell = Cell_runtimeState.untrackedCell;
+    Cell_runtimeState.untrackedCell = Cell_runtimeState.currentCell;
     try {
       return fn();
     } finally {
-      Cell_CommonState.inUntrackedCounter--;
+      Cell_runtimeState.untrackedCell = prevUntrackedCell;
     }
   }
   function tracked(fn) {
-    Cell_CommonState.inTrackedCounter++;
+    var prevTrackedCell = trackedCell;
+    trackedCell = Cell_runtimeState.currentCell;
     try {
       return fn();
     } finally {
-      Cell_CommonState.inTrackedCounter--;
+      trackedCell = prevTrackedCell;
     }
   }
-
-  //#endregion
-  //#region src/utils/isEventEmitterLike.ts
-  function isEventEmitterLike(value) {
-    return !!value && typeof value["on"] == "function" && typeof value["off"] == "function" && typeof value["emit"] == "function";
-  }
-
   //#endregion
   //#region src/utils/isPromiseLike.ts
   function isPromiseLike(value) {
-    return !!value && typeof value["then"] == "function";
+    return !!value && typeof value["then"] === "function";
   }
-
-  //#endregion
-  //#region src/utils/nextTick.ts
-  /* istanbul ignore next */
-  var nextTick = globalThis.process?.nextTick ?? (() => {
-    var resolvedPromise = Promise.resolve();
-    return cb => {
-      resolvedPromise.then(cb);
+  function createLink(dependency, prevDependency, nextDependency, dependent) {
+    return {
+      dependency,
+      _prevDependency: prevDependency,
+      _nextDependency: nextDependency,
+      dependent,
+      _prevDependent: null,
+      _nextDependent: null,
+      dependencyVersion: dependency._version,
+      dependentPullVersion: dependent._pullVersion,
+      prevDependents: null
     };
-  })();
-
-  //#endregion
-  //#region src/Cell.ts
-  var CellState = /* @__PURE__ */function (CellState) {
-    CellState["ACTUAL"] = "actual";
-    CellState["DIRTY"] = "dirty";
-    CellState["CHECK"] = "check";
-    return CellState;
-  }({});
-  var Cell_CommonState = {
+  }
+  var Cell_runtimeState = {
     pendingCells: [],
     pendingCellsIndex: 0,
+    pendingCellsCount: 0,
+    pulling: 0,
     currentCell: null,
-    lastUpdateId: 0,
-    afterRelease: null,
-    transactionStates: null,
-    inUntrackedCounter: 0,
-    inTrackedCounter: 0
+    untrackedCell: null,
+    globalVersion: 0,
+    afterRelease: null
   };
-  var $error = null;
-  var Cell = class Cell {
-    static {
-      this.EVENT_CHANGE = "change";
+  function checkDependencies(node) {
+    var globalVersion;
+    do {
+      globalVersion = Cell_runtimeState.globalVersion;
+      for (var link = node._nextDependency; link; link = link._nextDependency) if (link.dependency._actualize(link) || link.dependency._version !== link.dependencyVersion) return true;
+    } while (globalVersion !== Cell_runtimeState.globalVersion);
+    return false;
+  }
+  function enqueueEffect(node) {
+    if ((node._flags & 48) === 16) {
+      node._flags |= 32;
+      Cell_runtimeState.pendingCells[Cell_runtimeState.pendingCellsCount++] = node;
+      scheduleRelease();
     }
-    static {
-      this.EVENT_ERROR = "error";
+  }
+  function trimDependencies(node) {
+    var current = node._currentDependency;
+    var link = (current ?? node)._nextDependency;
+    if (link) {
+      (current ?? node)._nextDependency = null;
+      do {
+        var next = link._nextDependency;
+        link.dependency._deleteDependent(link);
+        link._prevDependency = link._nextDependency = null;
+        link = next;
+      } while (link);
     }
-    static get currentlyPulling() {
-      return Cell_CommonState.currentCell != null;
+    node._currentDependency = null;
+  }
+  var Cell = class {
+    static get pulling() {
+      return Cell_runtimeState.currentCell !== null;
     }
-    static {
-      this.autorun = autorun;
-    }
-    static {
-      this.reaction = reaction;
-    }
-    static {
-      this.release = release;
-    }
-    static {
-      this.afterRelease = afterRelease;
-    }
-    get writable() {
-      return this._writable;
-    }
-    getDependencies() {
-      var dependencies = [];
-      for (var dependency = this._nextDependency; dependency; dependency = dependency._nextDependency) dependencies.push(dependency.cell);
-      return dependencies;
-    }
-    getDependents() {
-      var dependents = [];
-      for (var dependent = this._nextDependent; dependent; dependent = dependent._nextDependent) dependents.push(dependent.cell);
-      return dependents;
-    }
-    get initialized() {
-      return this._initialized;
-    }
-    get active() {
-      return this._active;
-    }
-    get state() {
-      return this._state;
-    }
-    constructor(options) {
-      this._currentDependency = null;
-      this._nextDependent = null;
-      this._lastDependent = null;
-      this._error$ = null;
-      this._error = null;
-      this._bound = false;
-      this._active = false;
-      this._currentlyPulling = false;
-      this._updateId = -1;
-      this._onChange = null;
-      this._onError = null;
-      this.context = options.context ?? null;
-      this.meta = options.meta ?? null;
-      this._pull = options.pull ?? null;
-      this._dependencyFilter = options.dependencyFilter ?? DependencyFilter.allExceptUntracked;
-      this._validateValue = options.validate ?? null;
-      this._put = options.put ?? null;
-      this._compareValues = options.compareValues ?? config.compareValues;
-      this._reap = options.reap ?? null;
-      var {
-        value
-      } = options;
-      if (this._pull) {
-        if (value !== void 0) {
-          this._validateValue?.(value, void 0);
-          if (isEventEmitterLike(value)) value.on("change", this._onValueChange, this);
-        }
-        this._writable = options.writable ?? !!this._put;
-        this._nextDependency = void 0;
-        this._initialized = false;
-        this._state = CellState.DIRTY;
-        if (this._pull.length > 0) {
-          this.push = this.push.bind(this);
-          this.fail = this.fail.bind(this);
-          this._bound = true;
-        }
+    context;
+    _compute;
+    _assertValue;
+    _value;
+    _error = null;
+    _globalVersion = -1;
+    _version = 0;
+    _pullVersion = 0;
+    _nextDependency = null;
+    _nextDependent = null;
+    _lastDependent = null;
+    _flags;
+    _rareState = null;
+    constructor(valueOrCompute, options) {
+      this.context = options?.context ?? null;
+      this._assertValue = options?.assertValue ?? null;
+      if (typeof valueOrCompute === "function") {
+        this._dependencyFilter = options?.dependencyFilter ?? null;
+        this._compute = valueOrCompute;
+        this._async = options?.async === true;
+        this._put = options?.put ?? null;
+        this._value = void 0;
+        this._currentDependency = null;
+        if (this._async) this._pullId = this._appliedPullId = 0;
+        this._flags = 2;
       } else {
-        this._validateValue?.(value, void 0);
-        if (isEventEmitterLike(value)) value.on("change", this._onValueChange, this);
-        this._writable = options.writable ?? true;
-        this._nextDependency = null;
-        this._initialized = true;
-        this._state = CellState.ACTUAL;
+        this._compute = null;
+        this._assertValue?.(valueOrCompute, void 0);
+        this._value = this._pendingValue = valueOrCompute;
+        this._flags = 0;
       }
-      this._value = value;
-      if (options.onChange) this.on(Cell.EVENT_CHANGE, options.onChange);
-      if (options.onError) this.on(Cell.EVENT_ERROR, options.onError);
+      if (options?.onObserved) this.onObserved(options.onObserved);
+      if (options?.onUnobserved) this.onUnobserved(options.onUnobserved);
+      if (options?.onError) this.onError(options.onError);
+      if (options?.onChange) this.onChange(options.onChange);
     }
-    on(type, listener) {
-      if (this._nextDependency !== null) this._actualize();
-      if (type == Cell.EVENT_CHANGE) (this._onChange ??= (0, _riim_event.event)(this.context))(listener);else (this._onError ??= (0, _riim_event.event)(this.context))(listener);
-      this._activate();
-      return this;
-    }
-    off(type, listener) {
-      if (this._nextDependency !== null) this._actualize();
-      var onChangeListeners = this._onChange?.[_riim_event.LISTENERS];
-      var onErrorListeners = this._onError?.[_riim_event.LISTENERS];
-      var hasListeners = onChangeListeners && onChangeListeners.size > 0 || onErrorListeners && onErrorListeners.size > 0;
-      var onEvent = type == Cell.EVENT_CHANGE ? this._onChange : this._onError;
-      if (onEvent) (0, _riim_event.unsubscribe)(onEvent, listener);
-      if (hasListeners && !this._nextDependent) {
-        onChangeListeners = this._onChange?.[_riim_event.LISTENERS];
-        onErrorListeners = this._onError?.[_riim_event.LISTENERS];
-        if ((!onChangeListeners || onChangeListeners.size == 0) && (!onErrorListeners || onErrorListeners.size == 0)) {
-          this._deactivate();
-          this._reap?.call(this.context);
-        }
-      }
-      return this;
-    }
-    onChange(listener) {
-      return this.on(Cell.EVENT_CHANGE, listener);
-    }
-    offChange(listener) {
-      return this.off(Cell.EVENT_CHANGE, listener);
-    }
-    onError(listener) {
-      return this.on(Cell.EVENT_ERROR, listener);
-    }
-    offError(listener) {
-      return this.off(Cell.EVENT_ERROR, listener);
-    }
-    subscribe(listener) {
-      var wrappers = listener[KEY_LISTENER_WRAPPERS] ??= /* @__PURE__ */new Map();
-      if (wrappers.has(this)) return this;
-      function wrapper(evt) {
-        return listener.call(this, evt.data["error"] ?? null, evt);
-      }
-      wrappers.set(this, wrapper);
-      return this.on(Cell.EVENT_CHANGE, wrapper).on(Cell.EVENT_ERROR, wrapper);
-    }
-    unsubscribe(listener) {
-      var wrappers = listener[KEY_LISTENER_WRAPPERS];
-      var wrapper = wrappers?.get(this);
-      if (!wrapper) return this;
-      wrappers.delete(this);
-      return this.off(Cell.EVENT_CHANGE, wrapper).off(Cell.EVENT_ERROR, wrapper);
-    }
-    _addDependent(dependent) {
-      (this._lastDependent ?? this)._nextDependent = this._lastDependent = {
-        cell: dependent,
-        _nextDependent: null,
-        prevDependents: null
+    _getRareState() {
+      return this._rareState ??= {
+        errorCell: null,
+        onObserved: null,
+        onUnobserved: null,
+        pendingEvents: 0
       };
-      this._activate();
     }
-    _deleteDependent(dependent) {
-      var currentDependent = this._nextDependent;
-      if (currentDependent.cell == dependent) {
-        if (!(this._nextDependent = currentDependent._nextDependent)) this._lastDependent = null;
-      } else for (var prevDependent;;) {
-        prevDependent = currentDependent;
-        currentDependent = currentDependent._nextDependent;
-        if (!currentDependent) break;
-        if (currentDependent.cell == dependent) {
-          if (!(prevDependent._nextDependent = currentDependent._nextDependent)) this._lastDependent = prevDependent;
-          break;
-        }
-      }
-      if (!this._nextDependent && (!this._onChange?.[_riim_event.LISTENERS] || this._onChange[_riim_event.LISTENERS].size == 0) && (!this._onError?.[_riim_event.LISTENERS] || this._onError[_riim_event.LISTENERS].size == 0)) {
-        this._deactivate();
-        this._reap?.call(this.context);
-      }
+    onChange(handler) {
+      var initialized = false;
+      var prevValue;
+      return effect(() => {
+        this.track();
+        var value = this._value;
+        var changed = initialized && value !== prevValue && !this._error;
+        prevValue = value;
+        initialized = true;
+        if (changed) untracked(() => handler.call(this.context, value));
+      });
     }
-    _activate() {
-      if (this._active) return;
-      var dependency = this._nextDependency;
-      if (dependency) {
-        do dependency.cell._addDependent(this); while (dependency = dependency._nextDependency);
-        this._active = true;
-        this._state = CellState.ACTUAL;
-      }
+    onError(handler) {
+      var initialized = false;
+      var prevError;
+      return effect(() => {
+        var err = this.error;
+        var changed = initialized && err !== prevError;
+        prevError = err;
+        initialized = true;
+        if (changed && err) untracked(() => handler.call(this.context, err));
+      });
     }
-    _deactivate() {
-      var dependency = this._nextDependency;
-      if (dependency) {
-        do dependency.cell._deleteDependent(this); while (dependency = dependency._nextDependency);
-        this._active = false;
-        this._state = CellState.DIRTY;
-      }
+    get onObserved() {
+      return this._getRareState().onObserved ??= (0, _riim_event.event)(this.context);
     }
-    _onValueChange(evt) {
-      this._updateId = ++Cell_CommonState.lastUpdateId;
-      this._addToRelease();
-      if (this._onChange) (0, _riim_event.fireEvent)(this._onChange, {
-        target: this,
-        type: Cell.EVENT_CHANGE,
-        data: {
-          sourceEvent: evt
+    get onUnobserved() {
+      return this._getRareState().onUnobserved ??= (0, _riim_event.event)(this.context);
+    }
+    _scheduleObservation(observed) {
+      var rareState = this._rareState;
+      var key = observed ? "onObserved" : "onUnobserved";
+      if (!rareState?.[key]?.[_riim_event.LISTENERS]?.size) return;
+      var flag = observed ? 1 : 2;
+      if (rareState.pendingEvents & flag) return;
+      rareState.pendingEvents |= flag;
+      queueMicrotask(() => {
+        try {
+          if (!!this._nextDependent === observed && rareState[key]?.[_riim_event.LISTENERS]?.size) (0, _riim_event.fireEvent)(rareState[key]);
+        } catch (err) {
+          config.logError(err);
+        } finally {
+          rareState.pendingEvents &= ~flag;
         }
       });
     }
-    _addToRelease() {
-      var directDependents = this._nextDependent;
-      if (!directDependents) return;
-      for (var stack = directDependents;;) {
-        var dependents = stack;
-        stack = stack.prevDependents;
-        dependents.prevDependents = null;
-        for (var dependent = dependents; dependent; dependent = dependent._nextDependent) {
-          var dirty = dependents == directDependents;
-          var {
-            cell
-          } = dependent;
-          if (cell._state == CellState.ACTUAL) {
-            cell._state = dirty ? CellState.DIRTY : CellState.CHECK;
-            if (cell._nextDependent) {
-              cell._nextDependent.prevDependents = stack;
-              stack = cell._nextDependent;
-              if ((cell._onChange?.[_riim_event.LISTENERS] && cell._onChange[_riim_event.LISTENERS].size > 0 || cell._onError?.[_riim_event.LISTENERS] && cell._onError[_riim_event.LISTENERS].size > 0) && Cell_CommonState.pendingCells.push(cell) == 1) nextTick(release);
-            } else if (Cell_CommonState.pendingCells.push(cell) == 1) nextTick(release);
-          } else if (dirty) cell._state = CellState.DIRTY;
-        }
+    _addDependent(link) {
+      if (link._prevDependent || this._nextDependent === link) return;
+      if (!(this._flags & 16)) {
+        this._actualize();
+        if (!(link.dependent._flags & 16)) return;
+      }
+      ((link._prevDependent = this._lastDependent) ?? this)._nextDependent = this._lastDependent = link;
+      this._activate();
+    }
+    _deleteDependent(link) {
+      var prev = link._prevDependent;
+      var next = link._nextDependent;
+      if (prev) prev._nextDependent = next;else if (this._nextDependent === link) this._nextDependent = next;else return;
+      if (next) next._prevDependent = prev;else this._lastDependent = prev;
+      link._prevDependent = link._nextDependent = null;
+      if (!this._nextDependent) this._deactivate();
+    }
+    _activate() {
+      if (this._flags & 16) return;
+      this._flags |= 16;
+      this._scheduleObservation(true);
+      for (var dependency = this._nextDependency; dependency; dependency = dependency._nextDependency) {
+        dependency.dependency._addDependent(dependency);
+        if (!(this._flags & 16)) break;
+      }
+    }
+    _deactivate() {
+      for (var dependency = this._nextDependency; dependency; dependency = dependency._nextDependency) dependency.dependency._deleteDependent(dependency);
+      this._flags &= -17;
+      this._scheduleObservation(false);
+    }
+    _invalidateDependents(waiting, state = 2) {
+      var list = this._nextDependent;
+      if (!list || list === waiting && !list._nextDependent) return;
+      for (var stack = null;;) {
+        var link = list;
+        do {
+          var node = link.dependent;
+          var flags = node._flags;
+          if (flags & 16 && (!(flags & 8) || link.dependentPullVersion === node._pullVersion)) {
+            node._flags = flags | state;
+            if (flags & 64) enqueueEffect(node);else if (!(flags & 3) && node._nextDependent) {
+              node._nextDependent.prevDependents = stack;
+              stack = node._nextDependent;
+            }
+          }
+        } while (link = link._nextDependent);
         if (!stack) break;
+        list = stack;
+        stack = list.prevDependents;
+        list.prevDependents = null;
+        state = 1;
       }
     }
     actualize() {
-      if (Cell_CommonState.transactionStates) throw Error("Cannot actualize in a transaction");
-      return this._actualize();
+      var prevCell = Cell_runtimeState.currentCell;
+      Cell_runtimeState.currentCell = null;
+      try {
+        this._actualize();
+        return this;
+      } finally {
+        Cell_runtimeState.currentCell = prevCell;
+      }
     }
-    _actualize() {
-      if (this._state == CellState.CHECK) for (var dependency = this._nextDependency;;) {
-        if (dependency.cell._actualize()._error) {
-          this._fail(dependency.cell._error);
-          break;
+    _actualize(waiting) {
+      if (!this._compute) {
+        if (this._flags & 2) {
+          this._flags &= -3;
+          return this._publish(this._pendingValue, null, waiting);
         }
-        if (this._state == CellState.DIRTY) {
-          this.pull();
-          break;
-        }
-        if (!(dependency = dependency._nextDependency)) {
-          this._error$?.set(null);
-          this._error = null;
-          this._state = CellState.ACTUAL;
-          break;
-        }
-      } else if (this._state == CellState.DIRTY) this.pull();
-      return this;
+        return false;
+      }
+      var flags = this._flags;
+      if (flags & 12) throw Error("Circular computation");
+      if (!(flags & 3) && (flags & 16 || this._globalVersion === Cell_runtimeState.globalVersion)) return false;
+      this._flags |= 4;
+      try {
+        if (flags & 2 || checkDependencies(this)) return this._pull(waiting);
+        this._flags &= -2;
+        this._globalVersion = Cell_runtimeState.globalVersion;
+        return false;
+      } finally {
+        this._flags &= -5;
+      }
     }
     get value() {
       return this.get();
@@ -399,355 +398,216 @@
       this.set(value);
     }
     get error() {
-      if (Cell_CommonState.transactionStates) {
-        if (!this._initialized) throw Error("Cannot read an uninitialized cell in a transaction");
-        return this._error;
-      }
-      if (this._state != CellState.ACTUAL && this._updateId != Cell_CommonState.lastUpdateId) this._actualize();
-      return Cell_CommonState.currentCell ? (this._error$ ?? (this._error$ = new Cell({
-        value: this._error
-      }))).get() : this._error;
+      if (Cell_runtimeState.currentCell) return (this._getRareState().errorCell ??= new ErrorCell(this)).get();
+      this._actualize();
+      return this._error;
     }
     get() {
-      if (Cell_CommonState.transactionStates) {
-        if (!this._initialized) throw Error("Cannot read an uninitialized cell in a transaction");
-        return this._value;
-      }
-      if (this._state != CellState.ACTUAL && this._updateId != Cell_CommonState.lastUpdateId) this._actualize();
-      var {
-        currentCell
-      } = Cell_CommonState;
-      if (currentCell?._dependencyFilter(this)) {
-        var currentDependency = currentCell._currentDependency;
-        if (currentDependency) {
-          var dependency = currentDependency._nextDependency;
-          if (dependency) {
-            if (dependency.cell == this) {
-              currentCell._currentDependency = dependency;
-              dependency.state = 0;
-            } else if (currentDependency.cell != this) for (var prevDependency;;) {
-              prevDependency = dependency;
-              if (dependency = dependency._nextDependency) {
-                if (dependency.cell == this) {
-                  prevDependency._nextDependency = dependency._nextDependency;
-                  dependency._nextDependency = currentDependency._nextDependency;
-                  currentDependency._nextDependency = currentCell._currentDependency = dependency;
-                  dependency.state = 0;
-                  break;
-                }
-              } else {
-                for (dependency = currentCell._nextDependency;; dependency = dependency._nextDependency) {
-                  if (dependency == currentDependency) {
-                    currentDependency._nextDependency = currentCell._currentDependency = {
-                      cell: this,
-                      _nextDependency: currentDependency._nextDependency,
-                      state: 1
-                    };
-                    break;
-                  }
-                  if (dependency.cell == this) break;
-                }
-                break;
-              }
-            }
-          } else if (currentDependency.cell != this) for (dependency = currentCell._nextDependency;; dependency = dependency._nextDependency) {
-            if (dependency == currentDependency) {
-              currentDependency._nextDependency = currentCell._currentDependency = {
-                cell: this,
-                _nextDependency: null,
-                state: 1
-              };
-              break;
-            }
-            if (dependency.cell == this) break;
-          }
-        } else {
-          var _dependency = currentCell._nextDependency;
-          if (_dependency) {
-            if (_dependency.cell == this) {
-              currentCell._currentDependency = _dependency;
-              _dependency.state = 0;
-            } else for (var _prevDependency = _dependency;;) {
-              _dependency = _dependency._nextDependency;
-              if (!_dependency) {
-                currentCell._nextDependency = currentCell._currentDependency = {
-                  cell: this,
-                  _nextDependency: currentCell._nextDependency,
-                  state: 1
-                };
-                break;
-              }
-              if (_dependency.cell == this) {
-                _prevDependency._nextDependency = _dependency._nextDependency;
-                _dependency._nextDependency = currentCell._nextDependency;
-                currentCell._nextDependency = currentCell._currentDependency = _dependency;
-                _dependency.state = 0;
-                break;
-              }
-              _prevDependency = _dependency;
-            }
-          } else currentCell._nextDependency = currentCell._currentDependency = {
-            cell: this,
-            _nextDependency: null,
-            state: 1
-          };
-        }
-      }
-      if (this._error && currentCell) throw this._error;
+      this.track();
+      if (Cell_runtimeState.currentCell && this._error) throw this._error;
       return this._value;
     }
+    track() {
+      if (this._flags !== 16) this._actualize();
+      var node = Cell_runtimeState.currentCell;
+      if (!node || node._flags & 64 && !(node._flags & 16) || (node._dependencyFilter ? !node._dependencyFilter(this) : node === Cell_runtimeState.untrackedCell)) return;
+      var current = node._currentDependency;
+      var next = (current ?? node)._nextDependency;
+      if (next?.dependency === this) {
+        next.dependencyVersion = this._version;
+        next.dependentPullVersion = node._pullVersion;
+        node._currentDependency = next;
+      } else if (current?.dependency !== this) {
+        var link = this._lastDependent;
+        if (link?.dependent !== node) {
+          link = (current ?? node)._nextDependency = node._currentDependency = createLink(this, current, next, node);
+          if (next) next._prevDependency = link;
+          if (node._flags & 16) this._addDependent(link);
+        } else if (link.dependentPullVersion !== node._pullVersion) this._moveDependency(link, node, current, next);
+      }
+      if (this._flags & 3) this._invalidateDependents();
+    }
+    _moveDependency(link, node, current, next) {
+      (link._prevDependency ?? node)._nextDependency = link._nextDependency;
+      if (link._nextDependency) link._nextDependency._prevDependency = link._prevDependency;
+      link._prevDependency = current;
+      link._nextDependency = next;
+      link.dependencyVersion = this._version;
+      link.dependentPullVersion = node._pullVersion;
+      (current ?? node)._nextDependency = node._currentDependency = link;
+      if (next) next._prevDependency = link;
+    }
     pull() {
-      if (!this._pull) return false;
-      if (Cell_CommonState.transactionStates) throw Error("Cannot call a pull in a transaction");
-      if (this._currentlyPulling) throw Error("Circular pulling");
-      var dependency = this._nextDependency;
-      if (dependency) do dependency.state = -1; while (dependency = dependency._nextDependency);else if (dependency === void 0) this._nextDependency = null;
-      this._currentlyPulling = true;
-      var prevCell = Cell_CommonState.currentCell;
-      Cell_CommonState.currentCell = this;
-      var value;
-      $error = null;
+      if (!this._compute) return false;
+      if (this._flags & 12) throw Error("Circular computation");
+      var prevCell = Cell_runtimeState.currentCell;
+      Cell_runtimeState.currentCell = null;
+      this._flags |= 4;
+      var value = this._value;
       try {
-        value = this._bound ? this._pull.call(this.context, this, this._value) : this._pull.call(this.context);
-        if (isPromiseLike(value)) {
-          value.then(value => this._push(value), err => this._fail(err));
-          $error = {
-            error: new WaitError()
-          };
-        }
+        if (this._pull()) this._globalVersion = ++Cell_runtimeState.globalVersion;
+        return this._error ? this._error instanceof WaitError : this._value !== value;
+      } finally {
+        this._flags &= -5;
+        Cell_runtimeState.currentCell = prevCell;
+      }
+    }
+    _pull(waiting) {
+      var {
+        currentCell: prevCell,
+        globalVersion
+      } = Cell_runtimeState;
+      Cell_runtimeState.pulling++;
+      Cell_runtimeState.currentCell = this;
+      this._pullVersion++;
+      this._flags = this._flags & -4 | 8;
+      var value = this._value;
+      var error = null;
+      var pullId = this._async ? ++this._pullId : 0;
+      try {
+        var result = this._compute.call(this.context, value);
+        if (this._async && isPromiseLike(result)) {
+          Promise.resolve(result).then(value => {
+            if (pullId > this._appliedPullId) {
+              this._appliedPullId = pullId;
+              this._globalVersion = ++Cell_runtimeState.globalVersion;
+              this._flags &= -4;
+              this._publish(value, null);
+            }
+          }, err => {
+            if (pullId > this._appliedPullId) {
+              if (!(err instanceof WaitError)) this._appliedPullId = pullId;
+              this._globalVersion = ++Cell_runtimeState.globalVersion;
+              this._flags &= -4;
+              this._publish(value, err);
+              if (!(err instanceof WaitError)) config.logError(err);
+            }
+          });
+          error = WaitError.instance;
+        } else value = result;
       } catch (err) {
-        $error = {
-          error: err
-        };
+        error = err instanceof Error ? err : Error(err === void 0 ? void 0 : String(err));
+      } finally {
+        this._flags &= -9;
+        Cell_runtimeState.currentCell = prevCell;
+        Cell_runtimeState.pulling--;
+        trimDependencies(this);
       }
-      Cell_CommonState.currentCell = prevCell;
-      this._currentlyPulling = false;
-      this._currentDependency = null;
-      if (this._nextDependent || this._onChange?.[_riim_event.LISTENERS] && this._onChange[_riim_event.LISTENERS].size > 0 || this._onError?.[_riim_event.LISTENERS] && this._onError[_riim_event.LISTENERS].size > 0) {
-        for (var holder = this, _dependency2 = this._nextDependency; _dependency2;) if (_dependency2.state == -1) {
-          _dependency2.cell._deleteDependent(this);
-          _dependency2 = holder._nextDependency = _dependency2._nextDependency;
-        } else {
-          if (_dependency2.state == 1) _dependency2.cell._addDependent(this);
-          holder = _dependency2;
-          _dependency2 = _dependency2._nextDependency;
-        }
-        if (this._nextDependency) this._active = true;else {
-          this._active = false;
-          this._state = CellState.ACTUAL;
-        }
-      } else this._state = this._nextDependency ? CellState.DIRTY : CellState.ACTUAL;
-      return $error ? this._fail($error.error, true) : this._push(value, true);
-    }
-    set(value) {
-      if (!this._writable) throw Error("Cannot write to a non-writable cell");
-      if (!this._initialized) this.pull();
-      this._validateValue?.(value, this._value);
-      if (this._put) {
-        if (!this._bound) {
-          this.push = this.push.bind(this);
-          this.fail = this.fail.bind(this);
-          this._bound = true;
-        }
-        if (this._put.length >= 3) this._put.call(this.context, this, value, this._value);else this._put.call(this.context, this, value);
-      } else this._push(value);
-      return this;
-    }
-    push(value) {
-      if (Cell_CommonState.transactionStates) throw Error("Cannot call a push in a transaction");
-      return this._push(value);
-    }
-    _push(value, fromPull) {
-      this._initialized = true;
-      var prevValue = this._value;
-      var err = this._error;
-      if (Cell_CommonState.transactionStates && !Cell_CommonState.transactionStates.has(this)) Cell_CommonState.transactionStates.set(this, {
-        value: prevValue,
-        error: err,
-        state: this._state,
-        updateId: this._updateId
-      });
-      var changed = !this._compareValues(value, prevValue);
-      if (changed) {
-        this._value = value;
-        if (isEventEmitterLike(prevValue)) prevValue.off("change", this._onValueChange, this);
-        if (isEventEmitterLike(value)) value.on("change", this._onValueChange, this);
-      }
-      if (err) {
-        this._error$?.set(null);
-        this._error = null;
-      }
-      if (this._active) this._state = CellState.ACTUAL;
-      this._updateId = fromPull ? Cell_CommonState.lastUpdateId : ++Cell_CommonState.lastUpdateId;
-      if (changed) {
-        this._addToRelease();
-        if (!Cell_CommonState.transactionStates && this._onChange) (0, _riim_event.fireEvent)(this._onChange, {
-          target: this,
-          type: Cell.EVENT_CHANGE,
-          data: {
-            value,
-            prevValue
-          }
-        });
-      }
+      if (globalVersion !== (this._globalVersion = Cell_runtimeState.globalVersion)) this._flags |= 1;
+      if (this._async && !(error instanceof WaitError)) this._appliedPullId = pullId;
+      var changed = this._publish(value, error, waiting);
+      if (error && !(error instanceof WaitError) && this._async) config.logError(error);
       return changed;
     }
-    fail(err) {
-      if (Cell_CommonState.transactionStates) throw Error("Cannot call a fail in a transaction");
-      return this._fail(err);
+    _publish(value, error, waiting) {
+      var errorChanged = error !== this._error;
+      if (error ? !errorChanged : !errorChanged && value === this._value) return false;
+      this._value = value;
+      this._error = error;
+      this._version++;
+      if (errorChanged) this._rareState?.errorCell?._push(error);
+      this._invalidateDependents(waiting);
+      return true;
     }
-    _fail(err, fromPull) {
-      this._initialized = true;
-      if (!(err instanceof Error)) err = Error(err);
-      this._error$?.set(err);
-      this._error = err;
-      if (this._active) this._state = CellState.ACTUAL;
-      this._updateId = fromPull ? Cell_CommonState.lastUpdateId : ++Cell_CommonState.lastUpdateId;
-      var isWaitError = err instanceof WaitError;
-      if (!isWaitError && $error) {
-        $error = null;
-        if (this.meta?.["id"] !== void 0) config.logError(`[${this.meta?.["id"]}]`, err);else config.logError(err);
+    set(value) {
+      if (this._compute && !this._put) throw Error("Cannot write to a computed cell");
+      this._assertValue?.(value, this._compute ? this._value : this._pendingValue);
+      if (this._compute) this._put.call(this.context, value, this._value);else if (value !== this._pendingValue) {
+        Cell_runtimeState.globalVersion++;
+        this._pendingValue = value;
+        this._flags |= 2;
+        this._invalidateDependents(void 0, 1);
       }
-      err[KEY_ERROR_EVENT] ??= {
-        target: this,
-        type: Cell.EVENT_ERROR,
-        data: {
-          error: err
-        }
-      };
-      if (this._onError) (0, _riim_event.fireEvent)(this._onError, err[KEY_ERROR_EVENT]);
-      return isWaitError;
-    }
-    wait() {
-      throw new WaitError();
-    }
-    reap() {
-      for (var dependent = this._nextDependent; dependent; dependent = dependent._nextDependent) dependent.cell.reap();
-      this._error$?.reap();
-      this._onChange?.[_riim_event.LISTENERS]?.clear();
-      this._onError?.[_riim_event.LISTENERS]?.clear();
-      this._deactivate();
-      this._reap?.call(this.context);
       return this;
     }
-    dispose() {
-      return this.reap();
+    disconnect() {
+      while (this._nextDependent) this._nextDependent.dependent.disconnect();
+      this._rareState?.errorCell?.disconnect();
+      if (this._flags & 16) this._deactivate();
+      this._scheduleObservation(false);
+      return this;
     }
   };
-
+  var ErrorCell = class extends Cell {
+    constructor(owner) {
+      super(owner._error);
+      this._nextDependency = createLink(owner, null, null, this);
+    }
+    _actualize() {
+      if (this._flags & 4) throw Error("Circular computation");
+      var version = this._version;
+      var owner = this._nextDependency.dependency;
+      this._flags |= 4;
+      try {
+        owner._actualize(this._nextDependency);
+        this._nextDependency.dependencyVersion = owner._version;
+        this._globalVersion = Cell_runtimeState.globalVersion;
+        this._flags &= -4;
+        if (owner._flags & 3) this._flags |= 1;
+        return this._version !== version;
+      } finally {
+        this._flags &= -5;
+      }
+    }
+    _push(value) {
+      if (value !== this._value) {
+        this._value = value;
+        this._version++;
+        this._invalidateDependents();
+      }
+    }
+  };
+  //#endregion
+  //#region src/afterRelease.ts
+  function afterRelease(cb) {
+    (Cell_runtimeState.afterRelease ??= []).push(cb);
+    scheduleRelease();
+  }
+  //#endregion
+  //#region src/reaction.ts
+  function reaction(source, fn, cellOptions) {
+    var cell = new Cell(source instanceof Cell ? () => source.value : source, cellOptions);
+    var disposer = () => {
+      cell.disconnect();
+    };
+    cell.onChange(function (value) {
+      var prevCell = Cell_runtimeState.currentCell;
+      Cell_runtimeState.currentCell = null;
+      try {
+        return fn.call(this, value, disposer);
+      } finally {
+        Cell_runtimeState.currentCell = prevCell;
+      }
+    });
+    return disposer;
+  }
   //#endregion
   //#region src/batch.ts
+  var batchDepth = 0;
   function batch(fn) {
-    var result = fn();
-    release();
-    return result;
-  }
-
-  //#endregion
-  //#region src/transaction.ts
-  function transaction(fn, onFailure) {
-    if (Cell_CommonState.transactionStates) return fn();
-    if (Cell_CommonState.pendingCells.length > 0) release();
-    Cell_CommonState.transactionStates = /* @__PURE__ */new Map();
-    var result;
+    batchDepth++;
     try {
-      result = fn();
-    } catch (err) {
-      for (var [cell, {
-        value,
-        error,
-        state,
-        updateId
-      }] of Cell_CommonState.transactionStates) {
-        cell._value = value;
-        cell._error$?.set(error);
-        cell._error = error;
-        cell._state = state;
-        cell._updateId = updateId;
-      }
-      Cell_CommonState.pendingCells.length = 0;
-      Cell_CommonState.transactionStates = null;
-      if (onFailure) return onFailure(err);
-      throw err;
+      return fn();
+    } finally {
+      if (--batchDepth === 0) release();
     }
-    for (var [_cell, {
-      value: _value
-    }] of Cell_CommonState.transactionStates) if (!_cell._compareValues(_cell._value, _value)) {
-      if (_cell._onChange) (0, _riim_event.fireEvent)(_cell._onChange, {
-        value: _cell._value,
-        prevValue: _value
-      });
-    }
-    Cell_CommonState.transactionStates = null;
-    if (Cell_CommonState.pendingCells.length > 0) release();
-    return result;
   }
-
-  //#endregion
-  //#region src/define.ts
-  function defineObservableProperty(obj, key, value) {
-    var cell = new Cell({
-      value,
-      context: obj
-    });
-    Object.defineProperty(obj, key, {
-      configurable: true,
-      enumerable: true,
-      get() {
-        return cell.get();
-      },
-      set(value) {
-        cell.set(value);
-      }
-    });
-    return obj;
-  }
-  function defineObservableProperties(obj, props) {
-    for (var key of Object.keys(props)) defineObservableProperty(obj, key, props[key]);
-    return obj;
-  }
-  function define(obj, keyOrProps, value) {
-    if (typeof keyOrProps == "object") defineObservableProperties(obj, keyOrProps);else defineObservableProperty(obj, keyOrProps, value);
-    return obj;
-  }
-
   //#endregion
   //#region src/cellx.ts
-  function observable(value, options) {
-    return new Cell({
-      ...options,
-      pull: void 0,
-      value
-    });
+  function cellx(valueOrCompute, options) {
+    return new Cell(valueOrCompute, options);
   }
-  function computed(pullFn, options) {
-    return new Cell({
-      ...options,
-      pull: pullFn
-    });
-  }
-  function cellx(valueOrPullFn, options) {
-    return typeof valueOrPullFn == "function" ? computed(valueOrPullFn, options) : observable(valueOrPullFn, options);
-  }
-
   //#endregion
   exports.Cell = Cell;
-  exports.CellState = CellState;
   exports.DependencyFilter = DependencyFilter;
   exports.WaitError = WaitError;
   exports.afterRelease = afterRelease;
-  exports.autorun = autorun;
   exports.batch = batch;
   exports.cellx = cellx;
-  exports.computed = computed;
   exports.configure = configure;
-  exports.define = define;
-  exports.defineObservableProperties = defineObservableProperties;
-  exports.defineObservableProperty = defineObservableProperty;
-  exports.observable = observable;
+  exports.effect = effect;
   exports.reaction = reaction;
   exports.release = release;
   exports.tracked = tracked;
-  exports.transaction = transaction;
   exports.untracked = untracked;
 });

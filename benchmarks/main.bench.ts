@@ -87,6 +87,49 @@ const setups: Array<[string, TSetup]> = [
 	],
 
 	[
+		'angular-signals',
+		async ({ timeStart, timeEnd }, listener) => {
+			const { computed, signal } = await import('@angular/core');
+			const { createWatch } = await import('@angular/core/primitives/signals');
+
+			timeStart();
+
+			const queue = new Set<import('@angular/core/primitives/signals').Watch>();
+			const x = signal(0);
+			const y = signal(0);
+			const z = signal(0);
+			const a = computed(() => x() + 1);
+			const b = computed(() => x() - y() + hard());
+			const c = computed(() => y() + z() - hard());
+			const d = computed(() => z() - 2);
+			const e = computed(() => a() + (a() % 6 < 3 ? b() : 0));
+			const f = computed(() => ((y() + hard()) % 7 < 3 ? a() : d()));
+			const g = computed(() => d() - (d() % 6 < 3 ? c() : 0));
+			const h = computed(() => (e() % 5 < g() % 9 ? f() : 0) + g());
+
+			const watch = createWatch(
+				() => listener(h()),
+				(watch) => queue.add(watch),
+				true
+			);
+			watch.run();
+
+			timeEnd();
+
+			return (value1, value2, value3) => {
+				x.set(value1);
+				y.set(value2);
+				z.set(value3);
+
+				for (const watch of queue) {
+					queue.delete(watch);
+					watch.run();
+				}
+			};
+		}
+	],
+
+	[
 		'baconjs (static)',
 		async ({ timeStart, timeEnd }, listener) => {
 			const { Bus, combineWith } = await import('baconjs');
@@ -417,9 +460,79 @@ const setups: Array<[string, TSetup]> = [
 	],
 
 	[
+		'pota',
+		async ({ timeStart, timeEnd }, listener) => {
+			const { batch, effect, memo, root, signal } = await import('pota');
+
+			timeStart();
+
+			const update = root(() => {
+				const x = signal(0);
+				const y = signal(0);
+				const z = signal(0);
+				const a = memo(() => x.read() + 1);
+				const b = memo(() => x.read() - y.read() + hard());
+				const c = memo(() => y.read() + z.read() - hard());
+				const d = memo(() => z.read() - 2);
+				const e = memo(() => a() + (a() % 6 < 3 ? b() : 0));
+				const f = memo(() => ((y.read() + hard()) % 7 < 3 ? a() : d()));
+				const g = memo(() => d() - (d() % 6 < 3 ? c() : 0));
+				const h = memo(() => (e() % 5 < g() % 9 ? f() : 0) + g());
+
+				effect(() => listener(h()));
+
+				return (value1: number, value2: number, value3: number) => {
+					batch(() => {
+						x.write(value1);
+						y.write(value2);
+						z.write(value3);
+					});
+				};
+			});
+
+			timeEnd();
+
+			return update;
+		}
+	],
+
+	[
 		'preact-signals',
 		async ({ timeStart, timeEnd }, listener) => {
 			const { batch, computed, effect, signal } = await import('@preact/signals-core');
+
+			timeStart();
+
+			const x = signal(0);
+			const y = signal(0);
+			const z = signal(0);
+			const a = computed(() => x.value + 1);
+			const b = computed(() => x.value - y.value + hard());
+			const c = computed(() => y.value + z.value - hard());
+			const d = computed(() => z.value - 2);
+			const e = computed(() => a.value + (a.value % 6 < 3 ? b.value : 0));
+			const f = computed(() => ((y.value + hard()) % 7 < 3 ? a.value : d.value));
+			const g = computed(() => d.value - (d.value % 6 < 3 ? c.value : 0));
+			const h = computed(() => (e.value % 5 < g.value % 9 ? f.value : 0) + g.value);
+
+			effect(() => listener(h.value));
+
+			timeEnd();
+
+			return (value1, value2, value3) => {
+				batch(() => {
+					x.value = value1;
+					y.value = value2;
+					z.value = value3;
+				});
+			};
+		}
+	],
+
+	[
+		'reactive-engine',
+		async ({ timeStart, timeEnd }, listener) => {
+			const { batch, computed, effect, signal } = await import('@pravosleva/reactive-engine');
 
 			timeStart();
 
@@ -641,6 +754,44 @@ const setups: Array<[string, TSetup]> = [
 	],
 
 	[
+		'solid-signals',
+		async ({ timeStart, timeEnd }, listener) => {
+			const { createEffect, createMemo, createRoot, createSignal, flush } =
+				await import('@solidjs/signals');
+
+			timeStart();
+
+			const update = createRoot(() => {
+				const [x, setX] = createSignal(0);
+				const [y, setY] = createSignal(0);
+				const [z, setZ] = createSignal(0);
+				const a = createMemo(() => x() + 1);
+				const b = createMemo(() => x() - y() + hard());
+				const c = createMemo(() => y() + z() - hard());
+				const d = createMemo(() => z() - 2);
+				const e = createMemo(() => a() + (a() % 6 < 3 ? b() : 0));
+				const f = createMemo(() => ((y() + hard()) % 7 < 3 ? a() : d()));
+				const g = createMemo(() => d() - (d() % 6 < 3 ? c() : 0));
+				const h = createMemo(() => (e() % 5 < g() % 9 ? f() : 0) + g());
+
+				createEffect(h, listener);
+
+				return (value1: number, value2: number, value3: number) => {
+					setX(value1);
+					setY(value2);
+					setZ(value3);
+					flush();
+				};
+			});
+
+			flush();
+			timeEnd();
+
+			return update;
+		}
+	],
+
+	[
 		'spred',
 		async ({ timeStart, timeEnd }, listener) => {
 			const { batch, computed, writable } = await import('spred');
@@ -658,6 +809,78 @@ const setups: Array<[string, TSetup]> = [
 			const f = computed(() => ((y.get() + hard()) % 7 < 3 ? a.get() : d.get()));
 			const g = computed(() => d.get() - (d.get() % 6 < 3 ? c.get() : 0));
 			const h = computed(() => (e.get() % 5 < g.get() % 9 ? f.get() : 0) + g.get());
+
+			h.subscribe(listener);
+
+			timeEnd();
+
+			return (value1, value2, value3) => {
+				batch(() => {
+					x.set(value1);
+					y.set(value2);
+					z.set(value3);
+				});
+			};
+		}
+	],
+
+	[
+		'svelte',
+		async ({ timeStart, timeEnd }, listener) => {
+			const { derived, effect_root, flush, get, render_effect, set, state } =
+				await import('svelte/internal/client');
+
+			timeStart();
+
+			let update!: TUpdateEntries;
+			effect_root(() => {
+				const x = state(0);
+				const y = state(0);
+				const z = state(0);
+				const a = derived(() => get(x) + 1);
+				const b = derived(() => get(x) - get(y) + hard());
+				const c = derived(() => get(y) + get(z) - hard());
+				const d = derived(() => get(z) - 2);
+				const e = derived(() => get(a) + (get(a) % 6 < 3 ? get(b) : 0));
+				const f = derived(() => ((get(y) + hard()) % 7 < 3 ? get(a) : get(d)));
+				const g = derived(() => get(d) - (get(d) % 6 < 3 ? get(c) : 0));
+				const h = derived(() => (get(e) % 5 < get(g) % 9 ? get(f) : 0) + get(g));
+
+				render_effect(() => listener(get(h)));
+
+				update = (value1, value2, value3) => {
+					flush(() => {
+						set(x, value1);
+						set(y, value2);
+						set(z, value3);
+					});
+				};
+			});
+
+			timeEnd();
+
+			return update;
+		}
+	],
+
+	[
+		'tansu',
+		async ({ timeStart, timeEnd }, listener) => {
+			const { batch, computed, writable } = await import('@amadeus-it-group/tansu');
+
+			timeStart();
+
+			const x = writable(0);
+			const y = writable(0);
+			const z = writable(0);
+			const a = computed(() => x() + 1);
+			const b = computed(() => x() - y() + hard());
+			const c = computed(() => y() + z() - hard());
+			const d = computed(() => z() - 2);
+			const e = computed(() => a() + (a() % 6 < 3 ? b() : 0));
+			const f = computed(() => ((y() + hard()) % 7 < 3 ? a() : d()));
+			const g = computed(() => d() - (d() % 6 < 3 ? c() : 0));
+			const h = computed(() => (e() % 5 < g() % 9 ? f() : 0) + g());
 
 			h.subscribe(listener);
 
@@ -927,6 +1150,7 @@ const setups: Array<[string, TSetup]> = [
 
 	await updationBench.run({
 		memoryUsage: true,
+		warmupTime: 5000,
 		time: 5000
 	});
 

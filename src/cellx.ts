@@ -25,6 +25,7 @@ export { afterRelease } from './afterRelease';
 export { effect, type IEffectOptions } from './effect';
 export { reaction } from './reaction';
 export { batch } from './batch';
+export { DependencyFilter, tracked, untracked } from './track';
 
 export function cellx<Value, Context = any>(
 	compute: TAsyncCellCompute<Value, Context>,

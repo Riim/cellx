@@ -1,148 +1,127 @@
-import { TEvent } from '@riim/event';
-import { afterRelease } from './afterRelease';
-import { autorun } from './autorun';
-import { reaction } from './reaction';
-import { release } from './release';
-export interface IEvent<Data = any, Target = any> {
-    target: Target;
-    type: string | symbol;
-    data: Data;
-}
-export type TListener<Event extends IEvent = IEvent, Context = any> = (this: Context, evt: Event) => any;
-export type CellValue<T> = T extends Cell<infer U> ? U : T;
-export interface ICellChangeEvent<Target extends Cell = Cell> extends IEvent<{
-    value: CellValue<Target>;
-    prevValue: CellValue<Target>;
-}, Target> {
-    type: typeof Cell.EVENT_CHANGE;
-}
-export interface ICellErrorEvent<Target extends Cell = Cell> extends IEvent<{
-    error: Error;
-}, Target> {
-    type: typeof Cell.EVENT_ERROR;
-}
-export type TCellEvent<Target extends Cell = Cell> = ICellChangeEvent<Target> | ICellErrorEvent<Target>;
-export type TCellChangeEventListener<Target extends Cell = Cell, Context = any> = TListener<ICellChangeEvent<Target>, Context>;
-export type TCellErrorEventListener<Target extends Cell = Cell, Context = any> = TListener<ICellErrorEvent<Target>, Context>;
-export type TCellEventListener<Target extends Cell = Cell, Context = any> = TCellChangeEventListener<Target, Context> | TCellErrorEventListener<Target, Context>;
-export interface ICellListeners<Target extends Cell = Cell, Context = any> {
-    [Cell.EVENT_CHANGE]?: TCellChangeEventListener<Target, Context>;
-    [Cell.EVENT_ERROR]?: TCellErrorEventListener<Target, Context>;
-}
-export type TCellPull<Value = any, Context = any, Meta = any> = (this: Context, cell: Cell<Value, Context, Meta>, value: Value | undefined) => Value;
-export type TCellPut<Value = any, Context = any, Meta = any> = (this: Context, cell: Cell<Value, Context, Meta>, nextValue: Value, value: Value | undefined) => void;
-export interface ICellOptions<Value = any, Context = any, Meta = any> {
+import { type TEvent } from '@riim/event';
+export type TCellValue<T> = T extends Cell<infer U, any> ? U : T;
+export type TCellCompute<Value = any, Context = any> = (this: Context, value: NoInfer<Value> | undefined) => Value;
+export type TAsyncCellCompute<Value = any, Context = any> = (this: Context, value: NoInfer<Value> | undefined) => Value | PromiseLike<Value>;
+export type TCellPut<Value = any, Context = any> = (this: Context, nextValue: Value, value: Value | undefined) => void;
+export interface ICellOptionsBase<Value = any, Context = any> {
     context?: Context;
-    meta?: Meta;
-    writable?: boolean;
-    pull?: TCellPull<Value, Context, Meta>;
-    dependencyFilter?: (dep: Cell) => any;
-    validate?: (nextValue: Value, value: Value | undefined) => void;
-    put?: TCellPut<Value, Context, Meta>;
-    compareValues?: (nextValue: Value, value: Value | undefined) => boolean;
-    reap?: (this: Context) => void;
-    value?: Value;
-    onChange?: TCellChangeEventListener<Cell<Value, any, Meta>>;
-    onError?: TCellErrorEventListener<Cell<Value, any, Meta>>;
+    dependencyFilter?: (dependency: Cell) => any;
+    assertValue?: (nextValue: NoInfer<Value>, value: NoInfer<Value> | undefined) => void;
+    put?: TCellPut<NoInfer<Value>, Context>;
+    onChange?: Parameters<Cell<NoInfer<Value>, Context>['onChange']>[0];
+    onError?: Parameters<Cell<Value, Context>['onError']>[0];
+    onObserved?: Parameters<Cell<Value, Context>['onObserved']>[0];
+    onUnobserved?: Parameters<Cell<Value, Context>['onUnobserved']>[0];
 }
-export interface IDependencyList {
-    cell: Cell;
-    _nextDependency: IDependencyList | null;
-    state: number;
+export interface ICellOptions<Value = any, Context = any> extends ICellOptionsBase<Value, Context> {
+    async?: false;
 }
-export interface IDependentList {
-    cell: Cell;
-    _nextDependent: IDependentList | null;
-    prevDependents: IDependentList | null;
+export interface IAsyncCellOptions<Value = any, Context = any> extends ICellOptionsBase<Value, Context> {
+    async: true;
 }
-export declare enum CellState {
-    ACTUAL = "actual",
-    DIRTY = "dirty",
-    CHECK = "check"
+export type TAnyCellOptions<Value = any, Context = any> = ICellOptions<Value, Context> | IAsyncCellOptions<Value, Context>;
+interface ICellRareState<Context> {
+    errorCell: ErrorCell | null;
+    onObserved: TEvent<void, Context> | null;
+    onUnobserved: TEvent<void, Context> | null;
+    pendingEvents: number;
 }
-export declare const Cell_CommonState: {
-    pendingCells: Array<Cell>;
+export declare const enum Flags {
+    PENDING = 1,
+    DIRTY = 2,
+    CHECKING = 4,
+    PULLING = 8,
+    ACTIVE = 16,
+    QUEUED = 32,
+    EFFECT = 64
+}
+export interface IReactiveNode {
+    _dependencyFilter: ((dependency: Cell) => any) | null;
+    _pullVersion: number;
+    _nextDependency: ILink | null;
+    _currentDependency: ILink | null;
+    _nextDependent: ILink | null;
+    _flags: number;
+    _actualize(waiting?: ILink): boolean;
+    disconnect(): IReactiveNode;
+}
+export interface ILink {
+    readonly dependency: Cell;
+    _prevDependency: ILink | null;
+    _nextDependency: ILink | null;
+    readonly dependent: IReactiveNode;
+    _prevDependent: ILink | null;
+    _nextDependent: ILink | null;
+    dependencyVersion: number;
+    dependentPullVersion: number;
+    prevDependents: ILink | null;
+}
+export declare const Cell_runtimeState: {
+    pendingCells: Array<IReactiveNode | undefined>;
     pendingCellsIndex: number;
-    currentCell: Cell | null;
-    lastUpdateId: number;
-    afterRelease: Array<Function> | null;
-    transactionStates: Map<Cell, {
-        value: any;
-        error: Error | null;
-        state: CellState;
-        updateId: number;
-    }> | null;
-    inUntrackedCounter: number;
-    inTrackedCounter: number;
+    pendingCellsCount: number;
+    pulling: number;
+    currentCell: IReactiveNode | null;
+    untrackedCell: IReactiveNode | null;
+    globalVersion: number;
+    afterRelease: Array<() => void> | null;
 };
-export declare class Cell<Value = any, Context = any, Meta = any> {
-    static readonly EVENT_CHANGE = "change";
-    static readonly EVENT_ERROR = "error";
-    static get currentlyPulling(): boolean;
-    static readonly autorun: typeof autorun;
-    static readonly reaction: typeof reaction;
-    static readonly release: typeof release;
-    static readonly afterRelease: typeof afterRelease;
+export declare function checkDependencies(node: IReactiveNode): boolean;
+export declare function enqueueEffect(node: IReactiveNode): void;
+export declare function trimDependencies(node: IReactiveNode): void;
+export declare class Cell<Value = any, Context = any> implements IReactiveNode {
+    static get pulling(): boolean;
     readonly context: Context;
-    readonly meta: Meta;
-    protected _writable: boolean;
-    get writable(): boolean;
-    protected _pull: TCellPull<Value, Context, Meta> | null;
-    protected _dependencyFilter: (dependency: Cell) => any;
-    protected _validateValue: ((nextValue: Value, value: Value | undefined) => void) | null;
-    protected _put: TCellPut<Value, Context, Meta> | null;
-    protected _compareValues: (nextValue: Value, value: Value | undefined) => boolean;
-    protected _reap: (() => void) | null;
-    protected _nextDependency: IDependencyList | null | undefined;
-    protected _currentDependency: IDependencyList | null;
-    protected _nextDependent: IDependentList | null;
-    protected _lastDependent: IDependentList | null;
-    getDependencies(): Cell<any, any, any>[];
-    getDependents(): Cell<any, any, any>[];
+    _dependencyFilter: ((dependency: Cell) => any) | null;
+    protected _compute: TAsyncCellCompute<Value, Context> | null;
+    protected _async: boolean;
+    protected _assertValue: ICellOptionsBase<Value, Context>['assertValue'] | null;
+    protected _put: TCellPut<Value, Context> | null;
     protected _value: Value | undefined;
-    protected _error$: Cell<Error | null> | null;
-    protected _error: Error | null;
-    protected _bound: boolean;
-    protected _initialized: boolean;
-    get initialized(): boolean;
-    protected _active: boolean;
-    get active(): boolean;
-    protected _state: CellState;
-    get state(): CellState;
-    protected _currentlyPulling: boolean;
-    protected _updateId: number;
-    protected _onChange: TEvent<ICellChangeEvent, Context> | null;
-    protected _onError: TEvent<ICellErrorEvent, Context> | null;
-    constructor(options: ICellOptions<Value, Context, Meta>);
-    on(type: typeof Cell.EVENT_CHANGE, listener: TCellChangeEventListener<Cell<Value, Context, Meta>>): this;
-    on(type: typeof Cell.EVENT_ERROR, listener: TCellErrorEventListener<Cell<Value, Context, Meta>>): this;
-    off(type: typeof Cell.EVENT_CHANGE, listener: TCellChangeEventListener<Cell<Value, Context, Meta>>): this;
-    off(type: typeof Cell.EVENT_ERROR, listener: TCellErrorEventListener<Cell<Value, Context, Meta>>): this;
-    onChange(listener: TCellChangeEventListener<Cell<Value, Context, Meta>>): this;
-    offChange(listener: TCellChangeEventListener<Cell<Value, Context, Meta>>): this;
-    onError(listener: TCellErrorEventListener<Cell<Value, Context, Meta>>): this;
-    offError(listener: TCellErrorEventListener<Cell<Value, Context, Meta>>): this;
-    subscribe(listener: (this: (typeof this)['context'], err: Error | null, evt: TCellEvent<this>) => any): this;
-    unsubscribe(listener: (this: (typeof this)['context'], err: Error | null, evt: TCellEvent<this>) => any): this;
-    protected _addDependent(dependent: Cell): void;
-    protected _deleteDependent(dependent: Cell): void;
+    protected _pendingValue: Value;
+    _error: Error | null;
+    protected _globalVersion: number;
+    _version: number;
+    _pullVersion: number;
+    _nextDependency: ILink | null;
+    _currentDependency: ILink | null;
+    _nextDependent: ILink | null;
+    protected _lastDependent: ILink | null;
+    _flags: number;
+    protected _pullId: number;
+    protected _appliedPullId: number;
+    protected _rareState: ICellRareState<Context> | null;
+    constructor(compute: TAsyncCellCompute<Value, Context>, options: IAsyncCellOptions<Value, Context>);
+    constructor(valueOrCompute: Value | TCellCompute<Value, Context>, options?: ICellOptions<Value, Context>);
+    protected _getRareState(): ICellRareState<Context>;
+    onChange(handler: (this: Context, value: Value) => void): () => void;
+    onError(handler: (this: Context, err: Error) => void): () => void;
+    get onObserved(): TEvent<void, Context>;
+    get onUnobserved(): TEvent<void, Context>;
+    protected _scheduleObservation(observed: boolean): void;
+    _addDependent(link: ILink): void;
+    _deleteDependent(link: ILink): void;
     protected _activate(): void;
     protected _deactivate(): void;
-    protected _onValueChange(evt: IEvent): void;
-    protected _addToRelease(): void;
+    protected _invalidateDependents(waiting?: ILink, state?: Flags): void;
     actualize(): this;
-    _actualize(): this;
+    _actualize(waiting?: ILink): boolean;
     get value(): Value;
     set value(value: Value);
     get error(): Error | null;
     get(): Value;
+    track(): void;
+    protected _moveDependency(link: ILink, node: IReactiveNode, current: ILink | null, next: ILink | null): void;
     pull(): boolean;
+    protected _pull(waiting?: ILink): boolean;
+    protected _publish(value: Value | undefined, error: Error | null, waiting?: ILink): boolean;
     set(value: Value): this;
-    push(value: Value): boolean;
-    _push(value: Value, fromPull?: boolean): boolean;
-    fail(err: any): boolean;
-    _fail(err: any, fromPull?: boolean): boolean;
-    wait(): never;
-    reap(): this;
-    dispose(): this;
+    disconnect(): this;
 }
+declare class ErrorCell extends Cell<Error | null> {
+    _nextDependency: ILink;
+    constructor(owner: Cell);
+    _actualize(): boolean;
+    _push(value: Error | null): void;
+}
+export {};

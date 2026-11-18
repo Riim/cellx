@@ -1,6 +1,5 @@
-import { Cell } from './Cell';
+import { type Cell } from './Cell';
 export declare const DependencyFilter: {
-    allExceptUntracked: (dependency: Cell) => boolean;
     onlyTracked: (dependency: Cell) => boolean;
 };
 export declare function untracked<T>(fn: () => T): T;

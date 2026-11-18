@@ -1,7 +1,6 @@
 import { describe, expect, test } from '@jest/globals';
 import { type ILink } from '../src/Cell';
-import { cellx, release } from '../src/cellx';
-import { DependencyFilter, tracked, untracked } from '../src/track';
+import { DependencyFilter, cellx, release, tracked, untracked } from '../src/cellx';
 
 function getDependencyListLength(list: ILink | null) {
 	if (!list) {

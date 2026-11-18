@@ -186,6 +186,7 @@ export class Cell<Value = any, Context = any> implements IReactiveNode {
 	declare protected _put: TCellPut<Value, Context> | null;
 
 	protected _value: Value | undefined;
+	declare protected _pendingValue: Value;
 	_error: Error | null = null;
 
 	protected _globalVersion = -1;
@@ -237,7 +238,7 @@ export class Cell<Value = any, Context = any> implements IReactiveNode {
 		} else {
 			this._compute = null;
 			this._assertValue?.(valueOrCompute, undefined);
-			this._value = valueOrCompute;
+			this._value = this._pendingValue = valueOrCompute;
 			this._flags = 0;
 		}
 
@@ -416,14 +417,14 @@ export class Cell<Value = any, Context = any> implements IReactiveNode {
 		this._scheduleObservation(false);
 	}
 
-	protected _invalidateDependents(waiting?: ILink): void {
+	protected _invalidateDependents(waiting?: ILink, state = Flags.DIRTY): void {
 		let list = this._nextDependent;
 
 		if (!list || (list === waiting && !list._nextDependent)) {
 			return;
 		}
 
-		for (let stack: ILink | null = null, state = Flags.DIRTY; ;) {
+		for (let stack: ILink | null = null; ;) {
 			let link: ILink | null = list;
 
 			do {
@@ -472,6 +473,11 @@ export class Cell<Value = any, Context = any> implements IReactiveNode {
 
 	_actualize(waiting?: ILink): boolean {
 		if (!this._compute) {
+			if (this._flags & Flags.DIRTY) {
+				this._flags &= ~Flags.DIRTY;
+				return this._publish(this._pendingValue, null, waiting);
+			}
+
 			return false;
 		}
 
@@ -731,15 +737,15 @@ export class Cell<Value = any, Context = any> implements IReactiveNode {
 			throw Error('Cannot write to a computed cell');
 		}
 
-		this._assertValue?.(value, this._value);
+		this._assertValue?.(value, this._compute ? this._value : this._pendingValue);
 
 		if (this._compute) {
 			this._put!.call(this.context, value, this._value);
-		} else if (value !== this._value) {
+		} else if (value !== this._pendingValue) {
 			Cell_runtimeState.globalVersion++;
-			this._value = value;
-			this._version++;
-			this._invalidateDependents();
+			this._pendingValue = value;
+			this._flags |= Flags.DIRTY;
+			this._invalidateDependents(undefined, Flags.PENDING);
 		}
 
 		return this;
